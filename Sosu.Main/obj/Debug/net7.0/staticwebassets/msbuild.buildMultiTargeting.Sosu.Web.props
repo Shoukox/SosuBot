@@ -1,0 +1,3 @@
+﻿<Project>
+  <Import Project="..\build\Sosu.Web.props" />
+</Project>
