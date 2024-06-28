@@ -28,12 +28,18 @@
             Data.LoadData();
         }
 
+        private static void StartSaveTimer()
+        {
+            TextDatabase.SaveTimer();
+        }
+
         public static void LoadAllSettings()
         {
             InitializeVariables();
             CreateDatabase();
             ConnectToOsuApi();
             LoadData();
+            StartSaveTimer();
         }
     }
 }

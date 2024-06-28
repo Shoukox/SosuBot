@@ -46,5 +46,23 @@ namespace Sosu.Services
             }
             Console.WriteLine("endedLoadData");
         }
+
+        public static void SaveTimer()
+        {
+            var saveDataTimer = new System.Timers.Timer(1 * 24 * 3600 * 1000);
+            saveDataTimer.Elapsed += (s, e) =>
+            {
+                try
+                {
+                    SaveData();
+                    Console.WriteLine("saved");
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine(ex);
+                }
+            };
+            saveDataTimer.Start();
+        }
     }
 }
