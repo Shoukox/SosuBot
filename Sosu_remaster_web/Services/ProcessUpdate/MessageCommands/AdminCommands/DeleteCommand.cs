@@ -5,6 +5,7 @@ namespace Sosu.Services.ProcessUpdate.MessageCommands.AdminCommands
 {
     public class DeleteCommand : ICommand
     {
+        public const string commandText = "/del";
         public Func<ITelegramBotClient, Update, Task> action => new Func<ITelegramBotClient, Update, Task>(async (bot, update) =>
         {
             var message = update.Message;

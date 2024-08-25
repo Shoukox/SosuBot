@@ -22,6 +22,7 @@
 
         public string error_baseMessage { get; }
         public string error_noUser { get; }
+        public string error_nameIsEmpty { get; }
         public string error_userNotFound { get; }
         public string error_noRecords { get; }
         public string error_argsLength { get; }

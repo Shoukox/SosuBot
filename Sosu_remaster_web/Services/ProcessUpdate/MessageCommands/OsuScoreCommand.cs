@@ -30,7 +30,6 @@ namespace Sosu.Services.ProcessUpdate.MessageCommands
                 return;
             }
 
-
             if (splittedMessage.Length == 1)
             {
                 ParsedBeatmap? parsedBeatmap = null;

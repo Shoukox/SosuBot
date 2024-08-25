@@ -26,13 +26,13 @@ namespace Sosu.Services.ProcessUpdate
             ICommand handler = command switch
             {
                 //~~~~~~admin~~~~~~~~
-                "/sendm" => new SendMessageCommand(),
-                "/del" => new DeleteCommand(),
-                "/get" => new GetCommand(),
+                SendMessageCommand.commandText => new SendMessageCommand(),
+                DeleteCommand.commandText => new DeleteCommand(),
+                GetCommand.commandText => new GetCommand(),
                 //~~~~~~~~~~~~~~~~~~~
 
                 "/start" => new StartCommand(),
-                "/help" => new SendMessageCommand(),
+                "/help" => new HelpCommand(),
                 "/set" => new OsuSetCommand(),
                 "/userbest" => new OsuUserbestCommand(),
                 "/chat_stats" => new OsuChatstatsCommand(),

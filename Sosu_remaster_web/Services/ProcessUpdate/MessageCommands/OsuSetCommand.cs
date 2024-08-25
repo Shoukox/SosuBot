@@ -15,6 +15,12 @@ namespace Sosu.Services.ProcessUpdate.MessageCommands
 
             string name = string.Join(" ", message.Text.Split(" ").Skip(1));
 
+            if (string.IsNullOrEmpty(name))
+            {
+                await bot.SendTextMessageAsync(message.Chat.Id, language.error_nameIsEmpty, ParseMode.Html, replyToMessageId: message.MessageId);
+                return;
+            }
+
             var item = Variables.osuUsers.FirstOrDefault(m => m.telegramId == message.From.Id);
             if (item == default)
             {

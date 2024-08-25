@@ -575,10 +575,16 @@
           "Serilog.Extensions.Hosting": "7.0.0",
           "Serilog.Sinks.Console": "4.1.0",
           "Serilog.Sinks.File": "5.0.0",
+          "Sosu.Localization": "1.0.0",
           "Telegram.Bot": "18.0.0"
         },
         "runtime": {
           "Sosu.dll": {}
+        }
+      },
+      "Sosu.Localization/1.0.0": {
+        "runtime": {
+          "Sosu.Localization.dll": {}
         }
       }
     }
@@ -898,6 +904,11 @@
       "hashPath": "telegram.bot.18.0.0.nupkg.sha512"
     },
     "Sosu/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "Sosu.Localization/1.0.0": {
       "type": "project",
       "serviceable": false,
       "sha512": ""

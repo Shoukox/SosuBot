@@ -101,6 +101,7 @@ namespace Sosu.Localization
 
             public string error_baseMessage => "Произошел троллинг...";
             public string error_noUser => "Ты кто? Юзай\n/set nickname";
+            public string error_nameIsEmpty => "Эта команда не может быть использована без параметров.\nВведи /set твой_никнейм";
             public string error_userNotFound => $"{error_baseMessage}\nИгрок не найден";
             public string error_noRecords => $"{error_baseMessage}\nРекорды не найдены";
             public string error_argsLength => $"{error_baseMessage}\nНеверное количество аргументов";

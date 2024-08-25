@@ -24,12 +24,10 @@ namespace Sosu.Services
             }
             else
             {
-                using (StreamReader sw = new StreamReader("osuusers.txt"))
-                {
-                    List<osuUser> data = Newtonsoft.Json.JsonConvert.DeserializeObject<osuUser[]>(sw.ReadToEnd()).ToList();
-                    Console.WriteLine(data);
-                    Variables.osuUsers = data ?? new List<osuUser>();
-                }
+                using StreamReader sw = new StreamReader("osuusers.txt");
+                List<osuUser> data = Newtonsoft.Json.JsonConvert.DeserializeObject<osuUser[]>(sw.ReadToEnd())?.ToList();
+                Console.WriteLine(data);
+                Variables.osuUsers = data ?? new List<osuUser>();
             }
             if (!File.Exists("chats.txt"))
             {
@@ -39,7 +37,7 @@ namespace Sosu.Services
             {
                 using (StreamReader sw = new StreamReader("chats.txt"))
                 {
-                    List<Types.Chat> data = Newtonsoft.Json.JsonConvert.DeserializeObject<Types.Chat[]>(sw.ReadToEnd()).ToList();
+                    List<Types.Chat> data = Newtonsoft.Json.JsonConvert.DeserializeObject<Types.Chat[]>(sw.ReadToEnd())?.ToList();
                     Console.WriteLine(data);
                     Variables.chats = data ?? new List<Chat>();
                 }
