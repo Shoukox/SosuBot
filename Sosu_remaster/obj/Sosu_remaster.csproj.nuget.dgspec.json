@@ -1,31 +1,26 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\Shoukko\\source\\repos\\Sosu_remaster\\Sosu_remaster\\Sosu_remaster.csproj": {}
+    "C:\\NotSys\\Projects\\SosuBot\\Sosu_remaster\\Sosu_remaster.csproj": {}
   },
   "projects": {
-    "C:\\Users\\Shoukko\\source\\repos\\Sosu_remaster\\Sosu.Localization\\Sosu.Localization.csproj": {
+    "C:\\NotSys\\Projects\\SosuBot\\Sosu.Localization\\Sosu.Localization.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\Shoukko\\source\\repos\\Sosu_remaster\\Sosu.Localization\\Sosu.Localization.csproj",
+        "projectUniqueName": "C:\\NotSys\\Projects\\SosuBot\\Sosu.Localization\\Sosu.Localization.csproj",
         "projectName": "Sosu.Localization",
-        "projectPath": "C:\\Users\\Shoukko\\source\\repos\\Sosu_remaster\\Sosu.Localization\\Sosu.Localization.csproj",
-        "packagesPath": "C:\\Users\\Shoukko\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\Shoukko\\source\\repos\\Sosu_remaster\\Sosu.Localization\\obj\\",
+        "projectPath": "C:\\NotSys\\Projects\\SosuBot\\Sosu.Localization\\Sosu.Localization.csproj",
+        "packagesPath": "C:\\Users\\Shahzod\\.nuget\\packages\\",
+        "outputPath": "C:\\NotSys\\Projects\\SosuBot\\Sosu.Localization\\obj\\",
         "projectStyle": "PackageReference",
-        "fallbackFolders": [
-          "D:\\Programms\\Visual Studio 2022\\Shared\\NuGetPackages"
-        ],
+        "UsingMicrosoftNETSdk": false,
         "configFilePaths": [
-          "C:\\Users\\Shoukko\\AppData\\Roaming\\NuGet\\NuGet.Config",
-          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
-          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
+          "C:\\Users\\Shahzod\\AppData\\Roaming\\NuGet\\NuGet.Config"
         ],
         "originalTargetFrameworks": [
           "net6.0"
         ],
         "sources": {
-          "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
           "https://api.nuget.org/v3/index.json": {}
         },
         "frameworks": {
@@ -59,40 +54,35 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\7.0.403\\RuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Users\\Shahzod\\.dotnet\\sdk\\6.0.428\\RuntimeIdentifierGraph.json"
         }
       }
     },
-    "C:\\Users\\Shoukko\\source\\repos\\Sosu_remaster\\Sosu_remaster\\Sosu_remaster.csproj": {
+    "C:\\NotSys\\Projects\\SosuBot\\Sosu_remaster\\Sosu_remaster.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\Shoukko\\source\\repos\\Sosu_remaster\\Sosu_remaster\\Sosu_remaster.csproj",
+        "projectUniqueName": "C:\\NotSys\\Projects\\SosuBot\\Sosu_remaster\\Sosu_remaster.csproj",
         "projectName": "Sosu_remaster",
-        "projectPath": "C:\\Users\\Shoukko\\source\\repos\\Sosu_remaster\\Sosu_remaster\\Sosu_remaster.csproj",
-        "packagesPath": "C:\\Users\\Shoukko\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\Shoukko\\source\\repos\\Sosu_remaster\\Sosu_remaster\\obj\\",
+        "projectPath": "C:\\NotSys\\Projects\\SosuBot\\Sosu_remaster\\Sosu_remaster.csproj",
+        "packagesPath": "C:\\Users\\Shahzod\\.nuget\\packages\\",
+        "outputPath": "C:\\NotSys\\Projects\\SosuBot\\Sosu_remaster\\obj\\",
         "projectStyle": "PackageReference",
-        "fallbackFolders": [
-          "D:\\Programms\\Visual Studio 2022\\Shared\\NuGetPackages"
-        ],
+        "UsingMicrosoftNETSdk": false,
         "configFilePaths": [
-          "C:\\Users\\Shoukko\\AppData\\Roaming\\NuGet\\NuGet.Config",
-          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
-          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
+          "C:\\Users\\Shahzod\\AppData\\Roaming\\NuGet\\NuGet.Config"
         ],
         "originalTargetFrameworks": [
           "net6.0"
         ],
         "sources": {
-          "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
           "https://api.nuget.org/v3/index.json": {}
         },
         "frameworks": {
           "net6.0": {
             "targetAlias": "net6.0",
             "projectReferences": {
-              "C:\\Users\\Shoukko\\source\\repos\\Sosu_remaster\\Sosu_remaster_web\\Sosu.csproj": {
-                "projectPath": "C:\\Users\\Shoukko\\source\\repos\\Sosu_remaster\\Sosu_remaster_web\\Sosu.csproj"
+              "C:\\NotSys\\Projects\\SosuBot\\Sosu_remaster_web\\Sosu.csproj": {
+                "projectPath": "C:\\NotSys\\Projects\\SosuBot\\Sosu_remaster_web\\Sosu.csproj"
               }
             }
           }
@@ -128,40 +118,35 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\7.0.403\\RuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Users\\Shahzod\\.dotnet\\sdk\\6.0.428\\RuntimeIdentifierGraph.json"
         }
       }
     },
-    "C:\\Users\\Shoukko\\source\\repos\\Sosu_remaster\\Sosu_remaster_web\\Sosu.csproj": {
+    "C:\\NotSys\\Projects\\SosuBot\\Sosu_remaster_web\\Sosu.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\Shoukko\\source\\repos\\Sosu_remaster\\Sosu_remaster_web\\Sosu.csproj",
+        "projectUniqueName": "C:\\NotSys\\Projects\\SosuBot\\Sosu_remaster_web\\Sosu.csproj",
         "projectName": "Sosu",
-        "projectPath": "C:\\Users\\Shoukko\\source\\repos\\Sosu_remaster\\Sosu_remaster_web\\Sosu.csproj",
-        "packagesPath": "C:\\Users\\Shoukko\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\Shoukko\\source\\repos\\Sosu_remaster\\Sosu_remaster_web\\obj\\",
+        "projectPath": "C:\\NotSys\\Projects\\SosuBot\\Sosu_remaster_web\\Sosu.csproj",
+        "packagesPath": "C:\\Users\\Shahzod\\.nuget\\packages\\",
+        "outputPath": "C:\\NotSys\\Projects\\SosuBot\\Sosu_remaster_web\\obj\\",
         "projectStyle": "PackageReference",
-        "fallbackFolders": [
-          "D:\\Programms\\Visual Studio 2022\\Shared\\NuGetPackages"
-        ],
+        "UsingMicrosoftNETSdk": false,
         "configFilePaths": [
-          "C:\\Users\\Shoukko\\AppData\\Roaming\\NuGet\\NuGet.Config",
-          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
-          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
+          "C:\\Users\\Shahzod\\AppData\\Roaming\\NuGet\\NuGet.Config"
         ],
         "originalTargetFrameworks": [
           "net6.0"
         ],
         "sources": {
-          "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
           "https://api.nuget.org/v3/index.json": {}
         },
         "frameworks": {
           "net6.0": {
             "targetAlias": "net6.0",
             "projectReferences": {
-              "C:\\Users\\Shoukko\\source\\repos\\Sosu_remaster\\Sosu.Localization\\Sosu.Localization.csproj": {
-                "projectPath": "C:\\Users\\Shoukko\\source\\repos\\Sosu_remaster\\Sosu.Localization\\Sosu.Localization.csproj"
+              "C:\\NotSys\\Projects\\SosuBot\\Sosu.Localization\\Sosu.Localization.csproj": {
+                "projectPath": "C:\\NotSys\\Projects\\SosuBot\\Sosu.Localization\\Sosu.Localization.csproj"
               }
             }
           }
@@ -236,7 +221,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\7.0.403\\RuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Users\\Shahzod\\.dotnet\\sdk\\6.0.428\\RuntimeIdentifierGraph.json"
         }
       }
     }

@@ -26,12 +26,7 @@ namespace Sosu
                     .AddNewtonsoftJson();
 
             var app = builder.Build();
-
-            app.UseStaticFiles();
-
-            app.UseRouting();
-
-            app.UseAuthorization();
+            
 
             app.UseEndpoints(m =>
             {

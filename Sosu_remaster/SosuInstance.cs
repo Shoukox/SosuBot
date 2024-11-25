@@ -13,29 +13,29 @@ namespace Sosu_remaster
 {
     internal class SosuInstance
     {
-        public readonly string token = "";
-        public ITelegramBotClient bot;
+        public readonly string Token;
+        public readonly ITelegramBotClient Bot;
 
-        public HandleUpdateService HandleUpdateService;
+        public readonly HandleUpdateService HandleUpdateService;
 
         public SosuInstance(string token)
         {
-            this.token = token;
-            this.bot = new TelegramBotClient(token);
-            this.HandleUpdateService = new HandleUpdateService(bot, null);
+            this.Token = token;
+            this.Bot = new TelegramBotClient(token);
+            this.HandleUpdateService = new HandleUpdateService(Bot, null);
         }
 
-        public async void Start()
+        public async Task Start()
         {
-            await bot.DeleteWebhookAsync();
+            await Bot.DeleteWebhookAsync();
 
             Settings.LoadAllSettings();
 
             using var cts = new CancellationTokenSource();
-            ReceiverOptions ro = new Telegram.Bot.Polling.ReceiverOptions() { AllowedUpdates = Array.Empty<UpdateType>() };
-            bot.StartReceiving(UpdateHandler, ErrorHandler, ro, cts.Token);
+            ReceiverOptions ro = new ReceiverOptions() { AllowedUpdates = Array.Empty<UpdateType>(), ThrowPendingUpdates = true};
+            Bot.StartReceiving(UpdateHandler, ErrorHandler, ro, cts.Token);
 
-            Variables.bot = await bot.GetMeAsync();
+            Variables.bot = await Bot.GetMeAsync();
 
             var saveDataTimer = new System.Timers.Timer(10 * 60 * 1000);
             saveDataTimer.Elapsed += (s, e) =>

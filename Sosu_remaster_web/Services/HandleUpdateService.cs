@@ -17,36 +17,38 @@ namespace Sosu.Services
             _logger = logger;
         }
 
-        public async Task EchoAsync(Update update)
+        public Task EchoAsync(Update update)
         {
-            var handler = update.Type switch
+            Func<ITelegramBotClient,Update,Task> handler = update.Type switch
             {
-                UpdateType.Message => (new ProcessMessage()).OnReceived(_botClient, update),
-                UpdateType.EditedMessage => (new ProcessMessage()).OnReceived(_botClient, update),
-                UpdateType.CallbackQuery => (new ProcessCallbackQuery()).OnReceived(_botClient, update),
-                UpdateType.Unknown => Nothing(),
-                UpdateType.InlineQuery => Nothing(),
-                UpdateType.ChosenInlineResult => Nothing(),
-                UpdateType.ChannelPost => Nothing(),
-                UpdateType.EditedChannelPost => Nothing(),
-                UpdateType.ShippingQuery => Nothing(),
-                UpdateType.PreCheckoutQuery => Nothing(),
-                UpdateType.Poll => Nothing(),
-                UpdateType.PollAnswer => Nothing(),
-                UpdateType.MyChatMember => Nothing(),
-                UpdateType.ChatMember => Nothing(),
-                UpdateType.ChatJoinRequest => Nothing(),
-                _ => Nothing(),
+                UpdateType.Message => (new ProcessMessage()).OnReceived,
+                UpdateType.EditedMessage => (new ProcessMessage()).OnReceived,
+                UpdateType.CallbackQuery => (new ProcessCallbackQuery()).OnReceived,
+                UpdateType.Unknown => Nothing,
+                UpdateType.InlineQuery => Nothing,
+                UpdateType.ChosenInlineResult => Nothing,
+                UpdateType.ChannelPost => Nothing,
+                UpdateType.EditedChannelPost => Nothing,
+                UpdateType.ShippingQuery => Nothing,
+                UpdateType.PreCheckoutQuery => Nothing,
+                UpdateType.Poll => Nothing,
+                UpdateType.PollAnswer => Nothing,
+                UpdateType.MyChatMember => Nothing,
+                UpdateType.ChatMember => Nothing,
+                UpdateType.ChatJoinRequest => Nothing,
+                _ => Nothing,
             };
 
             try
             {
-                await Task.Run(async() => handler);
+                _ = Task.Run(() => handler(_botClient, update));
             }
             catch (Exception exception)
             {
-                await HandleErrorAsync(exception);
+                _ = HandleErrorAsync(exception);
             }
+
+            return Task.CompletedTask;
         }
 
 
@@ -66,9 +68,9 @@ namespace Sosu.Services
             return Task.CompletedTask;
         }
 
-        public async Task Nothing()
+        public Task Nothing(ITelegramBotClient bot, Update update)
         {
-            //Diese Methode macht nichts
+            return Task.CompletedTask;
         }
     }
 }
