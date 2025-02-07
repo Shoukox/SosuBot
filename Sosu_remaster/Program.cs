@@ -10,7 +10,7 @@ namespace Sosu_remaster
     {
         public static void Main(string[] args)
         {
-            string token = "1328219094:AAGd4s54wdzK25sxIPEMrB0gOlSRn5kY05g";
+            string token = "1776414200:AAGlVI_yhVNxkjNjKUOepvtI8hhyd4HZjOE";
             SosuInstance si = new SosuInstance(token);
             _ = si.Start();
 
