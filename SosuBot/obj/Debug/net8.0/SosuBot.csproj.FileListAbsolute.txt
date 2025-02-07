@@ -1,0 +1,5 @@
+C:\NotSys\Projects\SosuBot\SosuBot\obj\Debug\net8.0\SosuBot.GeneratedMSBuildEditorConfig.editorconfig
+C:\NotSys\Projects\SosuBot\SosuBot\obj\Debug\net8.0\SosuBot.AssemblyInfoInputs.cache
+C:\NotSys\Projects\SosuBot\SosuBot\obj\Debug\net8.0\SosuBot.AssemblyInfo.cs
+C:\NotSys\Projects\SosuBot\SosuBot\obj\Debug\net8.0\SosuBot.csproj.CoreCompileInputs.cache
+C:\NotSys\Projects\SosuBot\SosuBot\obj\Debug\net8.0\SosuBot.sourcelink.json

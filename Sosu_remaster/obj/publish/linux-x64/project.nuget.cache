@@ -1,0 +1,19 @@
+{
+  "version": 2,
+  "dgSpecHash": "gPppybf9+q1/QFJ/hL9MN+JXvge7EULNwcMtRTLAf3Ij3m328GyjpMpON6q0t2l3SLQMgFp0dVqIrIjEdhZauw==",
+  "success": true,
+  "projectFilePath": "C:\\Users\\Shoukko\\source\\repos\\Sosu_remaster\\Sosu_remaster\\Sosu_remaster.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\Shoukko\\.nuget\\packages\\microsoft.aspnetcore.jsonpatch\\6.0.13\\microsoft.aspnetcore.jsonpatch.6.0.13.nupkg.sha512",
+    "C:\\Users\\Shoukko\\.nuget\\packages\\microsoft.aspnetcore.mvc.newtonsoftjson\\6.0.13\\microsoft.aspnetcore.mvc.newtonsoftjson.6.0.13.nupkg.sha512",
+    "C:\\Users\\Shoukko\\.nuget\\packages\\microsoft.csharp\\4.7.0\\microsoft.csharp.4.7.0.nupkg.sha512",
+    "C:\\Users\\Shoukko\\.nuget\\packages\\newtonsoft.json\\13.0.1\\newtonsoft.json.13.0.1.nupkg.sha512",
+    "C:\\Users\\Shoukko\\.nuget\\packages\\newtonsoft.json.bson\\1.0.2\\newtonsoft.json.bson.1.0.2.nupkg.sha512",
+    "C:\\Users\\Shoukko\\.nuget\\packages\\npgsql\\6.0.8\\npgsql.6.0.8.nupkg.sha512",
+    "C:\\Users\\Shoukko\\.nuget\\packages\\oppaisharp\\3.4.0\\oppaisharp.3.4.0.nupkg.sha512",
+    "C:\\Users\\Shoukko\\.nuget\\packages\\system.runtime.compilerservices.unsafe\\6.0.0\\system.runtime.compilerservices.unsafe.6.0.0.nupkg.sha512",
+    "C:\\Users\\Shoukko\\.nuget\\packages\\telegram.bot\\18.0.0\\telegram.bot.18.0.0.nupkg.sha512",
+    "C:\\Users\\Shoukko\\.nuget\\packages\\microsoft.netcore.app.host.linux-x64\\6.0.13\\microsoft.netcore.app.host.linux-x64.6.0.13.nupkg.sha512"
+  ],
+  "logs": []
+}
