@@ -11,7 +11,7 @@ namespace Sosu.Services.ProcessUpdate
         {
             Message? message = update.Message;
 
-            if (message.Text == null)
+            if (message?.Text == null)
                 return;
 
             CheckForNewDataInUpdate.Check(message);
@@ -49,6 +49,7 @@ namespace Sosu.Services.ProcessUpdate
                 "/score" => new OsuScoreCommand(),
                 "/s" => new OsuScoreCommand(),
 
+                "/msg" => new MsgCommand(),
 
                 _ => new OtherCommand()
             };
