@@ -39,7 +39,7 @@ namespace SosuBot.Logging
             WriteTimestamp(textWriter);
             WriteObjectName(textWriter, logEntry.Category);
             WriteOutputMessage(textWriter, message);
-
+            WriteException(textWriter, logEntry.Exception);
         }
 
         private void WriteLogLevel(TextWriter textWriter, LogLevel logLevel)
@@ -91,6 +91,14 @@ namespace SosuBot.Logging
             string outputMessage = ": " + message;
             textWriter.Write(GetForegroundColorEscapeCode(ConsoleColor.White));
             textWriter.WriteLine(outputMessage);
+        }
+
+        private void WriteException(TextWriter textWriter, Exception? exception)
+        {
+            if (exception is null) return;
+            
+            textWriter.Write(GetForegroundColorEscapeCode(ConsoleColor.DarkMagenta));
+            textWriter.WriteLine("Exception occured: {0}", exception!.Message);
         }
 
         static string GetForegroundColorEscapeCode(ConsoleColor color) =>

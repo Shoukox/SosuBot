@@ -14,7 +14,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Sosu.Localization", "Sosu.L
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SosuBot", "SosuBot\SosuBot.csproj", "{EA368A83-79FD-444E-8139-EC5BC29891C3}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SendToAllChats", "SendToAllChats\SendToAllChats.csproj", "{93584A8F-9ED1-46A1-849A-6EB14623DCE8}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PerfomanceCalculator", "PerfomanceCalculator\perfomance-calc\PerfomanceCalculator.csproj", "{6403AEA0-CD36-53FD-B57B-1C701EAB2DFA}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -38,10 +38,10 @@ Global
 		{EA368A83-79FD-444E-8139-EC5BC29891C3}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{EA368A83-79FD-444E-8139-EC5BC29891C3}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{EA368A83-79FD-444E-8139-EC5BC29891C3}.Release|Any CPU.Build.0 = Release|Any CPU
-		{93584A8F-9ED1-46A1-849A-6EB14623DCE8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{93584A8F-9ED1-46A1-849A-6EB14623DCE8}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{93584A8F-9ED1-46A1-849A-6EB14623DCE8}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{93584A8F-9ED1-46A1-849A-6EB14623DCE8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6403AEA0-CD36-53FD-B57B-1C701EAB2DFA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6403AEA0-CD36-53FD-B57B-1C701EAB2DFA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6403AEA0-CD36-53FD-B57B-1C701EAB2DFA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6403AEA0-CD36-53FD-B57B-1C701EAB2DFA}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

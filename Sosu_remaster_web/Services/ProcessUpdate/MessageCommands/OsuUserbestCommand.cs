@@ -67,7 +67,6 @@ namespace Sosu.Services.ProcessUpdate.MessageCommands
                 new InlineKeyboardButton[] { new InlineKeyboardButton("Previous") { CallbackData = $"{chat.chat.Id} userbest previous 0 {gameMode} {osuUser.username()}" }, new InlineKeyboardButton("Next") { CallbackData = $"{chat.chat.Id} userbest next 0 {gameMode} {osuUser.username()}" } }
                 );
             await bot.EditMessageTextAsync(message.Chat.Id, startMessage.MessageId, textToSend, ParseMode.Html, replyMarkup: ik, disableWebPagePreview: true);
-
-        });
+        }
     }
 }

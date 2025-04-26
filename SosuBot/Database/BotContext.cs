@@ -9,5 +9,6 @@ public class BotContext : DbContext
 {
     public BotContext(DbContextOptions<BotContext> options) : base(options) { }
 
-    public DbSet<TelegramChat> DiscordServers { get; set; }
+    public DbSet<TelegramChat> TelegramChats { get; set; }
+    public DbSet<OsuUser> OsuUsers { get; set; }
 }

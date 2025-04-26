@@ -12,6 +12,7 @@ namespace Sosu_remaster
     {
         public static void Main(string[] args)
         {
+            // dotnet build ONLY FROM PROJECT DIRECTORY! (for textdatabase)
             // get config from json
             string path = "appsettings.json";
             if (!File.Exists(path)) throw new Exception("You should firstly create an appsettings.json and pass your client_id and client_secret into it!");
