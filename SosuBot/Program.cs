@@ -4,9 +4,14 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using OsuApi.Core.V2;
 using SosuBot.Database;
 using SosuBot.Logging;
 using SosuBot.Services;
+using SosuBot.Services.Data;
+using SosuBot.Services.Handlers;
+using System.Diagnostics;
+using System.Net.WebSockets;
 using Telegram.Bot;
 
 namespace SosuBot;
@@ -17,37 +22,37 @@ internal class Program
     {
         var builder = Host.CreateApplicationBuilder(args);
 
-        string token = builder.Configuration.GetSection("TelegramBotToken").Value!;
-        var botConfiguration = new BotConfiguration() { Token = token };
+        // Configuration
+        string fileName = "appsettings.json";
+        if (!File.Exists(fileName)) throw new FileNotFoundException($"{fileName} was not found!", fileName);
+        builder.Configuration.AddJsonFile(fileName, false);
 
         // Logging
         builder.Logging.ClearProviders();
         builder.Logging.AddConsole();
         builder.Logging.AddConsoleFormatter<CustomConsoleFormatter, CustomConsoleFormatterOptions>();
 
-        builder.Services.Configure<BotConfiguration>(builder.Configuration.GetSection("BotConfiguration"));
-        builder.Services.AddHttpClient("telegram_bot_client")
+        // Services
+        builder.Services.Configure<BotConfiguration>(builder.Configuration.GetSection(nameof(BotConfiguration)));
+        builder.Services.Configure<OsuApiV2Configuration>(builder.Configuration.GetSection(nameof(OsuApiV2Configuration)));
+
+        builder.Services.AddHttpClient(nameof(TelegramBotClient))
                         .RemoveAllLoggers()
                         .AddTypedClient<ITelegramBotClient>((httpClient, sp) =>
                         {
-                            BotConfiguration? botConfiguration = sp.GetService<IOptions<BotConfiguration>>()?.Value;
-                            ArgumentNullException.ThrowIfNull(botConfiguration);
-                            TelegramBotClientOptions options = new(botConfiguration.Token);
-                            return new TelegramBotClient(options, httpClient);
+                            var options = sp.GetRequiredService<IOptions<BotConfiguration>>();
+                            return new TelegramBotClient(options.Value.Token, httpClient);
                         });
-
+        var osuApiV2Configuration = builder.Services.BuildServiceProvider().GetRequiredService<IOptions<OsuApiV2Configuration>>().Value;
+        builder.Services.AddSingleton<ApiV2>(new ApiV2(osuApiV2Configuration.ClientId, osuApiV2Configuration.ClientSecret));
+        builder.Services.AddSingleton<UpdateQueueService>();
         builder.Services.AddScoped<UpdateHandler>();
-        builder.Services.AddScoped<ReceiverService>();
-        builder.Services.AddHostedService<PollingService>();
+        builder.Services.AddHostedService<PollingBackgroundService>();
+        builder.Services.AddHostedService<UpdateHandlerBackgroundService>();
+        
         // Database
-        var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
-                ?? throw new InvalidOperationException("Connection string" + "'DefaultConnection' not found.");
+        var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ?? throw new InvalidOperationException("Connection string" + "'DefaultConnection' not found.");
         builder.Services.AddDbContextPool<BotContext>(options => options.UseSqlite(connectionString));
-
-        // Services
-        builder.Services.AddSingleton(botConfiguration); // bot config
-                                                         //builder.Services.AddSingleton<IDiscordServerStateCollection, DiscordServerStateCollection>();
-                                                         //builder.Services.AddSingleton<IDiscordServerStateCollection, DiscordServerStateCollection>();
 
         var app = builder.Build();
         app.Run();

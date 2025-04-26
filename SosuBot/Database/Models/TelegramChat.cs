@@ -9,9 +9,13 @@ using System.Threading.Tasks;
 
 namespace SosuBot.Database.Models;
 
-public class TelegramChat
+public record TelegramChat
 {
     [Key]
     [DatabaseGenerated(DatabaseGeneratedOption.None)]
-    public ulong Id { get; init; }
+    public long ChatId { get; init; }
+
+    public List<long>? ChatMembers { get; set; }
+    public List<long>? ExcludeFromChatstats { get; set; }
+    public long? LastBeatmapId { get; set; }
 }
