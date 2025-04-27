@@ -77,42 +77,39 @@ public class UpdateHandler(ApiV2 osuApi, BotContext database, ILogger<UpdateHand
             //ForceSaveCommand.commandText => new ForceSaveCommand(),
             //~~~~~~~~~~~~~~~~~~~
 
-            case string cmd when StartCommand.Commands.Contains(cmd):
+            case string start when StartCommand.Commands.Contains(start):
                 executableCommand = new StartCommand();
                 break;
-            case string cmd when HelpCommand.Commands.Contains(cmd):
+            case string help when HelpCommand.Commands.Contains(help):
                 executableCommand = new HelpCommand();
                 break;
-            case string cmd when OsuSetCommand.Commands.Contains(cmd):
+            case string set when OsuSetCommand.Commands.Contains(set):
                 executableCommand = new OsuSetCommand();
                 break;
-            case string cmd when OsuSetModeCommand.Commands.Contains(cmd):
-                executableCommand = new OsuSetModeCommand();
+            case string mode when OsuModeCommand.Commands.Contains(mode):
+                executableCommand = new OsuModeCommand();
                 break;
-            case string cmd when OsuUserbestCommand.Commands.Contains(cmd):
+            case string userbest when OsuUserbestCommand.Commands.Contains(userbest):
                 executableCommand = new OsuUserbestCommand();
                 break;
-            case string cmd when OsuChatstatsCommand.Commands.Contains(cmd):
+            case string chatstats when OsuChatstatsCommand.Commands.Contains(chatstats):
                 executableCommand = new OsuChatstatsCommand();
                 break;
-            case string cmd when OsuChatstatsExcludeCommand.Commands.Contains(cmd):
+            case string exclude when OsuChatstatsExcludeCommand.Commands.Contains(exclude):
                 executableCommand = new OsuChatstatsExcludeCommand();
                 break;
-            case string cmd when OsuChatstatsIncludeCommand.Commands.Contains(cmd):
+            case string include when OsuChatstatsIncludeCommand.Commands.Contains(include):
                 executableCommand = new OsuChatstatsIncludeCommand();
                 break;
-            case string cmd when OsuCompareCommand.Commands.Contains(cmd):
+            case string compare when OsuCompareCommand.Commands.Contains(compare):
                 executableCommand = new OsuCompareCommand();
                 break;
-            case string cmd when OsuLastCommand.Commands.Contains(cmd):
+            case string last when OsuLastCommand.Commands.Contains(last):
                 executableCommand = new OsuLastCommand();
                 break;
             default:
                 executableCommand = new HelpCommand();
                 break;
-
-            //"/last" => new OsuLastCommand(),
-            //"/l" => new OsuLastCommand(),
 
             //"/user" => new OsuUserCommand(),
             //"/u" => new OsuUserCommand(),
@@ -131,9 +128,9 @@ public class UpdateHandler(ApiV2 osuApi, BotContext database, ILogger<UpdateHand
         await database.SaveChangesAsync();
     }
 
-    private async Task OnText(ITelegramBotClient botClient, Message msg)
+    private Task OnText(ITelegramBotClient botClient, Message msg)
     {
-
+        return Task.CompletedTask;
     }
 
     private Task OnCallbackQuery(ITelegramBotClient botClient, CallbackQuery callbackQuery)

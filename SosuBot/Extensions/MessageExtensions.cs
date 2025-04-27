@@ -34,7 +34,7 @@ namespace SosuBot.Extensions
         /// </summary>
         /// <param name="text"></param>
         /// <returns></returns>
-        public static string ParseToRuleset(this string text)
+        public static string? ParseToRuleset(this string text)
         {
             text = text.Trim().ToLowerInvariant();
 
@@ -46,6 +46,7 @@ namespace SosuBot.Extensions
 
             if (possibilitiesOfFruitsInput.Contains(text)) text = Ruleset.Fruits;
             else if (possibilitiesOfOsuInput.Contains(text)) text = Ruleset.Osu;
+            else if (text is not Ruleset.Taiko and not Ruleset.Mania) return null;
 
             return text;
         }
@@ -55,20 +56,21 @@ namespace SosuBot.Extensions
         /// </summary>
         /// <param name="ruleset"></param>
         /// <returns></returns>
-        public static string ParseFromRuleset(this string ruleset)
+        public static string? ParseFromRuleset(this string ruleset)
         {
             return ruleset switch
             {
-                Ruleset.Osu => "Standard",
-                Ruleset.Mania => "Mania",
-                Ruleset.Taiko => "Taiko",
-                Ruleset.Fruits => "Catch",
+                Ruleset.Osu => "osu!std",
+                Ruleset.Mania => "osu!mania",
+                Ruleset.Taiko => "osu!taiko",
+                Ruleset.Fruits => "osu!catch",
+                _ => null
             };
         }
 
         public static Task<Message> ReplyAsync(this Message message, ITelegramBotClient botClient, string text, bool privateAsnwer = false, ParseMode parseMode = ParseMode.Html)
           => botClient.SendMessage(privateAsnwer ? message.From!.Id : message.Chat.Id, text, parseMode: parseMode, replyParameters: new ReplyParameters() { MessageId = message.MessageId }, linkPreviewOptions: new LinkPreviewOptions { IsDisabled = true });
-        
+
         public static Task<Message> EditAsync(this Message message, ITelegramBotClient botClient, string text, ParseMode parseMode = ParseMode.Html, InlineKeyboardMarkup? replyMarkup = null)
           => botClient.EditMessageText(message.Chat.Id, message.MessageId, text, parseMode: parseMode, linkPreviewOptions: new LinkPreviewOptions { IsDisabled = true }, replyMarkup: replyMarkup);
     }

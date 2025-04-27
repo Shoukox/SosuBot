@@ -18,9 +18,9 @@ using Telegram.Bot.Types.Enums;
 
 namespace SosuBot.Services.Handlers.MessageCommands
 {
-    public class OsuSetModeCommand : CommandBase<Message>
+    public class OsuModeCommand : CommandBase<Message>
     {
-        public static string[] Commands = ["/setmode"];
+        public static string[] Commands = ["/mode"];
 
         public override async Task ExecuteAsync()
         {
@@ -29,10 +29,9 @@ namespace SosuBot.Services.Handlers.MessageCommands
 
             string msgText = Context.Text!;
             string[] parameters = msgText.GetCommandParameters()!;
-            string osuMode = parameters[0];
+            string? osuMode = parameters[0].ParseToRuleset();
 
-            string[] allowedModes = ["osu", "std", "standard", "standart", "ctb", "catch", "mania", "osu", "std", "standard", "standart"];
-            if (!allowedModes.Contains(osuMode))
+            if (osuMode is null)
             {
                 await Context.ReplyAsync(BotClient, language.error_modeIncorrect);
                 return;

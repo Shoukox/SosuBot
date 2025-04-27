@@ -53,10 +53,10 @@ namespace SosuBot.Services.Handlers.MessageCommands
             {
                 if (parameters.Length == 2)
                 {
-                    ruleset = parameters[2].ParseToRuleset();
+                    ruleset = parameters[2].ParseToRuleset()!;
                 }
 
-                var userResponse = await OsuApiV2.Users.GetUser(parameters[1], new());
+                var userResponse = await OsuApiV2.Users.GetUser(parameters[0], new());
                 if (userResponse is null)
                 {
                     await waitMessage.EditAsync(BotClient, language.error_noUser + "\n\n" + language.error_hintReplaceSpaces);
@@ -75,7 +75,7 @@ namespace SosuBot.Services.Handlers.MessageCommands
                 return;
             }
 
-            string gamemode = ruleset.ParseFromRuleset();
+            string gamemode = ruleset.ParseFromRuleset()!;
             string textToSend = $"{osuUsernameForUserbest} (<b>{gamemode}</b>)\n\n";
 
             GetBeatmapResponse[] beatmaps = bestScores.Select(async score => await OsuApiV2.Beatmaps.GetBeatmap((long)score.Beatmap!.Id)).Select(t => t.Result).ToArray()!;
@@ -83,7 +83,7 @@ namespace SosuBot.Services.Handlers.MessageCommands
             {
                 var score = bestScores[i];
                 var beatmap = beatmaps[i];
-                textToSend += language.command_userbest.Fill([$"{i + 1}", $"{score.Rank}", $"{score.BeatmapId}", $"{score.Beatmapset!.Title}", $"{score.Beatmap!.Version}", $"{score.Beatmapset.Status}", $"{score.Statistics!.Great}", $"{score.Statistics!.Ok}", $"{score.Statistics!.Meh}", $"{score.Statistics!.Miss}", $"{score.Accuracy * 100:N2}", $"+{string.Join("", score.Mods!.Select(m => m.Acronym))}", $"{score.MaxCombo}", $"{beatmap.BeatmapExtended.MaxCombo}", $"{score.Pp:N2}"]);
+                textToSend += language.command_userbest.Fill([$"{i + 1}", $"{score.Rank}", $"{score.BeatmapId}", $"{score.Beatmapset!.Title}", $"{score.Beatmap!.Version}", $"{score.Beatmapset.Status}", $"{score.Statistics!.Great}", $"{score.Statistics!.Ok}", $"{score.Statistics!.Meh}", $"{score.Statistics!.Miss}", $"{score.Accuracy * 100:N2}", $"+{string.Join("", score.Mods!.Select(m => m.Acronym))}", $"{score.MaxCombo}", $"{beatmap.BeatmapExtended!.MaxCombo}", $"{score.Pp:N2}"]);
             }
 
             var ik = new InlineKeyboardMarkup(
