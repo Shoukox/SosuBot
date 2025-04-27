@@ -54,6 +54,8 @@ namespace SosuBot.Services.Handlers.MessageCommands
                     OsuMode = Ruleset.Osu
                 };
                 await Database.OsuUsers.AddAsync(newOsuUser);
+
+                osuUserInDatabase = newOsuUser;
             }
             else
             {
@@ -62,7 +64,7 @@ namespace SosuBot.Services.Handlers.MessageCommands
                 osuUserInDatabase.OsuUserId = response.UserExtend!.Id.Value;
                 osuUserInDatabase.PPValue = response.UserExtend.Statistics!.Pp;
             }
-            string sendText = language.command_set.Fill([$"{response.UserExtend!.Username!}"]);
+            string sendText = language.command_set.Fill([$"{response.UserExtend!.Username!}", osuUserInDatabase.OsuMode.ParseFromRuleset()!]);
             await Context.ReplyAsync(BotClient, sendText);
         }
     }

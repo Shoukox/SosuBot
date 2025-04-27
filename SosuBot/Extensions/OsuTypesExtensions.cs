@@ -1,6 +1,10 @@
-﻿using osu.Game.Rulesets.Mods;
+﻿using osu.Game.Rulesets.Catch.Mods;
+using osu.Game.Rulesets.Mania.Mods;
+using osu.Game.Rulesets.Mods;
 using osu.Game.Rulesets.Osu.Mods;
+using osu.Game.Rulesets.Taiko.Mods;
 using OsuApi.Core.V2.Scores;
+using SosuBot.OsuTypes;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -12,53 +16,47 @@ namespace SosuBot.Extensions
 {
     public static class OsuTypesExtensions
     {
-        private static Mod[] AllOsuMods = new Mod[]{
-            new OsuModAccuracyChallenge(),
-            new OsuModAlternate(),
-            new OsuModApproachDifferent(),
-            new OsuModAutopilot(),
-            new OsuModAutoplay(),
-            new OsuModBarrelRoll(),
-            new OsuModBlinds(),
-            new OsuModBloom(),
-            new OsuModBubbles(),
-            new OsuModCinema(),
-            new OsuModClassic(),
-            new OsuModDaycore(),
-            new OsuModDeflate(),
-            new OsuModDepth(),
-            new OsuModDifficultyAdjust(),
-            new OsuModDoubleTime(),
-            new OsuModEasy(),
-            new OsuModFlashlight(),
-            new OsuModFreezeFrame(),
-            new OsuModHalfTime(),
-            new OsuModHardRock(),
-            new OsuModHidden(),
-            new OsuModMirror(),
-            new OsuModMuted(),
-            new OsuModNightcore(),
-            new OsuModNoFail(),
-            new OsuModNoScope(),
-            new OsuModPerfect(),
-            new OsuModRandom(),
-            new OsuModRelax(),
-            new OsuModSingleTap(),
-            new OsuModSpinIn(),
-            new OsuModSpunOut(),
-            new OsuModStrictTracking(),
-            new OsuModSuddenDeath(),
-            new OsuModSynesthesia(),
-            new OsuModTargetPractice(),
-            new OsuModTouchDevice(),
-            new OsuModTraceable(),
-        };
-        public static Mod[] ToOsuMods(this OsuApi.Core.V2.Scores.Models.Mod[] mods)
+        private static Mod[] AllOsuMods = typeof(OsuModNoFail).Assembly.GetTypes()
+            .Where(t => t.IsClass && !t.IsAbstract && t.IsPublic)
+            .Where(t => typeof(Mod).IsAssignableFrom(t))
+            .Where(t => t.Name.StartsWith("OsuMod"))
+            .Select(t => (Mod)Activator.CreateInstance(t)!)
+            .ToArray()!;
+
+        private static Mod[] AllManiaMods = typeof(ManiaModNoFail).Assembly.GetTypes()
+            .Where(t => t.IsClass && !t.IsAbstract && t.IsPublic)
+            .Where(t => typeof(Mod).IsAssignableFrom(t))
+            .Where(t => t.Name.StartsWith("ManiaMod"))
+            .Select(t => (Mod)Activator.CreateInstance(t)!)
+            .ToArray()!;
+
+        private static Mod[] AllTaikoMods = typeof(TaikoModNoFail).Assembly.GetTypes()
+            .Where(t => t.IsClass && !t.IsAbstract && t.IsPublic)
+            .Where(t => typeof(Mod).IsAssignableFrom(t))
+            .Where(t => t.Name.StartsWith("TaikoMod"))
+            .Select(t => (Mod)Activator.CreateInstance(t)!)
+            .ToArray()!;
+
+        private static Mod[] AllCatchMods = typeof(CatchModNoFail).Assembly.GetTypes()
+            .Where(t => t.IsClass && !t.IsAbstract && t.IsPublic)
+            .Where(t => typeof(Mod).IsAssignableFrom(t))
+            .Where(t => t.Name.StartsWith("CatchMod"))
+            .Select(t => (Mod)Activator.CreateInstance(t)!)
+            .ToArray()!;
+
+        public static Mod[] ToOsuMods(this OsuApi.Core.V2.Scores.Models.Mod[] mods, Playmode playmode)
         {
             List<Mod> osuMods = new List<Mod>();
             foreach (var mod in mods)
             {
-                Mod? osuMod = AllOsuMods.FirstOrDefault(m => m.Acronym == mod.Acronym);
+                Mod? osuMod = playmode switch
+                {
+                    Playmode.Osu => AllOsuMods.FirstOrDefault(m => m.Acronym == mod.Acronym),
+                    Playmode.Taiko => AllTaikoMods.FirstOrDefault(m => m.Acronym == mod.Acronym),
+                    Playmode.Mania => AllManiaMods.FirstOrDefault(m => m.Acronym == mod.Acronym),
+                    Playmode.Catch => AllCatchMods.FirstOrDefault(m => m.Acronym == mod.Acronym),
+                    _ => throw new NotImplementedException(),
+                };
                 if (osuMod is not null) osuMods.Add(osuMod);
             }
             return osuMods.ToArray();

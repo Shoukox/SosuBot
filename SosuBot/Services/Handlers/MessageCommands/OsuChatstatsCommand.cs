@@ -34,6 +34,7 @@ namespace SosuBot.Services.Handlers.MessageCommands
             Message waitMessage = await Context.ReplyAsync(BotClient, language.waiting);
             string sendText = language.command_chatstats_title;
 
+            chatInDatabase!.ExcludeFromChatstats = chatInDatabase.ExcludeFromChatstats ?? new List<long>();
             foreach (var memberId in chatInDatabase!.ChatMembers!)
             {
                 OsuUser? foundMember = await Database.OsuUsers.FindAsync(memberId);

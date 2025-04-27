@@ -27,7 +27,14 @@ namespace SosuBot.Services.Handlers.MessageCommands
                 return;
             }
 
-            string gamemode = parameters.Length == 2 ? Ruleset.Osu : parameters[2].ParseToRuleset();
+            string? ruleset = parameters[2].ParseToRuleset();
+            if (ruleset is null)
+            {
+                await Context.ReplyAsync(BotClient, language.error_modeIncorrect);
+                return;
+            }
+
+            string gamemode = parameters.Length == 2 ? Ruleset.Osu : ruleset;
             var getUser1Response = await OsuApiV2.Users.GetUser($"@{parameters[0]}", new(), mode: gamemode);
             var getUser2Response = await OsuApiV2.Users.GetUser($"@{parameters[1]}", new(), mode: gamemode);
 
@@ -60,7 +67,7 @@ namespace SosuBot.Services.Handlers.MessageCommands
             }.Max();
 
             string textToSend = language.command_compare.Fill([
-                gamemode.ParseFromRuleset(), 
+                gamemode.ParseFromRuleset()!, 
 
                 user1.Username.PadRight(max), 
                 user2.Username!, 

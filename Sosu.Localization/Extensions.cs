@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace Sosu.Localization
@@ -12,7 +13,7 @@ namespace Sosu.Localization
         {
             foreach (var item in replace)
             {
-                int ind = text.IndexOf("{}");
+                int ind = Regex.Match(text, @"{(.*)}").Index;
                 text = text.Remove(ind, 2).Insert(ind, item);
             }
             return text;
