@@ -1,0 +1,3 @@
+[submodule "PerfomanceCalculator"]
+	path = PerfomanceCalculator
+	url = https://github.com/Shoukox/PerfomanceCalculator.git
