@@ -16,6 +16,12 @@ namespace SosuBot.Services.Handlers.Commands.MessageCommands
 
             string msgText = Context.Text!;
             string[] parameters = msgText.GetCommandParameters()!;
+            if (parameters.Length == 0)
+            {
+                await Context.ReplyAsync(BotClient, language.error_modeIsEmpty);
+                return;
+            }
+
             string? osuMode = parameters[0].ParseToRuleset();
 
             if (osuMode is null)
