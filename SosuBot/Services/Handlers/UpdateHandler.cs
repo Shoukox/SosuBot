@@ -19,15 +19,15 @@ public class UpdateHandler(ApiV2 osuApi, BotContext database, ILogger<UpdateHand
 
     public async Task HandleErrorAsync(ITelegramBotClient botClient, Exception exception, HandleErrorSource source, CancellationToken cancellationToken)
     {
-        if (_update!.Message is Message msg && msg.Text is { Length: > 0 } text)
-        {
-            long userId = (await database.OsuUsers.FirstAsync(u => u.IsAdmin)).TelegramId;
-            string errorText =
-                $"Произошла ошибка.\n" +
-                $"{exception.Message}\n" +
-                $"Сообщите о ней <a href=\"tg://user?id={userId}\">создателю</a>";
-            await msg.ReplyAsync(botClient, errorText);
-        }
+        //if (_update!.Message is Message msg && msg.Text is { Length: > 0 } text)
+        //{
+        //    long userId = (await database.OsuUsers.FirstAsync(u => u.IsAdmin)).TelegramId;
+        //    string errorText =
+        //        $"Произошла ошибка.\n" +
+        //        $"{exception.Message}\n" +
+        //        $"Сообщите о ней <a href=\"tg://user?id={userId}\">создателю</a>";
+        //    await msg.ReplyAsync(botClient, errorText);
+        //}
         logger.LogInformation("HandleError: {Exception}", exception);
     }
 
