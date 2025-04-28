@@ -24,6 +24,16 @@ public class UpdateHandlerBackgroundService(
         while (!stoppingToken.IsCancellationRequested)
         {
             var line = Console.ReadLine();
+
+            if (line == "gc")
+            {
+                GC.Collect();
+                GC.WaitForPendingFinalizers();
+                GC.Collect();
+                Console.WriteLine("gc worked!");
+                continue;
+            }
+
             try
             {
                 for (var i = 0; i < messagesCount; i++)
@@ -37,17 +47,14 @@ public class UpdateHandlerBackgroundService(
                         },
                     }, stoppingToken);
                 }
+                Console.WriteLine(messagesCount);
             }
             catch (OperationCanceledException)
             {
                 return;
             }
 
-            if (line == "gc")
-            {
-                GC.Collect();
-                GC.WaitForPendingFinalizers();
-            }
+           
         }
     }
     #endregion
@@ -68,15 +75,15 @@ public class UpdateHandlerBackgroundService(
     {
         while (!stoppingToken.IsCancellationRequested)
         {
+            Update update = await updateQueue.DequeueUpdateAsync(stoppingToken);
+
             await using var scope = serviceProvider.CreateAsyncScope();
             var updateHandler = scope.ServiceProvider.GetRequiredService<UpdateHandler>();
             var bot = scope.ServiceProvider.GetRequiredService<ITelegramBotClient>();
-            Update update = await updateQueue.DequeueUpdateAsync(stoppingToken);
 
             try
             {
                 await updateHandler.HandleUpdateAsync(bot, update, stoppingToken);
-                //logger.LogWarning($"{(DateTime.Now - DateTime.Parse(update.Message!.Text!)).TotalMilliseconds}");
             }
             catch (OperationCanceledException)
             {
