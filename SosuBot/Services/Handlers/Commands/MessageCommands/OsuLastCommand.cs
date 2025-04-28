@@ -11,7 +11,7 @@ using SosuBot.OsuTypes;
 using System.Text.RegularExpressions;
 using Telegram.Bot.Types;
 
-namespace SosuBot.Services.Handlers.MessageCommands
+namespace SosuBot.Services.Handlers.Commands.MessageCommands
 {
     public class OsuLastCommand : CommandBase<Message>
     {
@@ -68,7 +68,7 @@ namespace SosuBot.Services.Handlers.MessageCommands
                         return;
                     }
                 }
-                
+
                 if (!limitParsed && !positionalParametersExists)
                 {
                     osuUsernameForLastScores = parameters[0];

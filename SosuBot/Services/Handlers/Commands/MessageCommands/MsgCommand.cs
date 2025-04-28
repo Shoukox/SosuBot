@@ -3,9 +3,8 @@ using SosuBot.Database.Models;
 using SosuBot.Extensions;
 using Telegram.Bot;
 using Telegram.Bot.Types;
-using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 
-namespace SosuBot.Services.Handlers.MessageCommands
+namespace SosuBot.Services.Handlers.Commands.MessageCommands
 {
     public class MsgCommand : CommandBase<Message>
     {

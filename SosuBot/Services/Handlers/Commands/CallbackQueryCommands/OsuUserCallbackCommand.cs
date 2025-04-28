@@ -5,11 +5,10 @@ using SosuBot.Database.Models;
 using SosuBot.Extensions;
 using SosuBot.Helpers;
 using SosuBot.OsuTypes;
-using System.Net.Mail;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.ReplyMarkups;
 
-namespace SosuBot.Services.Handlers.MessageCommands
+namespace SosuBot.Services.Handlers.Commands.CallbackQueryCommands
 {
     public class OsuUserCallbackCommand : CommandBase<CallbackQuery>
     {

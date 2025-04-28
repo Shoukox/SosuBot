@@ -1,6 +1,5 @@
 ﻿using OsuApi.Core.V2.Scores.Models;
 using SosuBot.OsuTypes;
-using System.Text.RegularExpressions;
 using Telegram.Bot;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
@@ -61,7 +60,7 @@ namespace SosuBot.Extensions
                 Ruleset.Mania => "osu!mania",
                 Ruleset.Taiko => "osu!taiko",
                 Ruleset.Fruits => "osu!catch",
-                _ => throw new NotImplementedException()    
+                _ => throw new NotImplementedException()
             };
         }
 
