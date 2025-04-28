@@ -9,10 +9,12 @@ namespace SosuBot.Extensions
 {
     public static class TelegramUpdateExtensions
     {
-        public static string? GetCommand(this string text)
+        public static string RemoveUsernamePostfix(this string text, string username)
         {
-            if (text.Length == 0 || text[0] != '/') return null;
-
+            return text.Replace($"@{username}", "");
+        }
+        public static string GetCommand(this string text)
+        {
             text = text.Trim();
             int spaceIndex = text.IndexOf(' ');
             if (spaceIndex == -1) return text;

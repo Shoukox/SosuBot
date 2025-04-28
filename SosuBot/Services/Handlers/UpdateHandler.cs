@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using OsuApi.Core.V2;
 using SosuBot.Database;
 using SosuBot.Extensions;
@@ -13,27 +14,15 @@ using Telegram.Bot.Types;
 
 namespace SosuBot.Services.Handlers;
 
-public class UpdateHandler(ApiV2 osuApi, BotContext database, ILogger<UpdateHandler> logger) : IUpdateHandler
+public class UpdateHandler(ApiV2 osuApi, BotContext database, ILogger<UpdateHandler> logger, IOptions<BotConfiguration> botConfig) : IUpdateHandler
 {
-    private Update? _update;
-
     public async Task HandleErrorAsync(ITelegramBotClient botClient, Exception exception, HandleErrorSource source, CancellationToken cancellationToken)
     {
-        //if (_update!.Message is Message msg && msg.Text is { Length: > 0 } text)
-        //{
-        //    long userId = (await database.OsuUsers.FirstAsync(u => u.IsAdmin)).TelegramId;
-        //    string errorText =
-        //        $"Произошла ошибка.\n" +
-        //        $"{exception.Message}\n" +
-        //        $"Сообщите о ней <a href=\"tg://user?id={userId}\">создателю</a>";
-        //    await msg.ReplyAsync(botClient, errorText);
-        //}
         logger.LogInformation("HandleError: {Exception}", exception);
     }
 
     public async Task HandleUpdateAsync(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
     {
-        _update = update;
         cancellationToken.ThrowIfCancellationRequested();
 
         Task eventHandler = update switch
@@ -55,7 +44,7 @@ public class UpdateHandler(ApiV2 osuApi, BotContext database, ILogger<UpdateHand
 
     private async Task OnMessage(ITelegramBotClient botClient, Message msg)
     {
-        if (msg.Text is not { Length: > 0 } text) return;
+        if (msg.Text is not { } text) return;
         if (msg.Chat is null || msg.From is null) return;
 
         await database.AddOrUpdateTelegramChat(msg);
@@ -105,7 +94,7 @@ public class UpdateHandler(ApiV2 osuApi, BotContext database, ILogger<UpdateHand
 
     private async Task OnCommand(ITelegramBotClient botClient, Message msg)
     {
-        string command = msg.Text!.GetCommand()!;
+        string command = msg.Text!.GetCommand().RemoveUsernamePostfix(botConfig.Value.Username);
         CommandBase<Message> executableCommand;
         switch (command)
         {
