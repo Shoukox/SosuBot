@@ -85,7 +85,7 @@ namespace Sosu.Services.ProcessUpdate.MessageCommands
                 Mods mods = (Mods)Variables.osuApi.CalculateModsMods(int.Parse(score.enabled_mods));
 
                 double accuracy = (50 * double.Parse(score.count50) + 100 * double.Parse(score.count100) + 300 * double.Parse(score.count300)) / (300 * (double.Parse(score.countmiss) + double.Parse(score.count50) + double.Parse(score.count100) + double.Parse(score.count300))) * 100;
-                osu.V1.Types.Beatmap beatmap = await Variables.osuApi.GetBeatmapByBeatmapIdAsync(beatmap_id);
+                Beatmap beatmap = await Variables.osuApi.GetBeatmapByBeatmapIdAsync(beatmap_id);
                 if (i == 0)
                 {
                     chat.lastBeatmap_id = beatmap_id;

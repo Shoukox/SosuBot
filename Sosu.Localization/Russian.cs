@@ -31,45 +31,25 @@ namespace Sosu.Localization
         public string command_last =>
             "{}. <b>({})</b> <a href=\"https://osu.ppy.sh/beatmaps/{}\">{} [{}]</a> <b>({})</b>\n" +
                 "{} / {}❌ - <b><i>{}</i></b>%\n" +
-                "<b>{}</b> <i>{}/{}</i> <b><u>{}pp</u></b> (<b><u>{}pp</u></b> if FC)\n({}) {}% пройдено\n\n";
-
-        public string command_last_osu =>
-            "{}. <b>({})</b> <a href=\"https://osu.ppy.sh/beatmaps/{}\">{} [{}]</a> <b>({})</b>\n" +
-                "{}<b>x300</b> / {}<b>x100</b> / {}<b>x50</b> / {}❌ - <b><i>{}</i></b>%\n" +
-                "<b>{}</b> <i>{}/{}</i> <b><u>{}pp</u></b> (<b><u>{}pp</u></b> if FC)\n({}) {}% пройдено\n\n";
-
-        public string command_last_taiko =>
-            "{}. <b>({})</b> <a href=\"https://osu.ppy.sh/beatmaps/{}\">{} [{}]</a> <b>({})</b>\n" +
-                "{}<b>x300</b> / {}<b>x100</b> / {}❌ - <b><i>{}</i></b>%\n" +
-                "<b>{}</b> <i>{}/{}</i> <b><u>{}pp</u></b> (<b><u>{}pp</u></b> if FC)\n({}) {}% пройдено\n\n";
-
-        public string command_last_mania =>
-            "{}. <b>({})</b> <a href=\"https://osu.ppy.sh/beatmaps/{}\">{} [{}]</a> <b>({})</b>\n" +
-                "{}<b>x320</b> / {}<b>x300</b> / {}<b>x200</b> / {}<b>x100</b> / {}<b>x50</b>/ {}❌ - <b><i>{}</i></b>%\n" +
-                "<b>{}</b> <i>{}/{}</i> <b><u>{}pp</u></b> (<b><u>{}pp</u></b> if FC)\n({}) {}% пройдено\n\n";
-
-        public string command_last_catch =>
-            "{}. <b>({})</b> <a href=\"https://osu.ppy.sh/beatmaps/{}\">{} [{}]</a> <b>({})</b>\n" +
-                "{}<b>x300</b> / {}<b>x100</b> / {}<b>x50</b> / {}❌ - <b><i>{}</i></b>%\n" +
-                "<b>{}</b> <i>{}/{}</i> <b><u>{}pp</u></b> (<b><u>{}pp</u></b> if FC)\n({}) {}% пройдено\n\n";
+                "<b>{}</b> <i>{}/{}</i> <b><u>{}pp</u></b> (<b><u>{}pp</u></b> if SS)\n({}) {}% пройдено\n\n";
 
         public string command_set =>
-            "Теперь ты <b>{}</b>\n" +
+            "Теперь ты <b>{}</b>, {}pp\n" +
             "Твой игровой режим: <b>{}</b>\n" +
             "\n" +
             "Для смены режима по умолчанию используй:\n" +
             "<b>/mode</b> osu/taiko/mania/catch";
         public string command_setMode => "Твой режим игры по умолчанию: <b>{}</b>";
         public string command_score =>
-            "<b>({})</b> <a href=\"https://osu.ppy.sh/beatmaps/{}\">{} [{}]</a> <b>({})</b>\n" +
-                "{} / {} / {} / {}❌ - <b><i>{}</i></b>%\n" +
+            "<b>({})</b> <a href=\"{}\">{} [{}]</a> <b>({})</b>\n" +
+                "{} / {}❌ - <b><i>{}</i></b>%\n" +
                 "<b>{}</b> <i>{}/{}</i> <b><u>{}pp</u></b>\n({})\n\n";
         public string command_user =>
                "<b>{}</b>\n" +
             "<a href=\"{}\"><i>{}</i></a>\n\n" +
             "<b>rank</b>: <i>#{} (#{} {})</i>\n" +
             "<b>pp</b>: <i>{} {}</i>\n" +
-            "<b>accuracy</b>: <i>{}%</i>\n" +
+            "<b>accuracy</b>: <i>{}</i>\n" +
             "<b>plays</b>: <i>{}</i>\n" +
             "<b>playtime</b>: <i>{}h</i>\n\n" +
             "<i>{}</i> <b>SSH</b> - <i>{}</i> <b>SH</b>\n" +
@@ -85,7 +65,7 @@ namespace Sosu.Localization
             "{}  {}\n" +
             "</pre>";
         public string command_userbest =>
-             "{}. (<b>{}</b>) <a href=\"http://osu.ppy.sh/b/{}\">{} [{}]</a> (<b>{}</b>)\n" +
+                "{}. (<b>{}</b>) <a href=\"http://osu.ppy.sh/b/{}\">{} [{}]</a> (<b>{}</b>)\n" +
                 "{} / {} / {} / {}❌ - <b><i>{}</i></b>%\n" +
                 "<b>{}</b> <i>{}/{}</i> <b><u>{}pp</u></b>\n\n";
         public string command_chatstats_title => "Топ-10 осеров в группе:\n\n";
@@ -95,8 +75,9 @@ namespace Sosu.Localization
         public string command_included => "<b>{}</b> снова будет появляться в /chat_stats";
         public string send_mapInfo =>
                  "[{}] - {}* - {} - {} - <b>{}</b>\n" +
-                 "<b>CS</b>: {} | <b>AR</b>: {} | <b>OD</b>: {} | <b>HP</b>: {} | <b>BPM</b>: {}\n" +
-                 "100% - {}pp | 98% - {}pp | 96% - {}pp\n<b>{}</b>";
+                 "<b>CS</b>: {} | <b>AR</b>: {} | <b>HP</b>: {} | <b>BPM</b>: {}\n" +
+                 "<b>Lazer SS</b> - {}pp\n" +
+                 "<b>Classic SS</b> - {}pp\n";
         public string waiting => "Подожди немного...";
 
         public string error_baseMessage => "Произошел троллинг...";
@@ -113,6 +94,6 @@ namespace Sosu.Localization
         public string error_noPreviousScores => $"{error_baseMessage}\nЭтот пользователь не играл последние 24 часа в {{}}";
         public string error_noBestScores => $"{error_baseMessage}\nУ этого пользователя еще нету лучших рекордов";
         public string error_excludeListAlreadyContainsThisId => $"Этот пользователь уже был исключен из /chat_stats";
-        public string error_UserWasNotExcluded => "Этот пользователь и так не был исключен из /chat_stats";
+        public string error_userWasNotExcluded => "Этот пользователь и так не был исключен из /chat_stats";
     }
 }

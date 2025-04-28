@@ -10,8 +10,6 @@ using SosuBot.Logging;
 using SosuBot.Services;
 using SosuBot.Services.Data;
 using SosuBot.Services.Handlers;
-using System.Diagnostics;
-using System.Net.WebSockets;
 using Telegram.Bot;
 
 namespace SosuBot;
@@ -49,7 +47,7 @@ internal class Program
         builder.Services.AddScoped<UpdateHandler>();
         builder.Services.AddHostedService<PollingBackgroundService>();
         builder.Services.AddHostedService<UpdateHandlerBackgroundService>();
-        
+
         // Database
         var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ?? throw new InvalidOperationException("Connection string" + "'DefaultConnection' not found.");
         builder.Services.AddDbContextPool<BotContext>(options => options.UseSqlite(connectionString));

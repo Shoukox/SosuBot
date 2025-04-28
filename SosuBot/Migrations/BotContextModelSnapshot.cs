@@ -21,9 +21,17 @@ namespace SosuBot.Migrations
                     b.Property<long>("TelegramId")
                         .HasColumnType("INTEGER");
 
-                    b.Property<string>("OsuMode")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
+                    b.Property<double>("CatchPPValue")
+                        .HasColumnType("REAL");
+
+                    b.Property<bool>("IsAdmin")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<double>("ManiaPPValue")
+                        .HasColumnType("REAL");
+
+                    b.Property<int>("OsuMode")
+                        .HasColumnType("INTEGER");
 
                     b.Property<long>("OsuUserId")
                         .HasColumnType("INTEGER");
@@ -32,12 +40,29 @@ namespace SosuBot.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
-                    b.Property<double?>("PPValue")
+                    b.Property<double>("StdPPValue")
+                        .HasColumnType("REAL");
+
+                    b.Property<double>("TaikoPPValue")
                         .HasColumnType("REAL");
 
                     b.HasKey("TelegramId");
 
                     b.ToTable("OsuUsers");
+
+                    b.HasData(
+                        new
+                        {
+                            TelegramId = 728384906L,
+                            CatchPPValue = 0.0,
+                            IsAdmin = true,
+                            ManiaPPValue = 0.0,
+                            OsuMode = 0,
+                            OsuUserId = 15319810L,
+                            OsuUsername = "Shoukko",
+                            StdPPValue = 0.0,
+                            TaikoPPValue = 0.0
+                        });
                 });
 
             modelBuilder.Entity("SosuBot.Database.Models.TelegramChat", b =>
@@ -51,7 +76,7 @@ namespace SosuBot.Migrations
                     b.PrimitiveCollection<string>("ExcludeFromChatstats")
                         .HasColumnType("TEXT");
 
-                    b.Property<long?>("LastBeatmapId")
+                    b.Property<int?>("LastBeatmapId")
                         .HasColumnType("INTEGER");
 
                     b.HasKey("ChatId");

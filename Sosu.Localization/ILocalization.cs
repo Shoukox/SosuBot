@@ -37,6 +37,6 @@
         public string error_noPreviousScores { get; }
         public string error_noBestScores { get; }
         public string error_excludeListAlreadyContainsThisId { get; }
-        public string error_UserWasNotExcluded { get; }
+        public string error_userWasNotExcluded { get; }
     }
 }

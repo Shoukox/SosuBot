@@ -1,10 +1,7 @@
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using SosuBot.Services.Data;
 using Telegram.Bot;
-using Telegram.Bot.Polling;
-using Telegram.Bot.Types;
 
 namespace SosuBot.Services;
 
@@ -40,7 +37,7 @@ public class PollingBackgroundService(
             }
             catch (Exception e)
             {
-                logger.LogError(e, "Unhandled exception");
+                logger.LogError(e, "Exception");
             }
         }
     }

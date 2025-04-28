@@ -1,20 +1,7 @@
-﻿using Microsoft.EntityFrameworkCore;
-using OsuApi.Core.V2.Scores.Models;
-using OsuApi.Core.V2.Users.Models.HttpIO;
-using Sosu.Localization;
-using SosuBot.Database;
+﻿using Sosu.Localization;
 using SosuBot.Database.Models;
 using SosuBot.Extensions;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Net.Mail;
-using System.Text;
-using System.Threading.Tasks;
-using System.Xml.Linq;
-using Telegram.Bot;
 using Telegram.Bot.Types;
-using Telegram.Bot.Types.Enums;
 
 namespace SosuBot.Services.Handlers.MessageCommands
 {
@@ -48,9 +35,9 @@ namespace SosuBot.Services.Handlers.MessageCommands
                 return;
             }
 
-            osuUserInDatabase.OsuMode = osuMode;
+            osuUserInDatabase.OsuMode = osuMode.ParseRulesetToPlaymode();
 
-            string sendText = language.command_setMode.Fill([osuUserInDatabase.OsuMode]);
+            string sendText = language.command_setMode.Fill([osuUserInDatabase.OsuMode.ToGamemode()]);
             await Context.ReplyAsync(BotClient, sendText);
         }
     }

@@ -2,15 +2,9 @@
 using osu.Game.Rulesets.Mania.Mods;
 using osu.Game.Rulesets.Mods;
 using osu.Game.Rulesets.Osu.Mods;
+using osu.Game.Rulesets.Scoring;
 using osu.Game.Rulesets.Taiko.Mods;
-using OsuApi.Core.V2.Scores;
 using SosuBot.OsuTypes;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Runtime.CompilerServices;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace SosuBot.Extensions
 {
@@ -62,6 +56,35 @@ namespace SosuBot.Extensions
             return osuMods.ToArray();
         }
 
+        public static string ToGamemode(this Playmode playmode)
+        {
+            return playmode switch
+            {
+                Playmode.Osu => "osu!std",
+                Playmode.Taiko => "osu!taiko",
+                Playmode.Catch => "osu!catch",
+                Playmode.Mania => "osu!mania",
+                _ => throw new NotImplementedException()
+            };
+        }
+
+        public static string ToRuleset(this Playmode playmode)
+        {
+            return playmode switch
+            {
+                Playmode.Osu => OsuApi.Core.V2.Scores.Models.Ruleset.Osu,
+                Playmode.Taiko => OsuApi.Core.V2.Scores.Models.Ruleset.Taiko,
+                Playmode.Catch => OsuApi.Core.V2.Scores.Models.Ruleset.Fruits,
+                Playmode.Mania => OsuApi.Core.V2.Scores.Models.Ruleset.Mania,
+                _ => throw new NotImplementedException()
+            };
+        }
+
+        public static string GetProfileUrl(this OsuApi.Core.V2.Users.Models.User user)
+        {
+            return $"http://osu.ppy.sh/u/{user.Id}";
+        }
+
         public static double CalculateCompletion(this OsuApi.Core.V2.Scores.Models.Score score, int beatmapObjects)
         {
             int scoreHittedObjects = score.CalculateObjectsAmount();
@@ -77,5 +100,14 @@ namespace SosuBot.Extensions
         {
             return beatmapExtended.CountCircles!.Value + beatmapExtended.CountSliders!.Value + beatmapExtended.CountSpinners!.Value;
         }
+
+        public static Dictionary<HitResult, int> GetMaximumStatistics(this OsuApi.Core.V2.Users.Models.BeatmapExtended beatmapExtended)
+        {
+            return new Dictionary<HitResult, int>()
+                {
+                    {HitResult.Great, beatmapExtended.CountCircles!.Value + beatmapExtended.CountSliders!.Value + beatmapExtended.CountSpinners!.Value}
+                };
+        }
+        
     }
 }

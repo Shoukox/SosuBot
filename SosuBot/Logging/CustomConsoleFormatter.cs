@@ -2,11 +2,6 @@
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Logging.Console;
 using Microsoft.Extensions.Options;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace SosuBot.Logging
 {
@@ -96,7 +91,7 @@ namespace SosuBot.Logging
         private void WriteException(TextWriter textWriter, Exception? exception)
         {
             if (exception is null) return;
-            
+
             textWriter.Write(GetForegroundColorEscapeCode(ConsoleColor.DarkMagenta));
             textWriter.WriteLine("Exception occured: {0}", exception!.Message);
         }

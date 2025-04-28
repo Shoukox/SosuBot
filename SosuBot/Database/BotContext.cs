@@ -1,7 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using SosuBot.Database.Models;
-using System;
-using System.Collections.Generic;
 
 namespace SosuBot.Database;
 
@@ -11,4 +9,18 @@ public class BotContext : DbContext
 
     public DbSet<TelegramChat> TelegramChats { get; set; }
     public DbSet<OsuUser> OsuUsers { get; set; }
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        base.OnModelCreating(modelBuilder);
+
+        modelBuilder.Entity<OsuUser>().HasData(new OsuUser()
+        {
+            OsuUserId = 15319810,
+            OsuMode = OsuTypes.Playmode.Osu,
+            OsuUsername = "Shoukko",
+            IsAdmin = true,
+            TelegramId = 728384906
+        });
+    }
 }

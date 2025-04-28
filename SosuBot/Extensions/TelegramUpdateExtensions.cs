@@ -1,17 +1,14 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Telegram.Bot.Types.Enums;
-using Telegram.Bot.Types;
+﻿using OsuApi.Core.V2.Scores.Models;
+using SosuBot.OsuTypes;
+using System.Text.RegularExpressions;
 using Telegram.Bot;
+using Telegram.Bot.Types;
+using Telegram.Bot.Types.Enums;
 using Telegram.Bot.Types.ReplyMarkups;
-using OsuApi.Core.V2.Scores.Models;
 
 namespace SosuBot.Extensions
 {
-    public static class MessageExtensions
+    public static class TelegramUpdateExtensions
     {
         public static string? GetCommand(this string text)
         {
@@ -36,7 +33,7 @@ namespace SosuBot.Extensions
         /// <returns></returns>
         public static string? ParseToRuleset(this string text)
         {
-            text = text.Trim().ToLowerInvariant();
+            text = text.Trim().ToLowerInvariant().Replace("mode=", "");
 
             // user can type taiko/mania, but fruits can be written in another way
             string[] possibilitiesOfFruitsInput = ["ctb", "catch"];
@@ -56,7 +53,7 @@ namespace SosuBot.Extensions
         /// </summary>
         /// <param name="ruleset"></param>
         /// <returns></returns>
-        public static string? ParseFromRuleset(this string ruleset)
+        public static string ParseRulesetToGamemode(this string ruleset)
         {
             return ruleset switch
             {
@@ -64,14 +61,29 @@ namespace SosuBot.Extensions
                 Ruleset.Mania => "osu!mania",
                 Ruleset.Taiko => "osu!taiko",
                 Ruleset.Fruits => "osu!catch",
-                _ => null
+                _ => throw new NotImplementedException()    
             };
         }
 
-        public static Task<Message> ReplyAsync(this Message message, ITelegramBotClient botClient, string text, bool privateAsnwer = false, ParseMode parseMode = ParseMode.Html)
-          => botClient.SendMessage(privateAsnwer ? message.From!.Id : message.Chat.Id, text, parseMode: parseMode, replyParameters: new ReplyParameters() { MessageId = message.MessageId }, linkPreviewOptions: new LinkPreviewOptions { IsDisabled = true });
+        public static Playmode ParseRulesetToPlaymode(this string ruleset)
+        {
+            return ruleset switch
+            {
+                Ruleset.Osu => Playmode.Osu,
+                Ruleset.Taiko => Playmode.Taiko,
+                Ruleset.Fruits => Playmode.Catch,
+                Ruleset.Mania => Playmode.Mania,
+                _ => throw new NotImplementedException()
+            };
+        }
+
+        public static Task<Message> ReplyAsync(this Message message, ITelegramBotClient botClient, string text, bool privateAsnwer = false, ParseMode parseMode = ParseMode.Html, InlineKeyboardMarkup? replyMarkup = null)
+          => botClient.SendMessage(privateAsnwer ? message.From!.Id : message.Chat.Id, text, parseMode: parseMode, replyParameters: new ReplyParameters() { MessageId = message.MessageId }, linkPreviewOptions: new LinkPreviewOptions { IsDisabled = true }, replyMarkup: replyMarkup);
 
         public static Task<Message> EditAsync(this Message message, ITelegramBotClient botClient, string text, ParseMode parseMode = ParseMode.Html, InlineKeyboardMarkup? replyMarkup = null)
           => botClient.EditMessageText(message.Chat.Id, message.MessageId, text, parseMode: parseMode, linkPreviewOptions: new LinkPreviewOptions { IsDisabled = true }, replyMarkup: replyMarkup);
+
+        public static Task AnswerAsync(this CallbackQuery callbackQuery, ITelegramBotClient botClient)
+          => botClient.AnswerCallbackQuery(callbackQuery.Id);
     }
 }

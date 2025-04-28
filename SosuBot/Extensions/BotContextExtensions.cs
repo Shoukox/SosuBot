@@ -1,13 +1,7 @@
 ﻿using SosuBot.Database;
 using SosuBot.Database.Models;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Telegram.Bot;
+using SosuBot.Synchronization;
 using Telegram.Bot.Types;
-using Telegram.Bot.Types.Enums;
 
 namespace SosuBot.Extensions
 {
@@ -15,6 +9,8 @@ namespace SosuBot.Extensions
     {
         public static async Task AddOrUpdateTelegramChat(this BotContext database, Message message)
         {
+            var semaphoreSlim = BotSynchronization.Instance.GetSemaphoreSlim(message.Chat.Id);
+            await semaphoreSlim.WaitAsync();
             if (await database.TelegramChats.FindAsync(message.Chat.Id) is TelegramChat chat)
             {
                 chat.ChatMembers = chat.ChatMembers ?? new List<long>();
@@ -30,6 +26,7 @@ namespace SosuBot.Extensions
                 };
                 await database.AddAsync(newChat);
             }
+            semaphoreSlim.Release();
         }
     }
 }

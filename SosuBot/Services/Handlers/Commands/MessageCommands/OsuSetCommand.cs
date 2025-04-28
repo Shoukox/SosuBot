@@ -1,19 +1,13 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Newtonsoft.Json.Linq;
 using OsuApi.Core.V2.Scores.Models;
+using OsuApi.Core.V2.Users.Models;
 using OsuApi.Core.V2.Users.Models.HttpIO;
 using Sosu.Localization;
-using SosuBot.Database;
 using SosuBot.Database.Models;
 using SosuBot.Extensions;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Xml.Linq;
-using Telegram.Bot;
+using SosuBot.OsuTypes;
 using Telegram.Bot.Types;
-using Telegram.Bot.Types.Enums;
 
 namespace SosuBot.Services.Handlers.MessageCommands
 {
@@ -35,7 +29,7 @@ namespace SosuBot.Services.Handlers.MessageCommands
                 return;
             }
 
-            OsuUser? osuUserInDatabase = await Database.OsuUsers.FirstOrDefaultAsync(m => m.OsuUsername == osuUsername);
+            OsuUser? osuUserInDatabase = await Database.OsuUsers.FirstOrDefaultAsync(m => m.TelegramId == Context.From!.Id);
             GetUserResponse? response = await OsuApiV2.Users.GetUser($"@{osuUsername}", new());
             if (response is null)
             {
@@ -43,28 +37,29 @@ namespace SosuBot.Services.Handlers.MessageCommands
                 return;
             }
 
+
+            UserExtend user = response.UserExtend!;
+
+            Playmode playmode = user.Playmode!.ParseRulesetToPlaymode();
             if (osuUserInDatabase is null)
             {
                 OsuUser newOsuUser = new OsuUser()
                 {
-                    TelegramId = Context.From!.Id, 
-                    OsuUsername = response.UserExtend!.Username!,
-                    OsuUserId = response.UserExtend!.Id.Value,
-                    PPValue = response.UserExtend.Statistics!.Pp,
-                    OsuMode = Ruleset.Osu
+                    TelegramId = Context.From!.Id,
+                    OsuUsername = user.Username!,
+                    OsuUserId = user.Id.Value,
+                    OsuMode = Playmode.Osu
                 };
-                await Database.OsuUsers.AddAsync(newOsuUser);
+                newOsuUser.SetPP(user.Statistics!.Pp!.Value, playmode);
 
+                await Database.OsuUsers.AddAsync(newOsuUser);
                 osuUserInDatabase = newOsuUser;
             }
             else
             {
-                osuUserInDatabase.TelegramId = Context.From!.Id;
-                osuUserInDatabase.OsuUsername = response.UserExtend!.Username!;
-                osuUserInDatabase.OsuUserId = response.UserExtend!.Id.Value;
-                osuUserInDatabase.PPValue = response.UserExtend.Statistics!.Pp;
+                osuUserInDatabase.Update(user, playmode);
             }
-            string sendText = language.command_set.Fill([$"{response.UserExtend!.Username!}", osuUserInDatabase.OsuMode.ParseFromRuleset()!]);
+            string sendText = language.command_set.Fill([$"{user.Username!}", $"{osuUserInDatabase.GetPP(playmode):N2}", osuUserInDatabase.OsuMode.ToGamemode()!]);
             await Context.ReplyAsync(BotClient, sendText);
         }
     }
