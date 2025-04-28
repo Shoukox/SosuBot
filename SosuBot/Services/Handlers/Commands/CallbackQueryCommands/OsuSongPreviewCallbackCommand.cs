@@ -1,19 +1,9 @@
-﻿using Microsoft.EntityFrameworkCore;
-using OsuApi.Core.V2.Beatmaps.Models.HttpIO;
-using OsuApi.Core.V2.Scores.Models;
-using OsuApi.Core.V2.Users.Models;
-using Sosu.Localization;
-using SosuBot.Database.Models;
-using SosuBot.Extensions;
+﻿using Sosu.Localization;
 using SosuBot.Helpers;
-using SosuBot.OsuTypes;
-using System.Net.Mail;
 using Telegram.Bot;
 using Telegram.Bot.Types;
-using Telegram.Bot.Types.ReplyMarkups;
-using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 
-namespace SosuBot.Services.Handlers.MessageCommands
+namespace SosuBot.Services.Handlers.Commands.CallbackQueryCommands
 {
     public class OsuSongPreviewCallbackCommand : CommandBase<CallbackQuery>
     {

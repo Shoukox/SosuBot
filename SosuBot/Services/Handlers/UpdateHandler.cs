@@ -1,14 +1,11 @@
-﻿using HtmlAgilityPack;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using OsuApi.Core.V2;
-using osuTK;
-using SDL;
 using SosuBot.Database;
 using SosuBot.Extensions;
+using SosuBot.Services.Handlers.Commands;
 using SosuBot.Services.Handlers.Commands.CallbackQueryCommands;
 using SosuBot.Services.Handlers.Commands.MessageCommands;
-using SosuBot.Services.Handlers.MessageCommands;
 using SosuBot.Services.Handlers.Text;
 using Telegram.Bot;
 using Telegram.Bot.Polling;
@@ -25,7 +22,7 @@ public class UpdateHandler(ApiV2 osuApi, BotContext database, ILogger<UpdateHand
         if (_update!.Message is Message msg && msg.Text is { Length: > 0 } text)
         {
             long userId = (await database.OsuUsers.FirstAsync(u => u.IsAdmin)).TelegramId;
-            string errorText = 
+            string errorText =
                 $"Произошла ошибка.\n" +
                 $"{exception.Message}\n" +
                 $"Сообщите о ней <a href=\"tg://user?id={userId}\">создателю</a>";
@@ -94,7 +91,7 @@ public class UpdateHandler(ApiV2 osuApi, BotContext database, ILogger<UpdateHand
                 executableCommand = new OsuSongPreviewCallbackCommand();
                 break;
             default:
-                executableCommand = new DummyCommand();
+                executableCommand = new Commands.CallbackQueryCommands.DummyCommand();
                 break;
         }
         executableCommand.SetContext(callbackQuery);
@@ -162,7 +159,7 @@ public class UpdateHandler(ApiV2 osuApi, BotContext database, ILogger<UpdateHand
                 executableCommand = new DbCommand();
                 break;
             default:
-                executableCommand = new HelpCommand();
+                executableCommand = new Commands.MessageCommands.DummyCommand();
                 break;
         }
         executableCommand.SetContext(msg);

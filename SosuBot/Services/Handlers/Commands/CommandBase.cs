@@ -2,7 +2,7 @@
 using SosuBot.Database;
 using Telegram.Bot;
 
-namespace SosuBot.Services.Handlers.MessageCommands
+namespace SosuBot.Services.Handlers.Commands
 {
     public class CommandBase<TUpdateType>
     {

@@ -1,6 +1,4 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using Newtonsoft.Json.Linq;
-using OsuApi.Core.V2.Scores.Models;
 using OsuApi.Core.V2.Users.Models;
 using OsuApi.Core.V2.Users.Models.HttpIO;
 using Sosu.Localization;
@@ -9,7 +7,7 @@ using SosuBot.Extensions;
 using SosuBot.OsuTypes;
 using Telegram.Bot.Types;
 
-namespace SosuBot.Services.Handlers.MessageCommands
+namespace SosuBot.Services.Handlers.Commands.MessageCommands
 {
     public class OsuSetCommand : CommandBase<Message>
     {

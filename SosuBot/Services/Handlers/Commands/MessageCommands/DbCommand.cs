@@ -1,16 +1,8 @@
-﻿using Microsoft.EntityFrameworkCore;
-using OsuApi.Core.V2;
-using OsuApi.Core.V2.Scores.Models;
+﻿using OsuApi.Core.V2.Scores.Models;
 using Sosu.Localization;
 using SosuBot.Database.Models;
 using SosuBot.Extensions;
-using SosuBot.Services.Handlers.MessageCommands;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Text.Json;
-using System.Threading.Tasks;
 using Telegram.Bot.Types;
 
 namespace SosuBot.Services.Handlers.Commands.MessageCommands

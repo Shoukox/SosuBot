@@ -4,7 +4,7 @@ using SosuBot.Extensions;
 using SosuBot.OsuTypes;
 using Telegram.Bot.Types;
 
-namespace SosuBot.Services.Handlers.MessageCommands
+namespace SosuBot.Services.Handlers.Commands.MessageCommands
 {
     public class OsuChatstatsCommand : CommandBase<Message>
     {
@@ -46,8 +46,8 @@ namespace SosuBot.Services.Handlers.MessageCommands
             foreach (OsuUser chatMember in foundChatMembers)
             {
                 sendText += language.command_chatstats_row.Fill([
-                    $"{i}", 
-                    $"{chatMember.OsuUsername}", 
+                    $"{i}",
+                    $"{chatMember.OsuUsername}",
                     $"{chatMember.GetPP(playmode):N0}"]);
                 i += 1;
             }

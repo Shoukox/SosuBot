@@ -3,7 +3,7 @@ using SosuBot.Database.Models;
 using SosuBot.Extensions;
 using Telegram.Bot.Types;
 
-namespace SosuBot.Services.Handlers.MessageCommands
+namespace SosuBot.Services.Handlers.Commands.MessageCommands
 {
     public class OsuModeCommand : CommandBase<Message>
     {

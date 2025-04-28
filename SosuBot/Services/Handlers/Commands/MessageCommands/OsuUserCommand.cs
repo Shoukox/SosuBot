@@ -1,5 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
-using OsuApi.Core.V2.Users.Models;
+﻿using OsuApi.Core.V2.Users.Models;
 using Sosu.Localization;
 using SosuBot.Database.Models;
 using SosuBot.Extensions;
@@ -8,7 +7,7 @@ using SosuBot.OsuTypes;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.ReplyMarkups;
 
-namespace SosuBot.Services.Handlers.MessageCommands
+namespace SosuBot.Services.Handlers.Commands.MessageCommands
 {
     public class OsuUserCommand : CommandBase<Message>
     {

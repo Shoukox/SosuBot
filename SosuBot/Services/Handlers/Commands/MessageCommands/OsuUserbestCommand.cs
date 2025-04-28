@@ -8,7 +8,7 @@ using SosuBot.OsuTypes;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.ReplyMarkups;
 
-namespace SosuBot.Services.Handlers.MessageCommands
+namespace SosuBot.Services.Handlers.Commands.MessageCommands
 {
     public class OsuUserbestCommand : CommandBase<Message>
     {
@@ -74,20 +74,20 @@ namespace SosuBot.Services.Handlers.MessageCommands
                 var score = bestScores[i];
                 var beatmap = beatmaps[i];
                 textToSend += language.command_userbest.Fill([
-                    $"{i + 1}", 
-                    $"{score.Rank}", 
-                    $"{score.BeatmapId}", 
-                    $"{score.Beatmapset!.Title}", 
-                    $"{score.Beatmap!.Version}", 
-                    $"{score.Beatmapset.Status}", 
-                    $"{score.Statistics!.Great}", 
-                    $"{score.Statistics!.Ok}", 
-                    $"{score.Statistics!.Meh}", 
-                    $"{score.Statistics!.Miss}", 
-                    $"{score.Accuracy * 100:N2}", 
-                    $"+{string.Join("", score.Mods!.Select(m => m.Acronym))}", 
-                    $"{score.MaxCombo}", 
-                    $"{beatmap.BeatmapExtended!.MaxCombo}", 
+                    $"{i + 1}",
+                    $"{score.Rank}",
+                    $"{score.BeatmapId}",
+                    $"{score.Beatmapset!.Title}",
+                    $"{score.Beatmap!.Version}",
+                    $"{score.Beatmapset.Status}",
+                    $"{score.Statistics!.Great}",
+                    $"{score.Statistics!.Ok}",
+                    $"{score.Statistics!.Meh}",
+                    $"{score.Statistics!.Miss}",
+                    $"{score.Accuracy * 100:N2}",
+                    $"+{string.Join("", score.Mods!.Select(m => m.Acronym))}",
+                    $"{score.MaxCombo}",
+                    $"{beatmap.BeatmapExtended!.MaxCombo}",
                     $"{score.Pp:N2}"]);
             }
 

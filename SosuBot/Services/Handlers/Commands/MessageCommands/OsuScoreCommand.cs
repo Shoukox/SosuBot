@@ -1,22 +1,13 @@
-﻿using Microsoft.EntityFrameworkCore.Diagnostics;
-using MongoDB.Bson.Serialization.Serializers;
-using osu.Game.Overlays.Settings.Sections.Gameplay;
-using osu.Game.Rulesets;
-using osu.Game.Rulesets.Osu.Skinning.Argon;
-using osu.Game.Rulesets.Scoring;
-using OsuApi.Core.V2.Beatmaps.Models.HttpIO;
-using OsuApi.Core.V2.Scores.Models;
+﻿using OsuApi.Core.V2.Scores.Models;
 using OsuApi.Core.V2.Users.Models;
-using PerfomanceCalculator;
 using Sosu.Localization;
 using SosuBot.Database.Models;
 using SosuBot.Extensions;
 using SosuBot.Helpers;
 using SosuBot.OsuTypes;
 using Telegram.Bot.Types;
-using Telegram.Bot.Types.Enums;
 
-namespace SosuBot.Services.Handlers.MessageCommands
+namespace SosuBot.Services.Handlers.Commands.MessageCommands
 {
     public class OsuScoreCommand : CommandBase<Message>
     {
@@ -154,7 +145,7 @@ namespace SosuBot.Services.Handlers.MessageCommands
             // if username was entered, then use as ruleset his (this username) standard ruleset.
             playmode ??= userResponse.UserExtend!.Playmode!.ParseRulesetToPlaymode();
 
-            var scoresResponse = await OsuApiV2.Beatmaps.GetUserBeatmapScores(beatmapId.Value, userResponse.UserExtend!.Id.Value, new() { Ruleset = playmode.Value.ToRuleset()});
+            var scoresResponse = await OsuApiV2.Beatmaps.GetUserBeatmapScores(beatmapId.Value, userResponse.UserExtend!.Id.Value, new() { Ruleset = playmode.Value.ToRuleset() });
             if (scoresResponse is null)
             {
                 await waitMessage.EditAsync(BotClient, language.error_noRecords);
