@@ -1,6 +1,6 @@
 .vs
 .idea
 Sosu*/appsettings*
-SendToAllChats
 */bin
 */obj
+*/*.db
