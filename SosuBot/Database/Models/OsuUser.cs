@@ -1,10 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations.Schema;
+﻿using SosuBot.OsuTypes;
 using System.ComponentModel.DataAnnotations;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace SosuBot.Database.Models
 {
@@ -16,7 +12,13 @@ namespace SosuBot.Database.Models
 
         public required long OsuUserId { get; set; }
         public required string OsuUsername { get; set; }
-        public required string OsuMode { get; set; }
-        public double? PPValue { get; set; }
+        public required Playmode OsuMode { get; set; }
+
+        public double StdPPValue { get; set; }
+        public double TaikoPPValue { get; set; }
+        public double CatchPPValue { get; set; }
+        public double ManiaPPValue { get; set; }
+
+        public bool IsAdmin { get; set; }
     }
 }

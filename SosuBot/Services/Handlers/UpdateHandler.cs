@@ -1,31 +1,42 @@
-﻿using Microsoft.Extensions.Logging;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using HtmlAgilityPack;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+using OsuApi.Core.V2;
+using osuTK;
+using SDL;
+using SosuBot.Database;
+using SosuBot.Extensions;
+using SosuBot.Services.Handlers.Commands.CallbackQueryCommands;
+using SosuBot.Services.Handlers.Commands.MessageCommands;
+using SosuBot.Services.Handlers.MessageCommands;
+using SosuBot.Services.Handlers.Text;
+using Telegram.Bot;
 using Telegram.Bot.Polling;
 using Telegram.Bot.Types;
-using Telegram.Bot;
-using System.Windows.Input;
-using SosuBot.Extensions;
-using SosuBot.Services.Handlers.MessageCommands;
-using SosuBot.Database;
-using OsuApi.Core.V2;
-using System.Data.Common;
 
 namespace SosuBot.Services.Handlers;
 
 public class UpdateHandler(ApiV2 osuApi, BotContext database, ILogger<UpdateHandler> logger) : IUpdateHandler
 {
-    public Task HandleErrorAsync(ITelegramBotClient botClient, Exception exception, HandleErrorSource source, CancellationToken cancellationToken)
+    private Update? _update;
+
+    public async Task HandleErrorAsync(ITelegramBotClient botClient, Exception exception, HandleErrorSource source, CancellationToken cancellationToken)
     {
+        if (_update!.Message is Message msg && msg.Text is { Length: > 0 } text)
+        {
+            long userId = (await database.OsuUsers.FirstAsync(u => u.IsAdmin)).TelegramId;
+            string errorText = 
+                $"Произошла ошибка.\n" +
+                $"{exception.Message}\n" +
+                $"Сообщите о ней <a href=\"tg://user?id={userId}\">создателю</a>";
+            await msg.ReplyAsync(botClient, errorText);
+        }
         logger.LogInformation("HandleError: {Exception}", exception);
-        return Task.CompletedTask;
     }
 
     public async Task HandleUpdateAsync(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
     {
+        _update = update;
         cancellationToken.ThrowIfCancellationRequested();
 
         Task eventHandler = update switch
@@ -47,15 +58,13 @@ public class UpdateHandler(ApiV2 osuApi, BotContext database, ILogger<UpdateHand
 
     private async Task OnMessage(ITelegramBotClient botClient, Message msg)
     {
-        if (msg.Text is not { Length: > 0 }) return;
+        if (msg.Text is not { Length: > 0 } text) return;
+        if (msg.Chat is null || msg.From is null) return;
 
-        if (msg.Chat is not null
-            && msg.From is not null) await database.AddOrUpdateTelegramChat(msg);
-        else return;
+        await database.AddOrUpdateTelegramChat(msg);
 
-        if (msg.Text[0] == '/')
+        if (text[0] == '/')
         {
-
             await OnCommand(botClient, msg);
         }
         else
@@ -64,11 +73,44 @@ public class UpdateHandler(ApiV2 osuApi, BotContext database, ILogger<UpdateHand
         }
     }
 
+    private async Task OnCallbackQuery(ITelegramBotClient botClient, CallbackQuery callbackQuery)
+    {
+        if (callbackQuery.Data is not { } data) return;
+
+        // Instantly answer the query to get rid of the loading icon
+        await callbackQuery.AnswerAsync(botClient);
+
+        string command = data.Split(" ")[1];
+        CommandBase<CallbackQuery> executableCommand;
+        switch (command)
+        {
+            case string user when OsuUserCallbackCommand.Command.Equals(user):
+                executableCommand = new OsuUserCallbackCommand();
+                break;
+            case string userbest when OsuUserBestCallbackCommand.Command.Equals(userbest):
+                executableCommand = new OsuUserBestCallbackCommand();
+                break;
+            case string songPreview when OsuSongPreviewCallbackCommand.Command.Equals(songPreview):
+                executableCommand = new OsuSongPreviewCallbackCommand();
+                break;
+            default:
+                executableCommand = new DummyCommand();
+                break;
+        }
+        executableCommand.SetContext(callbackQuery);
+        executableCommand.SetDatabase(database);
+        executableCommand.SetBotClient(botClient);
+        executableCommand.SetOsuApiV2(osuApi);
+
+        await executableCommand.ExecuteAsync();
+        await database.SaveChangesAsync();
+    }
+
     private async Task OnCommand(ITelegramBotClient botClient, Message msg)
     {
         string command = msg.Text!.GetCommand()!;
         CommandBase<Message> executableCommand;
-        switch(command) 
+        switch (command)
         {
             //~~~~~~admin~~~~~~~~
             //"/sendm" => new SendMessageCommand(),
@@ -107,18 +149,22 @@ public class UpdateHandler(ApiV2 osuApi, BotContext database, ILogger<UpdateHand
             case string last when OsuLastCommand.Commands.Contains(last):
                 executableCommand = new OsuLastCommand();
                 break;
+            case string user when OsuUserCommand.Commands.Contains(user):
+                executableCommand = new OsuUserCommand();
+                break;
+            case string score when OsuScoreCommand.Commands.Contains(score):
+                executableCommand = new OsuScoreCommand();
+                break;
+            case string sendMsg when MsgCommand.Commands.Contains(sendMsg):
+                executableCommand = new MsgCommand();
+                break;
+            case string db when DbCommand.Commands.Contains(db):
+                executableCommand = new DbCommand();
+                break;
             default:
                 executableCommand = new HelpCommand();
                 break;
-
-            //"/user" => new OsuUserCommand(),
-            //"/u" => new OsuUserCommand(),
-
-            //"/score" => new OsuScoreCommand(),
-            //"/s" => new OsuScoreCommand(),
-
-            //"/msg" => new MsgCommand(),
-        };
+        }
         executableCommand.SetContext(msg);
         executableCommand.SetDatabase(database);
         executableCommand.SetBotClient(botClient);
@@ -128,15 +174,16 @@ public class UpdateHandler(ApiV2 osuApi, BotContext database, ILogger<UpdateHand
         await database.SaveChangesAsync();
     }
 
-    private Task OnText(ITelegramBotClient botClient, Message msg)
+    private async Task OnText(ITelegramBotClient botClient, Message msg)
     {
-        return Task.CompletedTask;
-    }
+        CommandBase<Message> textHandler = new TextHandler();
+        textHandler.SetContext(msg);
+        textHandler.SetDatabase(database);
+        textHandler.SetBotClient(botClient);
+        textHandler.SetOsuApiV2(osuApi);
 
-    private Task OnCallbackQuery(ITelegramBotClient botClient, CallbackQuery callbackQuery)
-    {
-        logger.LogInformation("Received inline keyboard callback from: {CallbackQueryId}", callbackQuery.Id);
-        return Task.CompletedTask;
+        await textHandler.ExecuteAsync();
+        await database.SaveChangesAsync();
     }
 
     private Task DoNothing() => Task.CompletedTask;

@@ -54,7 +54,7 @@ public class UpdateHandlerBackgroundService(
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        if(EnableStressTestUsingConsole) _ = Task.Run(() => StressTestUsingConsole(stoppingToken));
+        if (EnableStressTestUsingConsole) _ = Task.Run(() => StressTestUsingConsole(stoppingToken));
 
         logger.LogInformation($"Starting {WorkersCount} workers to handle updates.");
         var workers =

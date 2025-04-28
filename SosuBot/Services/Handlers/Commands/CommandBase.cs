@@ -1,10 +1,5 @@
 ﻿using OsuApi.Core.V2;
 using SosuBot.Database;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Telegram.Bot;
 
 namespace SosuBot.Services.Handlers.MessageCommands

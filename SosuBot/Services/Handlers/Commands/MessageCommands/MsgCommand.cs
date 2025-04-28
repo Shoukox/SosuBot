@@ -1,0 +1,42 @@
+﻿using Sosu.Localization;
+using SosuBot.Database.Models;
+using SosuBot.Extensions;
+using Telegram.Bot;
+using Telegram.Bot.Types;
+using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
+
+namespace SosuBot.Services.Handlers.MessageCommands
+{
+    public class MsgCommand : CommandBase<Message>
+    {
+        public static string[] Commands = ["/msg"];
+
+        public override async Task ExecuteAsync()
+        {
+            ILocalization language = new Russian();
+            TelegramChat? chatInDatabase = await Database.TelegramChats.FindAsync(Context.Chat.Id);
+            OsuUser? osuUserInDatabase = await Database.OsuUsers.FindAsync(Context.From!.Id);
+
+            if (osuUserInDatabase is null || !osuUserInDatabase.IsAdmin) return;
+
+            string[] parameters = Context.Text!.GetCommandParameters()!;
+            if (parameters[0] == "groups")
+            {
+                string msg = string.Join(" ", parameters[1..]);
+
+                foreach (var chat in Database.TelegramChats)
+                {
+                    await BotClient.SendMessage(chat.ChatId, msg, Telegram.Bot.Types.Enums.ParseMode.Html);
+                    await Task.Delay(500);
+                }
+            }
+            else if (parameters[0] == "user")
+            {
+                string id = parameters[1];
+                string msg = string.Join(" ", parameters[2..]);
+                await BotClient.SendMessage(id, msg, Telegram.Bot.Types.Enums.ParseMode.Html);
+            }
+            await Context.ReplyAsync(BotClient, "Done.");
+        }
+    }
+}
