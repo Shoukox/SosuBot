@@ -41,19 +41,19 @@ namespace Sosu.Localization
             "<b>/mode</b> osu/taiko/mania/catch";
         public string command_setMode => "Твой режим игры по умолчанию: <b>{}</b>";
         public string command_score =>
-            "<b>({})</b> <a href=\"{}\">{} [{}]</a> <b>({})</b>\n" +
+                "<b>({})</b> <a href=\"{}\">{} [{}]</a> <b>({})</b>\n" +
                 "{} / {}❌ - <b><i>{}</i></b>%\n" +
                 "<b>{}</b> <i>{}/{}</i> <b><u>{}pp</u></b>\n({})\n\n";
         public string command_user =>
-               "<b>{}</b>\n" +
-            "<a href=\"{}\"><i>{}</i></a>\n\n" +
-            "<b>rank</b>: <i>#{} (#{} {})</i>\n" +
-            "<b>pp</b>: <i>{} {}</i>\n" +
-            "<b>accuracy</b>: <i>{}</i>\n" +
-            "<b>plays</b>: <i>{}</i>\n" +
-            "<b>playtime</b>: <i>{}h</i>\n\n" +
-            "<i>{}</i> <b>SSH</b> - <i>{}</i> <b>SH</b>\n" +
-            "<i>{}</i> <b>SS</b> - <i>{}</i> <b>S</b> - <i>{}</i> <b>A</b>";
+                "<b>{}</b>\n" +
+                "<a href=\"{}\"><i>{}</i></a>\n\n" +
+                "<b>rank</b>: <i>#{} (#{} {})</i>\n" +
+                "<b>pp</b>: <i>{} {}</i>\n" +
+                "<b>accuracy</b>: <i>{}</i>\n" +
+                "<b>plays</b>: <i>{}</i>\n" +
+                "<b>playtime</b>: <i>{}h</i>\n\n" +
+                "<i>{}</i> <b>SSH</b> - <i>{}</i> <b>SH</b>\n" +
+                "<i>{}</i> <b>SS</b> - <i>{}</i> <b>S</b> - <i>{}</i> <b>A</b>";
         public string command_compare =>
               "<pre>" +
             "{}\n\n" +
@@ -66,7 +66,7 @@ namespace Sosu.Localization
             "</pre>";
         public string command_userbest =>
                 "{}. (<b>{}</b>) <a href=\"http://osu.ppy.sh/b/{}\">{} [{}]</a> (<b>{}</b>)\n" +
-                "{} / {} / {} / {}❌ - <b><i>{}</i></b>%\n" +
+                "{} / {}❌ - <b><i>{}</i></b>%\n" +
                 "<b>{}</b> <i>{}/{}</i> <b><u>{}pp</u></b>\n\n";
         public string command_chatstats_title => "Топ-10 осеров в группе:\n\n";
         public string command_chatstats_row => "<b>{}. {}</b>: <i>{}pp</i>\n";

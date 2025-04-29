@@ -1,5 +1,6 @@
 ﻿using OsuApi.Core.V2.Scores.Models;
 using SosuBot.OsuTypes;
+using Veldrid.MetalBindings;
 
 namespace SosuBot.Helpers
 {
@@ -10,6 +11,12 @@ namespace SosuBot.Helpers
             string modsText = "+" + string.Join("", mods!.Select(m => m.Acronym));
             if (modsText == "+") modsText += "NM";
             return modsText;
+        }
+
+        public static string GetScorePPText(double? scorePP, string format = "N2")
+        {
+            string ppText = scorePP?.ToString(format) ?? "-";
+            return ppText;
         }
 
         public static string GetScoreStatisticsText(ScoreStatistics scoreStatistics, Playmode playmode)

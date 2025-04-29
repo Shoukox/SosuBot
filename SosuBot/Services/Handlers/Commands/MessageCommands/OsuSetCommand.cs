@@ -46,7 +46,7 @@ namespace SosuBot.Services.Handlers.Commands.MessageCommands
                     TelegramId = Context.From!.Id,
                     OsuUsername = user.Username!,
                     OsuUserId = user.Id.Value,
-                    OsuMode = Playmode.Osu
+                    OsuMode = playmode
                 };
                 newOsuUser.SetPP(user.Statistics!.Pp!.Value, playmode);
 

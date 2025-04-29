@@ -4,6 +4,7 @@ using OsuApi.Core.V2.Users.Models;
 using Sosu.Localization;
 using SosuBot.Database.Models;
 using SosuBot.Extensions;
+using SosuBot.Helpers;
 using SosuBot.OsuTypes;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.ReplyMarkups;
@@ -77,18 +78,16 @@ namespace SosuBot.Services.Handlers.Commands.MessageCommands
                     $"{i + 1}",
                     $"{score.Rank}",
                     $"{score.BeatmapId}",
-                    $"{score.Beatmapset!.Title}",
-                    $"{score.Beatmap!.Version}",
+                    $"{score.Beatmapset!.Title.EncodeHTML()}",
+                    $"{score.Beatmap!.Version.EncodeHTML()}",
                     $"{score.Beatmapset.Status}",
-                    $"{score.Statistics!.Great}",
-                    $"{score.Statistics!.Ok}",
-                    $"{score.Statistics!.Meh}",
+                    $"{ScoreHelper.GetScoreStatisticsText(score.Statistics!, playmode)}",
                     $"{score.Statistics!.Miss}",
                     $"{score.Accuracy * 100:N2}",
-                    $"+{string.Join("", score.Mods!.Select(m => m.Acronym))}",
+                    $"{ScoreHelper.GetModsText(score.Mods!)}",
                     $"{score.MaxCombo}",
                     $"{beatmap.BeatmapExtended!.MaxCombo}",
-                    $"{score.Pp:N2}"]);
+                    $"{ScoreHelper.GetScorePPText(score.Pp)}"]);
             }
 
             var ik = new InlineKeyboardMarkup(

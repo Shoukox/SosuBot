@@ -83,7 +83,7 @@ namespace SosuBot.Services.Handlers.Commands.MessageCommands
                 $"{user.Statistics.GlobalRank}",
                 $"{user.Statistics.CountryRank}",
                 $"{user.CountryCode}",
-                $"{currentPP:N2}",
+                $"{ScoreHelper.GetScorePPText(currentPP)}",
                 $"{ppDifferenceText}",
                 $"{user.Statistics.HitAccuracy:N2}%",
                 $"{user.Statistics.PlayCount:N0}",

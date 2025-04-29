@@ -127,7 +127,7 @@ namespace SosuBot.Services.Handlers.Commands.MessageCommands
                 // calculate pp
                 var calculatedPP = new
                 {
-                    Current = await ppCalculator.CalculatePPAsync(
+                    Current = score.Pp ?? await ppCalculator.CalculatePPAsync(
                         beatmap.Id.Value,
                         score.MaxCombo!.Value,
                         mods.ToOsuMods(playmode),
@@ -148,8 +148,8 @@ namespace SosuBot.Services.Handlers.Commands.MessageCommands
                     $"{i + 1}",
                     $"{score.Rank}",
                     $"{beatmap.Id}",
-                    $"{score.Beatmapset!.Title}",
-                    $"{beatmap.Version}",
+                    $"{score.Beatmapset!.Title.EncodeHTML()}",
+                    $"{beatmap.Version.EncodeHTML()}",
                     $"{beatmap.Status}",
                     $"{ScoreHelper.GetScoreStatisticsText(score.Statistics!, playmode)}",
                     $"{score.Statistics!.Miss + score.Statistics!.LargeTickMiss}",
