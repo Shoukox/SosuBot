@@ -173,12 +173,11 @@ namespace SosuBot.Services.Handlers.Commands.MessageCommands
                     chatInDatabase!.LastBeatmapId = beatmap!.Id;
                 }
 
-                double curpp = score.Pp!.Value;
                 textToSend += language.command_score.Fill([
                     $"{score.Rank}",
                     $"{beatmap.Url}",
-                    $"{beatmapset.Title}",
-                    $"{beatmap.Version}",
+                    $"{beatmapset.Title.EncodeHTML()}",
+                    $"{beatmap.Version.EncodeHTML()}",
                     $"{beatmap.Status}",
                     $"{ScoreHelper.GetScoreStatisticsText(score.Statistics!, playmode.Value)}",
                     $"{score.Statistics!.Miss}",
@@ -186,7 +185,7 @@ namespace SosuBot.Services.Handlers.Commands.MessageCommands
                     $"{ScoreHelper.GetModsText(score.Mods!)}",
                     $"{score.MaxCombo}",
                     $"{beatmap.MaxCombo}",
-                    $"{curpp:N2}",
+                    $"{ScoreHelper.GetScorePPText(score.Pp)}",
                     $"{score.EndedAt!.Value:dd.MM.yyyy HH:mm zzz}"]);
             }
             await waitMessage.EditAsync(BotClient, textToSend);
