@@ -147,6 +147,9 @@ public class UpdateHandler(ApiV2 osuApi, BotContext database, ILogger<UpdateHand
             case string db when DbCommand.Commands.Contains(db):
                 executableCommand = new DbCommand();
                 break;
+            case string delete when DeleteCommand.Commands.Contains(delete):
+                executableCommand = new DeleteCommand();
+                break;
             default:
                 executableCommand = new Commands.MessageCommands.DummyCommand();
                 break;
