@@ -15,7 +15,7 @@ namespace SosuBot.Helpers
 
         public static string GetScorePPText(double? scorePP, string format = "N2")
         {
-            string ppText = scorePP?.ToString(format) ?? "-";
+            string ppText = scorePP?.ToString(format) ?? "—";
             return ppText;
         }
 
