@@ -5,7 +5,7 @@ using SosuBot.Extensions;
 using System.Text.Json;
 using Telegram.Bot.Types;
 
-namespace SosuBot.Services.Handlers.Commands.MessageCommands
+namespace SosuBot.Services.Handlers.Commands
 {
     public class DbCommand : CommandBase<Message>
     {
@@ -33,7 +33,7 @@ namespace SosuBot.Services.Handlers.Commands.MessageCommands
                 }
                 foreach (var user in users)
                 {
-                    var response = (await OsuApiV2.Users.GetUser($"@{user.osuName}", new(), Ruleset.Osu));
+                    var response = await OsuApiV2.Users.GetUser($"@{user.osuName}", new(), Ruleset.Osu);
                     if (response is null) continue;
                     var osuUserFromApi = response.UserExtend!;
                     OsuUser osuUser = new OsuUser()
@@ -62,7 +62,7 @@ namespace SosuBot.Services.Handlers.Commands.MessageCommands
                 }
                 foreach (var user in users)
                 {
-                    var response = (await OsuApiV2.Users.GetUser($"@{user.osuName}", new(), Ruleset.Osu));
+                    var response = await OsuApiV2.Users.GetUser($"@{user.osuName}", new(), Ruleset.Osu);
                     if (response is null) continue;
                     var osuUserFromApi = response.UserExtend!;
                     OsuUser osuUser = new OsuUser()

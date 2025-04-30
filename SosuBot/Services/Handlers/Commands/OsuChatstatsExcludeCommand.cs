@@ -4,7 +4,7 @@ using SosuBot.Database.Models;
 using SosuBot.Extensions;
 using Telegram.Bot.Types;
 
-namespace SosuBot.Services.Handlers.Commands.MessageCommands
+namespace SosuBot.Services.Handlers.Commands
 {
     public class OsuChatstatsExcludeCommand : CommandBase<Message>
     {
