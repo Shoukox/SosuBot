@@ -91,6 +91,7 @@ namespace SosuBot.Services.Handlers.Text
 
                 string duration = $"{beatmap.HitLength / 60}:{(beatmap.HitLength % 60):00}";
                 string textToSend = language.send_mapInfo.Fill([
+                    $"{playmode.ToGamemode()}",
                     $"{beatmap.Version}",
                     $"{beatmap.DifficultyRating:N2}",
                     $"{duration}",
@@ -108,11 +109,11 @@ namespace SosuBot.Services.Handlers.Text
 
                 try
                 {
-                    await BotClient.SendPhoto(Context.Chat.Id, photo, caption: textToSend, ParseMode.Html, replyMarkup: ik);
+                    await Context.ReplyAsync(BotClient, photo, caption: textToSend, replyMarkup: ik);
                 }
                 catch
                 {
-                    await BotClient.SendMessage(Context.Chat.Id, textToSend, ParseMode.Html, replyMarkup: ik, linkPreviewOptions: true);
+                    await Context.ReplyAsync(BotClient, textToSend, replyMarkup: ik);
                 }
 
                 TelegramChat? chatInDatabase = await Database.TelegramChats.FindAsync(Context.Chat.Id);

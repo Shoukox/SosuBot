@@ -74,6 +74,7 @@ namespace Sosu.Localization
         public string command_excluded => "<b>{}</b> был успешно исключен из /chat_stats";
         public string command_included => "<b>{}</b> снова будет появляться в /chat_stats";
         public string send_mapInfo =>
+                 "<b>{}</b>\n" +
                  "[{}] - {}* - {} - {} - <b>{}</b>\n" +
                  "<b>CS</b>: {} | <b>AR</b>: {} | <b>HP</b>: {} | <b>BPM</b>: {}\n" +
                  "<b>Lazer SS</b> - {}pp\n" +
