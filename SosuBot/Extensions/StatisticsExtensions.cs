@@ -24,7 +24,15 @@ namespace SosuBot.Extensions
             result.TryAdd(HitResult.IgnoreHit, statistics.IgnoreHit);
             //result.TryAdd(HitResult.ComboBreak, statistics.ComboBreak);
             result.TryAdd(HitResult.SliderTailHit, statistics.SliderTailHit);
+#pragma warning disable CS0618 // Type or member is obsolete
+            result.TryAdd(HitResult.LegacyComboIncrease, statistics.LegacyComboIncrease);
+#pragma warning restore CS0618 // Type or member is obsolete
             return result;
+        }
+
+        public static int GetMaxCombo(this ScoreStatistics statistics)
+        {
+            return statistics.Perfect + statistics.Great + statistics.Good + statistics.Ok + statistics.Meh + statistics.Miss + statistics.LegacyComboIncrease;
         }
     }
 }

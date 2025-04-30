@@ -19,13 +19,18 @@ namespace SosuBot.Services.Handlers.Commands.MessageCommands
 
             if (osuUserInDatabase is null || !osuUserInDatabase.IsAdmin) return;
 
-            string[] parameters = Context.Text.GetCommandParameters()!;
+            string[] parameters = Context.Text!.GetCommandParameters()!;
 
             if (parameters[0] == "fromfiles")
             {
                 int startCount = Database.OsuUsers.Count();
                 string osuusers = "osuusers.txt";
                 var users = JsonSerializer.Deserialize<List<Legacy.osuUser>>(File.ReadAllText(osuusers));
+                if (users == null)
+                {
+                    await Context.ReplyAsync(BotClient, "Incorrect json");
+                    return;
+                }
                 foreach (var user in users)
                 {
                     var response = (await OsuApiV2.Users.GetUser($"@{user.osuName}", new(), Ruleset.Osu));
@@ -50,6 +55,11 @@ namespace SosuBot.Services.Handlers.Commands.MessageCommands
             {
                 int startCount = Database.OsuUsers.Count();
                 var users = JsonSerializer.Deserialize<List<Legacy.osuUser>>(string.Join(" ", parameters[2..]));
+                if (users == null)
+                {
+                    await Context.ReplyAsync(BotClient, "Incorrect json");
+                    return;
+                }
                 foreach (var user in users)
                 {
                     var response = (await OsuApiV2.Users.GetUser($"@{user.osuName}", new(), Ruleset.Osu));

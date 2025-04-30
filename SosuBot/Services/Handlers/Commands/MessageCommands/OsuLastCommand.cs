@@ -121,32 +121,32 @@ namespace SosuBot.Services.Handlers.Commands.MessageCommands
                     chatInDatabase!.LastBeatmapId = beatmap!.Id;
                 }
 
-                Dictionary<HitResult, int> currentStatistics = score.Statistics!.ToStatistics();
-                Dictionary<HitResult, int> maximumStatistics = score.MaximumStatistics!.ToStatistics();
+                var scoreStatistics = score.Statistics!.ToStatistics();
 
                 // calculate pp
-                var calculatedPP = new
+                var calculatedPP = new PPResult()
                 {
                     Current = score.Pp ?? await ppCalculator.CalculatePPAsync(
                         beatmap.Id.Value,
                         score.MaxCombo!.Value,
                         mods.ToOsuMods(playmode),
-                        statistics: currentStatistics,
-                        maxStatistics: maximumStatistics,
+                        scoreStatistics: scoreStatistics,
+                        scoreMaximumStatistics: score.MaximumStatistics!.ToStatistics(),
                         rulesetId: (int)playmode),
 
-                    NoMiss = await ppCalculator.CalculatePPAsync(
+                    IfSS = await ppCalculator.CalculatePPAsync(
                         beatmap.Id.Value,
                         beatmap.MaxCombo!.Value,
                         mods.ToOsuMods(playmode),
-                        statistics: maximumStatistics,
-                        maxStatistics: maximumStatistics,
+                        scoreStatistics: null,
+                        scoreMaximumStatistics: null,
                         rulesetId: (int)playmode)
                 };
 
+                string scoreRank = score.Passed!.Value ? score.Rank! : "F";
                 textToSend += language.command_last.Fill([
                     $"{i + 1}",
-                    $"{score.Rank}",
+                    $"{scoreRank}",
                     $"{beatmap.Id}",
                     $"{score.Beatmapset!.Title.EncodeHTML()}",
                     $"{beatmap.Version.EncodeHTML()}",
@@ -158,7 +158,7 @@ namespace SosuBot.Services.Handlers.Commands.MessageCommands
                     $"{score.MaxCombo}",
                     $"{beatmap.MaxCombo}",
                     $"{calculatedPP.Current:N2}",
-                    $"{calculatedPP.NoMiss:N2}",
+                    $"{calculatedPP.IfSS:N2}",
                     $"{score.EndedAt!.Value:dd.MM.yyyy HH:mm zzz}",
                     $"{score.CalculateCompletion(beatmap.CalculateObjectsAmount()):N1}"]);
             }

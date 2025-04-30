@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using OsuApi.Core.V2;
@@ -11,14 +12,16 @@ using SosuBot.Services.Handlers.Text;
 using Telegram.Bot;
 using Telegram.Bot.Polling;
 using Telegram.Bot.Types;
+using Telegram.Bot.Types.Enums;
 
 namespace SosuBot.Services.Handlers;
 
-public class UpdateHandler(ApiV2 osuApi, BotContext database, ILogger<UpdateHandler> logger, IOptions<BotConfiguration> botConfig) : IUpdateHandler
+public class UpdateHandler(ApiV2 osuApi, BotContext database, ILogger<UpdateHandler> logger, IOptions<BotConfiguration> botConfig, IServiceProvider serviceProvider) : IUpdateHandler
 {
-    public async Task HandleErrorAsync(ITelegramBotClient botClient, Exception exception, HandleErrorSource source, CancellationToken cancellationToken)
+    public Task HandleErrorAsync(ITelegramBotClient botClient, Exception exception, HandleErrorSource source, CancellationToken cancellationToken)
     {
         logger.LogInformation("HandleError: {Exception}", exception);
+        return Task.CompletedTask;
     }
 
     public async Task HandleUpdateAsync(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
@@ -87,6 +90,7 @@ public class UpdateHandler(ApiV2 osuApi, BotContext database, ILogger<UpdateHand
         executableCommand.SetDatabase(database);
         executableCommand.SetBotClient(botClient);
         executableCommand.SetOsuApiV2(osuApi);
+        executableCommand.SetLogger(serviceProvider.GetRequiredService<ILogger<CommandBase<CallbackQuery>>>());
 
         await executableCommand.ExecuteAsync();
         await database.SaveChangesAsync();
