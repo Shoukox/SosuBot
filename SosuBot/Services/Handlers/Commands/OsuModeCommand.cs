@@ -31,7 +31,7 @@ namespace SosuBot.Services.Handlers.Commands
             }
             if (osuUserInDatabase is null)
             {
-                await Context.ReplyAsync(BotClient, language.error_noUser);
+                await Context.ReplyAsync(BotClient, language.error_userNotSetHimself);
                 return;
             }
 

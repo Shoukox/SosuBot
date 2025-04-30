@@ -24,7 +24,7 @@
         public string waiting { get; }
 
         public string error_baseMessage { get; }
-        public string error_noUser { get; }
+        public string error_userNotSetHimself { get; }
         public string error_hintReplaceSpaces { get; }
         public string error_nameIsEmpty { get; }
         public string error_modeIsEmpty { get; }

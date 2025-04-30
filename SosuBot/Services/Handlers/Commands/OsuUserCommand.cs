@@ -28,7 +28,7 @@ namespace SosuBot.Services.Handlers.Commands
             {
                 if (osuUserInDatabase is null)
                 {
-                    await waitMessage.EditAsync(BotClient, language.error_noUser);
+                    await waitMessage.EditAsync(BotClient, language.error_userNotSetHimself);
                     return;
                 }
 
@@ -41,7 +41,7 @@ namespace SosuBot.Services.Handlers.Commands
                 {
                     if (osuUserInDatabase is null)
                     {
-                        await waitMessage.EditAsync(BotClient, language.error_noUser);
+                        await waitMessage.EditAsync(BotClient, language.error_userNotSetHimself);
                         return;
                     }
 
