@@ -40,13 +40,13 @@ namespace SosuBot.Services.Handlers.Callbacks
             if (directionOfPaging == "next")
             {
                 int offset = 5 * (page + 1);
-                scores = (await OsuApiV2.Users.GetUserScores(osuUserInDatabase.OsuUserId, ScoreType.Best, new() { Mode = osuUserInDatabase.OsuMode.ToRuleset(), Limit = 5, Offset = offset }))!.Scores;
+                scores = (await OsuApiV2.Users.GetUserScores(osuUserInDatabase.OsuUserId, ScoreType.Best, new() { Mode = playmode.ToRuleset(), Limit = 5, Offset = offset }))!.Scores;
                 page += 1;
             }
             else if (directionOfPaging == "previous")
             {
                 int offset = 5 * (page - 1);
-                scores = (await OsuApiV2.Users.GetUserScores(osuUserInDatabase.OsuUserId, ScoreType.Best, new() { Mode = osuUserInDatabase.OsuMode.ToRuleset(), Limit = 5, Offset = offset }))!.Scores;
+                scores = (await OsuApiV2.Users.GetUserScores(osuUserInDatabase.OsuUserId, ScoreType.Best, new() { Mode = playmode.ToRuleset(), Limit = 5, Offset = offset }))!.Scores;
                 page -= 1;
             }
             else throw new NotImplementedException();
