@@ -7,7 +7,7 @@ using SosuBot.OsuTypes;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.ReplyMarkups;
 
-namespace SosuBot.Services.Handlers.Commands.MessageCommands
+namespace SosuBot.Services.Handlers.Commands
 {
     public class OsuUserCommand : CommandBase<Message>
     {

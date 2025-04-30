@@ -7,7 +7,7 @@ using Telegram.Bot;
 using Telegram.Bot.Exceptions;
 using Telegram.Bot.Types;
 
-namespace SosuBot.Services.Handlers.Commands.MessageCommands
+namespace SosuBot.Services.Handlers.Commands
 {
     public class MsgCommand : CommandBase<Message>
     {

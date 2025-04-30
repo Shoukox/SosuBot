@@ -6,9 +6,8 @@ using Microsoft.Extensions.Options;
 using OsuApi.Core.V2;
 using SosuBot.Database;
 using SosuBot.Extensions;
+using SosuBot.Services.Handlers.Callbacks;
 using SosuBot.Services.Handlers.Commands;
-using SosuBot.Services.Handlers.Commands.CallbackQueryCommands;
-using SosuBot.Services.Handlers.Commands.MessageCommands;
 using SosuBot.Services.Handlers.Text;
 using Telegram.Bot;
 using Telegram.Bot.Polling;
@@ -95,7 +94,7 @@ public class UpdateHandler(ApiV2 osuApi, BotContext database, ILogger<UpdateHand
                 executableCommand = new OsuSongPreviewCallbackCommand();
                 break;
             default:
-                executableCommand = new Commands.CallbackQueryCommands.DummyCommand();
+                executableCommand = new Callbacks.DummyCommand();
                 break;
         }
         executableCommand.SetContext(callbackQuery);
@@ -167,7 +166,7 @@ public class UpdateHandler(ApiV2 osuApi, BotContext database, ILogger<UpdateHand
                 executableCommand = new DeleteCommand();
                 break;
             default:
-                executableCommand = new Commands.MessageCommands.DummyCommand();
+                executableCommand = new Commands.DummyCommand();
                 break;
         }
         executableCommand.SetContext(msg);

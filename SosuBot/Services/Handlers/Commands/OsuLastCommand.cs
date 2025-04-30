@@ -11,7 +11,7 @@ using SosuBot.OsuTypes;
 using System.Text.RegularExpressions;
 using Telegram.Bot.Types;
 
-namespace SosuBot.Services.Handlers.Commands.MessageCommands
+namespace SosuBot.Services.Handlers.Commands
 {
     public class OsuLastCommand : CommandBase<Message>
     {

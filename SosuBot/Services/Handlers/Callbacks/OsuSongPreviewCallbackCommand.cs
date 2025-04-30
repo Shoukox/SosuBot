@@ -1,9 +1,10 @@
 ﻿using Sosu.Localization;
 using SosuBot.Helpers;
+using SosuBot.Services.Handlers.Commands;
 using Telegram.Bot;
 using Telegram.Bot.Types;
 
-namespace SosuBot.Services.Handlers.Commands.CallbackQueryCommands
+namespace SosuBot.Services.Handlers.Callbacks
 {
     public class OsuSongPreviewCallbackCommand : CommandBase<CallbackQuery>
     {
