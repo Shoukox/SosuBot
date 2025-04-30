@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Markdig.Helpers;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -18,14 +19,25 @@ namespace SosuBot.Services.Handlers;
 
 public class UpdateHandler(ApiV2 osuApi, BotContext database, ILogger<UpdateHandler> logger, IOptions<BotConfiguration> botConfig, IServiceProvider serviceProvider) : IUpdateHandler
 {
-    public Task HandleErrorAsync(ITelegramBotClient botClient, Exception exception, HandleErrorSource source, CancellationToken cancellationToken)
+    private Update? _currentUpdate;
+
+    public async Task HandleErrorAsync(ITelegramBotClient botClient, Exception exception, HandleErrorSource source, CancellationToken cancellationToken)
     {
+        if (_currentUpdate!.Message is { Text:string } msg && msg.Text!.IsCommand())
+        {
+            long userId = (await database.OsuUsers.FirstAsync(u => u.IsAdmin)).TelegramId;
+            string errorText =
+                $"Произошла ошибка.\n" +
+                $"{exception.Message}\n" +
+                $"Сообщите о ней <a href=\"tg://user?id={userId}\">создателю</a>";
+            await msg.ReplyAsync(botClient, errorText);
+        }
         logger.LogInformation("HandleError: {Exception}", exception);
-        return Task.CompletedTask;
     }
 
     public async Task HandleUpdateAsync(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
     {
+        _currentUpdate = update;
         cancellationToken.ThrowIfCancellationRequested();
 
         Task eventHandler = update switch
@@ -52,7 +64,7 @@ public class UpdateHandler(ApiV2 osuApi, BotContext database, ILogger<UpdateHand
 
         await database.AddOrUpdateTelegramChat(msg);
 
-        if (text[0] == '/')
+        if (text.IsCommand())
         {
             await OnCommand(botClient, msg);
         }

@@ -52,16 +52,24 @@ namespace SosuBot.Services.Handlers.Commands.MessageCommands
                         return;
                     }
                     playmode = ruleset.ParseRulesetToPlaymode();
-                    user = (await OsuApiV2.Users.GetUser($"@{osuUserInDatabase.OsuUsername}", new(), ruleset))!.UserExtend!;
-                }
-                else
-                {
-                    user = (await OsuApiV2.Users.GetUser($"@{parameters[0]}", new()))!.UserExtend!;
-                    if (user is null)
+
+                    var userResponse = await OsuApiV2.Users.GetUser($"@{osuUserInDatabase.OsuUsername}", new(), ruleset);
+                    if (userResponse is null)
                     {
                         await waitMessage.EditAsync(BotClient, language.error_userNotFound);
                         return;
                     }
+                    user = userResponse.UserExtend!;
+                }
+                else
+                {
+                    var userResponse = await OsuApiV2.Users.GetUser($"@{parameters[0]}", new());
+                    if (userResponse is null)
+                    {
+                        await waitMessage.EditAsync(BotClient, language.error_userNotFound);
+                        return;
+                    }
+                    user = userResponse.UserExtend!;
 
                     playmode = user.Playmode!.ParseRulesetToPlaymode();
                 }
@@ -71,7 +79,6 @@ namespace SosuBot.Services.Handlers.Commands.MessageCommands
                 await waitMessage.EditAsync(BotClient, language.error_argsLength);
                 return;
             }
-
             double? savedPPInDatabase = null;
             double? currentPP = user.Statistics!.Pp;
             string ppDifferenceText = await UserHelper.GetPPDifferenceTextAsync(Database, user, playmode, currentPP, savedPPInDatabase);

@@ -15,6 +15,10 @@ namespace SosuBot.Extensions
         {
             return text.Replace($"@{username}", "");
         }
+        public static bool IsCommand(this string text)
+        {
+            return text.Length > 0 && text[0] == '/';
+        }
         public static string GetCommand(this string text)
         {
             text = text.Trim();
