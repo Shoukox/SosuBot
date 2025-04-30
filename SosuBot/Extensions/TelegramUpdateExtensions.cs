@@ -20,7 +20,7 @@ namespace SosuBot.Extensions
         public static Task<Message> EditAsync(this Message message, ITelegramBotClient botClient, string text, ParseMode parseMode = ParseMode.Html, InlineKeyboardMarkup? replyMarkup = null)
           => botClient.EditMessageText(message.Chat.Id, message.MessageId, text, parseMode: parseMode, linkPreviewOptions: new LinkPreviewOptions { IsDisabled = true }, replyMarkup: replyMarkup);
 
-        public static Task AnswerAsync(this CallbackQuery callbackQuery, ITelegramBotClient botClient)
-          => botClient.AnswerCallbackQuery(callbackQuery.Id);
+        public static Task AnswerAsync(this CallbackQuery callbackQuery, ITelegramBotClient botClient, string? text = null, bool showAlert = false)
+          => botClient.AnswerCallbackQuery(callbackQuery.Id, text, showAlert);
     }
 }
