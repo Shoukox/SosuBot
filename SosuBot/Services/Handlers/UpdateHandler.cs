@@ -174,6 +174,7 @@ public class UpdateHandler(ApiV2 osuApi, BotContext database, ILogger<UpdateHand
         executableCommand.SetDatabase(database);
         executableCommand.SetBotClient(botClient);
         executableCommand.SetOsuApiV2(osuApi);
+        executableCommand.SetLogger(serviceProvider.GetRequiredService<ILogger<CommandBase<Message>>>());
 
         await executableCommand.ExecuteAsync();
         await database.SaveChangesAsync();
@@ -186,6 +187,7 @@ public class UpdateHandler(ApiV2 osuApi, BotContext database, ILogger<UpdateHand
         textHandler.SetDatabase(database);
         textHandler.SetBotClient(botClient);
         textHandler.SetOsuApiV2(osuApi);
+        textHandler.SetLogger(serviceProvider.GetRequiredService<ILogger<CommandBase<Message>>>());
 
         await textHandler.ExecuteAsync();
         await database.SaveChangesAsync();
