@@ -77,9 +77,6 @@ public class UpdateHandler(ApiV2 osuApi, BotContext database, ILogger<UpdateHand
     {
         if (callbackQuery.Data is not { } data) return;
 
-        // Instantly answer the query to get rid of the loading icon
-        await callbackQuery.AnswerAsync(botClient);
-
         string command = data.Split(" ")[1];
         CommandBase<CallbackQuery> executableCommand;
         switch (command)
@@ -104,6 +101,8 @@ public class UpdateHandler(ApiV2 osuApi, BotContext database, ILogger<UpdateHand
         executableCommand.SetLogger(serviceProvider.GetRequiredService<ILogger<CommandBase<CallbackQuery>>>());
 
         await executableCommand.ExecuteAsync();
+        await callbackQuery.AnswerAsync(botClient);
+
         await database.SaveChangesAsync();
     }
 
