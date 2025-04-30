@@ -41,9 +41,11 @@ namespace SosuBot.Services.Handlers.Commands
             }
             else
             {
+                bool rulesetAlreadySet = false;
                 if (parameters.Length == 2)
                 {
-                    ruleset = parameters[2].ParseToRuleset()!;
+                    ruleset = parameters[1].ParseToRuleset()!;
+                    rulesetAlreadySet = true;
                 }
 
                 var userResponse = await OsuApiV2.Users.GetUser(parameters[0], new());
@@ -53,7 +55,7 @@ namespace SosuBot.Services.Handlers.Commands
                     return;
                 }
 
-                ruleset = userResponse.UserExtend!.Playmode!;
+                if (!rulesetAlreadySet) ruleset = userResponse.UserExtend!.Playmode!;
                 osuUsernameForUserbest = userResponse.UserExtend!.Username!;
                 var userbestResponse = await OsuApiV2.Users.GetUserScores(userResponse.UserExtend!.Id.Value, ScoreType.Best, new() { Limit = 5, Mode = ruleset });
                 bestScores = userbestResponse!.Scores;
