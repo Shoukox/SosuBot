@@ -2,6 +2,7 @@
 using Sosu.Localization;
 using SosuBot.Database.Models;
 using SosuBot.Extensions;
+using System.Text.RegularExpressions;
 using Telegram.Bot;
 using Telegram.Bot.Exceptions;
 using Telegram.Bot.Types;
@@ -32,8 +33,13 @@ namespace SosuBot.Services.Handlers.Commands.MessageCommands
                         await BotClient.SendMessage(chat.ChatId, msg, Telegram.Bot.Types.Enums.ParseMode.Html);
                         await Task.Delay(500);
                     }
-                    catch (ApiRequestException reqEx) {
-                        Logger.LogError(reqEx, $"Exception in MsgCommand while sending message to group {chat.ChatId}");
+                    catch (ApiRequestException reqEx)
+                    {
+                        Logger.LogError(reqEx, $"ApiRequestException in MsgCommand while sending message to group {chat.ChatId}");
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger.LogError(ex, $"Exception in MsgCommand while sending message to group {chat.ChatId}");
                     }
                 }
             }
