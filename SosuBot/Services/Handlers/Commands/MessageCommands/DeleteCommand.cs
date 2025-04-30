@@ -1,6 +1,4 @@
-﻿using Sosu.Localization;
-using SosuBot.Database.Models;
-using SosuBot.Extensions;
+﻿using SosuBot.Database.Models;
 using Telegram.Bot;
 using Telegram.Bot.Types;
 
@@ -12,9 +10,7 @@ namespace SosuBot.Services.Handlers.Commands.MessageCommands
 
         public override async Task ExecuteAsync()
         {
-            ILocalization language = new Russian();
             OsuUser? osuUserInDatabase = await Database.OsuUsers.FindAsync(Context.From!.Id);
-
             if (osuUserInDatabase is null || !osuUserInDatabase.IsAdmin) return;
 
             if (Context.ReplyToMessage != null)

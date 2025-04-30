@@ -70,23 +70,22 @@ namespace SosuBot.Services.Handlers.Text
                 var beatmapset = await OsuApiV2.Beatmapsets.GetBeatmapset(beatmap!.BeatmapsetId.Value);
 
                 Playmode playmode = beatmap.Mode!.ParseRulesetToPlaymode();
-                var maximumStatistics = beatmap.GetMaximumStatistics();
                 var ppCalculator = new PPCalculator();
                 var calculatedPP = new
                 {
                     ClassicSS = await ppCalculator.CalculatePPAsync(
                         beatmap.Id.Value,
                         beatmap.MaxCombo!.Value,
-                        [new OsuModClassic()],
-                        statistics: maximumStatistics,
-                        maxStatistics: maximumStatistics,
+                        scoreMods: [new OsuModClassic()],
+                        scoreStatistics: null,
+                        scoreMaximumStatistics: null,
                         rulesetId: (int)playmode),
                     LazerSS = await ppCalculator.CalculatePPAsync(
                         beatmap.Id.Value,
                         beatmap.MaxCombo!.Value,
-                        [],
-                        statistics: maximumStatistics,
-                        maxStatistics: maximumStatistics,
+                        scoreMods: [],
+                        scoreStatistics: null,
+                        scoreMaximumStatistics: null,
                         rulesetId: (int)playmode),
                 };
 

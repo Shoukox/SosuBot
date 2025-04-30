@@ -1,7 +1,9 @@
-﻿using Sosu.Localization;
+﻿using Microsoft.Extensions.Logging;
+using Sosu.Localization;
 using SosuBot.Database.Models;
 using SosuBot.Extensions;
 using Telegram.Bot;
+using Telegram.Bot.Exceptions;
 using Telegram.Bot.Types;
 
 namespace SosuBot.Services.Handlers.Commands.MessageCommands
@@ -25,8 +27,14 @@ namespace SosuBot.Services.Handlers.Commands.MessageCommands
 
                 foreach (var chat in Database.TelegramChats)
                 {
-                    await BotClient.SendMessage(chat.ChatId, msg, Telegram.Bot.Types.Enums.ParseMode.Html);
-                    await Task.Delay(500);
+                    try
+                    {
+                        await BotClient.SendMessage(chat.ChatId, msg, Telegram.Bot.Types.Enums.ParseMode.Html);
+                        await Task.Delay(500);
+                    }
+                    catch (ApiRequestException reqEx) {
+                        Logger.LogError(reqEx, $"Exception in MsgCommand while sending message to group {chat.ChatId}");
+                    }
                 }
             }
             else if (parameters[0] == "user")

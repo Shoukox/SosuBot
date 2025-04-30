@@ -82,11 +82,6 @@ namespace Sosu.Services.ProcessUpdate.MessageCommands
                 if (i == 0) chat.lastBeatmap_id = long.Parse(beatmap.beatmap_id);
                 beatmap.ParseHTML();
 
-                //double[] curpp = new[]
-                //{Other.ppCalc1(long.Parse(beatmap.beatmap_id), item.accuracy(), (OppaiSharp.Mods)mods, int.Parse(item.count100), int.Parse(item.count50), int.Parse(item.countmiss), int.Parse(item.maxcombo)),
-                //Other.ppCalc1(long.Parse(beatmap.beatmap_id), item.accuracy(), (OppaiSharp.Mods)mods, int.Parse(item.count100), int.Parse(item.count50), 0, int.Parse(beatmap.max_combo))};
-                //double[] curpp = await Tools.PPCalc.ppCalc(long.Parse(beatmap.beatmap_id), score.accuracy(), (OppaiSharp.Mods)mods, int.Parse(score.countmiss), int.Parse(score.maxcombo));
-                
                 Mod[] getMods(osu.V1.Enums.Mods mods)
                 {
                     List<Mod> osuMods = new List<Mod>();
