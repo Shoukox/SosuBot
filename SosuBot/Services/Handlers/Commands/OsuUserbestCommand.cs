@@ -32,7 +32,7 @@ namespace SosuBot.Services.Handlers.Commands
             {
                 if (osuUserInDatabase is null)
                 {
-                    await waitMessage.EditAsync(BotClient, language.error_noUser);
+                    await waitMessage.EditAsync(BotClient, language.error_userNotSetHimself);
                     return;
                 }
                 ruleset = osuUserInDatabase.OsuMode.ToRuleset();
@@ -49,7 +49,7 @@ namespace SosuBot.Services.Handlers.Commands
                 var userResponse = await OsuApiV2.Users.GetUser(parameters[0], new());
                 if (userResponse is null)
                 {
-                    await waitMessage.EditAsync(BotClient, language.error_noUser + "\n\n" + language.error_hintReplaceSpaces);
+                    await waitMessage.EditAsync(BotClient, language.error_specificUserNotFound.Fill([parameters[0]]) + "\n\n" + language.error_hintReplaceSpaces);
                     return;
                 }
 

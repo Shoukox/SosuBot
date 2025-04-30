@@ -82,7 +82,7 @@ namespace Sosu.Localization
         public string waiting => "Подожди немного...";
 
         public string error_baseMessage => "Произошел троллинг...";
-        public string error_noUser => "Ты кто? Юзай\n/set nickname";
+        public string error_userNotSetHimself => "Ты кто? Юзай\n/set nickname";
         public string error_hintReplaceSpaces => "<b>Подсказка: </b>если в нике есть пробелы, заменяйте их на '_'. (Blue Archive => Blue_Archive)";
         public string error_nameIsEmpty => "Эта команда не может быть использована без параметров.\nВведи <b>/set</b> твой_никнейм";
         public string error_modeIsEmpty => "Эта команда не может быть использована без параметров.\nВведи <b>/mode</b> osu/mania/taiko/ctb";
