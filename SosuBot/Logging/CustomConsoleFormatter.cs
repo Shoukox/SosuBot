@@ -93,7 +93,7 @@ namespace SosuBot.Logging
             if (exception is null) return;
 
             textWriter.Write(GetForegroundColorEscapeCode(ConsoleColor.DarkMagenta));
-            textWriter.WriteLine("Exception occured: {0}", exception!.Message);
+            textWriter.WriteLine("Exception: {0}", exception?.ToString());
         }
 
         static string GetForegroundColorEscapeCode(ConsoleColor color) =>
@@ -114,7 +114,6 @@ namespace SosuBot.Logging
             ConsoleColor.Magenta => "\x1B[1m\x1B[35m",
             ConsoleColor.Cyan => "\x1B[1m\x1B[36m",
             ConsoleColor.White => "\x1B[1m\x1B[37m",
-
             _ => ""
         };
 
@@ -129,7 +128,6 @@ namespace SosuBot.Logging
                 ConsoleColor.DarkMagenta => "\x1B[45m",
                 ConsoleColor.DarkCyan => "\x1B[46m",
                 ConsoleColor.Gray => "\x1B[47m",
-
                 _ => ""
             };
 
