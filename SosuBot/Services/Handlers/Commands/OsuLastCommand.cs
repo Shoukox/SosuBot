@@ -24,7 +24,7 @@ namespace SosuBot.Services.Handlers.Commands
             OsuUser? osuUserInDatabase = await Database.OsuUsers.FindAsync(Context.From!.Id);
 
             Message waitMessage = await Context.ReplyAsync(BotClient, language.waiting);
-
+            
             Score[] lastScores;
             string osuUsernameForLastScores = string.Empty;
             string[] parameters = Context.Text!.GetCommandParameters()!;

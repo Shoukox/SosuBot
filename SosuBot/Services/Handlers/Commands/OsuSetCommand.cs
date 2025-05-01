@@ -16,7 +16,7 @@ namespace SosuBot.Services.Handlers.Commands
         public override async Task ExecuteAsync()
         {
             ILocalization language = new Russian();
-
+            
             string msgText = Context.Text!;
             string[] parameters = msgText.GetCommandParameters()!;
             string osuUsername = string.Join(' ', parameters);
