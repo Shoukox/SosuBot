@@ -3,12 +3,15 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using OpenTabletDriver.Native.Windows;
+using osu.Framework.Extensions;
 using OsuApi.Core.V2;
 using SosuBot.Database;
 using SosuBot.Extensions;
 using SosuBot.Services.Handlers.Callbacks;
 using SosuBot.Services.Handlers.Commands;
 using SosuBot.Services.Handlers.Text;
+using SosuBot.Synchonization.MessageSpamResistance;
 using Telegram.Bot;
 using Telegram.Bot.Polling;
 using Telegram.Bot.Types;
@@ -16,13 +19,18 @@ using Telegram.Bot.Types.Enums;
 
 namespace SosuBot.Services.Handlers;
 
-public class UpdateHandler(ApiV2 osuApi, BotContext database, ILogger<UpdateHandler> logger, IOptions<BotConfiguration> botConfig, IServiceProvider serviceProvider) : IUpdateHandler
+public class UpdateHandler(
+    ApiV2 osuApi,
+    BotContext database,
+    ILogger<UpdateHandler> logger,
+    IOptions<BotConfiguration> botConfig,
+    IServiceProvider serviceProvider) : IUpdateHandler
 {
     private Update? _currentUpdate;
 
     public async Task HandleErrorAsync(ITelegramBotClient botClient, Exception exception, HandleErrorSource source, CancellationToken cancellationToken)
     {
-        if (_currentUpdate!.Message is { Text:string } msg && msg.Text!.IsCommand())
+        if (_currentUpdate!.Message is { Text: string } msg && msg.Text!.IsCommand())
         {
             long userId = (await database.OsuUsers.FirstAsync(u => u.IsAdmin)).TelegramId;
             string errorText =
@@ -61,8 +69,22 @@ public class UpdateHandler(ApiV2 osuApi, BotContext database, ILogger<UpdateHand
         if (msg.Text is not { } text) return;
         if (msg.Chat is null || msg.From is null) return;
 
+        // Add new chat and update chat members
         await database.AddOrUpdateTelegramChat(msg);
 
+        // SpamResistance
+        var (canSend, sendWarning) = await SpamResistance.Instance.CanSendMessage(msg.From.Id, msg.Date);
+        if (!canSend)
+        {
+            if (sendWarning)
+            {
+                await Task.Delay(1000);
+                await botClient.SendMessage(msg.Chat.Id, $"Не спамь!\nТы заблокирован на {SpamResistance.BlockInterval.TotalSeconds} сек.", ParseMode.Html, msg.MessageId, linkPreviewOptions: false);
+            }
+            return;
+        }
+
+        // Execute necessary functions
         if (text.IsCommand())
         {
             await OnCommand(botClient, msg);
