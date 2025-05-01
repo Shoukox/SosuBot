@@ -11,9 +11,9 @@ namespace SosuBot.Synchonization.MessageSpamResistance
         public static SpamResistance Instance => instanceHolder.Value;
 
         private readonly ConcurrentDictionary<long, MessagingUser> _usersDict;
-        private readonly int _maxMessagesPerInterval = 4;
+        private readonly int _maxMessagesPerInterval = 5;
 
-        public static readonly TimeSpan Interval = TimeSpan.FromSeconds(3);
+        public static readonly TimeSpan Interval = TimeSpan.FromSeconds(5);
         public static readonly TimeSpan BlockInterval = TimeSpan.FromSeconds(15);
 
         public SpamResistance()
