@@ -1,8 +1,4 @@
-﻿using OsuApi.Core.V2.Scores.Models;
-using SosuBot.OsuTypes;
-using System.Text.Encodings.Web;
-using System.Web;
-using Telegram.Bot;
+﻿using Telegram.Bot;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 using Telegram.Bot.Types.ReplyMarkups;

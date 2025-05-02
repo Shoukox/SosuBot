@@ -1,11 +1,12 @@
 ﻿using OsuApi.Core.V2.Beatmaps.Models.HttpIO;
 using OsuApi.Core.V2.Scores.Models;
 using OsuApi.Core.V2.Users.Models;
-using Sosu.Localization;
 using SosuBot.Database.Models;
 using SosuBot.Extensions;
-using SosuBot.Helpers;
-using SosuBot.OsuTypes;
+using SosuBot.Helpers.OsuTypes;
+using SosuBot.Helpers.Scoring;
+using SosuBot.Localization;
+using SosuBot.Services.Handlers.Abstract;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.ReplyMarkups;
 
@@ -18,26 +19,26 @@ namespace SosuBot.Services.Handlers.Commands
         public override async Task ExecuteAsync()
         {
             ILocalization language = new Russian();
-            TelegramChat? chatInDatabase = await Database.TelegramChats.FindAsync(Context.Chat.Id);
-            OsuUser? osuUserInDatabase = await Database.OsuUsers.FindAsync(Context.From!.Id);
+            TelegramChat? chatInDatabase = await Context.Database.TelegramChats.FindAsync(Context.Update.Chat.Id);
+            OsuUser? osuUserInDatabase = await Context.Database.OsuUsers.FindAsync(Context.Update.From!.Id);
 
-            Message waitMessage = await Context.ReplyAsync(BotClient, language.waiting);
+            Message waitMessage = await Context.Update.ReplyAsync(Context.BotClient, language.waiting);
 
             Score[] bestScores;
             string osuUsernameForUserbest = string.Empty;
             string ruleset = Ruleset.Osu;
 
-            string[] parameters = Context.Text!.GetCommandParameters()!;
+            string[] parameters = Context.Update.Text!.GetCommandParameters()!;
             if (parameters.Length == 0)
             {
                 if (osuUserInDatabase is null)
                 {
-                    await waitMessage.EditAsync(BotClient, language.error_userNotSetHimself);
+                    await waitMessage.EditAsync(Context.BotClient, language.error_userNotSetHimself);
                     return;
                 }
                 ruleset = osuUserInDatabase.OsuMode.ToRuleset();
                 osuUsernameForUserbest = osuUserInDatabase.OsuUsername;
-                bestScores = (await OsuApiV2.Users.GetUserScores(osuUserInDatabase.OsuUserId, ScoreType.Best, new() { Limit = 5, Mode = ruleset }))!.Scores;
+                bestScores = (await Context.OsuApiV2.Users.GetUserScores(osuUserInDatabase.OsuUserId, ScoreType.Best, new() { Limit = 5, Mode = ruleset }))!.Scores;
             }
             else
             {
@@ -48,22 +49,22 @@ namespace SosuBot.Services.Handlers.Commands
                     rulesetAlreadySet = true;
                 }
 
-                var userResponse = await OsuApiV2.Users.GetUser(parameters[0], new());
+                var userResponse = await Context.OsuApiV2.Users.GetUser(parameters[0], new());
                 if (userResponse is null)
                 {
-                    await waitMessage.EditAsync(BotClient, language.error_specificUserNotFound.Fill([parameters[0]]) + "\n\n" + language.error_hintReplaceSpaces);
+                    await waitMessage.EditAsync(Context.BotClient, language.error_specificUserNotFound.Fill([parameters[0]]) + "\n\n" + language.error_hintReplaceSpaces);
                     return;
                 }
 
                 if (!rulesetAlreadySet) ruleset = userResponse.UserExtend!.Playmode!;
                 osuUsernameForUserbest = userResponse.UserExtend!.Username!;
-                var userbestResponse = await OsuApiV2.Users.GetUserScores(userResponse.UserExtend!.Id.Value, ScoreType.Best, new() { Limit = 5, Mode = ruleset });
+                var userbestResponse = await Context.OsuApiV2.Users.GetUserScores(userResponse.UserExtend!.Id.Value, ScoreType.Best, new() { Limit = 5, Mode = ruleset });
                 bestScores = userbestResponse!.Scores;
             }
 
             if (bestScores.Length == 0)
             {
-                await waitMessage.EditAsync(BotClient, language.error_noBestScores);
+                await waitMessage.EditAsync(Context.BotClient, language.error_noBestScores);
                 return;
             }
 
@@ -71,7 +72,7 @@ namespace SosuBot.Services.Handlers.Commands
             Playmode playmode = ruleset.ParseRulesetToPlaymode();
             string textToSend = $"{osuUsernameForUserbest} (<b>{gamemode}</b>)\n\n";
 
-            GetBeatmapResponse[] beatmaps = bestScores.Select(async score => await OsuApiV2.Beatmaps.GetBeatmap((long)score.Beatmap!.Id)).Select(t => t.Result).ToArray()!;
+            GetBeatmapResponse[] beatmaps = bestScores.Select(async score => await Context.OsuApiV2.Beatmaps.GetBeatmap((long)score.Beatmap!.Id)).Select(t => t.Result).ToArray()!;
             for (int i = 0; i <= bestScores.Length - 1; i++)
             {
                 var score = bestScores[i];
@@ -95,7 +96,7 @@ namespace SosuBot.Services.Handlers.Commands
             var ik = new InlineKeyboardMarkup(
                 new InlineKeyboardButton[] { new InlineKeyboardButton("Previous") { CallbackData = $"{chatInDatabase!.ChatId} userbest previous 0 {(int)playmode} {osuUsernameForUserbest}" }, new InlineKeyboardButton("Next") { CallbackData = $"{chatInDatabase.ChatId} userbest next 0 {(int)playmode} {osuUsernameForUserbest}" } }
             );
-            await waitMessage.EditAsync(BotClient, textToSend, replyMarkup: ik);
+            await waitMessage.EditAsync(Context.BotClient, textToSend, replyMarkup: ik);
         }
     }
 }

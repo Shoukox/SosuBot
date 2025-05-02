@@ -1,6 +1,6 @@
 ﻿using OsuApi.Core.V2.Users.Models;
 using SosuBot.Database.Models;
-using SosuBot.OsuTypes;
+using SosuBot.Helpers.OsuTypes;
 
 namespace SosuBot.Extensions
 {

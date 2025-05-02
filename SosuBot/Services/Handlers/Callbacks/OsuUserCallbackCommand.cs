@@ -1,11 +1,11 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using OsuApi.Core.V2.Users.Models;
-using Sosu.Localization;
 using SosuBot.Database.Models;
 using SosuBot.Extensions;
-using SosuBot.Helpers;
-using SosuBot.OsuTypes;
-using SosuBot.Services.Handlers.Commands;
+using SosuBot.Helpers.OsuTypes;
+using SosuBot.Helpers.OutputText;
+using SosuBot.Localization;
+using SosuBot.Services.Handlers.Abstract;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.ReplyMarkups;
 
@@ -19,19 +19,19 @@ namespace SosuBot.Services.Handlers.Callbacks
         {
             ILocalization language = new Russian();
 
-            string[] parameters = Context.Data!.Split(' ');
+            string[] parameters = Context.Update.Data!.Split(' ');
             long chatId = long.Parse(parameters[0]);
             Playmode playmode = (Playmode)int.Parse(parameters[2]);
             string osuUsername = string.Join(' ', parameters[3..]);
 
-            TelegramChat? chatInDatabase = await Database.TelegramChats.FindAsync(chatId);
-            OsuUser? osuUserInDatabase = await Database.OsuUsers.FirstOrDefaultAsync(u => u.OsuUsername == osuUsername);
+            TelegramChat? chatInDatabase = await Context.Database.TelegramChats.FindAsync(chatId);
+            OsuUser? osuUserInDatabase = await Context.Database.OsuUsers.FirstOrDefaultAsync(u => u.OsuUsername == osuUsername);
 
-            UserExtend user = (await OsuApiV2.Users.GetUser($"@{osuUserInDatabase!.OsuUsername}", new(), playmode.ToRuleset()))!.UserExtend!;
+            UserExtend user = (await Context.OsuApiV2.Users.GetUser($"@{osuUserInDatabase!.OsuUsername}", new(), playmode.ToRuleset()))!.UserExtend!;
 
             double? savedPPInDatabase = null;
             double? currentPP = user.Statistics!.Pp;
-            string ppDifferenceText = await UserHelper.GetPPDifferenceTextAsync(Database, user, playmode, currentPP, savedPPInDatabase);
+            string ppDifferenceText = await UserHelper.GetPPDifferenceTextAsync(Context.Database, user, playmode, currentPP, savedPPInDatabase);
 
             string textToSend = language.command_user.Fill([
                 $"{playmode.ToGamemode()}",
@@ -56,7 +56,7 @@ namespace SosuBot.Services.Handlers.Callbacks
                 [new InlineKeyboardButton("Catch") {CallbackData = $"{chatId} user 2 {user.Username}" }, new InlineKeyboardButton("Mania") { CallbackData = $"{chatId} user 3 {user.Username}" }]
             });
 
-            await Context.Message!.EditAsync(BotClient, textToSend, replyMarkup: ik);
+            await Context.Update.Message!.EditAsync(Context.BotClient, textToSend, replyMarkup: ik);
         }
     }
 }

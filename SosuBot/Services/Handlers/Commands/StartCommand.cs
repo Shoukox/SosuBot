@@ -1,5 +1,6 @@
-﻿using Sosu.Localization;
-using SosuBot.Extensions;
+﻿using SosuBot.Extensions;
+using SosuBot.Localization;
+using SosuBot.Services.Handlers.Abstract;
 using Telegram.Bot.Types;
 
 namespace SosuBot.Services.Handlers.Commands
@@ -11,7 +12,7 @@ namespace SosuBot.Services.Handlers.Commands
         public override async Task ExecuteAsync()
         {
             ILocalization language = new Russian();
-            await Context.ReplyAsync(BotClient, language.command_start);
+            await Context.Update.ReplyAsync(Context.BotClient, language.command_start);
         }
     }
 }

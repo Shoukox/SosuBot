@@ -1,10 +1,12 @@
 ﻿using OsuApi.Core.V2.Scores.Models;
 using OsuApi.Core.V2.Users.Models;
-using Sosu.Localization;
 using SosuBot.Database.Models;
 using SosuBot.Extensions;
-using SosuBot.Helpers;
-using SosuBot.OsuTypes;
+using SosuBot.Helpers.OsuTypes;
+using SosuBot.Helpers.OutputText;
+using SosuBot.Helpers.Scoring;
+using SosuBot.Localization;
+using SosuBot.Services.Handlers.Abstract;
 using Telegram.Bot.Types;
 
 namespace SosuBot.Services.Handlers.Commands
@@ -16,25 +18,25 @@ namespace SosuBot.Services.Handlers.Commands
         public override async Task ExecuteAsync()
         {
             ILocalization language = new Russian();
-            TelegramChat? chatInDatabase = await Database.TelegramChats.FindAsync(Context.Chat.Id);
-            OsuUser? osuUserInDatabase = await Database.OsuUsers.FindAsync(Context.From!.Id);
+            TelegramChat? chatInDatabase = await Context.Database.TelegramChats.FindAsync(Context.Update.Chat.Id);
+            OsuUser? osuUserInDatabase = await Context.Database.OsuUsers.FindAsync(Context.Update.From!.Id);
 
-            Message waitMessage = await Context.ReplyAsync(BotClient, language.waiting);
+            Message waitMessage = await Context.Update.ReplyAsync(Context.BotClient, language.waiting);
 
             Score[] scores;
             Playmode? playmode;
             int? beatmapId = null;
             string osuUsernameForScore = string.Empty;
-            string[] parameters = Context.Text!.GetCommandParameters()!;
+            string[] parameters = Context.Update.Text!.GetCommandParameters()!;
 
             // s
             if (parameters.Length == 0)
             {
-                if (OsuHelper.ParseOsuBeatmapLink(Context.ReplyToMessage?.Text, out int? beatmapsetId, out beatmapId) is string link)
+                if (OsuHelper.ParseOsuBeatmapLink(Context.Update.ReplyToMessage?.Text, out int? beatmapsetId, out beatmapId) is string link)
                 {
                     if (beatmapId is null && beatmapsetId is not null)
                     {
-                        BeatmapsetExtended beatmapset = await OsuApiV2.Beatmapsets.GetBeatmapset(beatmapsetId.Value);
+                        BeatmapsetExtended beatmapset = await Context.OsuApiV2.Beatmapsets.GetBeatmapset(beatmapsetId.Value);
                         beatmapId = beatmapset.Beatmaps![0].Id!;
                     }
                 }
@@ -45,7 +47,7 @@ namespace SosuBot.Services.Handlers.Commands
 
                 if (osuUserInDatabase is null)
                 {
-                    await waitMessage.EditAsync(BotClient, language.error_userNotSetHimself);
+                    await waitMessage.EditAsync(Context.BotClient, language.error_userNotSetHimself);
                     return;
                 }
                 playmode = osuUserInDatabase.OsuMode;
@@ -58,12 +60,12 @@ namespace SosuBot.Services.Handlers.Commands
             {
                 // s mrekk, with reply
                 int? beatmapsetId = null;
-                string? link = OsuHelper.ParseOsuBeatmapLink(Context.ReplyToMessage?.Text, out beatmapsetId, out beatmapId);
+                string? link = OsuHelper.ParseOsuBeatmapLink(Context.Update.ReplyToMessage?.Text, out beatmapsetId, out beatmapId);
                 if (link is not null)
                 {
                     if (beatmapId is null && beatmapsetId is not null)
                     {
-                        BeatmapsetExtended beatmapset = await OsuApiV2.Beatmapsets.GetBeatmapset(beatmapsetId.Value);
+                        BeatmapsetExtended beatmapset = await Context.OsuApiV2.Beatmapsets.GetBeatmapset(beatmapsetId.Value);
                         beatmapId = beatmapset.Beatmaps![0].Id!;
                     }
 
@@ -78,13 +80,13 @@ namespace SosuBot.Services.Handlers.Commands
                     {
                         if (beatmapId is null && beatmapsetId is not null)
                         {
-                            BeatmapsetExtended beatmapset = await OsuApiV2.Beatmapsets.GetBeatmapset(beatmapsetId.Value);
+                            BeatmapsetExtended beatmapset = await Context.OsuApiV2.Beatmapsets.GetBeatmapset(beatmapsetId.Value);
                             beatmapId = beatmapset.Beatmaps![0].Id!;
                         }
 
                         if (osuUserInDatabase is null)
                         {
-                            await waitMessage.EditAsync(BotClient, language.error_userNotSetHimself);
+                            await waitMessage.EditAsync(Context.BotClient, language.error_userNotSetHimself);
                             return;
                         }
                         osuUsernameForScore = osuUserInDatabase.OsuUsername;
@@ -103,11 +105,11 @@ namespace SosuBot.Services.Handlers.Commands
             // s url mrekk
             else if (parameters.Length == 2)
             {
-                if (OsuHelper.ParseOsuBeatmapLink(Context.Text, out int? beatmapsetId, out beatmapId) is { } link)
+                if (OsuHelper.ParseOsuBeatmapLink(Context.Update.Text, out int? beatmapsetId, out beatmapId) is { } link)
                 {
                     if (beatmapId is null && beatmapsetId is not null)
                     {
-                        BeatmapsetExtended beatmapset = await OsuApiV2.Beatmapsets.GetBeatmapset(beatmapsetId.Value);
+                        BeatmapsetExtended beatmapset = await Context.OsuApiV2.Beatmapsets.GetBeatmapset(beatmapsetId.Value);
                         beatmapId = beatmapset.Beatmaps![0].Id!;
                     }
 
@@ -124,37 +126,37 @@ namespace SosuBot.Services.Handlers.Commands
             }
             else
             {
-                await waitMessage.EditAsync(BotClient, language.error_argsLength);
+                await waitMessage.EditAsync(Context.BotClient, language.error_argsLength);
                 return;
             }
 
             if (beatmapId is null)
             {
-                await waitMessage.EditAsync(BotClient, language.error_baseMessage);
+                await waitMessage.EditAsync(Context.BotClient, language.error_baseMessage);
                 return;
             }
 
             // getting osu!player through username
-            var userResponse = await OsuApiV2.Users.GetUser($"@{osuUsernameForScore}", new());
+            var userResponse = await Context.OsuApiV2.Users.GetUser($"@{osuUsernameForScore}", new());
             if (userResponse is null)
             {
-                await waitMessage.EditAsync(BotClient, language.error_userNotFound + "\n\n" + language.error_hintReplaceSpaces);
+                await waitMessage.EditAsync(Context.BotClient, language.error_userNotFound + "\n\n" + language.error_hintReplaceSpaces);
                 return;
             }
 
             // if username was entered, then use as ruleset his (this username) standard ruleset.
             playmode ??= userResponse.UserExtend!.Playmode!.ParseRulesetToPlaymode();
 
-            var scoresResponse = await OsuApiV2.Beatmaps.GetUserBeatmapScores(beatmapId.Value, userResponse.UserExtend!.Id.Value, new() { Ruleset = playmode.Value.ToRuleset() });
+            var scoresResponse = await Context.OsuApiV2.Beatmaps.GetUserBeatmapScores(beatmapId.Value, userResponse.UserExtend!.Id.Value, new() { Ruleset = playmode.Value.ToRuleset() });
             if (scoresResponse is null)
             {
-                await waitMessage.EditAsync(BotClient, language.error_noRecords);
+                await waitMessage.EditAsync(Context.BotClient, language.error_noRecords);
                 return;
             }
             scores = scoresResponse.Scores!;
             if (scores.Length == 0)
             {
-                await waitMessage.EditAsync(BotClient, language.error_noRecords);
+                await waitMessage.EditAsync(Context.BotClient, language.error_noRecords);
                 return;
             }
 
@@ -162,8 +164,8 @@ namespace SosuBot.Services.Handlers.Commands
             for (int i = 0; i <= scores.Length - 1; i++)
             {
                 var score = scores[i];
-                var beatmap = (await OsuApiV2.Beatmaps.GetBeatmap(scores[i].BeatmapId!.Value))!.BeatmapExtended;
-                var beatmapset = await OsuApiV2.Beatmapsets.GetBeatmapset(beatmap!.BeatmapsetId.Value);
+                var beatmap = (await Context.OsuApiV2.Beatmaps.GetBeatmap(scores[i].BeatmapId!.Value))!.BeatmapExtended;
+                var beatmapset = await Context.OsuApiV2.Beatmapsets.GetBeatmapset(beatmap!.BeatmapsetId.Value);
 
                 Mod[] mods = score.Mods!;
                 double accuracy = score.Accuracy!.Value;
@@ -188,7 +190,7 @@ namespace SosuBot.Services.Handlers.Commands
                     $"{ScoreHelper.GetScorePPText(score.Pp)}",
                     $"{score.EndedAt!.Value:dd.MM.yyyy HH:mm zzz}"]);
             }
-            await waitMessage.EditAsync(BotClient, textToSend);
+            await waitMessage.EditAsync(Context.BotClient, textToSend);
         }
     }
 }

@@ -1,9 +1,11 @@
 ﻿using OsuApi.Core.V2.Users.Models;
-using Sosu.Localization;
 using SosuBot.Database.Models;
 using SosuBot.Extensions;
-using SosuBot.Helpers;
-using SosuBot.OsuTypes;
+using SosuBot.Helpers.OsuTypes;
+using SosuBot.Helpers.OutputText;
+using SosuBot.Helpers.Scoring;
+using SosuBot.Localization;
+using SosuBot.Services.Handlers.Abstract;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.ReplyMarkups;
 
@@ -16,10 +18,10 @@ namespace SosuBot.Services.Handlers.Commands
         public override async Task ExecuteAsync()
         {
             ILocalization language = new Russian();
-            OsuUser? osuUserInDatabase = await Database.OsuUsers.FindAsync(Context.From!.Id);
-            string[] parameters = Context.Text!.GetCommandParameters()!;
+            OsuUser? osuUserInDatabase = await Context.Database.OsuUsers.FindAsync(Context.Update.From!.Id);
+            string[] parameters = Context.Update.Text!.GetCommandParameters()!;
 
-            Message waitMessage = await Context.ReplyAsync(BotClient, language.waiting);
+            Message waitMessage = await Context.Update.ReplyAsync(Context.BotClient, language.waiting);
 
             UserExtend user;
             Playmode playmode = Playmode.Osu;
@@ -28,12 +30,12 @@ namespace SosuBot.Services.Handlers.Commands
             {
                 if (osuUserInDatabase is null)
                 {
-                    await waitMessage.EditAsync(BotClient, language.error_userNotSetHimself);
+                    await waitMessage.EditAsync(Context.BotClient, language.error_userNotSetHimself);
                     return;
                 }
 
                 playmode = osuUserInDatabase.OsuMode;
-                user = (await OsuApiV2.Users.GetUser($"@{osuUserInDatabase.OsuUsername}", new(), playmode.ToRuleset()))!.UserExtend!;
+                user = (await Context.OsuApiV2.Users.GetUser($"@{osuUserInDatabase.OsuUsername}", new(), playmode.ToRuleset()))!.UserExtend!;
             }
             else if (parameters.Length == 1)
             {
@@ -41,32 +43,32 @@ namespace SosuBot.Services.Handlers.Commands
                 {
                     if (osuUserInDatabase is null)
                     {
-                        await waitMessage.EditAsync(BotClient, language.error_userNotSetHimself);
+                        await waitMessage.EditAsync(Context.BotClient, language.error_userNotSetHimself);
                         return;
                     }
 
                     string? ruleset = parameters[0].ParseToRuleset();
                     if (ruleset is null)
                     {
-                        await waitMessage.EditAsync(BotClient, language.error_modeIncorrect);
+                        await waitMessage.EditAsync(Context.BotClient, language.error_modeIncorrect);
                         return;
                     }
                     playmode = ruleset.ParseRulesetToPlaymode();
 
-                    var userResponse = await OsuApiV2.Users.GetUser($"@{osuUserInDatabase.OsuUsername}", new(), ruleset);
+                    var userResponse = await Context.OsuApiV2.Users.GetUser($"@{osuUserInDatabase.OsuUsername}", new(), ruleset);
                     if (userResponse is null)
                     {
-                        await waitMessage.EditAsync(BotClient, language.error_userNotFound);
+                        await waitMessage.EditAsync(Context.BotClient, language.error_userNotFound);
                         return;
                     }
                     user = userResponse.UserExtend!;
                 }
                 else
                 {
-                    var userResponse = await OsuApiV2.Users.GetUser($"@{parameters[0]}", new());
+                    var userResponse = await Context.OsuApiV2.Users.GetUser($"@{parameters[0]}", new());
                     if (userResponse is null)
                     {
-                        await waitMessage.EditAsync(BotClient, language.error_userNotFound);
+                        await waitMessage.EditAsync(Context.BotClient, language.error_userNotFound);
                         return;
                     }
                     user = userResponse.UserExtend!;
@@ -76,12 +78,12 @@ namespace SosuBot.Services.Handlers.Commands
             }
             else
             {
-                await waitMessage.EditAsync(BotClient, language.error_argsLength);
+                await waitMessage.EditAsync(Context.BotClient, language.error_argsLength);
                 return;
             }
             double? savedPPInDatabase = null;
             double? currentPP = user.Statistics!.Pp;
-            string ppDifferenceText = await UserHelper.GetPPDifferenceTextAsync(Database, user, playmode, currentPP, savedPPInDatabase);
+            string ppDifferenceText = await UserHelper.GetPPDifferenceTextAsync(Context.Database, user, playmode, currentPP, savedPPInDatabase);
 
             string textToSend = language.command_user.Fill([
                 $"{playmode.ToGamemode()}",
@@ -102,11 +104,11 @@ namespace SosuBot.Services.Handlers.Commands
                 $"{user.Statistics.GradeCounts!.A}"]);
             var ik = new InlineKeyboardMarkup(new InlineKeyboardButton[][]
             {
-                [new InlineKeyboardButton("Standard") {CallbackData = $"{Context.Chat.Id} user 0 {user.Username}"}, new InlineKeyboardButton("Taiko") { CallbackData = $"{Context.Chat.Id} user 1 {user.Username}" }],
-                [new InlineKeyboardButton("Catch") {CallbackData = $"{Context.Chat.Id} user 2 {user.Username}" }, new InlineKeyboardButton("Mania") { CallbackData = $"{Context.Chat.Id} user 3 {user.Username}" }]
+                [new InlineKeyboardButton("Standard") {CallbackData = $"{Context.Update.Chat.Id} user 0 {user.Username}"}, new InlineKeyboardButton("Taiko") { CallbackData = $"{Context.Update.Chat.Id} user 1 {user.Username}" }],
+                [new InlineKeyboardButton("Catch") {CallbackData = $"{Context.Update.Chat.Id} user 2 {user.Username}" }, new InlineKeyboardButton("Mania") { CallbackData = $"{Context.Update.Chat.Id} user 3 {user.Username}" }]
             });
 
-            await waitMessage.EditAsync(BotClient, textToSend, replyMarkup: ik);
+            await waitMessage.EditAsync(Context.BotClient, textToSend, replyMarkup: ik);
         }
     }
 }

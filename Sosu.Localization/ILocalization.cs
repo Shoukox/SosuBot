@@ -1,4 +1,4 @@
-﻿namespace Sosu.Localization
+﻿namespace SosuBot.Localization
 {
     public interface ILocalization
     {
@@ -14,7 +14,7 @@
         public string command_chatstats_title { get; }
         public string command_chatstats_row { get; }
         public string command_chatstats_end { get; }
-        public string command_excluded{ get; }
+        public string command_excluded { get; }
         public string command_included { get; }
         public string settings { get; }
         public string settings_language_ru { get; }

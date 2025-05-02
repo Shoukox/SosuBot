@@ -25,7 +25,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\PerfomanceCalculator\perfomance-calc\PerfomanceCalculator.csproj" />
-    <ProjectReference Include="..\Sosu.Localization\Sosu.Localization.csproj" />
+    <ProjectReference Include="..\Sosu.Localization\SosuBot.Localization.csproj" />
   </ItemGroup>
 
   <ItemGroup>

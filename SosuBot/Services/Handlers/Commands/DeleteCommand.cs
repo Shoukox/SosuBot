@@ -1,4 +1,5 @@
 ﻿using SosuBot.Database.Models;
+using SosuBot.Services.Handlers.Abstract;
 using Telegram.Bot;
 using Telegram.Bot.Types;
 
@@ -10,12 +11,12 @@ namespace SosuBot.Services.Handlers.Commands
 
         public override async Task ExecuteAsync()
         {
-            OsuUser? osuUserInDatabase = await Database.OsuUsers.FindAsync(Context.From!.Id);
+            OsuUser? osuUserInDatabase = await Context.Database.OsuUsers.FindAsync(Context.Update.From!.Id);
             if (osuUserInDatabase is null || !osuUserInDatabase.IsAdmin) return;
 
-            if (Context.ReplyToMessage != null)
+            if (Context.Update.ReplyToMessage != null)
             {
-                await BotClient.DeleteMessage(Context.ReplyToMessage.Chat.Id, Context.ReplyToMessage.MessageId);
+                await Context.BotClient.DeleteMessage(Context.Update.ReplyToMessage.Chat.Id, Context.Update.ReplyToMessage.MessageId);
             }
         }
     }

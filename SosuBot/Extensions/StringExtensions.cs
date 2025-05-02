@@ -1,10 +1,5 @@
 ﻿using OsuApi.Core.V2.Scores.Models;
-using SosuBot.OsuTypes;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using SosuBot.Helpers.OsuTypes;
 using System.Web;
 
 namespace SosuBot.Extensions

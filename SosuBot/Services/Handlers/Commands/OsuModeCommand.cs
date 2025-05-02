@@ -1,6 +1,7 @@
-﻿using Sosu.Localization;
-using SosuBot.Database.Models;
+﻿using SosuBot.Database.Models;
 using SosuBot.Extensions;
+using SosuBot.Localization;
+using SosuBot.Services.Handlers.Abstract;
 using Telegram.Bot.Types;
 
 namespace SosuBot.Services.Handlers.Commands
@@ -12,13 +13,13 @@ namespace SosuBot.Services.Handlers.Commands
         public override async Task ExecuteAsync()
         {
             ILocalization language = new Russian();
-            OsuUser? osuUserInDatabase = await Database.OsuUsers.FindAsync(Context.From!.Id);
+            OsuUser? osuUserInDatabase = await Context.Database.OsuUsers.FindAsync(Context.Update.From!.Id);
 
-            string msgText = Context.Text!;
+            string msgText = Context.Update.Text!;
             string[] parameters = msgText.GetCommandParameters()!;
             if (parameters.Length == 0)
             {
-                await Context.ReplyAsync(BotClient, language.error_modeIsEmpty);
+                await Context.Update.ReplyAsync(Context.BotClient, language.error_modeIsEmpty);
                 return;
             }
 
@@ -26,25 +27,25 @@ namespace SosuBot.Services.Handlers.Commands
 
             if (osuMode is null)
             {
-                await Context.ReplyAsync(BotClient, language.error_modeIncorrect);
+                await Context.Update.ReplyAsync(Context.BotClient, language.error_modeIncorrect);
                 return;
             }
             if (osuUserInDatabase is null)
             {
-                await Context.ReplyAsync(BotClient, language.error_userNotSetHimself);
+                await Context.Update.ReplyAsync(Context.BotClient, language.error_userNotSetHimself);
                 return;
             }
 
             if (string.IsNullOrEmpty(osuMode))
             {
-                await Context.ReplyAsync(BotClient, language.error_modeIsEmpty);
+                await Context.Update.ReplyAsync(Context.BotClient, language.error_modeIsEmpty);
                 return;
             }
 
             osuUserInDatabase.OsuMode = osuMode.ParseRulesetToPlaymode();
 
             string sendText = language.command_setMode.Fill([osuUserInDatabase.OsuMode.ToGamemode()]);
-            await Context.ReplyAsync(BotClient, sendText);
+            await Context.Update.ReplyAsync(Context.BotClient, sendText);
         }
     }
 }

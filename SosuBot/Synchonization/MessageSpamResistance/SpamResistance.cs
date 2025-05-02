@@ -1,7 +1,5 @@
-﻿using osu.Game.Rulesets.Osu.Difficulty.Evaluators;
-using SosuBot.Synchronization;
+﻿using SosuBot.Synchronization;
 using System.Collections.Concurrent;
-using Telegram.Bot.Types;
 
 namespace SosuBot.Synchonization.MessageSpamResistance
 {

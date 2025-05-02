@@ -1,8 +1,7 @@
 ﻿using OsuApi.Core.V2.Scores.Models;
-using SosuBot.OsuTypes;
-using Veldrid.MetalBindings;
+using SosuBot.Helpers.OsuTypes;
 
-namespace SosuBot.Helpers
+namespace SosuBot.Helpers.Scoring
 {
     public static class ScoreHelper
     {
