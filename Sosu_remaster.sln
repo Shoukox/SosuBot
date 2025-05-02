@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.4.33213.308
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Sosu.Localization", "Sosu.Localization\Sosu.Localization.csproj", "{F7B610F1-A276-4684-809F-48E059D3A8F8}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SosuBot.Localization", "Sosu.Localization\SosuBot.Localization.csproj", "{F7B610F1-A276-4684-809F-48E059D3A8F8}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SosuBot", "SosuBot\SosuBot.csproj", "{EA368A83-79FD-444E-8139-EC5BC29891C3}"
 EndProject

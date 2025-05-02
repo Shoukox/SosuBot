@@ -1,5 +1,5 @@
 ﻿
-namespace Sosu.Localization
+namespace SosuBot.Localization
 {
     public struct Russian : ILocalization
     {

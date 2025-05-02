@@ -1,4 +1,4 @@
-﻿using SosuBot.OsuTypes;
+﻿using SosuBot.Helpers.OsuTypes;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 

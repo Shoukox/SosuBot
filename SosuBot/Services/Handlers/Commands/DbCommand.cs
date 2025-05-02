@@ -1,7 +1,9 @@
 ﻿using OsuApi.Core.V2.Scores.Models;
-using Sosu.Localization;
 using SosuBot.Database.Models;
 using SosuBot.Extensions;
+using SosuBot.Helpers.OsuTypes;
+using SosuBot.Localization;
+using SosuBot.Services.Handlers.Abstract;
 using System.Text.Json;
 using Telegram.Bot.Types;
 
@@ -14,78 +16,78 @@ namespace SosuBot.Services.Handlers.Commands
         public override async Task ExecuteAsync()
         {
             ILocalization language = new Russian();
-            TelegramChat? chatInDatabase = await Database.TelegramChats.FindAsync(Context.Chat.Id);
-            OsuUser? osuUserInDatabase = await Database.OsuUsers.FindAsync(Context.From!.Id);
+            TelegramChat? chatInDatabase = await Context.Database.TelegramChats.FindAsync(Context.Update.Chat.Id);
+            OsuUser? osuUserInDatabase = await Context.Database.OsuUsers.FindAsync(Context.Update.From!.Id);
 
             if (osuUserInDatabase is null || !osuUserInDatabase.IsAdmin) return;
 
-            string[] parameters = Context.Text!.GetCommandParameters()!;
+            string[] parameters = Context.Update.Text!.GetCommandParameters()!;
 
             if (parameters[0] == "fromfiles")
             {
-                int startCount = Database.OsuUsers.Count();
+                int startCount = Context.Database.OsuUsers.Count();
                 string osuusers = "osuusers.txt";
                 var users = JsonSerializer.Deserialize<List<Legacy.osuUser>>(File.ReadAllText(osuusers));
                 if (users == null)
                 {
-                    await Context.ReplyAsync(BotClient, "Incorrect json");
+                    await Context.Update.ReplyAsync(Context.BotClient, "Incorrect json");
                     return;
                 }
                 foreach (var user in users)
                 {
-                    var response = await OsuApiV2.Users.GetUser($"@{user.osuName}", new(), Ruleset.Osu);
+                    var response = await Context.OsuApiV2.Users.GetUser($"@{user.osuName}", new(), Ruleset.Osu);
                     if (response is null) continue;
                     var osuUserFromApi = response.UserExtend!;
                     OsuUser osuUser = new OsuUser()
                     {
-                        OsuMode = OsuTypes.Playmode.Osu,
+                        OsuMode = Playmode.Osu,
                         OsuUserId = osuUserFromApi.Id.Value,
                         OsuUsername = osuUserFromApi.Username!,
                         TelegramId = user.telegramId,
                     };
-                    if (!Database.OsuUsers.Any(m => m.TelegramId == osuUser.TelegramId))
+                    if (!Context.Database.OsuUsers.Any(m => m.TelegramId == osuUser.TelegramId))
                     {
-                        await Database.OsuUsers.AddAsync(osuUser);
+                        await Context.Database.OsuUsers.AddAsync(osuUser);
                     }
                 }
-                await Database.SaveChangesAsync();
-                await Context.ReplyAsync(BotClient, $"Added {Database.OsuUsers.Count() - startCount} new users");
+                await Context.Database.SaveChangesAsync();
+                await Context.Update.ReplyAsync(Context.BotClient, $"Added {Context.Database.OsuUsers.Count() - startCount} new users");
             }
             else if (parameters[0] == "fromtext")
             {
-                int startCount = Database.OsuUsers.Count();
+                int startCount = Context.Database.OsuUsers.Count();
                 var users = JsonSerializer.Deserialize<List<Legacy.osuUser>>(string.Join(" ", parameters[2..]));
                 if (users == null)
                 {
-                    await Context.ReplyAsync(BotClient, "Incorrect json");
+                    await Context.Update.ReplyAsync(Context.BotClient, "Incorrect json");
                     return;
                 }
                 foreach (var user in users)
                 {
-                    var response = await OsuApiV2.Users.GetUser($"@{user.osuName}", new(), Ruleset.Osu);
+                    var response = await Context.OsuApiV2.Users.GetUser($"@{user.osuName}", new(), Ruleset.Osu);
                     if (response is null) continue;
                     var osuUserFromApi = response.UserExtend!;
                     OsuUser osuUser = new OsuUser()
                     {
-                        OsuMode = OsuTypes.Playmode.Osu,
+                        OsuMode = Playmode.Osu,
                         OsuUserId = osuUserFromApi.Id.Value,
                         OsuUsername = osuUserFromApi.Username!,
                         TelegramId = user.telegramId,
                     };
-                    if (!Database.OsuUsers.Any(m => m.TelegramId == osuUser.TelegramId))
+                    if (!Context.Database.OsuUsers.Any(m => m.TelegramId == osuUser.TelegramId))
                     {
-                        await Database.OsuUsers.AddAsync(osuUser);
+                        await Context.Database.OsuUsers.AddAsync(osuUser);
                     }
                 }
-                await Database.SaveChangesAsync();
-                await Context.ReplyAsync(BotClient, $"Added {Database.OsuUsers.Count() - startCount} new users");
+                await Context.Database.SaveChangesAsync();
+                await Context.Update.ReplyAsync(Context.BotClient, $"Added {Context.Database.OsuUsers.Count() - startCount} new users");
             }
             else if (parameters[0] == "count")
             {
                 int count = 0;
-                if (parameters[1] == "users") count = Database.OsuUsers.Count();
-                else if (parameters[1] == "chats") count = Database.TelegramChats.Count();
-                await Context.ReplyAsync(BotClient, $"{parameters[1]}: {count}");
+                if (parameters[1] == "users") count = Context.Database.OsuUsers.Count();
+                else if (parameters[1] == "chats") count = Context.Database.TelegramChats.Count();
+                await Context.Update.ReplyAsync(Context.BotClient, $"{parameters[1]}: {count}");
             }
         }
     }

@@ -1,6 +1,6 @@
 ﻿using System.Text.RegularExpressions;
 
-namespace SosuBot.Helpers
+namespace SosuBot.Helpers.OutputText
 {
     public static class OsuHelper
     {

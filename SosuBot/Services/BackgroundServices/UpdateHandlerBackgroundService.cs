@@ -54,7 +54,7 @@ public class UpdateHandlerBackgroundService(
                 return;
             }
 
-           
+
         }
     }
     #endregion

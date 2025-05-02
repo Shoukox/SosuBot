@@ -1,7 +1,8 @@
-﻿using Sosu.Localization;
-using SosuBot.Database.Models;
+﻿using SosuBot.Database.Models;
 using SosuBot.Extensions;
-using SosuBot.OsuTypes;
+using SosuBot.Helpers.OsuTypes;
+using SosuBot.Localization;
+using SosuBot.Services.Handlers.Abstract;
 using Telegram.Bot.Types;
 
 namespace SosuBot.Services.Handlers.Commands
@@ -13,12 +14,12 @@ namespace SosuBot.Services.Handlers.Commands
         public override async Task ExecuteAsync()
         {
             ILocalization language = new Russian();
-            TelegramChat? chatInDatabase = await Database.TelegramChats.FindAsync(Context.Chat.Id);
-            OsuUser? osuUserInDatabase = await Database.OsuUsers.FindAsync(Context.From!.Id);
+            TelegramChat? chatInDatabase = await Context.Database.TelegramChats.FindAsync(Context.Update.Chat.Id);
+            OsuUser? osuUserInDatabase = await Context.Database.OsuUsers.FindAsync(Context.Update.From!.Id);
             List<OsuUser> foundChatMembers = new List<OsuUser>();
-            string[] parameters = Context.Text!.GetCommandParameters()!;
+            string[] parameters = Context.Update.Text!.GetCommandParameters()!;
 
-            Message waitMessage = await Context.ReplyAsync(BotClient, language.waiting);
+            Message waitMessage = await Context.Update.ReplyAsync(Context.BotClient, language.waiting);
             string sendText = language.command_chatstats_title;
 
             Playmode playmode = Playmode.Osu;
@@ -27,7 +28,7 @@ namespace SosuBot.Services.Handlers.Commands
                 string? ruleset = parameters[0].ParseToRuleset();
                 if (ruleset is null)
                 {
-                    await waitMessage.EditAsync(BotClient, language.error_modeIncorrect);
+                    await waitMessage.EditAsync(Context.BotClient, language.error_modeIncorrect);
                     return;
                 }
 
@@ -37,7 +38,7 @@ namespace SosuBot.Services.Handlers.Commands
             chatInDatabase!.ExcludeFromChatstats = chatInDatabase.ExcludeFromChatstats ?? new List<long>();
             foreach (var memberId in chatInDatabase!.ChatMembers!)
             {
-                OsuUser? foundMember = await Database.OsuUsers.FindAsync(memberId);
+                OsuUser? foundMember = await Context.Database.OsuUsers.FindAsync(memberId);
                 if (foundMember != null && !chatInDatabase.ExcludeFromChatstats.Contains(foundMember.TelegramId)) foundChatMembers.Add(foundMember);
             }
             foundChatMembers = foundChatMembers.Take(10).OrderByDescending(m => m.GetPP(playmode)).ToList();
@@ -52,7 +53,7 @@ namespace SosuBot.Services.Handlers.Commands
                 i += 1;
             }
             sendText += language.command_chatstats_end;
-            await waitMessage.EditAsync(BotClient, sendText);
+            await waitMessage.EditAsync(Context.BotClient, sendText);
         }
     }
 }

@@ -1,12 +1,12 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using OsuApi.Core.V2.Scores.Models;
 using OsuApi.Core.V2.Users.Models;
-using Sosu.Localization;
 using SosuBot.Database.Models;
 using SosuBot.Extensions;
-using SosuBot.Helpers;
-using SosuBot.OsuTypes;
-using SosuBot.Services.Handlers.Commands;
+using SosuBot.Helpers.OsuTypes;
+using SosuBot.Helpers.Scoring;
+using SosuBot.Localization;
+using SosuBot.Services.Handlers.Abstract;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.ReplyMarkups;
 
@@ -20,15 +20,15 @@ namespace SosuBot.Services.Handlers.Callbacks
         {
             ILocalization language = new Russian();
 
-            string[] parameters = Context.Data!.Split(' ');
+            string[] parameters = Context.Update.Data!.Split(' ');
             long chatId = long.Parse(parameters[0]);
             string directionOfPaging = parameters[2];
             int page = int.Parse(parameters[3]);
             Playmode playmode = (Playmode)int.Parse(parameters[4]);
             string osuUsername = string.Join(' ', parameters[5..]);
 
-            TelegramChat? chatInDatabase = await Database.TelegramChats.FindAsync(chatId);
-            OsuUser? osuUserInDatabase = await Database.OsuUsers.FirstOrDefaultAsync(u => u.OsuUsername == osuUsername);
+            TelegramChat? chatInDatabase = await Context.Database.TelegramChats.FindAsync(chatId);
+            OsuUser? osuUserInDatabase = await Context.Database.OsuUsers.FirstOrDefaultAsync(u => u.OsuUsername == osuUsername);
 
             if (directionOfPaging == "previous" && page == 0 || osuUserInDatabase is null)
             {
@@ -40,18 +40,18 @@ namespace SosuBot.Services.Handlers.Callbacks
             if (directionOfPaging == "next")
             {
                 int offset = 5 * (page + 1);
-                scores = (await OsuApiV2.Users.GetUserScores(osuUserInDatabase.OsuUserId, ScoreType.Best, new() { Mode = playmode.ToRuleset(), Limit = 5, Offset = offset }))!.Scores;
+                scores = (await Context.OsuApiV2.Users.GetUserScores(osuUserInDatabase.OsuUserId, ScoreType.Best, new() { Mode = playmode.ToRuleset(), Limit = 5, Offset = offset }))!.Scores;
                 page += 1;
             }
             else if (directionOfPaging == "previous")
             {
                 int offset = 5 * (page - 1);
-                scores = (await OsuApiV2.Users.GetUserScores(osuUserInDatabase.OsuUserId, ScoreType.Best, new() { Mode = playmode.ToRuleset(), Limit = 5, Offset = offset }))!.Scores;
+                scores = (await Context.OsuApiV2.Users.GetUserScores(osuUserInDatabase.OsuUserId, ScoreType.Best, new() { Mode = playmode.ToRuleset(), Limit = 5, Offset = offset }))!.Scores;
                 page -= 1;
             }
             else throw new NotImplementedException();
 
-            BeatmapExtended[] beatmaps = scores.Select(async score => await OsuApiV2.Beatmaps.GetBeatmap((long)score.Beatmap!.Id)).Select(t => t.Result!.BeatmapExtended).ToArray()!;
+            BeatmapExtended[] beatmaps = scores.Select(async score => await Context.OsuApiV2.Beatmaps.GetBeatmap((long)score.Beatmap!.Id)).Select(t => t.Result!.BeatmapExtended).ToArray()!;
 
             string textToSend = $"{osuUsername}({playmode.ToGamemode()})\n\n";
             int index = page * 5;
@@ -79,7 +79,7 @@ namespace SosuBot.Services.Handlers.Callbacks
                     new InlineKeyboardButton("Next") { CallbackData = $"{chatId} userbest next {page} {(int)playmode} {osuUsername}" } }
                );
 
-            await Context.Message!.EditAsync(BotClient, textToSend, replyMarkup: ik);
+            await Context.Update.Message!.EditAsync(Context.BotClient, textToSend, replyMarkup: ik);
         }
     }
 }

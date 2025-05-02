@@ -4,7 +4,7 @@ using osu.Game.Rulesets.Mods;
 using osu.Game.Rulesets.Osu.Mods;
 using osu.Game.Rulesets.Scoring;
 using osu.Game.Rulesets.Taiko.Mods;
-using SosuBot.OsuTypes;
+using SosuBot.Helpers.OsuTypes;
 
 namespace SosuBot.Extensions
 {

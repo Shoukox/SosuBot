@@ -3,9 +3,9 @@ using OsuApi.Core.V2.Users.Models;
 using SosuBot.Database;
 using SosuBot.Database.Models;
 using SosuBot.Extensions;
-using SosuBot.OsuTypes;
+using SosuBot.Helpers.OsuTypes;
 
-namespace SosuBot.Helpers
+namespace SosuBot.Helpers.OutputText
 {
     public static class UserHelper
     {

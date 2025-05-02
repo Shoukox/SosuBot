@@ -1,6 +1,6 @@
-﻿using Sosu.Localization;
-using SosuBot.Helpers;
-using SosuBot.Services.Handlers.Commands;
+﻿using SosuBot.Helpers.OutputText;
+using SosuBot.Localization;
+using SosuBot.Services.Handlers.Abstract;
 using Telegram.Bot;
 using Telegram.Bot.Types;
 
@@ -14,13 +14,13 @@ namespace SosuBot.Services.Handlers.Callbacks
         {
             ILocalization language = new Russian();
 
-            string[] parameters = Context.Data!.Split(' ');
+            string[] parameters = Context.Update.Data!.Split(' ');
             long chatId = long.Parse(parameters[0]);
             int beatmapsetId = int.Parse(parameters[2]);
 
             byte[] data = await OsuHelper.GetSongPreviewAsync(beatmapsetId);
             using MemoryStream ms = new MemoryStream(data);
-            await BotClient.SendAudio(chatId, new InputFileStream(ms));
+            await Context.BotClient.SendAudio(chatId, new InputFileStream(ms));
         }
     }
 }

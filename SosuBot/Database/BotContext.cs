@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using SosuBot.Database.Models;
+using SosuBot.Helpers.OsuTypes;
 
 namespace SosuBot.Database;
 
@@ -17,7 +18,7 @@ public class BotContext : DbContext
         modelBuilder.Entity<OsuUser>().HasData(new OsuUser()
         {
             OsuUserId = 15319810,
-            OsuMode = OsuTypes.Playmode.Osu,
+            OsuMode = Playmode.Osu,
             OsuUsername = "Shoukko",
             IsAdmin = true,
             TelegramId = 728384906

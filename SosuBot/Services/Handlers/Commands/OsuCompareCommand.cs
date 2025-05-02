@@ -1,7 +1,8 @@
 ﻿using OsuApi.Core.V2.Scores.Models;
-using Sosu.Localization;
 using SosuBot.Database.Models;
 using SosuBot.Extensions;
+using SosuBot.Localization;
+using SosuBot.Services.Handlers.Abstract;
 using Telegram.Bot.Types;
 
 namespace SosuBot.Services.Handlers.Commands
@@ -13,38 +14,38 @@ namespace SosuBot.Services.Handlers.Commands
         public override async Task ExecuteAsync()
         {
             ILocalization language = new Russian();
-            OsuUser? osuUserInDatabase = await Database.OsuUsers.FindAsync(Context.From!.Id);
+            OsuUser? osuUserInDatabase = await Context.Database.OsuUsers.FindAsync(Context.Update.From!.Id);
             List<OsuUser> foundChatMembers = new List<OsuUser>();
 
-            Message waitMessage = await Context.ReplyAsync(BotClient, language.waiting);
-            string[] parameters = Context.Text!.GetCommandParameters()!;
+            Message waitMessage = await Context.Update.ReplyAsync(Context.BotClient, language.waiting);
+            string[] parameters = Context.Update.Text!.GetCommandParameters()!;
 
             if (parameters.Length < 2)
             {
-                await waitMessage.EditAsync(BotClient, language.error_argsLength);
+                await waitMessage.EditAsync(Context.BotClient, language.error_argsLength);
                 return;
             }
 
             string? ruleset = parameters[2].ParseToRuleset();
             if (ruleset is null)
             {
-                await Context.ReplyAsync(BotClient, language.error_modeIncorrect);
+                await Context.Update.ReplyAsync(Context.BotClient, language.error_modeIncorrect);
                 return;
             }
 
             string gamemode = parameters.Length == 2 ? Ruleset.Osu : ruleset;
-            var getUser1Response = await OsuApiV2.Users.GetUser($"@{parameters[0]}", new(), mode: gamemode);
-            var getUser2Response = await OsuApiV2.Users.GetUser($"@{parameters[1]}", new(), mode: gamemode);
+            var getUser1Response = await Context.OsuApiV2.Users.GetUser($"@{parameters[0]}", new(), mode: gamemode);
+            var getUser2Response = await Context.OsuApiV2.Users.GetUser($"@{parameters[1]}", new(), mode: gamemode);
 
             if (getUser1Response == null)
             {
-                await waitMessage.EditAsync(BotClient, language.error_specificUserNotFound.Fill([parameters[0]]));
+                await waitMessage.EditAsync(Context.BotClient, language.error_specificUserNotFound.Fill([parameters[0]]));
                 return;
             }
 
             if (getUser2Response == null)
             {
-                await waitMessage.EditAsync(BotClient, language.error_specificUserNotFound.Fill([parameters[1]]));
+                await waitMessage.EditAsync(Context.BotClient, language.error_specificUserNotFound.Fill([parameters[1]]));
                 return;
             }
 
@@ -83,7 +84,7 @@ namespace SosuBot.Services.Handlers.Commands
 
                 $"{((user1.Statistics.PlayTime!.Value / 3600).ToString() + "h").PadRight(max)}",
                 $"{user2.Statistics.PlayTime!.Value / 3600}h"]);
-            await waitMessage.EditAsync(BotClient, textToSend);
+            await waitMessage.EditAsync(Context.BotClient, textToSend);
         }
     }
 }

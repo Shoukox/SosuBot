@@ -3,11 +3,10 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using OpenTabletDriver.Native.Windows;
-using osu.Framework.Extensions;
 using OsuApi.Core.V2;
 using SosuBot.Database;
 using SosuBot.Extensions;
+using SosuBot.Services.Handlers.Abstract;
 using SosuBot.Services.Handlers.Callbacks;
 using SosuBot.Services.Handlers.Commands;
 using SosuBot.Services.Handlers.Text;
@@ -116,15 +115,16 @@ public class UpdateHandler(
                 executableCommand = new Callbacks.DummyCommand();
                 break;
         }
-        executableCommand.SetContext(callbackQuery);
-        executableCommand.SetDatabase(database);
-        executableCommand.SetBotClient(botClient);
-        executableCommand.SetOsuApiV2(osuApi);
-        executableCommand.SetLogger(serviceProvider.GetRequiredService<ILogger<CommandBase<CallbackQuery>>>());
+        executableCommand.SetContext(
+            new CommandContext<CallbackQuery>(
+                botClient, 
+                callbackQuery, 
+                database, 
+                osuApi, 
+                serviceProvider.GetRequiredService<ILogger<ICommandContext<CallbackQuery>>>())); 
 
         await executableCommand.ExecuteAsync();
         await callbackQuery.AnswerAsync(botClient);
-
         await database.SaveChangesAsync();
     }
 
@@ -190,11 +190,13 @@ public class UpdateHandler(
                 executableCommand = new Commands.DummyCommand();
                 break;
         }
-        executableCommand.SetContext(msg);
-        executableCommand.SetDatabase(database);
-        executableCommand.SetBotClient(botClient);
-        executableCommand.SetOsuApiV2(osuApi);
-        executableCommand.SetLogger(serviceProvider.GetRequiredService<ILogger<CommandBase<Message>>>());
+        executableCommand.SetContext(
+            new CommandContext<Message>(
+                botClient,
+                msg,
+                database,
+                osuApi,
+                serviceProvider.GetRequiredService<ILogger<ICommandContext<Message>>>()));
 
         await executableCommand.ExecuteAsync();
         await database.SaveChangesAsync();
@@ -203,12 +205,14 @@ public class UpdateHandler(
     private async Task OnText(ITelegramBotClient botClient, Message msg)
     {
         CommandBase<Message> textHandler = new TextHandler();
-        textHandler.SetContext(msg);
-        textHandler.SetDatabase(database);
-        textHandler.SetBotClient(botClient);
-        textHandler.SetOsuApiV2(osuApi);
-        textHandler.SetLogger(serviceProvider.GetRequiredService<ILogger<CommandBase<Message>>>());
-
+        textHandler.SetContext(
+            new CommandContext<Message>(
+                botClient,
+                msg,
+                database,
+                osuApi,
+                serviceProvider.GetRequiredService<ILogger<ICommandContext<Message>>>()));
+        
         await textHandler.ExecuteAsync();
         await database.SaveChangesAsync();
     }

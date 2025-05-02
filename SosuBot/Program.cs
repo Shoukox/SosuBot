@@ -44,7 +44,7 @@ internal class Program
                             return new TelegramBotClient(options.Value.Token, httpClient);
                         })
                         .AddPolicyHandler(GetRetryPolicy());
-                        
+
 
         var osuApiV2Configuration = builder.Services.BuildServiceProvider().GetRequiredService<IOptions<OsuApiV2Configuration>>().Value;
         builder.Services.AddSingleton<ApiV2>(provider =>
@@ -78,7 +78,7 @@ internal class Program
                 r.StatusCode == HttpStatusCode.TooManyRequests && r.Headers.RetryAfter != null)
             .WaitAndRetryAsync(3,
                sleepDurationProvider: (_, result, _) => result.Result.Headers.RetryAfter!.Delta!.Value,
-               onRetryAsync: (_,_,_,_) => Task.CompletedTask);
+               onRetryAsync: (_, _, _, _) => Task.CompletedTask);
 
         return Policy.WrapAsync(transientRetryPolicy, retryAfterPolicy);
     }

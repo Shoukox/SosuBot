@@ -1,15 +1,13 @@
 ﻿using osu.Game.Rulesets.Osu.Mods;
 using OsuApi.Core.V2.Users.Models;
 using PerfomanceCalculator;
-using Sosu.Localization;
 using SosuBot.Database.Models;
 using SosuBot.Extensions;
-using SosuBot.Helpers;
-using SosuBot.OsuTypes;
-using SosuBot.Services.Handlers.Commands;
-using Telegram.Bot;
+using SosuBot.Helpers.OsuTypes;
+using SosuBot.Helpers.OutputText;
+using SosuBot.Localization;
+using SosuBot.Services.Handlers.Abstract;
 using Telegram.Bot.Types;
-using Telegram.Bot.Types.Enums;
 using Telegram.Bot.Types.ReplyMarkups;
 
 namespace SosuBot.Services.Handlers.Text
@@ -19,19 +17,19 @@ namespace SosuBot.Services.Handlers.Text
         public override async Task ExecuteAsync()
         {
             ILocalization language = new Russian();
-            string text = Context.Text!;
+            string text = Context.Update.Text!;
 
             string? userProfileLink = OsuHelper.ParseOsuUserLink(text, out int? userId);
             string? beatmapLink = OsuHelper.ParseOsuBeatmapLink(text, out int? beatmapsetId, out int? beatmapId);
 
             if (userProfileLink is not null)
             {
-                UserExtend user = (await OsuApiV2.Users.GetUser($"{userId}", new()))!.UserExtend!;
+                UserExtend user = (await Context.OsuApiV2.Users.GetUser($"{userId}", new()))!.UserExtend!;
 
                 Playmode playmode = user.Playmode!.ParseRulesetToPlaymode();
                 double? savedPPInDatabase = null;
                 double? currentPP = user.Statistics!.Pp;
-                string ppDifferenceText = await UserHelper.GetPPDifferenceTextAsync(Database, user, playmode, currentPP, savedPPInDatabase);
+                string ppDifferenceText = await UserHelper.GetPPDifferenceTextAsync(Context.Database, user, playmode, currentPP, savedPPInDatabase);
 
                 string textToSend = language.command_user.Fill([
                     $"{playmode.ToGamemode()}",
@@ -52,22 +50,22 @@ namespace SosuBot.Services.Handlers.Text
                 $"{user.Statistics.GradeCounts!.A}"]);
                 var ik = new InlineKeyboardMarkup(new InlineKeyboardButton[][]
                 {
-                [new InlineKeyboardButton("Standard") {CallbackData = $"{Context.Chat.Id} user 0 {user.Username}"}, new InlineKeyboardButton("Taiko") { CallbackData = $"{Context.Chat.Id} user 1 {user.Username}" }],
-                [new InlineKeyboardButton("Catch") {CallbackData = $"{Context.Chat.Id} user 2 {user.Username}" }, new InlineKeyboardButton("Mania") { CallbackData = $"{Context.Chat.Id} user 3 {user.Username}" }]
+                [new InlineKeyboardButton("Standard") {CallbackData = $"{Context.Update.Chat.Id} user 0 {user.Username}"}, new InlineKeyboardButton("Taiko") { CallbackData = $"{Context.Update.Chat.Id} user 1 {user.Username}" }],
+                [new InlineKeyboardButton("Catch") {CallbackData = $"{Context.Update.Chat.Id} user 2 {user.Username}" }, new InlineKeyboardButton("Mania") { CallbackData = $"{Context.Update.Chat.Id} user 3 {user.Username}" }]
                 });
 
-                await Context.ReplyAsync(BotClient, textToSend, replyMarkup: ik);
+                await Context.Update.ReplyAsync(Context.BotClient, textToSend, replyMarkup: ik);
             }
             if (beatmapLink is not null)
             {
                 if (beatmapId is null && beatmapsetId is not null)
                 {
-                    BeatmapsetExtended beatmapsetToGetBeatmapId = await OsuApiV2.Beatmapsets.GetBeatmapset(beatmapsetId.Value);
+                    BeatmapsetExtended beatmapsetToGetBeatmapId = await Context.OsuApiV2.Beatmapsets.GetBeatmapset(beatmapsetId.Value);
                     beatmapId = beatmapsetToGetBeatmapId.Beatmaps!.OrderByDescending(m => m.DifficultyRating).First().Id!;
                 }
 
-                var beatmap = (await OsuApiV2.Beatmaps.GetBeatmap(beatmapId!.Value))!.BeatmapExtended;
-                var beatmapset = await OsuApiV2.Beatmapsets.GetBeatmapset(beatmap!.BeatmapsetId.Value);
+                var beatmap = (await Context.OsuApiV2.Beatmaps.GetBeatmap(beatmapId!.Value))!.BeatmapExtended;
+                var beatmapset = await Context.OsuApiV2.Beatmapsets.GetBeatmapset(beatmap!.BeatmapsetId.Value);
 
                 Playmode playmode = beatmap.Mode!.ParseRulesetToPlaymode();
                 var ppCalculator = new PPCalculator();
@@ -105,18 +103,18 @@ namespace SosuBot.Services.Handlers.Text
                     $"{calculatedPP.ClassicSS:N0}"]);
 
                 var photo = new InputFileUrl(new Uri($"https://assets.ppy.sh/beatmaps/{beatmapset.Id}/covers/card@2x.jpg"));
-                var ik = new InlineKeyboardMarkup(new InlineKeyboardButton("Song preview") { CallbackData = $"{Context.Chat.Id} songpreview {beatmapset.Id}" });
+                var ik = new InlineKeyboardMarkup(new InlineKeyboardButton("Song preview") { CallbackData = $"{Context.Update.Chat.Id} songpreview {beatmapset.Id}" });
 
                 try
                 {
-                    await Context.ReplyAsync(BotClient, photo, caption: textToSend, replyMarkup: ik);
+                    await Context.Update.ReplyAsync(Context.BotClient, photo, caption: textToSend, replyMarkup: ik);
                 }
                 catch
                 {
-                    await Context.ReplyAsync(BotClient, textToSend, replyMarkup: ik);
+                    await Context.Update.ReplyAsync(Context.BotClient, textToSend, replyMarkup: ik);
                 }
 
-                TelegramChat? chatInDatabase = await Database.TelegramChats.FindAsync(Context.Chat.Id);
+                TelegramChat? chatInDatabase = await Context.Database.TelegramChats.FindAsync(Context.Update.Chat.Id);
                 chatInDatabase!.LastBeatmapId = beatmapId;
             }
         }
