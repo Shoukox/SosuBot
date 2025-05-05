@@ -7,6 +7,7 @@ using SosuBot.Services.Handlers.Abstract;
 using Telegram.Bot;
 using Telegram.Bot.Exceptions;
 using Telegram.Bot.Types;
+using Telegram.Bot.Types.Enums;
 
 namespace SosuBot.Services.Handlers.Commands
 {
@@ -22,7 +23,7 @@ namespace SosuBot.Services.Handlers.Commands
 
             if (osuUserInDatabase is null || !osuUserInDatabase.IsAdmin) return;
 
-            await Context.Update.ReplyAsync(Context.BotClient, "Подожди...");
+            Message waitMessage = await Context.Update.ReplyAsync(Context.BotClient, "Подожди...");
 
             string[] parameters = Context.Update.Text!.GetCommandParameters()!;
             if (parameters[0] == "groups")
@@ -50,7 +51,7 @@ namespace SosuBot.Services.Handlers.Commands
             {
                 string id = parameters[1];
                 string msg = string.Join(" ", parameters[2..]);
-                await Context.BotClient.SendMessage(id, msg, Telegram.Bot.Types.Enums.ParseMode.Html);
+                await waitMessage.EditAsync(Context.BotClient, msg);
             }
             else if (parameters[0] == "check")
             {
@@ -63,7 +64,7 @@ namespace SosuBot.Services.Handlers.Commands
                         {
                             await Task.Delay(500);
                             var chatMember = await Context.BotClient.GetChatMember(chat.ChatId, Context.BotClient.BotId);
-                            if (chatMember.IsInChat)
+                            if (chatMember.Status is ChatMemberStatus.Administrator or ChatMemberStatus.Member)
                             {
                                 chats += 1;
                             }
@@ -77,8 +78,7 @@ namespace SosuBot.Services.Handlers.Commands
                             await Context.Update.ReplyAsync(Context.BotClient, ex.ToString());
                         }
                     }
-
-                    await Context.Update.ReplyAsync(Context.BotClient, $"chats: {chats}/{Context.Database.TelegramChats.Count()}");
+                    await waitMessage.EditAsync(Context.BotClient, $"chats: {chats}/{Context.Database.TelegramChats.Count()}");
                 }
             }
         }
