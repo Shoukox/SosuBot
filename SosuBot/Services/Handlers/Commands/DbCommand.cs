@@ -87,6 +87,7 @@ namespace SosuBot.Services.Handlers.Commands
                 int count = 0;
                 if (parameters[1] == "users") count = Context.Database.OsuUsers.Count();
                 else if (parameters[1] == "chats") count = Context.Database.TelegramChats.Count();
+                else if (parameters[0] == "groups") count = Context.Database.TelegramChats.Count(m => m.ChatId < 0);
                 await Context.Update.ReplyAsync(Context.BotClient, $"{parameters[1]}: {count}");
             }
         }

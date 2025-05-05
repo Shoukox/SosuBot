@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
+using SDL;
 using SosuBot.Database.Models;
 using SosuBot.Extensions;
 using SosuBot.Localization;
@@ -48,6 +49,51 @@ namespace SosuBot.Services.Handlers.Commands
                 string id = parameters[1];
                 string msg = string.Join(" ", parameters[2..]);
                 await Context.BotClient.SendMessage(id, msg, Telegram.Bot.Types.Enums.ParseMode.Html);
+            }
+            else if (parameters[0] == "check")
+            {
+                if (parameters[1] == "all")
+                {
+                    int chats = 0;
+                    foreach (var chat in Context.Database.TelegramChats)
+                    {
+                        try
+                        {
+                            await Context.BotClient.GetChatMember(chat.ChatId, Context.BotClient.BotId);
+                            await Task.Delay(500);
+                            chats += 1;
+                        }
+                        catch (ApiRequestException reqEx)
+                        {
+                            Context.Logger.LogError(reqEx, $"ApiRequestException in MsgCommand while sending message to group {chat.ChatId}");
+                        }
+                        catch (Exception ex)
+                        {
+                            Context.Logger.LogError(ex, $"Exception in MsgCommand while sending message to group {chat.ChatId}");
+                        }
+                    }
+
+                    int users = 0;
+                    foreach (var user in Context.Database.OsuUsers)
+                    {
+                        try
+                        {
+                            await Context.BotClient.SendChatAction(user.TelegramId, Telegram.Bot.Types.Enums.ChatAction.Typing);
+                            await Task.Delay(500);
+                            users += 1;
+                        }
+                        catch (ApiRequestException reqEx)
+                        {
+                            Context.Logger.LogError(reqEx, $"ApiRequestException in MsgCommand while sending message to user {user.TelegramId}");
+                        }
+                        catch (Exception ex)
+                        {
+                            Context.Logger.LogError(ex, $"Exception in MsgCommand while sending message to user {user.TelegramId}");
+                        }
+                    }
+
+                    await Context.Update.ReplyAsync(Context.BotClient, $"users: {users}/{Context.Database.OsuUsers.Count()}\nchats: {chats}/{Context.Database.TelegramChats.Count()}");
+                }
             }
             await Context.Update.ReplyAsync(Context.BotClient, "Done.");
         }
