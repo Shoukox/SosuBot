@@ -22,6 +22,8 @@ namespace SosuBot.Services.Handlers.Commands
 
             if (osuUserInDatabase is null || !osuUserInDatabase.IsAdmin) return;
 
+            await Context.Update.ReplyAsync(Context.BotClient, "Подожди...");
+
             string[] parameters = Context.Update.Text!.GetCommandParameters()!;
             if (parameters[0] == "groups")
             {
@@ -31,8 +33,8 @@ namespace SosuBot.Services.Handlers.Commands
                 {
                     try
                     {
-                        await Context.BotClient.SendMessage(chat.ChatId, msg, Telegram.Bot.Types.Enums.ParseMode.Html);
                         await Task.Delay(500);
+                        await Context.BotClient.SendMessage(chat.ChatId, msg, Telegram.Bot.Types.Enums.ParseMode.Html);
                     }
                     catch (ApiRequestException reqEx)
                     {
@@ -59,14 +61,14 @@ namespace SosuBot.Services.Handlers.Commands
                     {
                         try
                         {
-                            await Context.BotClient.GetChatMember(chat.ChatId, Context.BotClient.BotId);
                             await Task.Delay(500);
+                            await Context.BotClient.GetChatMember(chat.ChatId, Context.BotClient.BotId);
                             chats += 1;
                         }
-                        catch (ApiRequestException reqEx)
-                        {
-                            Context.Logger.LogError(reqEx, $"ApiRequestException in MsgCommand while sending message to group {chat.ChatId}");
-                        }
+                        //catch (ApiRequestException reqEx)
+                        //{
+                        //    Context.Logger.LogError(reqEx, $"ApiRequestException in MsgCommand while sending message to group {chat.ChatId}");
+                        //}
                         catch (Exception ex)
                         {
                             Context.Logger.LogError(ex, $"Exception in MsgCommand while sending message to group {chat.ChatId}");
@@ -78,14 +80,14 @@ namespace SosuBot.Services.Handlers.Commands
                     {
                         try
                         {
-                            await Context.BotClient.SendChatAction(user.TelegramId, Telegram.Bot.Types.Enums.ChatAction.Typing);
                             await Task.Delay(500);
+                            await Context.BotClient.SendChatAction(user.TelegramId, Telegram.Bot.Types.Enums.ChatAction.Typing);
                             users += 1;
                         }
-                        catch (ApiRequestException reqEx)
-                        {
-                            Context.Logger.LogError(reqEx, $"ApiRequestException in MsgCommand while sending message to user {user.TelegramId}");
-                        }
+                        //catch (ApiRequestException reqEx)
+                        //{
+                        //    Context.Logger.LogError(reqEx, $"ApiRequestException in MsgCommand while sending message to user {user.TelegramId}");
+                        //}
                         catch (Exception ex)
                         {
                             Context.Logger.LogError(ex, $"Exception in MsgCommand while sending message to user {user.TelegramId}");
@@ -95,7 +97,6 @@ namespace SosuBot.Services.Handlers.Commands
                     await Context.Update.ReplyAsync(Context.BotClient, $"users: {users}/{Context.Database.OsuUsers.Count()}\nchats: {chats}/{Context.Database.TelegramChats.Count()}");
                 }
             }
-            await Context.Update.ReplyAsync(Context.BotClient, "Done.");
         }
     }
 }
