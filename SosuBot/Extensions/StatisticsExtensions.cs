@@ -1,5 +1,5 @@
 ﻿using osu.Game.Rulesets.Scoring;
-using OsuApi.Core.V2.Scores.Models;
+using OsuApi.Core.V2.Models;
 
 namespace SosuBot.Extensions
 {

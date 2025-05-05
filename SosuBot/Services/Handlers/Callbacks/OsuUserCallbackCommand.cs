@@ -1,6 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
-using OsuApi.Core.V2.Users.Models;
-using SosuBot.Database.Models;
+﻿using OsuApi.Core.V2.Users.Models;
 using SosuBot.Extensions;
 using SosuBot.Helpers.OsuTypes;
 using SosuBot.Helpers.OutputText;

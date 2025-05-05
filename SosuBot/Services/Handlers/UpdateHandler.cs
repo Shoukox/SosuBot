@@ -117,11 +117,11 @@ public class UpdateHandler(
         }
         executableCommand.SetContext(
             new CommandContext<CallbackQuery>(
-                botClient, 
-                callbackQuery, 
-                database, 
-                osuApi, 
-                serviceProvider.GetRequiredService<ILogger<ICommandContext<CallbackQuery>>>())); 
+                botClient,
+                callbackQuery,
+                database,
+                osuApi,
+                serviceProvider.GetRequiredService<ILogger<ICommandContext<CallbackQuery>>>()));
 
         await executableCommand.ExecuteAsync();
         await callbackQuery.AnswerAsync(botClient);
@@ -212,7 +212,7 @@ public class UpdateHandler(
                 database,
                 osuApi,
                 serviceProvider.GetRequiredService<ILogger<ICommandContext<Message>>>()));
-        
+
         await textHandler.ExecuteAsync();
         await database.SaveChangesAsync();
     }

@@ -1,5 +1,5 @@
-﻿using OsuApi.Core.V2.Beatmaps.Models.HttpIO;
-using OsuApi.Core.V2.Scores.Models;
+﻿using OsuApi.Core.V2.Clients.Beatmaps.HttpIO;
+using OsuApi.Core.V2.Models;
 using OsuApi.Core.V2.Users.Models;
 using SosuBot.Database.Models;
 using SosuBot.Extensions;
@@ -26,6 +26,7 @@ namespace SosuBot.Services.Handlers.Commands
 
             Score[] bestScores;
             string osuUsernameForUserbest = string.Empty;
+            long osuUserIdForUserbest = -1;
             string ruleset = Ruleset.Osu;
 
             string[] parameters = Context.Update.Text!.GetCommandParameters()!;
@@ -38,6 +39,7 @@ namespace SosuBot.Services.Handlers.Commands
                 }
                 ruleset = osuUserInDatabase.OsuMode.ToRuleset();
                 osuUsernameForUserbest = osuUserInDatabase.OsuUsername;
+                osuUserIdForUserbest = osuUserInDatabase.OsuUserId;
                 bestScores = (await Context.OsuApiV2.Users.GetUserScores(osuUserInDatabase.OsuUserId, ScoreType.Best, new() { Limit = 5, Mode = ruleset }))!.Scores;
             }
             else
@@ -58,6 +60,7 @@ namespace SosuBot.Services.Handlers.Commands
 
                 if (!rulesetAlreadySet) ruleset = userResponse.UserExtend!.Playmode!;
                 osuUsernameForUserbest = userResponse.UserExtend!.Username!;
+                osuUserIdForUserbest = userResponse.UserExtend!.Id.Value;
                 var userbestResponse = await Context.OsuApiV2.Users.GetUserScores(userResponse.UserExtend!.Id.Value, ScoreType.Best, new() { Limit = 5, Mode = ruleset });
                 bestScores = userbestResponse!.Scores;
             }
@@ -94,7 +97,10 @@ namespace SosuBot.Services.Handlers.Commands
             }
 
             var ik = new InlineKeyboardMarkup(
-                new InlineKeyboardButton[] { new InlineKeyboardButton("Previous") { CallbackData = $"{chatInDatabase!.ChatId} userbest previous 0 {(int)playmode} {osuUsernameForUserbest}" }, new InlineKeyboardButton("Next") { CallbackData = $"{chatInDatabase.ChatId} userbest next 0 {(int)playmode} {osuUsernameForUserbest}" } }
+                new InlineKeyboardButton[] {
+                    new InlineKeyboardButton("Previous") { CallbackData = $"{chatInDatabase!.ChatId} userbest previous 0 {(int)playmode} {osuUserIdForUserbest} {osuUsernameForUserbest}" },
+                    new InlineKeyboardButton("Next") { CallbackData = $"{chatInDatabase.ChatId} userbest next 0 {(int)playmode} {osuUserIdForUserbest} {osuUsernameForUserbest}" }
+                }
             );
             await waitMessage.EditAsync(Context.BotClient, textToSend, replyMarkup: ik);
         }

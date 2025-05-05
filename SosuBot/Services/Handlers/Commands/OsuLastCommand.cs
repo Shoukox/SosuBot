@@ -1,5 +1,5 @@
-﻿using OsuApi.Core.V2.Beatmaps.Models.HttpIO;
-using OsuApi.Core.V2.Scores.Models;
+﻿using OsuApi.Core.V2.Clients.Beatmaps.HttpIO;
+using OsuApi.Core.V2.Models;
 using OsuApi.Core.V2.Users.Models;
 using PerfomanceCalculator;
 using SosuBot.Database.Models;
