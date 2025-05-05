@@ -1,5 +1,4 @@
 ﻿using Microsoft.Extensions.Logging;
-using SDL;
 using SosuBot.Database.Models;
 using SosuBot.Extensions;
 using SosuBot.Localization;
@@ -35,7 +34,7 @@ namespace SosuBot.Services.Handlers.Commands
                     try
                     {
                         await Task.Delay(500);
-                        await Context.BotClient.SendMessage(chat.ChatId, msg, Telegram.Bot.Types.Enums.ParseMode.Html);
+                        await Context.BotClient.SendMessage(chat.ChatId, msg);
                     }
                     catch (ApiRequestException reqEx)
                     {
@@ -47,10 +46,9 @@ namespace SosuBot.Services.Handlers.Commands
                     }
                 }
             }
-            else if (parameters[0] == "user")
+            else if (parameters[0] == "me")
             {
-                string id = parameters[1];
-                string msg = string.Join(" ", parameters[2..]);
+                string msg = string.Join(" ", parameters[1..]);
                 await waitMessage.EditAsync(Context.BotClient, msg);
             }
             else if (parameters[0] == "check")
@@ -80,6 +78,10 @@ namespace SosuBot.Services.Handlers.Commands
                     }
                     await waitMessage.EditAsync(Context.BotClient, $"chats: {chats}/{Context.Database.TelegramChats.Count()}");
                 }
+            }
+            else
+            {
+                await waitMessage.EditAsync(Context.BotClient, $"Неизвестная команда");
             }
         }
     }

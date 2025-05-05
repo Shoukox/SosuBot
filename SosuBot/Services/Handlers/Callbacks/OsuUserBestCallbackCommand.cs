@@ -1,14 +1,11 @@
-﻿using NUnit.Framework.Constraints;
-using OsuApi.Core.V2.Clients.Users.HttpIO;
+﻿using OsuApi.Core.V2.Clients.Users.HttpIO;
 using OsuApi.Core.V2.Models;
 using OsuApi.Core.V2.Users.Models;
-using SosuBot.Database.Models;
 using SosuBot.Extensions;
 using SosuBot.Helpers.OsuTypes;
 using SosuBot.Helpers.Scoring;
 using SosuBot.Localization;
 using SosuBot.Services.Handlers.Abstract;
-using System.Net.Mail;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.ReplyMarkups;
 

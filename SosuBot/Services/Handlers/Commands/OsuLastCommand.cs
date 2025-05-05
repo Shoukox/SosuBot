@@ -1,12 +1,12 @@
 ﻿using OsuApi.Core.V2.Clients.Beatmaps.HttpIO;
 using OsuApi.Core.V2.Models;
 using OsuApi.Core.V2.Users.Models;
-using PerfomanceCalculator;
 using SosuBot.Database.Models;
 using SosuBot.Extensions;
 using SosuBot.Helpers.OsuTypes;
 using SosuBot.Helpers.Scoring;
 using SosuBot.Localization;
+using SosuBot.PerformanceCalculator;
 using SosuBot.Services.Handlers.Abstract;
 using System.Text.RegularExpressions;
 using Telegram.Bot.Types;
@@ -126,19 +126,21 @@ namespace SosuBot.Services.Handlers.Commands
                 var calculatedPP = new PPResult()
                 {
                     Current = score.Pp ?? await ppCalculator.CalculatePPAsync(
-                        beatmap.Id.Value,
-                        score.MaxCombo!.Value,
-                        mods.ToOsuMods(playmode),
+                        accuracy: score.Accuracy,
+                        beatmapId: beatmap.Id.Value,
+                        scoreMaxCombo: score.MaxCombo!.Value,
+                        scoreMods: mods.ToOsuMods(playmode),
                         scoreStatistics: scoreStatistics,
-                        scoreMaximumStatistics: score.MaximumStatistics!.ToStatistics(),
+                        scoreMaxStatistics: score.MaximumStatistics!.ToStatistics(),
                         rulesetId: (int)playmode),
 
                     IfSS = await ppCalculator.CalculatePPAsync(
-                        beatmap.Id.Value,
-                        beatmap.MaxCombo!.Value,
-                        mods.ToOsuMods(playmode),
+                        accuracy: 1,
+                        beatmapId: beatmap.Id.Value,
+                        scoreMaxCombo: beatmap.MaxCombo!.Value,
+                        scoreMods: mods.ToOsuMods(playmode),
                         scoreStatistics: null,
-                        scoreMaximumStatistics: null,
+                        scoreMaxStatistics: null,
                         rulesetId: (int)playmode)
                 };
 

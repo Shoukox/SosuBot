@@ -1,11 +1,11 @@
 ﻿using osu.Game.Rulesets.Osu.Mods;
 using OsuApi.Core.V2.Users.Models;
-using PerfomanceCalculator;
 using SosuBot.Database.Models;
 using SosuBot.Extensions;
 using SosuBot.Helpers.OsuTypes;
 using SosuBot.Helpers.OutputText;
 using SosuBot.Localization;
+using SosuBot.PerformanceCalculator;
 using SosuBot.Services.Handlers.Abstract;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.ReplyMarkups;
@@ -72,18 +72,57 @@ namespace SosuBot.Services.Handlers.Text
                 var calculatedPP = new
                 {
                     ClassicSS = await ppCalculator.CalculatePPAsync(
-                        beatmap.Id.Value,
-                        beatmap.MaxCombo!.Value,
+                        accuracy: 1,
+                        beatmapId: beatmap.Id.Value,
+                        scoreMaxCombo: null,
                         scoreMods: [new OsuModClassic()],
                         scoreStatistics: null,
-                        scoreMaximumStatistics: null,
+                        scoreMaxStatistics: null,
                         rulesetId: (int)playmode),
+
+                    Classic99 = await ppCalculator.CalculatePPAsync(
+                        accuracy: 0.99,
+                        beatmapId: beatmap.Id.Value,
+                        scoreMaxCombo: null,
+                        scoreMods: [new OsuModClassic()],
+                        scoreStatistics: null,
+                        scoreMaxStatistics: null,
+                        rulesetId: (int)playmode),
+
+                    Classic98 = await ppCalculator.CalculatePPAsync(
+                        accuracy: 0.98,
+                        beatmapId: beatmap.Id.Value,
+                        scoreMaxCombo: null,
+                        scoreMods: [new OsuModClassic()],
+                        scoreStatistics: null,
+                        scoreMaxStatistics: null,
+                        rulesetId: (int)playmode),
+
                     LazerSS = await ppCalculator.CalculatePPAsync(
-                        beatmap.Id.Value,
-                        beatmap.MaxCombo!.Value,
+                        accuracy: 1,
+                        beatmapId: beatmap.Id.Value,
+                        scoreMaxCombo: null,
                         scoreMods: [],
                         scoreStatistics: null,
-                        scoreMaximumStatistics: null,
+                        scoreMaxStatistics: null,
+                        rulesetId: (int)playmode),
+
+                    Lazer99 = await ppCalculator.CalculatePPAsync(
+                        accuracy: 0.99,
+                        beatmapId: beatmap.Id.Value,
+                        scoreMaxCombo: null,
+                        scoreMods: [],
+                        scoreStatistics: null,
+                        scoreMaxStatistics: null,
+                        rulesetId: (int)playmode),
+
+                    Lazer98 = await ppCalculator.CalculatePPAsync(
+                        accuracy: 0.98,
+                        beatmapId: beatmap.Id.Value,
+                        scoreMaxCombo: null,
+                        scoreMods: [],
+                        scoreStatistics: null,
+                        scoreMaxStatistics: null,
                         rulesetId: (int)playmode),
                 };
 
@@ -99,8 +138,15 @@ namespace SosuBot.Services.Handlers.Text
                     $"{beatmap.AR}",
                     $"{beatmap.Drain}",
                     $"{beatmap.BPM}",
+                    $"{calculatedPP.ClassicSS:N0}",
                     $"{calculatedPP.LazerSS:N0}",
-                    $"{calculatedPP.ClassicSS:N0}"]);
+
+                    $"{calculatedPP.Classic99:N0}",
+                    $"{calculatedPP.Lazer99:N0}",
+
+                    $"{calculatedPP.Classic98:N0}",
+                    $"{calculatedPP.Lazer98:N0}",
+                    ]);
 
                 var photo = new InputFileUrl(new Uri($"https://assets.ppy.sh/beatmaps/{beatmapset.Id}/covers/card@2x.jpg"));
                 var ik = new InlineKeyboardMarkup(new InlineKeyboardButton("Song preview") { CallbackData = $"{Context.Update.Chat.Id} songpreview {beatmapset.Id}" });
