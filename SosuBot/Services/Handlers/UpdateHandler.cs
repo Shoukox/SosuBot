@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using osu.Game.Rulesets.Osu.Skinning.Default;
 using OsuApi.Core.V2;
 using SosuBot.Database;
 using SosuBot.Extensions;
@@ -29,16 +30,22 @@ public class UpdateHandler(
 
     public async Task HandleErrorAsync(ITelegramBotClient botClient, Exception exception, HandleErrorSource source, CancellationToken cancellationToken)
     {
+        // if a text-command message
         if (_currentUpdate!.Message is { Text: string } msg && msg.Text!.IsCommand())
         {
             long userId = (await database.OsuUsers.FirstAsync(u => u.IsAdmin)).TelegramId;
             string errorText =
                 $"Произошла ошибка.\n" +
-                $"{exception.Message}\n" +
-                $"Сообщите о ней <a href=\"tg://user?id={userId}\">создателю</a>";
+                $"Пожалуйста, сообщите о ней <a href=\"tg://user?id={userId}\">создателю</a> (@Shoukkoo)";
             await msg.ReplyAsync(botClient, errorText);
         }
-        logger.LogInformation("HandleError: {Exception}", exception);
+        // if a callback query
+        else if (_currentUpdate!.CallbackQuery is { Data: string } callbackQuery) {
+            await callbackQuery.AnswerAsync(botClient, "Произошла ошибка! Пожалуйста, сообщите о ней @Shoukkoo", true);
+        }
+
+        // log in console
+        logger.LogError("HandleError: {Exception}", exception);
     }
 
     public async Task HandleUpdateAsync(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)

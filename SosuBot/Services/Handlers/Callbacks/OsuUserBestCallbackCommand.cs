@@ -1,4 +1,5 @@
-﻿using OsuApi.Core.V2.Clients.Users.HttpIO;
+﻿using NUnit.Framework.Constraints;
+using OsuApi.Core.V2.Clients.Users.HttpIO;
 using OsuApi.Core.V2.Models;
 using OsuApi.Core.V2.Users.Models;
 using SosuBot.Database.Models;
@@ -83,7 +84,6 @@ namespace SosuBot.Services.Handlers.Callbacks
                     new InlineKeyboardButton[] { new InlineKeyboardButton("Previous") { CallbackData = $"{chatId} userbest previous {page} {(int)playmode} {osuUserId} {osuUsername}" },
                     new InlineKeyboardButton("Next") { CallbackData = $"{chatId} userbest next {page} {(int)playmode} {osuUserId} {osuUsername}" } }
                );
-
             await Context.Update.Message!.EditAsync(Context.BotClient, textToSend, replyMarkup: ik);
         }
     }
