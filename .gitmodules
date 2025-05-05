@@ -1,6 +1,0 @@
-[submodule "PerfomanceCalculator"]
-	path = PerfomanceCalculator
-	url = git@github.com:Shoukox/PerfomanceCalculator.git
-[submodule "SosuBot.PerformanceCalculator"]
-	path = SosuBot.PerformanceCalculator
-	url = .\\SosuBot.PerformanceCalculator\\
