@@ -74,11 +74,16 @@ namespace SosuBot.Localization
         public string command_excluded => "<b>{}</b> был успешно исключен из /chat_stats";
         public string command_included => "<b>{}</b> снова будет появляться в /chat_stats";
         public string send_mapInfo =>
-                 "<b>{}</b>\n" +
-                 "[{}] - {}* - {} - {} - <b>{}</b>\n" +
-                 "<b>CS</b>: {} | <b>AR</b>: {} | <b>HP</b>: {} | <b>BPM</b>: {}\n" +
-                 "<b>Lazer SS</b> - {}pp\n" +
-                 "<b>Classic SS</b> - {}pp\n";
+            "<b>{}</b>\n" +
+            "[{}] - {}* - {} - {} - <b>{}</b>\n" +
+            "<b>CS</b>: {} | <b>AR</b>: {} | <b>HP</b>: {} | <b>BPM</b>: {}\n" +
+            "<code>" +
+            "acc  | classic | lazer\n" +
+            "-----+---------+---------\n" +
+            "100% | {}pp   | {}pp\n" +
+            "99%  | {}pp   | {}pp\n" +
+            "98%  | {}pp   | {}pp\n" +
+            "</code>\n";
         public string waiting => "Подожди немного...";
 
         public string error_baseMessage => "Произошел троллинг...";

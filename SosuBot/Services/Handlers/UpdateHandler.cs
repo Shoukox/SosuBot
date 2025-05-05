@@ -1,9 +1,7 @@
-﻿using Markdig.Helpers;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using osu.Game.Rulesets.Osu.Skinning.Default;
 using OsuApi.Core.V2;
 using SosuBot.Database;
 using SosuBot.Extensions;
@@ -40,7 +38,8 @@ public class UpdateHandler(
             await msg.ReplyAsync(botClient, errorText);
         }
         // if a callback query
-        else if (_currentUpdate!.CallbackQuery is { Data: string } callbackQuery) {
+        else if (_currentUpdate!.CallbackQuery is { Data: string } callbackQuery)
+        {
             await callbackQuery.AnswerAsync(botClient, "Произошла ошибка! Пожалуйста, сообщите о ней @Shoukkoo", true);
         }
 

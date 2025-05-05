@@ -25,7 +25,7 @@ namespace SosuBot.Extensions
         public static string[]? GetCommandParameters(this string text)
         {
             if (text.Length == 0 || text[0] != '/') return null;
-            return text.Split(' ')[1..];
+            return text.Split(' ', StringSplitOptions.TrimEntries)[1..];
         }
 
         /// <summary>
