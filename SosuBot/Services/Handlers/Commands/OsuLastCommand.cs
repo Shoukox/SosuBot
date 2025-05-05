@@ -122,7 +122,6 @@ namespace SosuBot.Services.Handlers.Commands
                 }
 
                 var scoreStatistics = score.Statistics!.ToStatistics();
-
                 // calculate pp
                 var calculatedPP = new PPResult()
                 {

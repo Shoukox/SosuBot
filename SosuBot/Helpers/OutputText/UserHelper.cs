@@ -23,5 +23,11 @@ namespace SosuBot.Helpers.OutputText
             }
             return ppDifferenceText;
         }
+
+        public static string GetUserRankText(int? rank)
+        {
+            string ppText = rank?.ToString() ?? "—";
+            return ppText;
+        }
     }
 }

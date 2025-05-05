@@ -24,10 +24,7 @@ namespace SosuBot.Services.Handlers.Callbacks
             Playmode playmode = (Playmode)int.Parse(parameters[2]);
             string osuUsername = string.Join(' ', parameters[3..]);
 
-            TelegramChat? chatInDatabase = await Context.Database.TelegramChats.FindAsync(chatId);
-            OsuUser? osuUserInDatabase = await Context.Database.OsuUsers.FirstOrDefaultAsync(u => u.OsuUsername == osuUsername);
-
-            UserExtend user = (await Context.OsuApiV2.Users.GetUser($"@{osuUserInDatabase!.OsuUsername}", new(), playmode.ToRuleset()))!.UserExtend!;
+            UserExtend user = (await Context.OsuApiV2.Users.GetUser($"@{osuUsername}", new(), playmode.ToRuleset()))!.UserExtend!;
 
             double? savedPPInDatabase = null;
             double? currentPP = user.Statistics!.Pp;
@@ -37,8 +34,8 @@ namespace SosuBot.Services.Handlers.Callbacks
                 $"{playmode.ToGamemode()}",
                 $"{user.GetProfileUrl()}",
                 $"{user.Username}",
-                $"{user.Statistics.GlobalRank}",
-                $"{user.Statistics.CountryRank}",
+                $"{UserHelper.GetUserRankText(user.Statistics.GlobalRank)}",
+                $"{UserHelper.GetUserRankText(user.Statistics.CountryRank)}",
                 $"{user.CountryCode}",
                 $"{currentPP:N2}",
                 $"{ppDifferenceText}",
