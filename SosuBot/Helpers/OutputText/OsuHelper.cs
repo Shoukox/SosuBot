@@ -1,4 +1,10 @@
-﻿using System.Text.RegularExpressions;
+﻿using osu.Game.Rulesets.Catch.Mods;
+using osu.Game.Rulesets.Mania.Mods;
+using osu.Game.Rulesets.Mods;
+using osu.Game.Rulesets.Osu.Mods;
+using osu.Game.Rulesets.Taiko.Mods;
+using SosuBot.Helpers.OsuTypes;
+using System.Text.RegularExpressions;
 
 namespace SosuBot.Helpers.OutputText
 {
@@ -55,6 +61,18 @@ namespace SosuBot.Helpers.OutputText
             string url = match.Value;
             if (int.TryParse(match.Groups[1].Value, out int uId)) userId = uId; else userId = null;
             return string.IsNullOrEmpty(url) ? null : url;
+        }
+
+        public static Mod GetClassicMode(Playmode playmode)
+        {
+            return playmode switch
+            {
+                Playmode.Osu => new OsuModClassic(),
+                Playmode.Taiko => new TaikoModClassic(),
+                Playmode.Catch => new CatchModClassic(),
+                Playmode.Mania => new ManiaModClassic(),
+                _ => throw new NotImplementedException()
+            };
         }
     }
 }
