@@ -154,7 +154,7 @@ namespace SosuBot.Services.Handlers.Text
 
                 try
                 {
-                    await Context.Update.ReplyAsync(Context.BotClient, photo, caption: textToSend, replyMarkup: ik);
+                    await Context.Update.ReplyPhotoAsync(Context.BotClient, photo, caption: textToSend, replyMarkup: ik);
                 }
                 catch
                 {
