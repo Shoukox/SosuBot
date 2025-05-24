@@ -1,9 +1,12 @@
 ﻿using OsuApi.Core.V2.Models;
+using SosuBot.Database.Extensions;
 using SosuBot.Database.Models;
 using SosuBot.Extensions;
 using SosuBot.Helpers.OsuTypes;
 using SosuBot.Localization;
 using SosuBot.Services.Handlers.Abstract;
+using System.IO;
+using System.Text;
 using System.Text.Json;
 using Telegram.Bot.Types;
 
@@ -87,9 +90,24 @@ namespace SosuBot.Services.Handlers.Commands
                 int count = 0;
                 if (parameters[1] == "users") count = Context.Database.OsuUsers.Count();
                 else if (parameters[1] == "chats") count = Context.Database.TelegramChats.Count();
-                else if (parameters[0] == "groups") count = Context.Database.TelegramChats.Count(m => m.ChatId < 0);
+                else if (parameters[1] == "groups") count = Context.Database.TelegramChats.Count(m => m.ChatId < 0);
+                else throw new NotImplementedException();
+
                 await Context.Update.ReplyAsync(Context.BotClient, $"{parameters[1]}: {count}");
             }
+            else if (parameters[0] == "astext")
+            {
+                MemoryStream stream;
+                if (parameters[1] == "users")
+                {
+                    string tableText = Context.Database.OsuUsers.ToReadfriendlyTableString();
+                    stream = new MemoryStream(Encoding.Default.GetBytes(tableText));
+                }
+                else throw new NotImplementedException();
+
+                await Context.Update.ReplyDocumentAsync(Context.BotClient, InputFile.FromStream(stream, "table.txt"));
+            }
+            else throw new NotImplementedException();
         }
     }
 }

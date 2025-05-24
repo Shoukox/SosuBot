@@ -1,0 +1,55 @@
+﻿using Microsoft.EntityFrameworkCore;
+using osu.Framework.Extensions.IEnumerableExtensions;
+using OsuApi.Core.V2.Users.Models;
+using SosuBot.Database.Models;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace SosuBot.Database.Extensions
+{
+    public static class DatabaseExtensions
+    {
+        public static string ToReadfriendlyTableString(this DbSet<OsuUser> set, int intervalSpaceCount = 5)
+        {
+            OsuUser[] users = set.ToArray();
+            var rows = new string[users.Length + 1]; // +heading
+
+            var osuUserType = typeof(OsuUser);
+            var osuUserAttributes = osuUserType.GetProperties();
+            string intervalString = new string(' ', intervalSpaceCount);
+
+            // index at every row
+            int indexPadding = users.Length.ToString().Length;
+            rows = rows.Select((row, index) => $"{index + 1}".PadRight(indexPadding) + intervalString).ToArray();
+
+            // ### heading into the heading row
+            rows[0] = new string('#', indexPadding) + intervalString;
+
+            foreach (var property in osuUserAttributes)
+            {
+                string propertyName = property.Name;
+
+                // 4 is "null".Length
+                string[] propertyValues = users.Select(u => property.GetValue(u)?.ToString() ?? "null").ToArray(); 
+
+                // padding to use
+                int padding = Math.Max(propertyValues.Select(m => m.Length).Max(), propertyName.Length);
+
+                // add heading value
+                rows[0] += propertyName.PadRight(padding) + intervalString;
+
+                for (int i = 0; i <= users.Length - 1; i++)
+                {
+                    int j = i + 1;
+                    string propertyValue = propertyValues[i];
+                    rows[j] += propertyValue.PadRight(padding) + intervalString;
+                }
+            }
+
+            return string.Join("\n", rows);
+        }
+    }
+}
