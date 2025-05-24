@@ -68,6 +68,7 @@ namespace SosuBot.Services.Handlers.Text
                 var beatmapset = await Context.OsuApiV2.Beatmapsets.GetBeatmapset(beatmap!.BeatmapsetId.Value);
 
                 Playmode playmode = beatmap.Mode!.ParseRulesetToPlaymode();
+                var classicMod = OsuHelper.GetClassicMode(playmode);
                 var ppCalculator = new PPCalculator();
                 var calculatedPP = new
                 {
@@ -75,7 +76,7 @@ namespace SosuBot.Services.Handlers.Text
                         accuracy: 1,
                         beatmapId: beatmap.Id.Value,
                         scoreMaxCombo: null,
-                        scoreMods: [new OsuModClassic()],
+                        scoreMods: [classicMod],
                         scoreStatistics: null,
                         scoreMaxStatistics: null,
                         rulesetId: (int)playmode),
@@ -84,7 +85,7 @@ namespace SosuBot.Services.Handlers.Text
                         accuracy: 0.99,
                         beatmapId: beatmap.Id.Value,
                         scoreMaxCombo: null,
-                        scoreMods: [new OsuModClassic()],
+                        scoreMods: [classicMod],
                         scoreStatistics: null,
                         scoreMaxStatistics: null,
                         rulesetId: (int)playmode),
@@ -93,7 +94,7 @@ namespace SosuBot.Services.Handlers.Text
                         accuracy: 0.98,
                         beatmapId: beatmap.Id.Value,
                         scoreMaxCombo: null,
-                        scoreMods: [new OsuModClassic()],
+                        scoreMods: [classicMod],
                         scoreStatistics: null,
                         scoreMaxStatistics: null,
                         rulesetId: (int)playmode),

@@ -108,6 +108,5 @@ namespace SosuBot.Extensions
                     {HitResult.Great, beatmapExtended.CountCircles!.Value + beatmapExtended.CountSliders!.Value + beatmapExtended.CountSpinners!.Value}
                 };
         }
-
     }
 }
