@@ -39,10 +39,6 @@ namespace SosuBot.Services.Handlers.Commands
             chatInDatabase!.ExcludeFromChatstats = chatInDatabase.ExcludeFromChatstats ?? new List<long>();
             foreach (long memberId in chatInDatabase!.ChatMembers!)
             {
-                if (memberId == 1097613088)
-                {
-                    Console.WriteLine();
-                }
                 OsuUser? foundMember = await Context.Database.OsuUsers.FindAsync(memberId);
                 if (foundMember != null && !chatInDatabase.ExcludeFromChatstats.Contains(foundMember.TelegramId))
                 {
