@@ -103,6 +103,11 @@ namespace SosuBot.Services.Handlers.Commands
                     string tableText = Context.Database.OsuUsers.ToReadfriendlyTableString();
                     stream = new MemoryStream(Encoding.Default.GetBytes(tableText));
                 }
+                else if (parameters[1] == "chats")
+                {
+                    string tableText = Context.Database.TelegramChats.ToReadfriendlyTableString();
+                    stream = new MemoryStream(Encoding.Default.GetBytes(tableText));
+                }
                 else throw new NotImplementedException();
 
                 await Context.Update.ReplyDocumentAsync(Context.BotClient, InputFile.FromStream(stream, "table.txt"));

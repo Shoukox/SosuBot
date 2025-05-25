@@ -71,8 +71,8 @@ namespace SosuBot.Localization
         public string command_chatstats_title => "Топ-10 осеров в группе:\n\n";
         public string command_chatstats_row => "<b>{}. {}</b>: <i>{}pp</i>\n";
         public string command_chatstats_end => "\nИспользуйте <b>/user</b>, чтобы обновить ваш <b>pp</b> в данном списке.";
-        public string command_excluded => "<b>{}</b> был успешно исключен из /chat_stats";
-        public string command_included => "<b>{}</b> снова будет появляться в /chat_stats";
+        public string command_excluded => "<b>{}</b> был успешно исключен из /chatstats";
+        public string command_included => "<b>{}</b> снова будет появляться в /chatstats";
         public string send_mapInfo =>
             "<b>{}</b>\n" +
             "[{}] - {}* - {} - {} - <b>{}</b>\n" +
@@ -99,7 +99,7 @@ namespace SosuBot.Localization
         public string error_argsLength => $"{error_baseMessage}\nНеверное количество аргументов";
         public string error_noPreviousScores => $"{error_baseMessage}\nЭтот пользователь не играл последние 24 часа в {{}}";
         public string error_noBestScores => $"{error_baseMessage}\nУ этого пользователя еще нету лучших рекордов";
-        public string error_excludeListAlreadyContainsThisId => $"Этот пользователь уже был исключен из /chat_stats";
-        public string error_userWasNotExcluded => "Этот пользователь и так не был исключен из /chat_stats";
+        public string error_excludeListAlreadyContainsThisId => $"Этот пользователь уже был исключен из /chatstats";
+        public string error_userWasNotExcluded => "Этот пользователь и так не был исключен из /chatstats";
     }
 }
