@@ -1,4 +1,5 @@
-﻿using SosuBot.Database;
+﻿using Realms;
+using SosuBot.Database;
 using SosuBot.Database.Models;
 using SosuBot.Synchronization;
 using Telegram.Bot.Types;
@@ -11,10 +12,20 @@ namespace SosuBot.Extensions
         {
             var semaphoreSlim = BotSynchronization.Instance.GetSemaphoreSlim(message.Chat.Id);
             await semaphoreSlim.WaitAsync();
+
             if (await database.TelegramChats.FindAsync(message.Chat.Id) is TelegramChat chat)
             {
                 chat.ChatMembers = chat.ChatMembers ?? new List<long>();
-                if (!chat.ChatMembers!.Contains(message.From!.Id)) chat.ChatMembers.Add(message.From!.Id);
+
+                // check whether someone left
+                if (message.LeftChatMember is User user)
+                {
+                    chat.ChatMembers.Remove(user.Id);
+                }
+                else if (!chat.ChatMembers!.Contains(message.From!.Id))
+                {
+                    chat.ChatMembers.Add(message.From!.Id);
+                }
             }
             else
             {

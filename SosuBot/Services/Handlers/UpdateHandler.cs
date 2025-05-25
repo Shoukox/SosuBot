@@ -59,7 +59,7 @@ public class UpdateHandler(
             _ => DoNothing()
         };
 
-        try
+        try 
         {
             await eventHandler;
         }
@@ -71,11 +71,11 @@ public class UpdateHandler(
 
     private async Task OnMessage(ITelegramBotClient botClient, Message msg)
     {
-        if (msg.Text is not { } text) return;
-        if (msg.Chat is null || msg.From is null) return;
-
         // Add new chat and update chat members
         await database.AddOrUpdateTelegramChat(msg);
+
+        if (msg.Text is not { } text) return;
+        if (msg.Chat is null || msg.From is null) return;
 
         // SpamResistance
         var (canSend, sendWarning) = await SpamResistance.Instance.CanSendMessage(msg.From.Id, msg.Date);

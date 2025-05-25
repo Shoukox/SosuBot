@@ -20,15 +20,15 @@ namespace SosuBot.Services.Handlers.Commands
             string[] parameters = Context.Update.Text!.GetCommandParameters()!;
             if (parameters.Length == 0)
             {
-                await Context.Update.ReplyAsync(Context.BotClient, language.error_nameIsEmpty);
+                await waitMessage.ReplyAsync(Context.BotClient, language.error_nameIsEmpty);
                 return;
             }
 
             string osuUsernameToExclude = parameters[0];
-            OsuUser? osuUserToExclude = await Context.Database.OsuUsers.FirstOrDefaultAsync(m => m.OsuUsername.Trim().ToLowerInvariant() == osuUsernameToExclude.Trim().ToLowerInvariant());
+            OsuUser? osuUserToExclude = Context.Database.OsuUsers.AsEnumerable().FirstOrDefault(m => m.OsuUsername.Trim().ToLowerInvariant() == osuUsernameToExclude.Trim().ToLowerInvariant());
             if (osuUserToExclude is null)
             {
-                await Context.Update.ReplyAsync(Context.BotClient, language.error_userNotFoundInBotsDatabase);
+                await waitMessage.ReplyAsync(Context.BotClient, language.error_userNotFoundInBotsDatabase);
                 return;
             }
 
@@ -36,7 +36,7 @@ namespace SosuBot.Services.Handlers.Commands
             chatInDatabase!.ChatMembers = chatInDatabase.ChatMembers ?? new List<long>();
             if (!chatInDatabase.ExcludeFromChatstats.Contains(osuUserToExclude.TelegramId))
             {
-                await Context.Update.ReplyAsync(Context.BotClient, language.error_userWasNotExcluded);
+                await waitMessage.ReplyAsync(Context.BotClient, language.error_userWasNotExcluded);
                 return;
             }
 
