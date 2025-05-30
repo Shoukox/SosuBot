@@ -26,16 +26,19 @@ namespace SosuBot.Services.Handlers.Commands
                 return;
             }
 
-            string? ruleset = parameters[2].ParseToRuleset();
-            if (ruleset is null)
+            string? ruleset = Ruleset.Osu;
+            if (parameters.Length >= 3)
             {
-                await Context.Update.ReplyAsync(Context.BotClient, language.error_modeIncorrect);
-                return;
+                ruleset = parameters[2].ParseToRuleset();
+                if (ruleset is null)
+                {
+                    await Context.Update.ReplyAsync(Context.BotClient, language.error_modeIncorrect);
+                    return;
+                }
             }
 
-            string gamemode = parameters.Length == 2 ? Ruleset.Osu : ruleset;
-            var getUser1Response = await Context.OsuApiV2.Users.GetUser($"@{parameters[0]}", new(), mode: gamemode);
-            var getUser2Response = await Context.OsuApiV2.Users.GetUser($"@{parameters[1]}", new(), mode: gamemode);
+            var getUser1Response = await Context.OsuApiV2.Users.GetUser($"@{parameters[0]}", new(), mode: ruleset);
+            var getUser2Response = await Context.OsuApiV2.Users.GetUser($"@{parameters[1]}", new(), mode: ruleset);
 
             if (getUser1Response == null)
             {
@@ -65,7 +68,7 @@ namespace SosuBot.Services.Handlers.Commands
             }.Max();
 
             string textToSend = language.command_compare.Fill([
-                gamemode.ParseRulesetToGamemode(),
+                ruleset.ParseRulesetToGamemode(),
 
                 user1.Username.PadRight(max),
                 user2.Username!,
