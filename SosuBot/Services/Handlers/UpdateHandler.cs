@@ -54,8 +54,8 @@ public class UpdateHandler(
 
         Task eventHandler = update switch
         {
-            { Message: { } message } => OnMessage(botClient, message),
-            { CallbackQuery: { } callbackQuery } => OnCallbackQuery(botClient, callbackQuery),
+            { Message: { } message } => OnMessage(botClient, message, cancellationToken),
+            { CallbackQuery: { } callbackQuery } => OnCallbackQuery(botClient, callbackQuery, cancellationToken),
             _ => DoNothing()
         };
 
@@ -69,7 +69,7 @@ public class UpdateHandler(
         }
     }
 
-    private async Task OnMessage(ITelegramBotClient botClient, Message msg)
+    private async Task OnMessage(ITelegramBotClient botClient, Message msg, CancellationToken cancellationToken)
     {
         // Add new chat and update chat members
         await database.AddOrUpdateTelegramChat(msg);
@@ -92,15 +92,15 @@ public class UpdateHandler(
         // Execute necessary functions
         if (text.IsCommand())
         {
-            await OnCommand(botClient, msg);
+            await OnCommand(botClient, msg, cancellationToken);
         }
         else
         {
-            await OnText(botClient, msg);
+            await OnText(botClient, msg, cancellationToken);
         }
     }
 
-    private async Task OnCallbackQuery(ITelegramBotClient botClient, CallbackQuery callbackQuery)
+    private async Task OnCallbackQuery(ITelegramBotClient botClient, CallbackQuery callbackQuery, CancellationToken cancellationToken)
     {
         if (callbackQuery.Data is not { } data) return;
 
@@ -127,14 +127,15 @@ public class UpdateHandler(
                 callbackQuery,
                 database,
                 osuApi,
-                serviceProvider.GetRequiredService<ILogger<ICommandContext<CallbackQuery>>>()));
+                serviceProvider.GetRequiredService<ILogger<ICommandContext<CallbackQuery>>>(),
+                cancellationToken));
 
         await executableCommand.ExecuteAsync();
         await callbackQuery.AnswerAsync(botClient);
         await database.SaveChangesAsync();
     }
 
-    private async Task OnCommand(ITelegramBotClient botClient, Message msg)
+    private async Task OnCommand(ITelegramBotClient botClient, Message msg, CancellationToken cancellationToken)
     {
         string command = msg.Text!.GetCommand().RemoveUsernamePostfix(botConfig.Value.Username);
         CommandBase<Message> executableCommand;
@@ -202,13 +203,14 @@ public class UpdateHandler(
                 msg,
                 database,
                 osuApi,
-                serviceProvider.GetRequiredService<ILogger<ICommandContext<Message>>>()));
+                serviceProvider.GetRequiredService<ILogger<ICommandContext<Message>>>(),
+                cancellationToken));
 
         await executableCommand.ExecuteAsync();
         await database.SaveChangesAsync();
     }
 
-    private async Task OnText(ITelegramBotClient botClient, Message msg)
+    private async Task OnText(ITelegramBotClient botClient, Message msg, CancellationToken cancellationToken)
     {
         CommandBase<Message> textHandler = new TextHandler();
         textHandler.SetContext(
@@ -217,7 +219,8 @@ public class UpdateHandler(
                 msg,
                 database,
                 osuApi,
-                serviceProvider.GetRequiredService<ILogger<ICommandContext<Message>>>()));
+                serviceProvider.GetRequiredService<ILogger<ICommandContext<Message>>>(),
+                cancellationToken));
 
         await textHandler.ExecuteAsync();
         await database.SaveChangesAsync();
