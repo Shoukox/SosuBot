@@ -79,7 +79,8 @@ namespace SosuBot.Services.Handlers.Text
                         scoreMods: [classicMod],
                         scoreStatistics: null,
                         scoreMaxStatistics: null,
-                        rulesetId: (int)playmode),
+                        rulesetId: (int)playmode,
+                        cancellationToken: Context.CancellationToken),
 
                     Classic99 = await ppCalculator.CalculatePPAsync(
                         accuracy: 0.99,
@@ -88,7 +89,8 @@ namespace SosuBot.Services.Handlers.Text
                         scoreMods: [classicMod],
                         scoreStatistics: null,
                         scoreMaxStatistics: null,
-                        rulesetId: (int)playmode),
+                        rulesetId: (int)playmode,
+                        cancellationToken: Context.CancellationToken),
 
                     Classic98 = await ppCalculator.CalculatePPAsync(
                         accuracy: 0.98,
@@ -97,7 +99,8 @@ namespace SosuBot.Services.Handlers.Text
                         scoreMods: [classicMod],
                         scoreStatistics: null,
                         scoreMaxStatistics: null,
-                        rulesetId: (int)playmode),
+                        rulesetId: (int)playmode,
+                        cancellationToken: Context.CancellationToken),
 
                     LazerSS = await ppCalculator.CalculatePPAsync(
                         accuracy: 1,
@@ -106,7 +109,8 @@ namespace SosuBot.Services.Handlers.Text
                         scoreMods: [],
                         scoreStatistics: null,
                         scoreMaxStatistics: null,
-                        rulesetId: (int)playmode),
+                        rulesetId: (int)playmode,
+                        cancellationToken: Context.CancellationToken),
 
                     Lazer99 = await ppCalculator.CalculatePPAsync(
                         accuracy: 0.99,
@@ -115,7 +119,8 @@ namespace SosuBot.Services.Handlers.Text
                         scoreMods: [],
                         scoreStatistics: null,
                         scoreMaxStatistics: null,
-                        rulesetId: (int)playmode),
+                        rulesetId: (int)playmode,
+                        cancellationToken: Context.CancellationToken),
 
                     Lazer98 = await ppCalculator.CalculatePPAsync(
                         accuracy: 0.98,
@@ -124,7 +129,8 @@ namespace SosuBot.Services.Handlers.Text
                         scoreMods: [],
                         scoreStatistics: null,
                         scoreMaxStatistics: null,
-                        rulesetId: (int)playmode),
+                        rulesetId: (int)playmode,
+                        cancellationToken: Context.CancellationToken)
                 };
 
                 string duration = $"{beatmap.HitLength / 60}:{(beatmap.HitLength % 60):00}";
