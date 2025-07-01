@@ -1,4 +1,4 @@
-﻿using OsuApi.Core.V2.Clients.Beatmaps.HttpIO;
+using OsuApi.Core.V2.Clients.Beatmaps.HttpIO;
 using OsuApi.Core.V2.Models;
 using OsuApi.Core.V2.Users.Models;
 using SosuBot.Database.Models;
@@ -9,6 +9,7 @@ using SosuBot.Localization;
 using SosuBot.PerformanceCalculator;
 using SosuBot.Services.Handlers.Abstract;
 using System.Text.RegularExpressions;
+using System.Threading;
 using Telegram.Bot.Types;
 
 namespace SosuBot.Services.Handlers.Commands
@@ -132,7 +133,8 @@ namespace SosuBot.Services.Handlers.Commands
                         scoreMods: mods.ToOsuMods(playmode),
                         scoreStatistics: scoreStatistics,
                         scoreMaxStatistics: score.MaximumStatistics!.ToStatistics(),
-                        rulesetId: (int)playmode),
+                        rulesetId: (int)playmode,
+                        cancellationToken: Context.CancellationToken),
 
                     IfSS = await ppCalculator.CalculatePPAsync(
                         accuracy: 1,
@@ -141,7 +143,9 @@ namespace SosuBot.Services.Handlers.Commands
                         scoreMods: mods.ToOsuMods(playmode),
                         scoreStatistics: null,
                         scoreMaxStatistics: null,
-                        rulesetId: (int)playmode)
+                        rulesetId: (int)playmode,
+                        cancellationToken: Context.CancellationToken),
+
                 };
 
                 string scoreRank = score.Passed!.Value ? score.Rank! : "F";
