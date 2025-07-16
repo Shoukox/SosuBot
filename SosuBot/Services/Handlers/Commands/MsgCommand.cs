@@ -16,7 +16,6 @@ namespace SosuBot.Services.Handlers.Commands
 
         public override async Task ExecuteAsync()
         {
-            ILocalization language = new Russian();
             TelegramChat? chatInDatabase = await Context.Database.TelegramChats.FindAsync(Context.Update.Chat.Id);
             OsuUser? osuUserInDatabase = await Context.Database.OsuUsers.FindAsync(Context.Update.From!.Id);
 

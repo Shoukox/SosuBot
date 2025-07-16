@@ -12,8 +12,6 @@ namespace SosuBot.Services.Handlers.Callbacks
 
         public override async Task ExecuteAsync()
         {
-            ILocalization language = new Russian();
-
             string[] parameters = Context.Update.Data!.Split(' ');
             long chatId = long.Parse(parameters[0]);
             int beatmapsetId = int.Parse(parameters[2]);

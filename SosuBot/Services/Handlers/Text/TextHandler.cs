@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging;
 using osu.Game.Rulesets.Osu.Mods;
 using OsuApi.Core.V2.Users.Models;
 using SosuBot.Database.Models;
@@ -58,14 +59,16 @@ namespace SosuBot.Services.Handlers.Text
             }
             if (beatmapLink is not null)
             {
+                BeatmapsetExtended? beatmapset= null;
+                BeatmapExtended? beatmap = null;
                 if (beatmapId is null && beatmapsetId is not null)
                 {
-                    BeatmapsetExtended beatmapsetToGetBeatmapId = await Context.OsuApiV2.Beatmapsets.GetBeatmapset(beatmapsetId.Value);
-                    beatmapId = beatmapsetToGetBeatmapId.Beatmaps!.OrderByDescending(m => m.DifficultyRating).First().Id!;
+                    beatmapset = await Context.OsuApiV2.Beatmapsets.GetBeatmapset(beatmapsetId.Value);
+                    beatmapId = beatmapset.Beatmaps!.OrderByDescending(m => m.DifficultyRating).First().Id;;
                 }
 
-                var beatmap = (await Context.OsuApiV2.Beatmaps.GetBeatmap(beatmapId!.Value))!.BeatmapExtended;
-                var beatmapset = await Context.OsuApiV2.Beatmapsets.GetBeatmapset(beatmap!.BeatmapsetId.Value);
+                beatmap ??= (await Context.OsuApiV2.Beatmaps.GetBeatmap(beatmapId!.Value))!.BeatmapExtended!;
+                beatmapset ??= await Context.OsuApiV2.Beatmapsets.GetBeatmapset(beatmap!.BeatmapsetId.Value);
 
                 Playmode playmode = beatmap.Mode!.ParseRulesetToPlaymode();
                 var classicMod = OsuHelper.GetClassicMode(playmode);
@@ -133,7 +136,7 @@ namespace SosuBot.Services.Handlers.Text
                         cancellationToken: Context.CancellationToken)
                 };
 
-                string duration = $"{beatmap.HitLength / 60}:{(beatmap.HitLength % 60):00}";
+                string duration = $"{beatmap.HitLength / 60}m {(beatmap.HitLength % 60):00}s";
                 string textToSend = language.send_mapInfo.Fill([
                     $"{playmode.ToGamemode()}",
                     $"{beatmap.Version.EncodeHTML()}",
