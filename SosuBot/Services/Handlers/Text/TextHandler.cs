@@ -68,6 +68,12 @@ namespace SosuBot.Services.Handlers.Text
                 }
 
                 beatmap ??= (await Context.OsuApiV2.Beatmaps.GetBeatmap(beatmapId!.Value))!.BeatmapExtended!;
+                int? sum = beatmap.CountCircles + beatmap.CountSliders + beatmap.CountSpinners;
+                if (sum is > 20_000)
+                {
+                    return;
+                }
+                
                 beatmapset ??= await Context.OsuApiV2.Beatmapsets.GetBeatmapset(beatmap!.BeatmapsetId.Value);
 
                 Playmode playmode = beatmap.Mode!.ParseRulesetToPlaymode();
