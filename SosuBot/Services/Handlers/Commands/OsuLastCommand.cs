@@ -1,3 +1,4 @@
+using System.Reflection.Metadata.Ecma335;
 using OsuApi.Core.V2.Clients.Beatmaps.HttpIO;
 using OsuApi.Core.V2.Models;
 using OsuApi.Core.V2.Users.Models;
@@ -114,6 +115,12 @@ namespace SosuBot.Services.Handlers.Commands
             {
                 var score = lastScores[i];
                 var beatmap = beatmaps[i].BeatmapExtended!;
+                int? sum = beatmap.CountCircles + beatmap.CountSliders + beatmap.CountSpinners;
+                if (sum is > 20_000)
+                {
+                    continue;
+                }
+                
                 Mod[] mods = score.Mods!;
                 Playmode playmode = (Playmode)score.RulesetId!;
 
