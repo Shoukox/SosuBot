@@ -118,7 +118,8 @@ namespace SosuBot.Services.Handlers.Commands
                 int? sum = beatmap.CountCircles + beatmap.CountSliders + beatmap.CountSpinners;
                 if (sum is > 20_000)
                 {
-                    continue;
+                    await waitMessage.EditAsync(Context.BotClient, language.error_baseMessage + "\nСлишком большая карта!");
+                    return;
                 }
                 
                 Mod[] mods = score.Mods!;
