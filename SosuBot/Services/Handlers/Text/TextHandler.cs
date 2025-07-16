@@ -136,7 +136,7 @@ namespace SosuBot.Services.Handlers.Text
                 string duration = $"{beatmap.HitLength / 60}:{(beatmap.HitLength % 60):00}";
                 string textToSend = language.send_mapInfo.Fill([
                     $"{playmode.ToGamemode()}",
-                    $"{beatmap.Version}",
+                    $"{beatmap.Version.EncodeHTML()}",
                     $"{beatmap.DifficultyRating:N2}",
                     $"{duration}",
                     $"{beatmapset.Creator}",

@@ -39,8 +39,8 @@ namespace SosuBot.Graphics.ProfileCard
         public void CreateCard()
         {
             using Image<Rgba32> image = new Image<Rgba32>(_cardSize.X, _cardSize.Y);
-            image.Mutate(context => DrawProfileCard(context));
-            image.SaveAsPng("card.png");
+            image.Mutate(DrawProfileCard);
+            image.SaveAsPng($"{_profileInfo.Username}.png");
         }
 
         private void DrawProfileCard(IImageProcessingContext context)
