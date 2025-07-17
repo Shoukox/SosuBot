@@ -6,6 +6,7 @@ using SosuBot.Helpers.OsuTypes;
 using SosuBot.Helpers.OutputText;
 using SosuBot.Helpers.Scoring;
 using SosuBot.Localization;
+using SosuBot.Localization.Languages;
 using SosuBot.Services.Handlers.Abstract;
 using Telegram.Bot.Types;
 

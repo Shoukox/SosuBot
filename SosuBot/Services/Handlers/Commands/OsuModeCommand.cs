@@ -1,6 +1,7 @@
 ﻿using SosuBot.Database.Models;
 using SosuBot.Extensions;
 using SosuBot.Localization;
+using SosuBot.Localization.Languages;
 using SosuBot.Services.Handlers.Abstract;
 using Telegram.Bot.Types;
 

@@ -6,6 +6,7 @@ using SosuBot.Extensions;
 using SosuBot.Helpers.OsuTypes;
 using SosuBot.Helpers.OutputText;
 using SosuBot.Localization;
+using SosuBot.Localization.Languages;
 using SosuBot.PerformanceCalculator;
 using SosuBot.Services.Handlers.Abstract;
 using Telegram.Bot.Types;
