@@ -33,14 +33,13 @@ namespace SosuBot.Services.Handlers.Commands
             }
 
             chatInDatabase!.ExcludeFromChatstats = chatInDatabase.ExcludeFromChatstats ?? new List<long>();
-            chatInDatabase!.ChatMembers = chatInDatabase.ChatMembers ?? new List<long>();
-            if (!chatInDatabase.ExcludeFromChatstats.Contains(osuUserToExclude.TelegramId))
+            if (!chatInDatabase.ExcludeFromChatstats.Contains(osuUserToExclude.OsuUserId))
             {
                 await waitMessage.ReplyAsync(Context.BotClient, language.error_userWasNotExcluded);
                 return;
             }
 
-            chatInDatabase.ExcludeFromChatstats.Remove(osuUserToExclude!.TelegramId);
+            chatInDatabase.ExcludeFromChatstats.Remove(osuUserToExclude!.OsuUserId);
             string sendText = language.command_included.Fill([osuUsernameToExclude]);
             await waitMessage.EditAsync(Context.BotClient, sendText);
         }

@@ -40,7 +40,7 @@ namespace SosuBot.Services.Handlers.Commands
             foreach (long memberId in chatInDatabase!.ChatMembers!)
             {
                 OsuUser? foundMember = await Context.Database.OsuUsers.FindAsync(memberId);
-                if (foundMember != null && !chatInDatabase.ExcludeFromChatstats.Contains(foundMember.TelegramId))
+                if (foundMember != null && !chatInDatabase.ExcludeFromChatstats.Contains(foundMember.OsuUserId))
                 {
                     foundChatMembers.Add(foundMember);
                 }
