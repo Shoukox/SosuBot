@@ -19,10 +19,9 @@ namespace SosuBot.Services.Handlers.Text
         public override async Task ExecuteAsync()
         {
             ILocalization language = new Russian();
-            string text = Context.Update.Text!;
 
-            string? userProfileLink = OsuHelper.ParseOsuUserLink(text, out int? userId);
-            string? beatmapLink = OsuHelper.ParseOsuBeatmapLink(text, out int? beatmapsetId, out int? beatmapId);
+            string? userProfileLink = OsuHelper.ParseOsuUserLink(Context.Update.GetAllLinks(), out int? userId);
+            string? beatmapLink = OsuHelper.ParseOsuBeatmapLink(Context.Update.GetAllLinks(), out int? beatmapsetId, out int? beatmapId);
 
             if (userProfileLink is not null)
             {

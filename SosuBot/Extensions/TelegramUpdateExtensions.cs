@@ -1,4 +1,5 @@
-﻿using Telegram.Bot;
+﻿using Polly;
+using Telegram.Bot;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 using Telegram.Bot.Types.ReplyMarkups;
@@ -21,5 +22,17 @@ namespace SosuBot.Extensions
 
         public static Task AnswerAsync(this CallbackQuery callbackQuery, ITelegramBotClient botClient, string? text = null, bool showAlert = false)
           => botClient.AnswerCallbackQuery(callbackQuery.Id, text, showAlert);
+
+        public static IEnumerable<string> GetAllLinks(this Message message)
+        {
+            if(message.Text == null || message.Entities == null) return Enumerable.Empty<string>();
+
+            List<string> links = new List<string>();
+            foreach(MessageEntity me in message.Entities.Where(e => e.Type is MessageEntityType.Url or MessageEntityType.TextLink))
+            {
+                links.Add(me.Url ?? message.Text.Substring(me.Offset, me.Length));
+            }
+            return links;
+        }
     }
 }
