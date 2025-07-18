@@ -1,8 +1,11 @@
-﻿using osu.Game.Rulesets.Catch.Mods;
+﻿using osu.Framework.Extensions.IEnumerableExtensions;
+using osu.Game.Rulesets.Catch.Mods;
 using osu.Game.Rulesets.Mania.Mods;
 using osu.Game.Rulesets.Mods;
 using osu.Game.Rulesets.Osu.Mods;
 using osu.Game.Rulesets.Taiko.Mods;
+using osu.Game.Utils;
+using OsuApi.Core.V2.Users.Models;
 using SosuBot.Helpers.OsuTypes;
 using System.Text.RegularExpressions;
 
@@ -17,10 +20,23 @@ namespace SosuBot.Helpers.OutputText
         }
 
         private static readonly Regex OsuBeatmapLinkRegex = new(@"(?>https?:\/\/)?(?>osu|old)\.ppy\.sh\/([b,s]|(?>beatmaps)|(?>beatmapsets))\/(\d+)\/?\#?(\w+)?\/?(\d+)?\/?(?>[&,?].+=\w+)?\s?(?>\+(\w+))?", RegexOptions.Compiled | RegexOptions.IgnoreCase);
-        public static string? ParseOsuBeatmapLink(string? text, out int? beatmapsetId, out int? beatmapId)
+        public static string? ParseOsuBeatmapLink(IEnumerable<string>? urls, out int? beatmapsetId, out int? beatmapId)
         {
-            Match match = OsuBeatmapLinkRegex.Match(text ?? string.Empty);
-            if (string.IsNullOrEmpty(match.Value))
+            if (urls == null)
+            {
+                beatmapsetId = null;
+                beatmapId = null;
+                return null;
+            }
+
+            Match? match = null;
+            foreach (string url in urls)
+            {
+                match = OsuBeatmapLinkRegex.Match(url);
+                if (match.Success) break;
+            }
+
+            if (match == null || !match.Success)
             {
                 beatmapsetId = null;
                 beatmapId = null;
@@ -44,23 +60,33 @@ namespace SosuBot.Helpers.OutputText
                     beatmapId = null;
                     break;
             }
-            string url = match.Value;
-            return string.IsNullOrEmpty(url) ? null : url;
+            return match.Value;
         }
 
         private static readonly Regex OsuUserLinkRegex = new(@"(?>https?:\/\/)?(?>osu|old)\.ppy\.sh\/u(?>sers)?\/(\d+|\S+)", RegexOptions.Compiled | RegexOptions.IgnoreCase);
-        public static string? ParseOsuUserLink(string text, out int? userId)
+        public static string? ParseOsuUserLink(IEnumerable<string>? urls, out int? userId)
         {
-            Match match = OsuUserLinkRegex.Match(text ?? string.Empty);
-            if (string.IsNullOrEmpty(match.Value))
+            if (urls == null)
             {
                 userId = null;
                 return null;
             }
 
-            string url = match.Value;
+            Match? match = null;
+            foreach (string url in urls)
+            {
+                match = OsuUserLinkRegex.Match(url);
+                if (match.Success) break;
+            }
+
+            if (match == null || !match.Success)
+            {
+                userId = null;
+                return null;
+            }
+
             if (int.TryParse(match.Groups[1].Value, out int uId)) userId = uId; else userId = null;
-            return string.IsNullOrEmpty(url) ? null : url;
+            return match.Value;
         }
 
         public static Mod GetClassicMode(Playmode playmode)

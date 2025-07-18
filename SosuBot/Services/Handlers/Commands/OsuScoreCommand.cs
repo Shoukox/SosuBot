@@ -9,13 +9,13 @@ using SosuBot.Localization;
 using SosuBot.Localization.Languages;
 using SosuBot.Services.Handlers.Abstract;
 using Telegram.Bot.Types;
+using Telegram.Bot.Types.Enums;
 
 namespace SosuBot.Services.Handlers.Commands
 {
     public class OsuScoreCommand : CommandBase<Message>
     {
         public static string[] Commands = ["/score", "/s"];
-
         public override async Task ExecuteAsync()
         {
             ILocalization language = new Russian();
@@ -33,7 +33,7 @@ namespace SosuBot.Services.Handlers.Commands
             // s
             if (parameters.Length == 0)
             {
-                if (OsuHelper.ParseOsuBeatmapLink(Context.Update.ReplyToMessage?.Text, out int? beatmapsetId, out beatmapId) is string link)
+                if (OsuHelper.ParseOsuBeatmapLink(Context.Update.ReplyToMessage?.GetAllLinks(), out int? beatmapsetId, out beatmapId) is string link)
                 {
                     if (beatmapId is null && beatmapsetId is not null)
                     {
@@ -60,8 +60,7 @@ namespace SosuBot.Services.Handlers.Commands
             else if (parameters.Length == 1)
             {
                 // s mrekk, with reply
-                int? beatmapsetId = null;
-                string? link = OsuHelper.ParseOsuBeatmapLink(Context.Update.ReplyToMessage?.Text, out beatmapsetId, out beatmapId);
+                string? link = OsuHelper.ParseOsuBeatmapLink(Context.Update.ReplyToMessage?.GetAllLinks(), out int? beatmapsetId, out beatmapId);
                 if (link is not null)
                 {
                     if (beatmapId is null && beatmapsetId is not null)
@@ -76,7 +75,7 @@ namespace SosuBot.Services.Handlers.Commands
                 // s url
                 else
                 {
-                    link ??= OsuHelper.ParseOsuBeatmapLink(parameters[0], out beatmapsetId, out beatmapId);
+                    link = OsuHelper.ParseOsuBeatmapLink([parameters[0]], out beatmapsetId, out beatmapId);
                     if (link is not null)
                     {
                         if (beatmapId is null && beatmapsetId is not null)
@@ -106,7 +105,7 @@ namespace SosuBot.Services.Handlers.Commands
             // s url mrekk
             else if (parameters.Length == 2)
             {
-                if (OsuHelper.ParseOsuBeatmapLink(Context.Update.Text, out int? beatmapsetId, out beatmapId) is { } link)
+                if (OsuHelper.ParseOsuBeatmapLink(Context.Update.GetAllLinks(), out int? beatmapsetId, out beatmapId) is { } link)
                 {
                     if (beatmapId is null && beatmapsetId is not null)
                     {
