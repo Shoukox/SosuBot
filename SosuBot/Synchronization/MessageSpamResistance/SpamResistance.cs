@@ -66,7 +66,7 @@ namespace SosuBot.Synchonization.MessageSpamResistance
             return new MessagingUser()
             {
                 BlockedUntil = DateTime.MinValue,
-                MessagesQueue = new Queue<DateTime>(),
+                MessagesQueue = new ConcurrentQueue<DateTime>(),
                 TelegramUserId = userId,
                 WarningMessageSent = false
             };
@@ -76,7 +76,11 @@ namespace SosuBot.Synchonization.MessageSpamResistance
         {
             var dateTimeNow = DateTime.UtcNow;
             var queue = messagingUser.MessagesQueue;
-            while (queue.Count > 0 && dateTimeNow - queue.Peek() > Interval) queue.Dequeue();
+
+            DateTime peekQueueDateTime;
+            queue.TryPeek(out peekQueueDateTime);
+
+            while (queue.Count > 0 && dateTimeNow - peekQueueDateTime > Interval) queue.TryDequeue(out _);
             queue.Enqueue(messageSent.ToUniversalTime());
 
             return new MessagingUser()

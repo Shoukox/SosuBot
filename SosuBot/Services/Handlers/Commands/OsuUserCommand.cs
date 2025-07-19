@@ -18,7 +18,8 @@ namespace SosuBot.Services.Handlers.Commands
 
         public override async Task ExecuteAsync()
         {
-            await Context.Update.SpamResistanceCheck(Context.BotClient);
+            if (await Context.Update.IsUserSpamming(Context.BotClient))
+                return;
 
             ILocalization language = new Russian();
             OsuUser? osuUserInDatabase = await Context.Database.OsuUsers.FindAsync(Context.Update.From!.Id);

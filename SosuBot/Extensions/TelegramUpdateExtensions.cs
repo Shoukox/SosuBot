@@ -37,7 +37,13 @@ namespace SosuBot.Extensions
             return links;
         }
 
-        public static async Task SpamResistanceCheck(this Message msg, ITelegramBotClient botClient)
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="msg"></param>
+        /// <param name="botClient"></param>
+        /// <returns>True, if is banned</returns>
+        public static async Task<bool> IsUserSpamming(this Message msg, ITelegramBotClient botClient)
         {
             var (canSend, sendWarning) = await SpamResistance.Instance.CanSendMessage(msg.From!.Id, msg.Date);
             if (!canSend)
@@ -47,8 +53,9 @@ namespace SosuBot.Extensions
                     await Task.Delay(1000);
                     await botClient.SendMessage(msg.Chat.Id, $"Не спамь!\nТы заблокирован на {SpamResistance.BlockInterval.TotalSeconds} сек.", ParseMode.Html, msg.MessageId, linkPreviewOptions: false);
                 }
-                return;
+                return true;
             }
+            return false;
         }
     }
 }

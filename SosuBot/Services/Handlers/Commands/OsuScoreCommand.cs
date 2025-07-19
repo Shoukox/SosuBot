@@ -18,7 +18,8 @@ namespace SosuBot.Services.Handlers.Commands
         public static string[] Commands = ["/score", "/s"];
         public override async Task ExecuteAsync()
         {
-            await Context.Update.SpamResistanceCheck(Context.BotClient);
+            if (await Context.Update.IsUserSpamming(Context.BotClient))
+                return;
 
             ILocalization language = new Russian();
             TelegramChat? chatInDatabase = await Context.Database.TelegramChats.FindAsync(Context.Update.Chat.Id);
