@@ -1,4 +1,6 @@
-﻿namespace SosuBot.Synchonization.MessageSpamResistance
+﻿using System.Collections.Concurrent;
+
+namespace SosuBot.Synchonization.MessageSpamResistance
 {
     public record MessagingUser
     {
@@ -6,6 +8,6 @@
 
         public DateTime BlockedUntil { get; set; }
         public bool WarningMessageSent { get; set; }
-        public required Queue<DateTime> MessagesQueue { get; set; }
+        public required ConcurrentQueue<DateTime> MessagesQueue { get; set; }
     }
 }
