@@ -77,18 +77,6 @@ public class UpdateHandler(
         if (msg.Text is not { } text) return;
         if (msg.Chat is null || msg.From is null) return;
 
-        // SpamResistance
-        var (canSend, sendWarning) = await SpamResistance.Instance.CanSendMessage(msg.From.Id, msg.Date);
-        if (!canSend)
-        {
-            if (sendWarning)
-            {
-                await Task.Delay(1000);
-                await botClient.SendMessage(msg.Chat.Id, $"Не спамь!\nТы заблокирован на {SpamResistance.BlockInterval.TotalSeconds} сек.", ParseMode.Html, msg.MessageId, linkPreviewOptions: false);
-            }
-            return;
-        }
-
         // Execute necessary functions
         if (text.IsCommand())
         {

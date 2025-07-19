@@ -11,7 +11,6 @@
         {
             Context = context;
         }
-
         public abstract Task ExecuteAsync();
     }
 }

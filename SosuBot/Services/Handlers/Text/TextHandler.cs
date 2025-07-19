@@ -25,6 +25,7 @@ namespace SosuBot.Services.Handlers.Text
 
             if (userProfileLink is not null)
             {
+                await Context.Update.SpamResistanceCheck(Context.BotClient);
                 UserExtend user = (await Context.OsuApiV2.Users.GetUser($"{userId}", new()))!.UserExtend!;
 
                 Playmode playmode = user.Playmode!.ParseRulesetToPlaymode();
@@ -59,7 +60,8 @@ namespace SosuBot.Services.Handlers.Text
             }
             if (beatmapLink is not null)
             {
-                BeatmapsetExtended? beatmapset= null;
+                await Context.Update.SpamResistanceCheck(Context.BotClient);
+                BeatmapsetExtended? beatmapset = null;
                 BeatmapExtended? beatmap = null;
                 if (beatmapId is null && beatmapsetId is not null)
                 {
