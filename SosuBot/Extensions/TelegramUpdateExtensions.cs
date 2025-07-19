@@ -1,4 +1,6 @@
 ﻿using Polly;
+using SDL;
+using SosuBot.Synchonization.MessageSpamResistance;
 using Telegram.Bot;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
@@ -33,6 +35,20 @@ namespace SosuBot.Extensions
                 links.Add(me.Url ?? message.Text.Substring(me.Offset, me.Length));
             }
             return links;
+        }
+
+        public static async Task SpamResistanceCheck(this Message msg, ITelegramBotClient botClient)
+        {
+            var (canSend, sendWarning) = await SpamResistance.Instance.CanSendMessage(msg.From!.Id, msg.Date);
+            if (!canSend)
+            {
+                if (sendWarning)
+                {
+                    await Task.Delay(1000);
+                    await botClient.SendMessage(msg.Chat.Id, $"Не спамь!\nТы заблокирован на {SpamResistance.BlockInterval.TotalSeconds} сек.", ParseMode.Html, msg.MessageId, linkPreviewOptions: false);
+                }
+                return;
+            }
         }
     }
 }
