@@ -147,7 +147,17 @@ namespace SosuBot.Services.Handlers.Commands
                         scoreMaxStatistics: score.MaximumStatistics!.ToStatistics(),
                         rulesetId: (int)playmode,
                         cancellationToken: Context.CancellationToken),
-
+                    
+                    IfFC = await ppCalculator.CalculatePPAsync(
+                        accuracy: score.Accuracy,
+                        beatmapId: beatmap.Id.Value,
+                        scoreMaxCombo: beatmap.MaxCombo!.Value,
+                        scoreMods: mods.ToOsuMods(playmode),
+                        scoreStatistics: null,
+                        scoreMaxStatistics: null,
+                        rulesetId: (int)playmode,
+                        cancellationToken: Context.CancellationToken),
+                    
                     IfSS = await ppCalculator.CalculatePPAsync(
                         accuracy: 1,
                         beatmapId: beatmap.Id.Value,
@@ -157,17 +167,18 @@ namespace SosuBot.Services.Handlers.Commands
                         scoreMaxStatistics: null,
                         rulesetId: (int)playmode,
                         cancellationToken: Context.CancellationToken),
-
                 };
-
+                
                 string scoreRank = score.Passed!.Value ? score.Rank! : "F";
+                string textBeforeBeatmapLink = lastScores.Length == 1 ? "" : $"{i + 1}. ";
                 textToSend += language.command_last.Fill([
-                    $"{i + 1}",
+                    $"{textBeforeBeatmapLink}",
                     $"{scoreRank}",
                     $"{beatmap.Id}",
                     $"{score.Beatmapset!.Title.EncodeHTML()}",
                     $"{beatmap.Version.EncodeHTML()}",
                     $"{beatmap.Status}",
+                    $"{ppCalculator.LastDifficultyAttributes.StarRating:N2}",
                     $"{ScoreHelper.GetScoreStatisticsText(score.Statistics!, playmode)}",
                     $"{score.Statistics!.Miss + score.Statistics!.LargeTickMiss}",
                     $"{score.Accuracy*100:N2}",
@@ -175,6 +186,7 @@ namespace SosuBot.Services.Handlers.Commands
                     $"{score.MaxCombo}",
                     $"{beatmap.MaxCombo}",
                     $"{calculatedPP.Current:N2}",
+                    $"{calculatedPP.IfFC:N2}",
                     $"{calculatedPP.IfSS:N2}",
                     $"{score.EndedAt!.Value:dd.MM.yyyy HH:mm zzz}",
                     $"{score.CalculateCompletion(beatmap.CalculateObjectsAmount()):N1}"]);
