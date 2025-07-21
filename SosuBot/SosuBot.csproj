@@ -22,11 +22,6 @@
     <PackageReference Include="OsuApi.Core" Version="0.0.413" />
     <PackageReference Include="Polly.Contrib.WaitAndRetry" Version="1.1.1" />
     <PackageReference Include="Telegram.Bot" Version="22.5.1" />
-    <PackageReference Include="ppy.osu.Game" Version="2025.607.0" />
-    <PackageReference Include="ppy.osu.Game.Rulesets.Osu" Version="2025.607.0" />
-    <PackageReference Include="ppy.osu.Game.Rulesets.Mania" Version="2025.607.0" />
-    <PackageReference Include="ppy.osu.Game.Rulesets.Taiko" Version="2025.607.0" />
-    <PackageReference Include="ppy.osu.Game.Rulesets.Catch" Version="2025.607.0" />
   </ItemGroup>
 
   <ItemGroup>

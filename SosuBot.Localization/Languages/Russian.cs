@@ -28,9 +28,9 @@
             $"По вопросам и предложениям писать создателю @Shoukkoo";
 
         public string command_last =>
-            "{}. <b>({})</b> <a href=\"https://osu.ppy.sh/beatmaps/{}\">{} [{}]</a> <b>({})</b>\n" +
+            "{}<b>({})</b> <a href=\"https://osu.ppy.sh/beatmaps/{}\">{} [{}]</a> <b>({}, {}⭐️)</b>\n" +
                 "{} / {}❌ - <b><i>{}</i></b>%\n" +
-                "<b>{}</b> <i>{}/{}</i> <b><u>{}pp</u></b> (<b><u>{}pp</u></b> if SS)\n({}) {}% пройдено\n\n";
+                "<b>{}</b> <i>{}/{}</i> <b><u>{}pp</u></b> (<b><u>{}pp/{}pp</u></b> FC/SS)\n({}) {}% пройдено\n\n";
 
         public string command_set =>
             "Теперь ты <b>{}</b>, {}pp\n" +
