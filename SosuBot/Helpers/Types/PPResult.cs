@@ -1,6 +1,6 @@
-﻿namespace SosuBot.Helpers.OsuTypes
+﻿namespace SosuBot.Helpers.Types
 {
-    public record PPResult
+    public sealed record PPResult
     {
         public required double? Current { get; set; }
         public required double? IfFC { get; set; }

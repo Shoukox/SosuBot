@@ -1,5 +1,5 @@
 using Microsoft.Extensions.Logging;
-using OsuApi.Core.V2;
+using OsuApi.V2;
 using SosuBot.Database;
 using Telegram.Bot;
 

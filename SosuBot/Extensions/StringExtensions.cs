@@ -1,4 +1,4 @@
-﻿using OsuApi.Core.V2.Models;
+﻿using OsuApi.V2.Models;
 using SosuBot.Helpers.OsuTypes;
 using System.Web;
 

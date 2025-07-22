@@ -4,7 +4,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using OsuApi.Core.V2;
 using Polly;
 using Polly.Contrib.WaitAndRetry;
 using Polly.Extensions.Http;
@@ -14,6 +13,8 @@ using SosuBot.Services;
 using SosuBot.Services.Data;
 using SosuBot.Services.Handlers;
 using System.Net;
+using OsuApi.V2;
+using SosuBot.Services.BackgroundServices;
 using Telegram.Bot;
 
 namespace SosuBot;
@@ -57,6 +58,7 @@ internal class Program
         builder.Services.AddScoped<UpdateHandler>();
         builder.Services.AddHostedService<PollingBackgroundService>();
         builder.Services.AddHostedService<UpdateHandlerBackgroundService>();
+        builder.Services.AddHostedService<ScoresObserverBackgroundService>();
 
         // Database
         var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ?? throw new InvalidOperationException("Connection string" + "'DefaultConnection' not found.");

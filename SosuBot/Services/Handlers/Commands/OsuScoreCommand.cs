@@ -1,5 +1,5 @@
-﻿using OsuApi.Core.V2.Models;
-using OsuApi.Core.V2.Users.Models;
+﻿using OsuApi.V2.Models;
+using OsuApi.V2.Users.Models;
 using SosuBot.Database.Models;
 using SosuBot.Extensions;
 using SosuBot.Helpers.OsuTypes;
@@ -9,7 +9,6 @@ using SosuBot.Localization;
 using SosuBot.Localization.Languages;
 using SosuBot.Services.Handlers.Abstract;
 using Telegram.Bot.Types;
-using Telegram.Bot.Types.Enums;
 
 namespace SosuBot.Services.Handlers.Commands
 {

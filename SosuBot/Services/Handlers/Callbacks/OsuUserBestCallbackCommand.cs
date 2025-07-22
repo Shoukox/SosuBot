@@ -1,6 +1,6 @@
-﻿using OsuApi.Core.V2.Clients.Users.HttpIO;
-using OsuApi.Core.V2.Models;
-using OsuApi.Core.V2.Users.Models;
+﻿using OsuApi.V2.Clients.Users.HttpIO;
+using OsuApi.V2.Models;
+using OsuApi.V2.Users.Models;
 using SosuBot.Extensions;
 using SosuBot.Helpers.OsuTypes;
 using SosuBot.Helpers.Scoring;

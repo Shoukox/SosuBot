@@ -5,7 +5,7 @@ using Telegram.Bot;
 
 namespace SosuBot.Services;
 
-public class PollingBackgroundService(
+public sealed class PollingBackgroundService(
     ILogger<PollingBackgroundService> logger,
     ITelegramBotClient botClient,
     UpdateQueueService updateQueueService) : BackgroundService

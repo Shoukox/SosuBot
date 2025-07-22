@@ -1,11 +1,9 @@
-﻿using OsuApi.Core.V2.Models;
+﻿using OsuApi.V2.Models;
 using SosuBot.Database.Extensions;
 using SosuBot.Database.Models;
 using SosuBot.Extensions;
 using SosuBot.Helpers.OsuTypes;
-using SosuBot.Localization;
 using SosuBot.Services.Handlers.Abstract;
-using System.IO;
 using System.Text;
 using System.Text.Json;
 using Telegram.Bot.Types;
@@ -14,11 +12,10 @@ namespace SosuBot.Services.Handlers.Commands
 {
     public class DbCommand : CommandBase<Message>
     {
-        public static string[] Commands = ["/db"];
+        public static readonly string[] Commands = ["/db"];
 
         public override async Task ExecuteAsync()
         {
-            TelegramChat? chatInDatabase = await Context.Database.TelegramChats.FindAsync(Context.Update.Chat.Id);
             OsuUser? osuUserInDatabase = await Context.Database.OsuUsers.FindAsync(Context.Update.From!.Id);
 
             if (osuUserInDatabase is null || !osuUserInDatabase.IsAdmin) return;
@@ -29,7 +26,7 @@ namespace SosuBot.Services.Handlers.Commands
             {
                 int startCount = Context.Database.OsuUsers.Count();
                 string osuusers = "osuusers.txt";
-                var users = JsonSerializer.Deserialize<List<Legacy.osuUser>>(File.ReadAllText(osuusers));
+                var users = JsonSerializer.Deserialize<List<Legacy.osuUser>>(await File.ReadAllTextAsync(osuusers));
                 if (users == null)
                 {
                     await Context.Update.ReplyAsync(Context.BotClient, "Incorrect json");
@@ -86,7 +83,7 @@ namespace SosuBot.Services.Handlers.Commands
             }
             else if (parameters[0] == "count")
             {
-                int count = 0;
+                int count;
                 if (parameters[1] == "users") count = Context.Database.OsuUsers.Count();
                 else if (parameters[1] == "chats") count = Context.Database.TelegramChats.Count();
                 else if (parameters[1] == "groups") count = Context.Database.TelegramChats.Count(m => m.ChatId < 0);
