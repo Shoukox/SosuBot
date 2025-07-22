@@ -9,7 +9,7 @@ using Telegram.Bot.Types;
 
 namespace SosuBot.Services;
 
-public class UpdateHandlerBackgroundService(
+public sealed class UpdateHandlerBackgroundService(
     UpdateQueueService updateQueue,
     IServiceProvider serviceProvider,
     ILogger<UpdateHandlerBackgroundService> logger)

@@ -1,7 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Primitives;
 using osu.Framework.Extensions.IEnumerableExtensions;
-using OsuApi.Core.V2.Users.Models;
 using SosuBot.Database.Models;
 using System;
 using System.Collections;

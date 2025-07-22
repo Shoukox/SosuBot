@@ -1,7 +1,6 @@
-using System.Reflection.Metadata.Ecma335;
-using OsuApi.Core.V2.Clients.Beatmaps.HttpIO;
-using OsuApi.Core.V2.Models;
-using OsuApi.Core.V2.Users.Models;
+using OsuApi.V2.Clients.Beatmaps.HttpIO;
+using OsuApi.V2.Models;
+using OsuApi.V2.Users.Models;
 using SosuBot.Database.Models;
 using SosuBot.Extensions;
 using SosuBot.Helpers.OsuTypes;
@@ -11,7 +10,7 @@ using SosuBot.Localization.Languages;
 using SosuBot.PerformanceCalculator;
 using SosuBot.Services.Handlers.Abstract;
 using System.Text.RegularExpressions;
-using System.Threading;
+using SosuBot.Helpers.Types;
 using Telegram.Bot.Types;
 
 namespace SosuBot.Services.Handlers.Commands

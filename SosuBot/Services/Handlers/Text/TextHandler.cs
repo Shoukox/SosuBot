@@ -1,6 +1,4 @@
-using Microsoft.Extensions.Logging;
-using osu.Game.Rulesets.Osu.Mods;
-using OsuApi.Core.V2.Users.Models;
+using OsuApi.V2.Users.Models;
 using SosuBot.Database.Models;
 using SosuBot.Extensions;
 using SosuBot.Helpers.OsuTypes;

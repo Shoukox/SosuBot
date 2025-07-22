@@ -2,7 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using OsuApi.Core.V2;
+using OsuApi.V2;
 using SosuBot.Database;
 using SosuBot.Extensions;
 using SosuBot.Services.Handlers.Abstract;

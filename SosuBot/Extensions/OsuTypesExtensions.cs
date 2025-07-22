@@ -38,7 +38,7 @@ namespace SosuBot.Extensions
             .Select(t => (Mod)Activator.CreateInstance(t)!)
             .ToArray()!;
 
-        public static Mod[] ToOsuMods(this OsuApi.Core.V2.Models.Mod[] mods, Playmode playmode)
+        public static Mod[] ToOsuMods(this OsuApi.V2.Models.Mod[] mods, Playmode playmode)
         {
             List<Mod> osuMods = new List<Mod>();
             foreach (var mod in mods)
@@ -72,36 +72,36 @@ namespace SosuBot.Extensions
         {
             return playmode switch
             {
-                Playmode.Osu => OsuApi.Core.V2.Models.Ruleset.Osu,
-                Playmode.Taiko => OsuApi.Core.V2.Models.Ruleset.Taiko,
-                Playmode.Catch => OsuApi.Core.V2.Models.Ruleset.Fruits,
-                Playmode.Mania => OsuApi.Core.V2.Models.Ruleset.Mania,
+                Playmode.Osu => OsuApi.V2.Models.Ruleset.Osu,
+                Playmode.Taiko => OsuApi.V2.Models.Ruleset.Taiko,
+                Playmode.Catch => OsuApi.V2.Models.Ruleset.Fruits,
+                Playmode.Mania => OsuApi.V2.Models.Ruleset.Mania,
                 _ => throw new NotImplementedException()
             };
         }
 
-        public static string GetProfileUrl(this OsuApi.Core.V2.Users.Models.User user)
+        public static string GetProfileUrl(this OsuApi.V2.Users.Models.User user)
         {
             return $"http://osu.ppy.sh/u/{user.Id}";
         }
 
-        public static double CalculateCompletion(this OsuApi.Core.V2.Models.Score score, int beatmapObjects)
+        public static double CalculateCompletion(this OsuApi.V2.Models.Score score, int beatmapObjects)
         {
             int scoreHittedObjects = score.CalculateObjectsAmount();
             return (scoreHittedObjects / (double)beatmapObjects) * 100.0;
         }
 
-        public static int CalculateObjectsAmount(this OsuApi.Core.V2.Models.Score score)
+        public static int CalculateObjectsAmount(this OsuApi.V2.Models.Score score)
         {
             return score.Statistics!.Great + score.Statistics.Ok + score.Statistics.Meh + score.Statistics.Miss;
         }
 
-        public static int CalculateObjectsAmount(this OsuApi.Core.V2.Users.Models.BeatmapExtended beatmapExtended)
+        public static int CalculateObjectsAmount(this OsuApi.V2.Users.Models.BeatmapExtended beatmapExtended)
         {
             return beatmapExtended.CountCircles!.Value + beatmapExtended.CountSliders!.Value + beatmapExtended.CountSpinners!.Value;
         }
 
-        public static Dictionary<HitResult, int> GetMaximumStatistics(this OsuApi.Core.V2.Users.Models.BeatmapExtended beatmapExtended)
+        public static Dictionary<HitResult, int> GetMaximumStatistics(this OsuApi.V2.Users.Models.BeatmapExtended beatmapExtended)
         {
             return new Dictionary<HitResult, int>()
                 {

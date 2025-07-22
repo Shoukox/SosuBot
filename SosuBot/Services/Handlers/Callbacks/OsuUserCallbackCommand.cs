@@ -1,4 +1,4 @@
-﻿using OsuApi.Core.V2.Users.Models;
+﻿using OsuApi.V2.Users.Models;
 using SosuBot.Extensions;
 using SosuBot.Helpers.OsuTypes;
 using SosuBot.Helpers.OutputText;
