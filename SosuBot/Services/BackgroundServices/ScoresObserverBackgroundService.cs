@@ -78,7 +78,7 @@ public sealed class ScoresObserverBackgroundService(
             catch (OperationCanceledException e)
             {
                 logger.LogError(e, "Cancelled unexpectedly");
-                await Task.Delay(TimeSpan.FromMinutes(1));
+                return;
             }
             catch (Exception e)
             {
