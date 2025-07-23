@@ -2,12 +2,17 @@ using System.Collections.Concurrent;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using osu.Game.Beatmaps;
 using OsuApi.V2;
 using OsuApi.V2.Clients.Users.HttpIO;
 using OsuApi.V2.Models;
 using OsuApi.V2.Users.Models;
 using SosuBot.Database;
 using SosuBot.Helpers.Comparers;
+using SosuBot.Helpers.OsuTypes;
+using SosuBot.Helpers.Scoring;
+using SosuBot.Localization;
+using SosuBot.Localization.Languages;
 using Telegram.Bot;
 using Telegram.Bot.Types.Enums;
 
@@ -36,6 +41,7 @@ public sealed class ScoresObserverBackgroundService(
     private async Task ObserveScores(CancellationToken stoppingToken)
     {
         Dictionary<int, GetUserScoresResponse> scores = new();
+        ILocalization language = new Russian();
         while (!stoppingToken.IsCancellationRequested)
         {
             try
@@ -59,8 +65,8 @@ public sealed class ScoresObserverBackgroundService(
                         foreach (Score score in newScores)
                         {
                             await botClient.SendMessage(adminTelegramId,
-                                $"{score.User?.Username} set a {score.Pp}pp <a href=\"{BaseOsuScoreLink}{score.Id}\">score!</a>",
-                                ParseMode.Html, cancellationToken: stoppingToken);
+                                $"<b>{score.User?.Username}</b> set a <b>{score.Pp}pp</b> <a href=\"{BaseOsuScoreLink}{score.Id}\">score!</a>",
+                                ParseMode.Html, linkPreviewOptions: false, cancellationToken: stoppingToken);
                             await Task.Delay(1000, stoppingToken);
                         }
                     }
