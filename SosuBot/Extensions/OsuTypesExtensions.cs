@@ -60,6 +60,7 @@ namespace SosuBot.Extensions
         public static string ModsToString(this Mod[] mods, Playmode playmode,
             bool acronymsToUpper = true)
         {
+            if (mods == null || mods.Length == 0) return "NM";
             return string.Join("",
                 mods.Select(m => acronymsToUpper ? m.Acronym!.ToUpperInvariant() : m.Acronym!.ToLowerInvariant()));
         }
