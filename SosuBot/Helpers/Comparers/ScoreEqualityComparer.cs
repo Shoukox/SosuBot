@@ -7,12 +7,10 @@ public class ScoreEqualityComparer : EqualityComparer<Score>
 {
     public override bool Equals(Score? x, Score? y)
     {
-        if (x is null || y is null)
-        {
-            return false;
-        }
+        if(ReferenceEquals(x, y)) return true;
+        if (x is null || y is null) return x == y;
 
-        if (x.Id == y.Id && x.MaxCombo != y.MaxCombo)
+        if (x.Id == y.Id && x.StartedAt != y.StartedAt)
         {
             File.WriteAllText(AppDomain.CurrentDomain.BaseDirectory + "/xScore.txt", Newtonsoft.Json.JsonConvert.SerializeObject(x));
             File.WriteAllText(AppDomain.CurrentDomain.BaseDirectory + "/yScore.txt", Newtonsoft.Json.JsonConvert.SerializeObject(y));
@@ -21,10 +19,9 @@ public class ScoreEqualityComparer : EqualityComparer<Score>
 
         return x.Id == y.Id
                && x.StartedAt == y.StartedAt
-               && x.EndedAt == y.EndedAt
-               && x.MaxCombo == y.MaxCombo;
+               && x.EndedAt == y.EndedAt;
     }
 
-    public override int GetHashCode(Score obj) => obj.Id.GetHashCode();
+    public override int GetHashCode(Score obj) => HashCode.Combine(obj.Id, obj.StartedAt, obj.EndedAt);
 
 }
