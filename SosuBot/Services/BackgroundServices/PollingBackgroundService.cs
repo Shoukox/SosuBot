@@ -13,6 +13,7 @@ public sealed class PollingBackgroundService(
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         logger.LogInformation("Starting polling background service");
+        await botClient.GetUpdates(timeout: 30, cancellationToken: stoppingToken);
         await EnqueueAllUpdates(stoppingToken);
     }
 
@@ -40,5 +41,6 @@ public sealed class PollingBackgroundService(
                 logger.LogError(e, "Exception");
             }
         }
+        logger.LogWarning("Finished its work");
     }
 }

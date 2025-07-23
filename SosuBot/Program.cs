@@ -59,6 +59,7 @@ internal class Program
         builder.Services.AddHostedService<PollingBackgroundService>();
         builder.Services.AddHostedService<UpdateHandlerBackgroundService>();
         builder.Services.AddHostedService<ScoresObserverBackgroundService>();
+        
 
         // Database
         var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ?? throw new InvalidOperationException("Connection string" + "'DefaultConnection' not found.");
