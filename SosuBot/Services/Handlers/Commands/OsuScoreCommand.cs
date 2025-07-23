@@ -182,8 +182,8 @@ namespace SosuBot.Services.Handlers.Commands
                 textToSend += language.command_score.Fill([
                     $"{score.Rank}",
                     $"{beatmap.Url}",
-                    $"{beatmapset.Title.EncodeHTML()}",
-                    $"{beatmap.Version.EncodeHTML()}",
+                    $"{beatmapset.Title.EncodeHtml()}",
+                    $"{beatmap.Version.EncodeHtml()}",
                     $"{beatmap.Status}",
                     $"{ScoreHelper.GetScoreStatisticsText(score.Statistics!, playmode.Value)}",
                     $"{score.Statistics!.Miss}",
