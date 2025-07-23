@@ -57,7 +57,7 @@ namespace SosuBot.Extensions
             return osuMods.ToArray();
         }
 
-        public static string ModsToString(this OsuApi.V2.Models.Mod[] mods, Playmode playmode,
+        public static string ModsToString(this Mod[] mods, Playmode playmode,
             bool acronymsToUpper = true)
         {
             return string.Join("",
