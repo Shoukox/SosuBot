@@ -38,9 +38,9 @@ public sealed class PollingBackgroundService(
                     await updateQueueService.EnqueueUpdateAsync(update, stoppingToken);
                 }
             }
-            catch (OperationCanceledException)
+            catch (OperationCanceledException e)
             {
-                logger.LogWarning("Operation cancelled");
+                logger.LogWarning(e, "Operation cancelled");
                 return;
             }
             catch (Exception e)
