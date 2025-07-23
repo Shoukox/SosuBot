@@ -75,7 +75,8 @@
         public string send_mapInfo =>
             "<b>{}</b>\n" +
             "<b>[{}]</b> - {}⭐️ - {} - {} - <b>{}</b> - <a href=\"https://osu.ppy.sh/beatmaps/{}\">link</a>\n" +
-            "<b>CS</b>: {} | <b>AR</b>: {} | <b>HP</b>: {} | <b>BPM</b>: {}\n" +
+            "<b>CS</b>: {} | <b>AR</b>: {} | <b>HP</b>: {} | <b>BPM</b>: {}\n\n" +
+            "<b>+{} ({}⭐️) pp calculation:</b>\n" +
             "<code>" +
             "acc  | classic | lazer\n" +
             "-----+---------+---------\n" +

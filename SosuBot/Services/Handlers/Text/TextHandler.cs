@@ -20,7 +20,7 @@ namespace SosuBot.Services.Handlers.Text
         public override async Task ExecuteAsync()
         {
             ILocalization language = new Russian();
-            
+
             await HandleBeatmapLink(language);
             await HandleUserProfileLink(language);
         }
@@ -118,7 +118,7 @@ namespace SosuBot.Services.Handlers.Text
 
             var classicModsToApply = modsFromMessage.Concat([classicMod]).Distinct().ToArray();
             var lazerModsToApply = modsFromMessage.Distinct().ToArray();
-                    
+
             var ppCalculator = new PPCalculator();
             var calculatedPP = new
             {
@@ -183,7 +183,7 @@ namespace SosuBot.Services.Handlers.Text
                     cancellationToken: Context.CancellationToken)
             };
 
-            string duration = $"{beatmap.TotalLength / 60}:{beatmap.TotalLength % 60}";
+            string duration = $"{beatmap.TotalLength / 60}:{beatmap.TotalLength % 60:00}";
             string textToSend = language.send_mapInfo.Fill([
                 $"{playmode.ToGamemode()}",
                 $"{beatmap.Version.EncodeHtml()}",
@@ -196,6 +196,8 @@ namespace SosuBot.Services.Handlers.Text
                 $"{beatmap.AR}",
                 $"{beatmap.Drain}",
                 $"{beatmap.BPM}",
+                $"{lazerModsToApply.ModsToString(playmode)}",
+                $"{ppCalculator.LastDifficultyAttributes.StarRating:N2}",
                 $"{calculatedPP.ClassicSS:N0}",
                 $"{calculatedPP.LazerSS:N0}",
 
