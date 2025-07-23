@@ -17,7 +17,7 @@ public sealed class PollingBackgroundService(
         logger.LogInformation("Starting polling background service");
 
         // Skip pending updates
-        Update[] pendingUpdates = await botClient.GetUpdates(timeout: 30, cancellationToken: stoppingToken);
+        Update[] pendingUpdates = await botClient.GetUpdates(cancellationToken: stoppingToken);
         if(pendingUpdates.Length != 0)
         {
             _offset = pendingUpdates.Last().Id + 1;
@@ -29,6 +29,7 @@ public sealed class PollingBackgroundService(
 
     private async Task EnqueueAllUpdates(CancellationToken stoppingToken)
     {
+        logger.LogInformation("Bot is ready");
         while (!stoppingToken.IsCancellationRequested)
         {
             try

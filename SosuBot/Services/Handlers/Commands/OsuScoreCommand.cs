@@ -1,4 +1,5 @@
-﻿using OsuApi.V2.Models;
+﻿using osu.Game.Configuration;
+using OsuApi.V2.Models;
 using OsuApi.V2.Users.Models;
 using SosuBot.Database.Models;
 using SosuBot.Extensions;
@@ -155,7 +156,8 @@ namespace SosuBot.Services.Handlers.Commands
                 await waitMessage.EditAsync(Context.BotClient, language.error_noRecords);
                 return;
             }
-            scores = scoresResponse.Scores!;
+            scores = scoresResponse.Scores!.GroupBy((s) => s.Mods).Select(m => m.MaxBy(s => s.Pp)!).OrderByDescending(m => m.Pp).ToArray();
+            
             if (scores.Length == 0)
             {
                 await waitMessage.EditAsync(Context.BotClient, language.error_noRecords);
