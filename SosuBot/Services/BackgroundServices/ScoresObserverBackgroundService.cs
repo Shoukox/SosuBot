@@ -38,35 +38,49 @@ public sealed class ScoresObserverBackgroundService(
         Dictionary<int, GetUserScoresResponse> scores = new();
         while (!stoppingToken.IsCancellationRequested)
         {
-            long adminTelegramId =
-                (await database.OsuUsers.FirstAsync((m) => m.IsAdmin, cancellationToken: stoppingToken)).TelegramId;
-            foreach (int userId in ObservedUsers)
+            try
             {
-                GetUserScoresResponse? userBestScores =
-                    await osuApi.Users.GetUserScores(userId, ScoreType.Best, new() { Limit = 50 });
-                if (userBestScores == null)
+                long adminTelegramId =
+                    (await database.OsuUsers.FirstAsync((m) => m.IsAdmin, cancellationToken: stoppingToken)).TelegramId;
+                foreach (int userId in ObservedUsers)
                 {
-                    logger.LogWarning($"{userId} has no scores!");
-                    continue;
-                }
-                
-                // ReSharper disable once CanSimplifyDictionaryLookupWithTryGetValue
-                if (scores.ContainsKey(userId))
-                {
-                    IEnumerable<Score> newScores = userBestScores.Scores.Except(scores[userId].Scores, scoreComparer);
-                    foreach (Score score in newScores)
+                    GetUserScoresResponse? userBestScores =
+                        await osuApi.Users.GetUserScores(userId, ScoreType.Best, new() { Limit = 50 });
+                    if (userBestScores == null)
                     {
-                        await botClient.SendMessage(adminTelegramId,
-                            $"{score.User?.Username} set a {score.Pp}pp <a href=\"{BaseOsuScoreLink}{score.Id}\">score!</a>",
-                            ParseMode.Html, cancellationToken: stoppingToken);
-                        await Task.Delay(1000, stoppingToken);
+                        logger.LogWarning($"{userId} has no scores!");
+                        continue;
                     }
-                }
 
-                scores[userId] = userBestScores;
-                await Task.Delay(1000, stoppingToken);
+                    // ReSharper disable once CanSimplifyDictionaryLookupWithTryGetValue
+                    if (scores.ContainsKey(userId))
+                    {
+                        IEnumerable<Score> newScores = userBestScores.Scores.Except(scores[userId].Scores, scoreComparer);
+                        foreach (Score score in newScores)
+                        {
+                            await botClient.SendMessage(adminTelegramId,
+                                $"{score.User?.Username} set a {score.Pp}pp <a href=\"{BaseOsuScoreLink}{score.Id}\">score!</a>",
+                                ParseMode.Html, cancellationToken: stoppingToken);
+                            await Task.Delay(1000, stoppingToken);
+                        }
+                    }
+
+                    scores[userId] = userBestScores;
+                    await Task.Delay(1000, stoppingToken);
+                }
+            }
+            catch (OperationCanceledException e)
+            {
+                logger.LogError(e, "Cancelled unexpectedly");
+                await Task.Delay(TimeSpan.FromMinutes(1));
+            }
+            catch (Exception e)
+            {
+                logger.LogError(e, "Unexpected exception");
             }
         }
+
+        logger.LogWarning("Finished its work");
     }
 
     /// <summary>
@@ -78,7 +92,7 @@ public sealed class ScoresObserverBackgroundService(
     private async Task<UserStatistics[]> GetBestPlayersFor(string? countryCode = null)
     {
         Rankings? rankings = await osuApi.Rankings.GetRanking(Ruleset.Osu, RankingType.Performance,
-            new() { Country = countryCode, Filter = Filter.All});
+            new() { Country = countryCode, Filter = Filter.All });
         if (rankings == null)
         {
             logger.LogError($"Ranking is null. {countryCode}");

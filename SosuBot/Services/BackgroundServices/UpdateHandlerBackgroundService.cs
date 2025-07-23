@@ -95,5 +95,6 @@ public sealed class UpdateHandlerBackgroundService(
                 await updateHandler.HandleErrorAsync(bot, ex, HandleErrorSource.HandleUpdateError, stoppingToken);
             }
         }
+        logger.LogWarning("Finished its work");
     }
 }
