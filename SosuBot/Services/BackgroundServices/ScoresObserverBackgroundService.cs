@@ -26,11 +26,11 @@ public sealed class ScoresObserverBackgroundService(
 {
     public static readonly ConcurrentBag<long> ObservedUsers = new();
     public const string BaseOsuScoreLink = "https://osu.ppy.sh/scores/";
-    private static ScoreEqualityComparer scoreComparer = new();
+    private static readonly ScoreEqualityComparer ScoreComparer = new();
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        logger.LogInformation("Scores observed background service started");
+        logger.LogInformation("Scores observer background service started");
 
         await AddPlayersToObserverList("uz", 50);
         await AddPlayersToObserverList(null, 50);
@@ -41,7 +41,6 @@ public sealed class ScoresObserverBackgroundService(
     private async Task ObserveScores(CancellationToken stoppingToken)
     {
         Dictionary<int, GetUserScoresResponse> scores = new();
-        ILocalization language = new Russian();
         while (!stoppingToken.IsCancellationRequested)
         {
             try
@@ -61,7 +60,7 @@ public sealed class ScoresObserverBackgroundService(
                     // ReSharper disable once CanSimplifyDictionaryLookupWithTryGetValue
                     if (scores.ContainsKey(userId))
                     {
-                        IEnumerable<Score> newScores = userBestScores.Scores.Except(scores[userId].Scores, scoreComparer);
+                        IEnumerable<Score> newScores = userBestScores.Scores.Except(scores[userId].Scores, ScoreComparer);
                         foreach (Score score in newScores)
                         {
                             await botClient.SendMessage(adminTelegramId,

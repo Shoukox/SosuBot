@@ -39,12 +39,16 @@ internal class Program
         builder.Services.Configure<BotConfiguration>(builder.Configuration.GetSection(nameof(BotConfiguration)));
         builder.Services.Configure<OsuApiV2Configuration>(builder.Configuration.GetSection(nameof(OsuApiV2Configuration)));
         builder.Services.AddHttpClient(nameof(TelegramBotClient))
-                        .AddTypedClient<ITelegramBotClient>((httpClient, sp) =>
-                        {
-                            var options = sp.GetRequiredService<IOptions<BotConfiguration>>();
-                            return new TelegramBotClient(options.Value.Token, httpClient);
-                        })
-                        .AddPolicyHandler(GetRetryPolicy());
+            .ConfigureHttpClient((httpClient) =>
+            {
+                httpClient.Timeout = TimeSpan.FromMinutes(10);
+            })
+            .AddTypedClient<ITelegramBotClient>((httpClient, sp) =>
+            {
+                var options = sp.GetRequiredService<IOptions<BotConfiguration>>();
+                return new TelegramBotClient(options.Value.Token, httpClient);
+            })
+            .AddPolicyHandler(GetRetryPolicy());
 
 
         var osuApiV2Configuration = builder.Services.BuildServiceProvider().GetRequiredService<IOptions<OsuApiV2Configuration>>().Value;
