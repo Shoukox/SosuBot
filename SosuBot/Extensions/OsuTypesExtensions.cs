@@ -10,28 +10,28 @@ namespace SosuBot.Extensions
 {
     public static class OsuTypesExtensions
     {
-        private static Mod[] AllOsuMods = typeof(OsuModNoFail).Assembly.GetTypes()
+        public static readonly Mod[] AllOsuMods = typeof(OsuModNoFail).Assembly.GetTypes()
             .Where(t => t.IsClass && !t.IsAbstract && t.IsPublic)
             .Where(t => typeof(Mod).IsAssignableFrom(t))
             .Where(t => t.Name.StartsWith("OsuMod"))
             .Select(t => (Mod)Activator.CreateInstance(t)!)
             .ToArray()!;
 
-        private static Mod[] AllManiaMods = typeof(ManiaModNoFail).Assembly.GetTypes()
+        public static readonly Mod[] AllManiaMods = typeof(ManiaModNoFail).Assembly.GetTypes()
             .Where(t => t.IsClass && !t.IsAbstract && t.IsPublic)
             .Where(t => typeof(Mod).IsAssignableFrom(t))
             .Where(t => t.Name.StartsWith("ManiaMod"))
             .Select(t => (Mod)Activator.CreateInstance(t)!)
             .ToArray()!;
 
-        private static Mod[] AllTaikoMods = typeof(TaikoModNoFail).Assembly.GetTypes()
+        public static readonly Mod[] AllTaikoMods = typeof(TaikoModNoFail).Assembly.GetTypes()
             .Where(t => t.IsClass && !t.IsAbstract && t.IsPublic)
             .Where(t => typeof(Mod).IsAssignableFrom(t))
             .Where(t => t.Name.StartsWith("TaikoMod"))
             .Select(t => (Mod)Activator.CreateInstance(t)!)
             .ToArray()!;
 
-        private static Mod[] AllCatchMods = typeof(CatchModNoFail).Assembly.GetTypes()
+        public static readonly Mod[] AllCatchMods = typeof(CatchModNoFail).Assembly.GetTypes()
             .Where(t => t.IsClass && !t.IsAbstract && t.IsPublic)
             .Where(t => typeof(Mod).IsAssignableFrom(t))
             .Where(t => t.Name.StartsWith("CatchMod"))
@@ -53,7 +53,15 @@ namespace SosuBot.Extensions
                 };
                 if (osuMod is not null) osuMods.Add(osuMod);
             }
+
             return osuMods.ToArray();
+        }
+
+        public static string ModsToString(this OsuApi.V2.Models.Mod[] mods, Playmode playmode,
+            bool acronymsToUpper = true)
+        {
+            return string.Join("",
+                mods.Select(m => acronymsToUpper ? m.Acronym!.ToUpperInvariant() : m.Acronym!.ToLowerInvariant()));
         }
 
         public static string ToGamemode(this Playmode playmode)
@@ -98,15 +106,21 @@ namespace SosuBot.Extensions
 
         public static int CalculateObjectsAmount(this OsuApi.V2.Users.Models.BeatmapExtended beatmapExtended)
         {
-            return beatmapExtended.CountCircles!.Value + beatmapExtended.CountSliders!.Value + beatmapExtended.CountSpinners!.Value;
+            return beatmapExtended.CountCircles!.Value + beatmapExtended.CountSliders!.Value +
+                   beatmapExtended.CountSpinners!.Value;
         }
 
-        public static Dictionary<HitResult, int> GetMaximumStatistics(this OsuApi.V2.Users.Models.BeatmapExtended beatmapExtended)
+        public static Dictionary<HitResult, int> GetMaximumStatistics(
+            this OsuApi.V2.Users.Models.BeatmapExtended beatmapExtended)
         {
             return new Dictionary<HitResult, int>()
+            {
                 {
-                    {HitResult.Great, beatmapExtended.CountCircles!.Value + beatmapExtended.CountSliders!.Value + beatmapExtended.CountSpinners!.Value}
-                };
+                    HitResult.Great,
+                    beatmapExtended.CountCircles!.Value + beatmapExtended.CountSliders!.Value +
+                    beatmapExtended.CountSpinners!.Value
+                }
+            };
         }
     }
 }

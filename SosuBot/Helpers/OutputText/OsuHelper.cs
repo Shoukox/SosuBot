@@ -11,13 +11,15 @@ namespace SosuBot.Helpers.OutputText
 {
     public static class OsuHelper
     {
+        private static readonly Regex OsuBeatmapLinkRegex = new(@"(?>https?:\/\/)?(?>osu|old)\.ppy\.sh\/([b,s]|(?>beatmaps)|(?>beatmapsets))\/(\d+)\/?\#?(\w+)?\/?(\d+)?\/?(?>[&,?].+=\w+)?\s?(?>\+(\w+))?", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+        private static readonly Regex OsuUserLinkRegex = new(@"(?>https?:\/\/)?(?>osu|old)\.ppy\.sh\/u(?>sers)?\/(\d+|\S+)", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+        
         public static async Task<byte[]> GetSongPreviewAsync(int beatmapsetId)
         {
             using HttpClient hc = new HttpClient();
             return await hc.GetByteArrayAsync($"https://b.ppy.sh/preview/{beatmapsetId}.mp3");
         }
 
-        private static readonly Regex OsuBeatmapLinkRegex = new(@"(?>https?:\/\/)?(?>osu|old)\.ppy\.sh\/([b,s]|(?>beatmaps)|(?>beatmapsets))\/(\d+)\/?\#?(\w+)?\/?(\d+)?\/?(?>[&,?].+=\w+)?\s?(?>\+(\w+))?", RegexOptions.Compiled | RegexOptions.IgnoreCase);
         public static string? ParseOsuBeatmapLink(IEnumerable<string>? urls, out int? beatmapsetId, out int? beatmapId)
         {
             if (urls == null)
@@ -61,7 +63,6 @@ namespace SosuBot.Helpers.OutputText
             return match.Value;
         }
 
-        private static readonly Regex OsuUserLinkRegex = new(@"(?>https?:\/\/)?(?>osu|old)\.ppy\.sh\/u(?>sers)?\/(\d+|\S+)", RegexOptions.Compiled | RegexOptions.IgnoreCase);
         public static string? ParseOsuUserLink(IEnumerable<string>? urls, out int? userId)
         {
             if (urls == null)

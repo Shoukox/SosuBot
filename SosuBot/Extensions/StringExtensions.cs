@@ -1,6 +1,7 @@
 ﻿using OsuApi.V2.Models;
 using SosuBot.Helpers.OsuTypes;
 using System.Web;
+using SosuBot.PerformanceCalculator;
 
 namespace SosuBot.Extensions
 {
@@ -10,10 +11,12 @@ namespace SosuBot.Extensions
         {
             return text.Replace($"@{username}", "");
         }
+
         public static bool IsCommand(this string text)
         {
             return text.Length > 0 && text[0] == '/';
         }
+
         public static string GetCommand(this string text)
         {
             text = text.Trim();
@@ -79,9 +82,35 @@ namespace SosuBot.Extensions
             };
         }
 
-        public static string? EncodeHTML(this string? text)
+        public static string? EncodeHtml(this string? text)
         {
             return HttpUtility.HtmlEncode(text);
+        }
+
+        public static osu.Game.Rulesets.Mods.Mod[] ToMods(this string text, Playmode playmode)
+        {
+            text = text.Trim().ToUpperInvariant();
+
+            int startFrom = 0;
+            if (!char.IsAsciiLetter(text[0])) startFrom = 1;
+            
+            List<osu.Game.Rulesets.Mods.Mod> mods = new List<osu.Game.Rulesets.Mods.Mod>();
+            for (int i = startFrom; i < text.Length; i += 2)
+            {
+                var rulesetMods = playmode switch
+                {
+                    Playmode.Osu => OsuTypesExtensions.AllOsuMods,
+                    Playmode.Taiko => OsuTypesExtensions.AllTaikoMods,
+                    Playmode.Catch => OsuTypesExtensions.AllCatchMods,
+                    Playmode.Mania => OsuTypesExtensions.AllManiaMods,
+                    _ => throw new NotImplementedException()
+                };
+                osu.Game.Rulesets.Mods.Mod? currentMod = rulesetMods.FirstOrDefault((m) => m.Acronym.ToUpperInvariant() == text.Substring(i, 2));
+                if(currentMod == null) continue;
+                mods.Add(currentMod);
+            }
+
+            return mods.ToArray();
         }
     }
 }
