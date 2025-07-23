@@ -2,6 +2,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using SosuBot.Services.Data;
 using Telegram.Bot;
+using Telegram.Bot.Types;
 
 namespace SosuBot.Services.BackgroundServices;
 
@@ -16,7 +17,13 @@ public sealed class PollingBackgroundService(
         logger.LogInformation("Starting polling background service");
 
         // Skip pending updates
-        _offset = (await botClient.GetUpdates(timeout: 30, cancellationToken: stoppingToken)).Last().Id + 1;
+        Update[] pendingUpdates = await botClient.GetUpdates(timeout: 30, cancellationToken: stoppingToken);
+        if(pendingUpdates.Length != 0)
+        {
+            _offset = pendingUpdates.Last().Id + 1;
+        }
+
+        // Start polling
         await EnqueueAllUpdates(stoppingToken);
     }
 
@@ -27,7 +34,7 @@ public sealed class PollingBackgroundService(
             try
             {
                 var updates = await botClient.GetUpdates(_offset, timeout: 30, cancellationToken: stoppingToken);
-                if(updates.Length == 0)
+                if (updates.Length == 0)
                 {
                     continue;
                 }
