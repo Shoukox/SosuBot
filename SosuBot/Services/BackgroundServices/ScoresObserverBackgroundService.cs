@@ -66,7 +66,7 @@ public sealed class ScoresObserverBackgroundService(
                         {
                             await botClient.SendMessage(adminTelegramId,
                                 $"<b>{score.User?.Username}</b> set a <b>{score.Pp}pp</b> <a href=\"{BaseOsuScoreLink}{score.Id}\">score!</a>",
-                                ParseMode.Html, linkPreviewOptions: false, cancellationToken: stoppingToken);
+                                ParseMode.Html, linkPreviewOptions: true, cancellationToken: stoppingToken);
                             await Task.Delay(1000, stoppingToken);
                         }
                     }
