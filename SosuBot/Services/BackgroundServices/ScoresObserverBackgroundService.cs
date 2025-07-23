@@ -77,7 +77,7 @@ public sealed class ScoresObserverBackgroundService(
             }
             catch (OperationCanceledException e)
             {
-                logger.LogError(e, "Cancelled unexpectedly");
+                logger.LogWarning(e, "Operation cancelled");
                 return;
             }
             catch (Exception e)
