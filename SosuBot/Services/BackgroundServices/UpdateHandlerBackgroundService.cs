@@ -7,7 +7,7 @@ using Telegram.Bot;
 using Telegram.Bot.Polling;
 using Telegram.Bot.Types;
 
-namespace SosuBot.Services;
+namespace SosuBot.Services.BackgroundServices;
 
 public sealed class UpdateHandlerBackgroundService(
     UpdateQueueService updateQueue,

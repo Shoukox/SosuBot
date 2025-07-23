@@ -3,7 +3,7 @@ using Microsoft.Extensions.Logging;
 using SosuBot.Services.Data;
 using Telegram.Bot;
 
-namespace SosuBot.Services;
+namespace SosuBot.Services.BackgroundServices;
 
 public sealed class PollingBackgroundService(
     ILogger<PollingBackgroundService> logger,
