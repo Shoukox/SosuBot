@@ -27,8 +27,12 @@ public sealed class PollingBackgroundService(
             try
             {
                 var updates = await botClient.GetUpdates(_offset, timeout: 30, cancellationToken: stoppingToken);
-                _offset = updates.Last().Id + 1;
+                if(updates.Length == 0)
+                {
+                    continue;
+                }
 
+                _offset = updates.Last().Id + 1;
                 foreach (var update in updates)
                 {
                     await updateQueueService.EnqueueUpdateAsync(update, stoppingToken);

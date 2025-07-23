@@ -146,7 +146,7 @@ namespace SosuBot.Services.Handlers.Text
                         cancellationToken: Context.CancellationToken)
                 };
 
-                string duration = $"{beatmap.HitLength / 60}m {(beatmap.HitLength % 60):00}s";
+                string duration = $"{beatmap.TotalLength / 60}:{beatmap.TotalLength % 60}";
                 string textToSend = language.send_mapInfo.Fill([
                     $"{playmode.ToGamemode()}",
                     $"{beatmap.Version.EncodeHTML()}",
@@ -154,6 +154,7 @@ namespace SosuBot.Services.Handlers.Text
                     $"{duration}",
                     $"{beatmapset.Creator}",
                     $"{beatmap.Status}",
+                    $"{beatmap.Id}",
                     $"{beatmap.CS}",
                     $"{beatmap.AR}",
                     $"{beatmap.Drain}",
