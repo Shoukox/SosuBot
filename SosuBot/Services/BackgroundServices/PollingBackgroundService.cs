@@ -10,24 +10,27 @@ public sealed class PollingBackgroundService(
     ITelegramBotClient botClient,
     UpdateQueueService updateQueueService) : BackgroundService
 {
+    private int? _offset = null;
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         logger.LogInformation("Starting polling background service");
-        await botClient.GetUpdates(timeout: 30, cancellationToken: stoppingToken);
+
+        // Skip pending updates
+        _offset = (await botClient.GetUpdates(timeout: 30, cancellationToken: stoppingToken)).Last().Id + 1;
         await EnqueueAllUpdates(stoppingToken);
     }
 
     private async Task EnqueueAllUpdates(CancellationToken stoppingToken)
     {
-        int? offset = null;
         while (!stoppingToken.IsCancellationRequested)
         {
             try
             {
-                var updates = await botClient.GetUpdates(offset, timeout: 30, cancellationToken: stoppingToken);
+                var updates = await botClient.GetUpdates(_offset, timeout: 30, cancellationToken: stoppingToken);
+                _offset = updates.Last().Id + 1;
+
                 foreach (var update in updates)
                 {
-                    offset = update.Id + 1;
                     await updateQueueService.EnqueueUpdateAsync(update, stoppingToken);
                 }
             }
