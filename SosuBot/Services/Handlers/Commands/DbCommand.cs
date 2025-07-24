@@ -2,10 +2,10 @@
 using SosuBot.Database.Extensions;
 using SosuBot.Database.Models;
 using SosuBot.Extensions;
-using SosuBot.Helpers.OsuTypes;
 using SosuBot.Services.Handlers.Abstract;
 using System.Text;
 using System.Text.Json;
+using SosuBot.Helpers.Types;
 using Telegram.Bot.Types;
 
 namespace SosuBot.Services.Handlers.Commands

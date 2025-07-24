@@ -1,4 +1,4 @@
-﻿namespace SosuBot.Helpers.OsuTypes
+﻿namespace SosuBot.Helpers.Types
 {
     public enum Playmode
     {

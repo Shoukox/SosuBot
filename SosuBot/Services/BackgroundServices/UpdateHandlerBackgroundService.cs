@@ -85,9 +85,9 @@ public sealed class UpdateHandlerBackgroundService(
             {
                 await updateHandler.HandleUpdateAsync(bot, update, stoppingToken);
             }
-            catch (OperationCanceledException e)
+            catch (OperationCanceledException)
             {
-                logger.LogWarning(e, "Operation cancelled");
+                logger.LogWarning("Operation cancelled");
                 return;
             }
             catch (Exception ex)

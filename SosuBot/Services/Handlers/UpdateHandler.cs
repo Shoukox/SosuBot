@@ -181,6 +181,9 @@ public class UpdateHandler(
             case string delete when DeleteCommand.Commands.Contains(delete):
                 executableCommand = new DeleteCommand();
                 break;
+            case string get when GetDailyStatisticsCommand.Commands.Contains(get):
+                executableCommand = new GetDailyStatisticsCommand();
+                break;
             default:
                 executableCommand = new Commands.DummyCommand();
                 break;

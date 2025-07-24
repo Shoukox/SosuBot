@@ -1,6 +1,6 @@
 ﻿using OsuApi.V2.Models;
-using SosuBot.Helpers.OsuTypes;
 using System.Web;
+using SosuBot.Helpers.Types;
 using SosuBot.PerformanceCalculator;
 
 namespace SosuBot.Extensions

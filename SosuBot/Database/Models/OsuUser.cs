@@ -1,6 +1,6 @@
-﻿using SosuBot.Helpers.OsuTypes;
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using SosuBot.Helpers.Types;
 
 namespace SosuBot.Database.Models
 {

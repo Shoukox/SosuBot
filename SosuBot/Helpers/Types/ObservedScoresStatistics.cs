@@ -1,6 +1,6 @@
 using OsuApi.V2.Models;
 
-namespace SosuBot.Helpers.OsuTypes;
+namespace SosuBot.Helpers.Types;
 
 public sealed record ObservedScoresStatistics (DateTime StatisticsDateTime)
 {
