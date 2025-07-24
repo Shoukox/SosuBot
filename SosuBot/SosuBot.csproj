@@ -24,7 +24,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\OsuApi\OsuApi\OsuApi.csproj" />
+    <ProjectReference Include="..\OsuApi\OsuApi\OsuApi.csproj" />
     <ProjectReference Include="..\SosuBot.Localization\SosuBot.Localization.csproj" />
     <ProjectReference Include="..\SosuBot.PerformanceCalculator\SosuBot.PerformanceCalculator.csproj" />
   </ItemGroup>
