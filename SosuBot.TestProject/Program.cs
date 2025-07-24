@@ -1,4 +1,5 @@
-﻿using SosuBot.Graphics.ProfileCard;
+﻿using OsuApi.V2;
+using SosuBot.Graphics.ProfileCard;
 
 namespace SosuBot.TestProject
 {

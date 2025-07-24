@@ -4,8 +4,8 @@ using osu.Game.Rulesets.Mania.Mods;
 using osu.Game.Rulesets.Mods;
 using osu.Game.Rulesets.Osu.Mods;
 using osu.Game.Rulesets.Taiko.Mods;
-using SosuBot.Helpers.OsuTypes;
 using System.Text.RegularExpressions;
+using SosuBot.Helpers.Types;
 
 namespace SosuBot.Helpers.OutputText
 {

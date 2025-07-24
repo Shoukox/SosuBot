@@ -21,6 +21,7 @@
         public string settings_language_en { get; }
         public string settings_language_changedSuccessfully { get; }
         public string send_mapInfo { get; }
+        public string send_dailyStatistic { get; }
         public string waiting { get; }
 
         public string error_baseMessage { get; }

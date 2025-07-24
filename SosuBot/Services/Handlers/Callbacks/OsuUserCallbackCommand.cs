@@ -1,7 +1,7 @@
 ﻿using OsuApi.V2.Users.Models;
 using SosuBot.Extensions;
-using SosuBot.Helpers.OsuTypes;
 using SosuBot.Helpers.OutputText;
+using SosuBot.Helpers.Types;
 using SosuBot.Localization;
 using SosuBot.Localization.Languages;
 using SosuBot.Services.Handlers.Abstract;

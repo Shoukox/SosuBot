@@ -1,6 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using SosuBot.Database.Models;
-using SosuBot.Helpers.OsuTypes;
+using SosuBot.Helpers.Types;
 
 namespace SosuBot.Database;
 

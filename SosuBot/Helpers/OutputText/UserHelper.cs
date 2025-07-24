@@ -3,7 +3,7 @@ using OsuApi.V2.Users.Models;
 using SosuBot.Database;
 using SosuBot.Database.Models;
 using SosuBot.Extensions;
-using SosuBot.Helpers.OsuTypes;
+using SosuBot.Helpers.Types;
 
 namespace SosuBot.Helpers.OutputText
 {

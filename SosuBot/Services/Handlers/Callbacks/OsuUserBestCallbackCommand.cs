@@ -2,8 +2,8 @@
 using OsuApi.V2.Models;
 using OsuApi.V2.Users.Models;
 using SosuBot.Extensions;
-using SosuBot.Helpers.OsuTypes;
 using SosuBot.Helpers.Scoring;
+using SosuBot.Helpers.Types;
 using SosuBot.Localization;
 using SosuBot.Localization.Languages;
 using SosuBot.Services.Handlers.Abstract;

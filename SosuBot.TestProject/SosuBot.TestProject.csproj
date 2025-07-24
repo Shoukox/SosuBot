@@ -8,6 +8,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\OsuApi\OsuApi\OsuApi.csproj" />
     <ProjectReference Include="..\SosuBot.Graphics\SosuBot.Graphics.csproj" />
   </ItemGroup>
 
