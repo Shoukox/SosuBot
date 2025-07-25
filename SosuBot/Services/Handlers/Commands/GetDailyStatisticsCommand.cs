@@ -14,9 +14,15 @@ namespace SosuBot.Services.Handlers.Commands
         public static string[] Commands = ["/get"];
         public override async Task ExecuteAsync()
         {
+            if(await Context.Update.IsUserSpamming(Context.BotClient))
+                return;
+            
+            ILocalization language = new Russian();
+            Message waitMessage = await Context.Update.ReplyAsync(Context.BotClient, language.waiting);
+            
             string sendText = await ScoreHelper.GetDailyStatisticsSendText(
                 ScoresObserverBackgroundService.AllDailyStatistics.Last(), Context.OsuApiV2, Context.Logger);
-            await Context.Update.ReplyAsync(Context.BotClient, sendText);
+            await waitMessage.EditAsync(Context.BotClient, sendText);
         }
     }
 }

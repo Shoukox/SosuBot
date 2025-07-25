@@ -50,9 +50,10 @@ namespace SosuBot.Helpers.Scoring
             return scoreStatisticsText;
         }
 
-        public static async Task<string> GetDailyStatisticsSendText(DailyStatistics dailyStatistics, ApiV2 osuApi, ILogger logger)
+        public static async Task<string> GetDailyStatisticsSendText(DailyStatistics dailyStatistics, ApiV2 osuApi,
+            ILogger logger)
         {
-            ILocalization language = new Russian(); 
+            ILocalization language = new Russian();
             int activePlayersCount = dailyStatistics.ActiveUsers.Count;
             int passedScores = dailyStatistics.Scores.Count;
             int beatmapsPlayed = dailyStatistics.BeatmapsPlayed.Count;
@@ -66,25 +67,27 @@ namespace SosuBot.Helpers.Scoring
                 return (m, dailyStatistics.Scores.Where(s => s.UserId == m.Id).ToArray());
             }).OrderByDescending(m => { return m.Item2.Length; }).ToArray();
 
+            
+            //todo
             var mostPlayedBeatmaps = dailyStatistics.Scores
                 .GroupBy(m => m.BeatmapId!.Value)
                 .OrderByDescending(m => m.Count()).ToArray();
 
             string top3ActivePlayers = "";
-            int count = 1;
+            int count = 0;
             foreach (var us in usersAndTheirScores)
             {
-                if (count == 3) break;
+                if (count >= 5) break;
                 top3ActivePlayers +=
-                    $"{count}. <b>{us.m.Username}</b> — {us.Item2.Length} скоров, макс. <i>{us.Item2.Max(m => m.Pp)}pp</i>\n";
+                    $"{count + 1}. <b>{us.m.Username}</b> — {us.Item2.Length} скоров, макс. <i>{us.Item2.Max(m => m.Pp):N2}pp</i>\n";
                 count += 1;
             }
 
             string top3MostPlayedBeatmaps = "";
-            count = 1;
+            count = 0;
             foreach (var us in mostPlayedBeatmaps)
             {
-                if (count == 3) break;
+                if (count >= 5) break;
 
                 GetBeatmapResponse? beatmap = await osuApi.Beatmaps.GetBeatmap(us.Key);
                 if (beatmap == null)
@@ -97,12 +100,12 @@ namespace SosuBot.Helpers.Scoring
                     await osuApi.Beatmapsets.GetBeatmapset(beatmap.BeatmapExtended!.BeatmapsetId.Value);
 
                 top3MostPlayedBeatmaps +=
-                    $"{count}. (<b>{beatmap.BeatmapExtended!.DifficultyRating}⭐️</b>) {beatmapsetExtended.Title.EncodeHtml()} [{beatmap.BeatmapExtended.Version.EncodeHtml()}] — <b>{us.Count()}</b> траев\n";
+                    $"{count + 1}. (<b>{beatmap.BeatmapExtended!.DifficultyRating}⭐️</b>) {beatmapsetExtended.Title.EncodeHtml()} [{beatmap.BeatmapExtended.Version.EncodeHtml()}] — <b>{us.Count()}</b> траев\n";
                 count += 1;
             }
 
             string sendText = language.send_dailyStatistic.Fill([
-                $"{dailyStatistics.DayOfStatistic:dd.MM.yyyy}",
+                $"{dailyStatistics.DayOfStatistic:dd.MM.yyyy HH:mm}",
                 $"{activePlayersCount}",
                 $"{passedScores}",
                 $"{beatmapsPlayed}",
@@ -114,7 +117,7 @@ namespace SosuBot.Helpers.Scoring
                 $"{top3ActivePlayers}\n",
                 $"{top3MostPlayedBeatmaps}\n",
             ]);
-            
+
             return sendText;
         }
     }

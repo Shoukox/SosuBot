@@ -15,8 +15,6 @@ namespace SosuBot.Services.Handlers.Commands
         public override async Task ExecuteAsync()
         {
             ILocalization language = new Russian();
-            OsuUser? osuUserInDatabase = await Context.Database.OsuUsers.FindAsync(Context.Update.From!.Id);
-            List<OsuUser> foundChatMembers = new List<OsuUser>();
 
             Message waitMessage = await Context.Update.ReplyAsync(Context.BotClient, language.waiting);
             string[] parameters = Context.Update.Text!.GetCommandParameters()!;
