@@ -1,26 +1,21 @@
 using System.Collections.Concurrent;
+using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using osu.Game.Beatmaps;
 using OsuApi.V2;
-using OsuApi.V2.Clients.Beatmaps.HttpIO;
 using OsuApi.V2.Clients.Scores.HttpIO;
 using OsuApi.V2.Clients.Users.HttpIO;
 using OsuApi.V2.Models;
 using OsuApi.V2.Users.Models;
 using SosuBot.Database;
-using SosuBot.Extensions;
 using SosuBot.Helpers.Comparers;
 using SosuBot.Helpers.Scoring;
 using SosuBot.Helpers.Types;
 using SosuBot.Helpers.Types.Statistics;
-using SosuBot.Localization;
-using SosuBot.Localization.Languages;
 using SosuBot.Services.Data.OsuApi;
 using Telegram.Bot;
 using Telegram.Bot.Types.Enums;
-using Beatmap = OsuApi.V2.Users.Models.Beatmap;
 
 namespace SosuBot.Services.BackgroundServices;
 
@@ -32,33 +27,52 @@ public sealed class ScoresObserverBackgroundService(
 {
     public const string BaseOsuScoreLink = "https://osu.ppy.sh/scores/";
     public static readonly ConcurrentBag<long> ObservedUsers = new();
-    public static List<DailyStatistics> AllDailyStatistics = new(); 
-    
+    public static List<DailyStatistics> AllDailyStatistics = new();
+
     private static readonly ScoreEqualityComparer ScoreComparer = new();
-    
-    private UserStatisticsCacheDatabase _userDatabase = new(osuApi);
+
+    private readonly UserStatisticsCacheDatabase _userDatabase = new(osuApi);
+
+    private static readonly string CacheDirectory =
+        Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "cache", "daily_statistics");
+
+    private static readonly string CachePath =
+        Path.Combine(CacheDirectory, "statistics.cache");
+
+    private long _adminTelegramId;
+
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         logger.LogInformation("Scores observer background service started");
 
-        await AddPlayersToObserverList("uz", 50);
-        await AddPlayersToObserverList(null, 50);
+        _adminTelegramId = (await database.OsuUsers.FirstAsync((m) => m.IsAdmin, cancellationToken: stoppingToken))
+            .TelegramId;
+        
+        await AddPlayersToObserverList("uz");
+        await AddPlayersToObserverList();
 
-
-        await Task.WhenAll([ObserveScoresGetScores(stoppingToken), ObserveScores(stoppingToken)]);
+        await Task.WhenAll(ObserveScoresGetScores(stoppingToken), ObserveScores(stoppingToken));
     }
 
     private async Task ObserveScoresGetScores(CancellationToken stoppingToken)
     {
+        await LoadDailyStatistics();
         await _userDatabase.CacheIfNeeded();
-        ILocalization language = new Russian();
-        var dailyStatistics = new DailyStatistics(CountryCode.Uzbekistan, DateTime.UtcNow);
-        AllDailyStatistics.Add(dailyStatistics);
-        long adminTelegramId = (await database.OsuUsers.FirstAsync((m) => m.IsAdmin, cancellationToken: stoppingToken))
-            .TelegramId;
+        
+        DailyStatistics dailyStatistics;
+        if (AllDailyStatistics.Count > 0 && AllDailyStatistics.Last().DayOfStatistic.Day == DateTime.UtcNow.Day)
+        {
+            dailyStatistics = AllDailyStatistics.Last();
+        }
+        else
+        {
+            dailyStatistics = new DailyStatistics(CountryCode.Uzbekistan, DateTime.UtcNow);
+            AllDailyStatistics.Add(dailyStatistics);
+        }
 
         string? cursor = null;
+        int counter = 0;
         while (!stoppingToken.IsCancellationRequested)
         {
             try
@@ -101,74 +115,22 @@ public sealed class ScoresObserverBackgroundService(
                 if (uzScores.Length != 0 && uzScores.Last().EndedAt!.Value.ToUniversalTime().Day !=
                     dailyStatistics.DayOfStatistic.Day)
                 {
-                    int activePlayersCount = dailyStatistics.ActiveUsers.Count;
-                    int passedScores = dailyStatistics.Scores.Count;
-                    int beatmapsPlayed = dailyStatistics.BeatmapsPlayed.Count;
+                    string sendText = await ScoreHelper.GetDailyStatisticsSendText(dailyStatistics, osuApi, logger);
 
-                    Score? mostPPForScore = dailyStatistics.Scores.MaxBy(m => m.Pp);
-                    User? userHavingMostPPForScore =
-                        dailyStatistics.ActiveUsers.FirstOrDefault(m => m.Id == mostPPForScore?.UserId);
-
-                    var usersAndTheirScores = dailyStatistics.ActiveUsers.Select(m =>
-                    {
-                        return (m, dailyStatistics.Scores.Where(s => s.UserId == m.Id).ToArray());
-                    }).OrderByDescending(m => { return m.Item2.Length; }).ToArray();
-
-                    var mostPlayedBeatmaps = dailyStatistics.Scores
-                        .GroupBy(m => m.BeatmapId!.Value)
-                        .OrderByDescending(m => m.Count()).ToArray();
-
-                    string top3ActivePlayers = "";
-                    int count = 1;
-                    foreach (var us in usersAndTheirScores)
-                    {
-                        if (count == 3) break;
-                        top3ActivePlayers +=
-                            $"{count}. <b>{us.m.Username}</b> — {us.Item2.Length} скоров, макс. <i>{us.Item2.Max(m => m.Pp)}pp</i><br>\n";
-                        count += 1;
-                    }
-
-                    string top3MostPlayedBeatmaps = "";
-                    count = 1;
-                    foreach (var us in mostPlayedBeatmaps)
-                    {
-                        if (count == 3) break;
-
-                        GetBeatmapResponse? beatmap = await osuApi.Beatmaps.GetBeatmap(us.Key);
-                        if (beatmap == null)
-                        {
-                            logger.LogError($"Beatmap \"{us.Key}\" not found");
-                            continue;
-                        }
-
-                        BeatmapsetExtended beatmapsetExtended =
-                            await osuApi.Beatmapsets.GetBeatmapset(beatmap.BeatmapExtended!.BeatmapsetId.Value);
-
-                        top3MostPlayedBeatmaps +=
-                            $"{count}. (<i>{beatmap.BeatmapExtended!.DifficultyRating}★</i>) {beatmapsetExtended.Title.EncodeHtml()} [{beatmap.BeatmapExtended.Version.EncodeHtml()}] — {us.Count()} траев<br>\n";
-                        count += 1;
-                    }
-
-                    string sendText = language.send_dailyStatistic.Fill([
-                        $"{activePlayersCount}",
-                        $"{passedScores}",
-                        $"{beatmapsPlayed}",
-                        $"{BaseOsuScoreLink}{mostPPForScore?.Id}",
-                        $"{mostPPForScore?.Pp}",
-                        $"{userHavingMostPPForScore?.GetProfileUrl()}",
-                        $"{userHavingMostPPForScore?.Username}",
-
-                        $"{top3ActivePlayers}\n",
-                        $"{top3MostPlayedBeatmaps}\n",
-                    ]);
-
-                    await botClient.SendMessage(adminTelegramId, sendText,
+                    await botClient.SendMessage(_adminTelegramId, sendText,
                         ParseMode.Html, linkPreviewOptions: true, cancellationToken: stoppingToken);
 
                     dailyStatistics = new DailyStatistics(CountryCode.Uzbekistan, DateTime.UtcNow);
                     AllDailyStatistics.Add(dailyStatistics);
                 }
+                
+                // Save every timedelay*100 seconds
+                if (counter % 100 == 0)
+                {
+                    await SaveDailyStatistics();
+                }
 
+                counter = (counter + 1) % int.MaxValue;
                 cursor = response.CursorString;
                 await Task.Delay(5000, stoppingToken);
             }
@@ -186,8 +148,6 @@ public sealed class ScoresObserverBackgroundService(
 
     private async Task ObserveScores(CancellationToken stoppingToken)
     {
-        long adminTelegramId =
-            (await database.OsuUsers.FirstAsync((m) => m.IsAdmin, cancellationToken: stoppingToken)).TelegramId;
         Dictionary<int, GetUserScoresResponse> scores = new();
         while (!stoppingToken.IsCancellationRequested)
         {
@@ -210,7 +170,7 @@ public sealed class ScoresObserverBackgroundService(
                             userBestScores.Scores.Except(scores[userId].Scores, ScoreComparer);
                         foreach (Score score in newScores)
                         {
-                            await botClient.SendMessage(adminTelegramId,
+                            await botClient.SendMessage(_adminTelegramId,
                                 $"<b>{score.User?.Username}</b> set a <b>{score.Pp}pp</b> <a href=\"{BaseOsuScoreLink}{score.Id}\">score!</a>",
                                 ParseMode.Html, linkPreviewOptions: true, cancellationToken: stoppingToken);
                             await Task.Delay(1000, stoppingToken);
@@ -236,7 +196,7 @@ public sealed class ScoresObserverBackgroundService(
     }
 
     /// <summary>
-    /// Get best players using some filter
+    /// Get the best players using some filter
     /// </summary>
     /// <param name="countryCode">If null, take from the global ranking</param>
     /// <returns></returns>
@@ -266,5 +226,22 @@ public sealed class ScoresObserverBackgroundService(
         {
             ObservedUsers.Add(playerStatistics.User!.Id.Value);
         }
+    }
+
+    private async Task SaveDailyStatistics()
+    {
+        if (!Directory.Exists(CacheDirectory))
+        {
+            Directory.CreateDirectory(CacheDirectory);
+        }
+
+        await File.WriteAllTextAsync(CachePath, JsonSerializer.Serialize(AllDailyStatistics));
+    }
+
+    private async Task LoadDailyStatistics()
+    {
+        if (!File.Exists(CachePath)) return;
+
+        AllDailyStatistics = JsonSerializer.Deserialize<List<DailyStatistics>>(await File.ReadAllTextAsync(CachePath))!;
     }
 }
