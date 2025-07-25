@@ -68,7 +68,6 @@ namespace SosuBot.Helpers.Scoring
             }).OrderByDescending(m => { return m.Item2.Length; }).ToArray();
 
             
-            //todo
             var mostPlayedBeatmaps = dailyStatistics.Scores
                 .GroupBy(m => m.BeatmapId!.Value)
                 .OrderByDescending(m => m.Count()).ToArray();
@@ -100,7 +99,7 @@ namespace SosuBot.Helpers.Scoring
                     await osuApi.Beatmapsets.GetBeatmapset(beatmap.BeatmapExtended!.BeatmapsetId.Value);
 
                 top3MostPlayedBeatmaps +=
-                    $"{count + 1}. (<b>{beatmap.BeatmapExtended!.DifficultyRating}⭐️</b>) {beatmapsetExtended.Title.EncodeHtml()} [{beatmap.BeatmapExtended.Version.EncodeHtml()}] — <b>{us.Count()}</b> траев\n";
+                    $"{count + 1}. (<b>{beatmap.BeatmapExtended!.DifficultyRating}⭐️</b>) {beatmapsetExtended.Title.EncodeHtml()} [{beatmap.BeatmapExtended.Version.EncodeHtml()}] — <b>{us.Count()} траев</b>\n";
                 count += 1;
             }
 
@@ -110,7 +109,7 @@ namespace SosuBot.Helpers.Scoring
                 $"{passedScores}",
                 $"{beatmapsPlayed}",
                 $"{ScoresObserverBackgroundService.BaseOsuScoreLink}{mostPPForScore?.Id}",
-                $"{mostPPForScore?.Pp}",
+                $"{mostPPForScore?.Pp:N2}",
                 $"{userHavingMostPPForScore?.GetProfileUrl()}",
                 $"{userHavingMostPPForScore?.Username}",
 
