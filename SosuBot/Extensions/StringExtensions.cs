@@ -94,17 +94,18 @@ namespace SosuBot.Extensions
             int startFrom = 0;
             if (!char.IsAsciiLetter(text[0])) startFrom = 1;
             
+            var rulesetMods = playmode switch
+            {
+                Playmode.Osu => OsuTypesExtensions.AllOsuMods,
+                Playmode.Taiko => OsuTypesExtensions.AllTaikoMods,
+                Playmode.Catch => OsuTypesExtensions.AllCatchMods,
+                Playmode.Mania => OsuTypesExtensions.AllManiaMods,
+                _ => throw new NotImplementedException()
+            };
+            
             List<osu.Game.Rulesets.Mods.Mod> mods = new List<osu.Game.Rulesets.Mods.Mod>();
             for (int i = startFrom; i < text.Length; i += 2)
             {
-                var rulesetMods = playmode switch
-                {
-                    Playmode.Osu => OsuTypesExtensions.AllOsuMods,
-                    Playmode.Taiko => OsuTypesExtensions.AllTaikoMods,
-                    Playmode.Catch => OsuTypesExtensions.AllCatchMods,
-                    Playmode.Mania => OsuTypesExtensions.AllManiaMods,
-                    _ => throw new NotImplementedException()
-                };
                 osu.Game.Rulesets.Mods.Mod? currentMod = rulesetMods.FirstOrDefault((m) => m.Acronym.ToUpperInvariant() == text.Substring(i, 2));
                 if(currentMod == null) continue;
                 mods.Add(currentMod);

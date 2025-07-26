@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
+using osu.Game.Rulesets.Mods;
 using OsuApi.V2;
 using OsuApi.V2.Clients.Beatmaps.HttpIO;
 using OsuApi.V2.Models;
@@ -9,6 +10,7 @@ using SosuBot.Helpers.Types.Statistics;
 using SosuBot.Localization;
 using SosuBot.Localization.Languages;
 using SosuBot.Services.BackgroundServices;
+using Mod = OsuApi.V2.Models.Mod;
 
 namespace SosuBot.Helpers.Scoring
 {
@@ -16,7 +18,15 @@ namespace SosuBot.Helpers.Scoring
     {
         public static string GetModsText(Mod[] mods)
         {
-            string modsText = "+" + string.Join("", mods!.Select(m => m.Acronym));
+            string modsText = "+" + string.Join("", mods!.Select(m =>
+            {
+                string speedChangeString = "";
+                if (m.Settings?.SpeedChange.HasValue ?? false)
+                {
+                    speedChangeString = $"({m.Settings.SpeedChange:0.0}x)";
+                }
+                return m.Acronym + speedChangeString;
+            }));
             if (modsText == "+") modsText += "NM";
             return modsText;
         }

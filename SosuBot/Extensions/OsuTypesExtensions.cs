@@ -51,6 +51,11 @@ namespace SosuBot.Extensions
                     Playmode.Catch => AllCatchMods.FirstOrDefault(m => m.Acronym == mod.Acronym),
                     _ => throw new NotImplementedException(),
                 };
+                if (osuMod is ModDoubleTime dtMode && mod.Settings?.SpeedChange != null)
+                {
+                    dtMode.SpeedChange.Value = mod.Settings.SpeedChange.Value;
+                    osuMod = dtMode;
+                }
                 if (osuMod is not null) osuMods.Add(osuMod);
             }
 
