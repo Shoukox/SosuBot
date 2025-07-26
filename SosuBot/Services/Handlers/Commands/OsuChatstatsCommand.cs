@@ -22,7 +22,6 @@ namespace SosuBot.Services.Handlers.Commands
             string[] parameters = Context.Update.Text!.GetCommandParameters()!;
 
             Message waitMessage = await Context.Update.ReplyAsync(Context.BotClient, language.waiting);
-            string sendText = language.command_chatstats_title;
 
             Playmode playmode = Playmode.Osu;
             if (parameters.Length == 1)
@@ -48,6 +47,8 @@ namespace SosuBot.Services.Handlers.Commands
             }
             foundChatMembers = foundChatMembers.OrderByDescending(m => m.GetPP(playmode)).Take(10).ToList();
 
+            string sendText = language.command_chatstats_title.Fill([playmode.ToGamemode()]);
+            
             int i = 1;
             foreach (OsuUser chatMember in foundChatMembers)
             {

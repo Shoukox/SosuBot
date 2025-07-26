@@ -67,7 +67,7 @@
                 "{}. (<b>{}</b>) <a href=\"http://osu.ppy.sh/b/{}\">{} [{}]</a> (<b>{}</b>)\n" +
                 "{} / {}❌ - <b><i>{}</i></b>%\n" +
                 "<b>{}</b> <i>{}/{}</i> <b><u>{}pp</u></b>\n\n";
-        public string command_chatstats_title => "Топ-10 осеров в группе:\n\n";
+        public string command_chatstats_title => "Топ-10 осеров (<b>{}</b>) в группе:\n\n";
         public string command_chatstats_row => "<b>{}. {}</b>: <i>{}pp</i>\n";
         public string command_chatstats_end => "\nИспользуйте <b>/user</b>, чтобы обновить ваш <b>pp</b> в данном списке.";
         public string command_excluded => "<b>{}</b> был успешно исключен из /chatstats";
