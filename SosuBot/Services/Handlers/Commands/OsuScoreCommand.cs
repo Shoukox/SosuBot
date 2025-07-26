@@ -156,7 +156,7 @@ namespace SosuBot.Services.Handlers.Commands
                 await waitMessage.EditAsync(Context.BotClient, language.error_noRecords);
                 return;
             }
-            scores = scoresResponse.Scores!.GroupBy((s) => s.Mods).Select(m => m.MaxBy(s => s.Pp)!).OrderByDescending(m => m.Pp).ToArray();
+            scores = scoresResponse.Scores!.GroupBy((s) => string.Join("", s.Mods!.Select(m => m.Acronym))).Select(m => m.MaxBy(s => s.Pp)!).OrderByDescending(m => m.Pp).ToArray();
             
             if (scores.Length == 0)
             {
@@ -170,9 +170,6 @@ namespace SosuBot.Services.Handlers.Commands
                 var score = scores[i];
                 var beatmap = (await Context.OsuApiV2.Beatmaps.GetBeatmap(scores[i].BeatmapId!.Value))!.BeatmapExtended;
                 var beatmapset = await Context.OsuApiV2.Beatmapsets.GetBeatmapset(beatmap!.BeatmapsetId.Value);
-
-                Mod[] mods = score.Mods!;
-                double accuracy = score.Accuracy!.Value;
 
                 if (i == 0)
                 {
