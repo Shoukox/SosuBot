@@ -3,6 +3,7 @@ using OsuApi.V2.Clients.Users.HttpIO;
 using OsuApi.V2.Users.Models;
 using SosuBot.Database.Models;
 using SosuBot.Extensions;
+using SosuBot.Helpers.OutputText;
 using SosuBot.Helpers.Types;
 using SosuBot.Localization;
 using SosuBot.Localization.Languages;
@@ -59,7 +60,7 @@ namespace SosuBot.Services.Handlers.Commands
             {
                 osuUserInDatabase.Update(user, playmode);
             }
-            string sendText = language.command_set.Fill([$"{user.Username!}", $"{osuUserInDatabase.GetPP(playmode):N2}", osuUserInDatabase.OsuMode.ToGamemode()!]);
+            string sendText = language.command_set.Fill([$"{UserHelper.GetUserProfileUrlWrappedInUsernameString(user.Id.Value, user.Username!)}", $"{osuUserInDatabase.GetPP(playmode):N2}", osuUserInDatabase.OsuMode.ToGamemode()!]);
             await Context.Update.ReplyAsync(Context.BotClient, sendText);
         }
     }

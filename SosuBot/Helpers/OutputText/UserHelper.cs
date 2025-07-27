@@ -29,5 +29,15 @@ namespace SosuBot.Helpers.OutputText
             string ppText = rank?.ToString() ?? "—";
             return ppText;
         }
+
+        public static string GetUserProfileUrl(int userId)
+        {
+            return $"{OsuConstants.BaseUserProfileUrl}{userId}";
+        }
+
+        public static string GetUserProfileUrlWrappedInUsernameString(int userId, string username)
+        {
+            return $"<a href=\"{GetUserProfileUrl(userId)}\">{username}</a>";
+        }
     }
 }

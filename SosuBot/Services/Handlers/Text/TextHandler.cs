@@ -43,8 +43,7 @@ namespace SosuBot.Services.Handlers.Text
 
             string textToSend = language.command_user.Fill([
                 $"{playmode.ToGamemode()}",
-                $"{user.GetProfileUrl()}",
-                $"{user.Username}",
+                $"{UserHelper.GetUserProfileUrlWrappedInUsernameString(user.Id.Value, user.Username!)}",
                 $"{user.Statistics.GlobalRank}",
                 $"{user.Statistics.CountryRank}",
                 $"{user.CountryCode}",

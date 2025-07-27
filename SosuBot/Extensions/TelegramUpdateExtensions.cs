@@ -27,9 +27,9 @@ namespace SosuBot.Extensions
 
         public static IEnumerable<string> GetAllLinks(this Message message)
         {
-            if(message.Text == null || message.Entities == null) return Enumerable.Empty<string>();
+            if(message.Text == null || message.Entities == null) return [];
 
-            List<string> links = new List<string>();
+            List<string> links = [];
             foreach(MessageEntity me in message.Entities.Where(e => e.Type is MessageEntityType.Url or MessageEntityType.TextLink))
             {
                 links.Add(me.Url ?? message.Text.Substring(me.Offset, me.Length));
