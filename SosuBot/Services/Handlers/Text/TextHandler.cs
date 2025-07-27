@@ -128,7 +128,6 @@ namespace SosuBot.Services.Handlers.Text
                     scoreMaxCombo: null,
                     scoreMods: classicModsToApply,
                     scoreStatistics: null,
-                    scoreMaxStatistics: null,
                     rulesetId: (int)playmode,
                     cancellationToken: Context.CancellationToken),
 
@@ -138,7 +137,6 @@ namespace SosuBot.Services.Handlers.Text
                     scoreMaxCombo: null,
                     scoreMods: classicModsToApply,
                     scoreStatistics: null,
-                    scoreMaxStatistics: null,
                     rulesetId: (int)playmode,
                     cancellationToken: Context.CancellationToken),
 
@@ -148,7 +146,6 @@ namespace SosuBot.Services.Handlers.Text
                     scoreMaxCombo: null,
                     scoreMods: classicModsToApply,
                     scoreStatistics: null,
-                    scoreMaxStatistics: null,
                     rulesetId: (int)playmode,
                     cancellationToken: Context.CancellationToken),
 
@@ -158,7 +155,6 @@ namespace SosuBot.Services.Handlers.Text
                     scoreMaxCombo: null,
                     scoreMods: lazerModsToApply,
                     scoreStatistics: null,
-                    scoreMaxStatistics: null,
                     rulesetId: (int)playmode,
                     cancellationToken: Context.CancellationToken),
 
@@ -168,7 +164,6 @@ namespace SosuBot.Services.Handlers.Text
                     scoreMaxCombo: null,
                     scoreMods: lazerModsToApply,
                     scoreStatistics: null,
-                    scoreMaxStatistics: null,
                     rulesetId: (int)playmode,
                     cancellationToken: Context.CancellationToken),
 
@@ -178,7 +173,6 @@ namespace SosuBot.Services.Handlers.Text
                     scoreMaxCombo: null,
                     scoreMods: lazerModsToApply,
                     scoreStatistics: null,
-                    scoreMaxStatistics: null,
                     rulesetId: (int)playmode,
                     cancellationToken: Context.CancellationToken)
             };
