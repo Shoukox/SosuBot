@@ -120,7 +120,7 @@ namespace SosuBot.Helpers.Scoring
                     await osuApi.Beatmapsets.GetBeatmapset(beatmap.BeatmapExtended!.BeatmapsetId.Value);
 
                 top3MostPlayedBeatmaps +=
-                    $"{count + 1}. (<b>{beatmap.BeatmapExtended!.DifficultyRating}⭐️</b>) <a href=\"https://osu.ppy.sh/beatmaps/{beatmap.BeatmapExtended.Id}\">{beatmapsetExtended.Title.EncodeHtml()} [{beatmap.BeatmapExtended.Version.EncodeHtml()}]</a> — <b>{us.Count()} траев</b>\n";
+                    $"{count + 1}. (<b>{beatmap.BeatmapExtended!.DifficultyRating}⭐️</b>) <a href=\"https://osu.ppy.sh/beatmaps/{beatmap.BeatmapExtended.Id}\">{beatmapsetExtended.Title.EncodeHtml()} [{beatmap.BeatmapExtended.Version.EncodeHtml()}]</a> — <b>{us.Count()} скоров</b>\n";
                 count += 1;
             }
 
