@@ -91,8 +91,7 @@ namespace SosuBot.Services.Handlers.Commands
 
             string textToSend = language.command_user.Fill([
                 $"{playmode.ToGamemode()}",
-                $"{user.GetProfileUrl()}",
-                $"{user.Username}",
+                $"{UserHelper.GetUserProfileUrlWrappedInUsernameString(user.Id.Value, user.Username!)}",
                 $"{UserHelper.GetUserRankText(user.Statistics.GlobalRank)}",
                 $"{UserHelper.GetUserRankText(user.Statistics.CountryRank)}",
                 $"{user.CountryCode}",

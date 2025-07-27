@@ -9,6 +9,7 @@ using SosuBot.Localization.Languages;
 using SosuBot.PerformanceCalculator;
 using SosuBot.Services.Handlers.Abstract;
 using System.Text.RegularExpressions;
+using SosuBot.Helpers.OutputText;
 using SosuBot.Helpers.Types;
 using Telegram.Bot.Types;
 
@@ -112,7 +113,7 @@ namespace SosuBot.Services.Handlers.Commands
             GetBeatmapResponse[] beatmaps = lastScores.Select(async score => await Context.OsuApiV2.Beatmaps.GetBeatmap((long)score.Beatmap!.Id)).Select(t => t.Result).ToArray()!;
             var ppCalculator = new PPCalculator();
 
-            string textToSend = $"<b>{osuUsernameForLastScores}</b> (<i>{ruleset.ParseRulesetToGamemode()}</i>)\n\n";
+            string textToSend = $"<b>{UserHelper.GetUserProfileUrlWrappedInUsernameString(userResponse.UserExtend!.Id.Value, osuUsernameForLastScores)}</b> (<i>{ruleset.ParseRulesetToGamemode()}</i>)\n\n";
             for (int i = 0; i <= lastScores.Length - 1; i++)
             {
                 var score = lastScores[i];

@@ -9,6 +9,7 @@ using OsuApi.V2.Clients.Users.HttpIO;
 using OsuApi.V2.Models;
 using OsuApi.V2.Users.Models;
 using SosuBot.Database;
+using SosuBot.Helpers;
 using SosuBot.Helpers.Comparers;
 using SosuBot.Helpers.Scoring;
 using SosuBot.Helpers.Types;
@@ -25,7 +26,6 @@ public sealed class ScoresObserverBackgroundService(
     ITelegramBotClient botClient,
     BotContext database) : BackgroundService
 {
-    public const string BaseOsuScoreLink = "https://osu.ppy.sh/scores/";
     public static readonly ConcurrentBag<long> ObservedUsers = new();
     public static List<DailyStatistics> AllDailyStatistics = new();
 
@@ -171,8 +171,8 @@ public sealed class ScoresObserverBackgroundService(
                         foreach (Score score in newScores)
                         {
                             await botClient.SendMessage(_adminTelegramId,
-                                $"<b>{score.User?.Username}</b> set a <b>{score.Pp}pp</b> <a href=\"{BaseOsuScoreLink}{score.Id}\">score!</a>",
-                                ParseMode.Html, linkPreviewOptions: true, cancellationToken: stoppingToken);
+                                $"<b>{score.User?.Username}</b> set a <b>{score.Pp}pp</b> {ScoreHelper.GetScoreUrlWrappedInString(score.Id!.Value, "score!")}",
+                                ParseMode.Html, linkPreviewOptions: true, cancellationToken: stoppingToken!);
                             await Task.Delay(1000, stoppingToken);
                         }
                     }

@@ -5,6 +5,7 @@ using OsuApi.V2.Clients.Beatmaps.HttpIO;
 using OsuApi.V2.Models;
 using OsuApi.V2.Users.Models;
 using SosuBot.Extensions;
+using SosuBot.Helpers.OutputText;
 using SosuBot.Helpers.Types;
 using SosuBot.Helpers.Types.Statistics;
 using SosuBot.Localization;
@@ -59,6 +60,16 @@ namespace SosuBot.Helpers.Scoring
 
             return scoreStatisticsText;
         }
+        
+        public static string GetScoreUrl(long scoreId)
+        {
+            return $"{OsuConstants.BaseScoreUrl}{scoreId}";
+        }
+
+        public static string GetScoreUrlWrappedInString(long scoreId, string text)
+        {
+            return $"<a href=\"{GetScoreUrl(scoreId)}\">{text}</a>";
+        }
 
         public static async Task<string> GetDailyStatisticsSendText(DailyStatistics dailyStatistics, ApiV2 osuApi,
             ILogger logger)
@@ -88,7 +99,7 @@ namespace SosuBot.Helpers.Scoring
             {
                 if (count >= 5) break;
                 top3ActivePlayers +=
-                    $"{count + 1}. <b><a href=\"{us.m.GetProfileUrl()}\">{us.m.Username}</a></b> — {us.Item2.Length} скоров, макс. <i>{us.Item2.Max(m => m.Pp):N2}pp</i>\n";
+                    $"{count + 1}. <b>{UserHelper.GetUserProfileUrlWrappedInUsernameString(us.m.Id.Value, us.m.Username!)}</b> — {us.Item2.Length} скоров, макс. <i>{us.Item2.Max(m => m.Pp):N2}pp</i>\n";
                 count += 1;
             }
 
@@ -118,11 +129,8 @@ namespace SosuBot.Helpers.Scoring
                 $"{activePlayersCount}",
                 $"{passedScores}",
                 $"{beatmapsPlayed}",
-                $"{ScoresObserverBackgroundService.BaseOsuScoreLink}{mostPPForScore?.Id}",
-                $"{mostPPForScore?.Pp:N2}",
-                $"{userHavingMostPPForScore?.GetProfileUrl()}",
-                $"{userHavingMostPPForScore?.Username}",
-
+                $"{ScoreHelper.GetScoreUrlWrappedInString(mostPPForScore!.Id!.Value, $"{mostPPForScore.Pp:N2}pp")}",
+                $"{UserHelper.GetUserProfileUrlWrappedInUsernameString(userHavingMostPPForScore!.Id!.Value, userHavingMostPPForScore.Username!)}",
                 $"{top3ActivePlayers}\n",
                 $"{top3MostPlayedBeatmaps}\n",
             ]);

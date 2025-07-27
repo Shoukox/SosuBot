@@ -94,11 +94,6 @@ namespace SosuBot.Extensions
             };
         }
 
-        public static string GetProfileUrl(this OsuApi.V2.Users.Models.User user)
-        {
-            return $"http://osu.ppy.sh/u/{user.Id}";
-        }
-
         public static double CalculateCompletion(this OsuApi.V2.Models.Score score, int beatmapObjects)
         {
             int scoreHittedObjects = score.CalculateObjectsAmount();
