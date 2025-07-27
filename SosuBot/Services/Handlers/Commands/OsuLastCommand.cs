@@ -142,7 +142,6 @@ namespace SosuBot.Services.Handlers.Commands
                         scoreMaxCombo: score.MaxCombo!.Value,
                         scoreMods: mods.ToOsuMods(playmode),
                         scoreStatistics: scoreStatistics,
-                        scoreMaxStatistics: score.MaximumStatistics!.ToStatistics(),
                         rulesetId: (int)playmode,
                         cancellationToken: Context.CancellationToken),
                     
@@ -152,7 +151,6 @@ namespace SosuBot.Services.Handlers.Commands
                         scoreMaxCombo: beatmap.MaxCombo!.Value,
                         scoreMods: mods.ToOsuMods(playmode),
                         scoreStatistics: null,
-                        scoreMaxStatistics: null,
                         rulesetId: (int)playmode,
                         cancellationToken: Context.CancellationToken),
                     
@@ -162,7 +160,6 @@ namespace SosuBot.Services.Handlers.Commands
                         scoreMaxCombo: beatmap.MaxCombo!.Value,
                         scoreMods: mods.ToOsuMods(playmode),
                         scoreStatistics: null,
-                        scoreMaxStatistics: null,
                         rulesetId: (int)playmode,
                         cancellationToken: Context.CancellationToken),
                 };

@@ -18,7 +18,7 @@ namespace SosuBot.Services.Handlers.Callbacks
 
             byte[] data = await OsuHelper.GetSongPreviewAsync(beatmapsetId);
             using MemoryStream ms = new MemoryStream(data);
-            await Context.BotClient.SendAudio(chatId, new InputFileStream(ms));
+            await Context.BotClient.SendAudio(chatId, new InputFileStream(ms, $"{beatmapsetId}.mp3"), replyParameters: Context.Update.Message!.Id);
         }
     }
 }

@@ -88,7 +88,7 @@ namespace SosuBot.Helpers.Scoring
             {
                 if (count >= 5) break;
                 top3ActivePlayers +=
-                    $"{count + 1}. <b>{us.m.Username}</b> — {us.Item2.Length} скоров, макс. <i>{us.Item2.Max(m => m.Pp):N2}pp</i>\n";
+                    $"{count + 1}. <b><a href=\"{us.m.GetProfileUrl()}\">{us.m.Username}</a></b> — {us.Item2.Length} скоров, макс. <i>{us.Item2.Max(m => m.Pp):N2}pp</i>\n";
                 count += 1;
             }
 
