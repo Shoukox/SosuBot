@@ -178,6 +178,9 @@ public class UpdateHandler(
             case string db when DbCommand.Commands.Contains(db):
                 executableCommand = new DbCommand();
                 break;
+            case string c when CustomCommand.Commands.Contains(c):
+                executableCommand = new CustomCommand();
+                break;
             case string delete when DeleteCommand.Commands.Contains(delete):
                 executableCommand = new DeleteCommand();
                 break;

@@ -16,6 +16,8 @@ namespace SosuBot.Services.Handlers.Commands
         {
             if(await Context.Update.IsUserSpamming(Context.BotClient))
                 return;
+
+            if (ScoresObserverBackgroundService.AllDailyStatistics.Count == 0) return;
             
             ILocalization language = new Russian();
             Message waitMessage = await Context.Update.ReplyAsync(Context.BotClient, language.waiting);
