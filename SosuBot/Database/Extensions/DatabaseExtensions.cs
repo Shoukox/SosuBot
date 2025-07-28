@@ -5,6 +5,8 @@ using SosuBot.Database.Models;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Data;
+using System.Data.Common;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -87,10 +89,12 @@ namespace SosuBot.Database.Extensions
                         {
                             text += item.ToString() + " ";
                         }
+
                         if (text.Length != 0)
                         {
                             text = text[0..^1];
                         }
+
                         return text;
                     }
                     else
@@ -114,6 +118,48 @@ namespace SosuBot.Database.Extensions
             }
 
             return string.Join("\n", rows);
+        }
+
+        public static List<List<string>> RawSqlQuery(this DbContext context, string query)
+        {
+            Func<DbDataReader, List<string>> readRow = (DbDataReader reader) =>
+            {
+                List<string> row = new List<string>();
+                for (int i = 0; i < reader.FieldCount; i++)
+                {
+                    row.Add(reader.GetString(i));
+                }
+                return row;
+            };
+            
+            Func<DbDataReader, List<string>> readFieldNames = (DbDataReader reader) =>
+            {
+                List<string> row = new List<string>();
+                for (int i = 0; i < reader.FieldCount; i++)
+                {
+                    row.Add(reader.GetName(i));
+                }
+                return row;
+            };
+            using (var command = context.Database.GetDbConnection().CreateCommand())
+            {
+                command.CommandText = query;
+                command.CommandType = CommandType.Text;
+
+                context.Database.OpenConnection();
+                
+                using (var result = command.ExecuteReader())
+                {
+                    var entities = new List<List<string>>();
+                    entities.Add(readFieldNames(result));
+                    
+                    while (result.Read())
+                    {
+                        entities.Add(readRow(result));
+                    }
+                    return entities;
+                }
+            }
         }
     }
 }

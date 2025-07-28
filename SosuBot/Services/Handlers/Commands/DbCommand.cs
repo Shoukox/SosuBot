@@ -5,6 +5,7 @@ using SosuBot.Extensions;
 using SosuBot.Services.Handlers.Abstract;
 using System.Text;
 using System.Text.Json;
+using SosuBot.Helpers.OutputText;
 using SosuBot.Helpers.Types;
 using Telegram.Bot.Types;
 
@@ -32,6 +33,7 @@ namespace SosuBot.Services.Handlers.Commands
                     await Context.Update.ReplyAsync(Context.BotClient, "Incorrect json");
                     return;
                 }
+
                 foreach (var user in users)
                 {
                     var response = await Context.OsuApiV2.Users.GetUser($"@{user.osuName}", new(), Ruleset.Osu);
@@ -49,8 +51,10 @@ namespace SosuBot.Services.Handlers.Commands
                         await Context.Database.OsuUsers.AddAsync(osuUser);
                     }
                 }
+
                 await Context.Database.SaveChangesAsync();
-                await Context.Update.ReplyAsync(Context.BotClient, $"Added {Context.Database.OsuUsers.Count() - startCount} new users");
+                await Context.Update.ReplyAsync(Context.BotClient,
+                    $"Added {Context.Database.OsuUsers.Count() - startCount} new users");
             }
             else if (parameters[0] == "fromtext")
             {
@@ -61,6 +65,7 @@ namespace SosuBot.Services.Handlers.Commands
                     await Context.Update.ReplyAsync(Context.BotClient, "Incorrect json");
                     return;
                 }
+
                 foreach (var user in users)
                 {
                     var response = await Context.OsuApiV2.Users.GetUser($"@{user.osuName}", new(), Ruleset.Osu);
@@ -78,8 +83,10 @@ namespace SosuBot.Services.Handlers.Commands
                         await Context.Database.OsuUsers.AddAsync(osuUser);
                     }
                 }
+
                 await Context.Database.SaveChangesAsync();
-                await Context.Update.ReplyAsync(Context.BotClient, $"Added {Context.Database.OsuUsers.Count() - startCount} new users");
+                await Context.Update.ReplyAsync(Context.BotClient,
+                    $"Added {Context.Database.OsuUsers.Count() - startCount} new users");
             }
             else if (parameters[0] == "count")
             {
@@ -107,6 +114,20 @@ namespace SosuBot.Services.Handlers.Commands
                 else throw new NotImplementedException();
 
                 await Context.Update.ReplyDocumentAsync(Context.BotClient, InputFile.FromStream(stream, "table.txt"));
+            }
+            else if (parameters[0] == "query")
+            {
+                if (Context.Update.From.Id != 728384906) // Shoukko's telegram id
+                {
+                    await Context.Update.ReplyAsync(Context.BotClient, "Пшел отсюда!");
+                    return;
+                }
+
+                string query = string.Join(" ", parameters[1..]);
+                List<List<string>> response = Context.Database.RawSqlQuery(query);
+
+                await Context.Update.ReplyDocumentAsync(Context.BotClient,
+                    new InputFileStream(TextHelper.TextToStream(TextHelper.GetReadfriendlyTable(response))));
             }
             else throw new NotImplementedException();
         }

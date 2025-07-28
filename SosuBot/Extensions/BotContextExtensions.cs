@@ -1,4 +1,7 @@
-﻿using Realms;
+﻿using System.Data;
+using System.Data.Common;
+using Microsoft.EntityFrameworkCore;
+using Realms;
 using SosuBot.Database;
 using SosuBot.Database.Models;
 using SosuBot.Synchronization;
@@ -37,6 +40,7 @@ namespace SosuBot.Extensions
                 };
                 await database.AddAsync(newChat);
             }
+
             semaphoreSlim.Release();
         }
     }
