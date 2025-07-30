@@ -127,7 +127,7 @@ namespace SosuBot.Database.Extensions
                 List<string> row = new List<string>();
                 for (int i = 0; i < reader.FieldCount; i++)
                 {
-                    row.Add(reader.GetString(i));
+                    row.Add(reader.IsDBNull(i) ? "null" : reader.GetString(i));
                 }
                 return row;
             };
