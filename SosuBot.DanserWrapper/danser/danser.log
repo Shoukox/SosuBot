@@ -1,0 +1,135 @@
+2025/07/30 05:09:44 -------------------------------------------------------------------
+2025/07/30 05:09:44 danser-go version: 0.11.0
+2025/07/30 05:09:44 Build commit hash: 8331b0ffb841cc9e0f5e6b756bcf2bba2a9465c0
+2025/07/30 05:09:44 Ran using: [./danser-cli -r /home/shoukko/.local/share/osu/exports/Shoukko playing Turbo - PADORU  PADORU (Sotarks) [Gift] (2025-07-29_02-30).osr -out test1mb]
+2025/07/30 05:09:44 OS:  arch 25.0.6
+2025/07/30 05:09:44 CPU: AMD Ryzen 7 9700X 8-Core Processor, 1 cores
+2025/07/30 05:09:44 RAM: 30 GiB
+2025/07/30 05:09:44 -------------------------------------------------------------------
+2025/07/30 05:09:44 Checking Github for a new version of danser...
+2025/07/30 05:09:44 You're using the newest version of danser.
+2025/07/30 05:09:44 SettingsManager: Loading "/home/shoukko/RiderProjects/SosuBot/SosuBot.DanserWrapper/danser/settings/default.json"
+2025/07/30 05:09:44 SettingsManager: "/home/shoukko/RiderProjects/SosuBot/SosuBot.DanserWrapper/danser/settings/default.json" loaded!
+2025/07/30 05:09:44 SettingsManager: Saving settings to "/home/shoukko/RiderProjects/SosuBot/SosuBot.DanserWrapper/danser/settings/default.json"
+2025/07/30 05:09:44 ApiConnector: Loading "/home/shoukko/RiderProjects/SosuBot/SosuBot.DanserWrapper/danser/settings/credentials.json"
+2025/07/30 05:09:44 Current config: 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
+2025/07/30 05:09:44 DatabaseManager: Initializing database...
+2025/07/30 05:09:44 DatabaseManager: Database schema version: 20220622
+2025/07/30 05:09:44 DatabaseManager: Database data version: 20220622
+2025/07/30 05:09:44 DatabaseManager: Scanning "/home/shoukko/danser/Songs" for .osu files...
+2025/07/30 05:09:44 DatabaseManager: Scan complete. Found 25 files.
+2025/07/30 05:09:44 DatabaseManager: Comparing files with database...
+2025/07/30 05:09:44 DatabaseManager: Compare complete.
+2025/07/30 05:09:44 DatabaseManager: Loading beatmaps from database...
+2025/07/30 05:09:44 DatabaseManager: Loaded 25 total.
+2025/07/30 05:09:44 Initializing GLFW...
+2025/07/30 05:09:44 GLFW Initialized!
+2025/07/30 05:09:44 Creating window...
+2025/07/30 05:09:44 Window created!
+2025/07/30 05:09:44 Initializing OpenGL...
+2025/07/30 05:09:44 GL Vendor:     NVIDIA Corporation
+2025/07/30 05:09:44 GL Renderer:   NVIDIA GeForce RTX 4060 Ti/PCIe/SSE2
+2025/07/30 05:09:44 GL Version:    3.3.0 NVIDIA 575.64.03
+2025/07/30 05:09:44 GLSL Version:  3.30 NVIDIA via Cg compiler
+2025/07/30 05:09:44 GL Extensions: GL_AMD_multi_draw_indirect GL_AMD_seamless_cubemap_per_texture GL_AMD_vertex_shader_viewport_index GL_AMD_vertex_shader_layer GL_ARB_arrays_of_arrays GL_ARB_base_instance GL_ARB_bindless_texture GL_ARB_blend_func_extended GL_ARB_buffer_storage GL_ARB_clear_buffer_object GL_ARB_clear_texture GL_ARB_clip_control GL_ARB_color_buffer_float GL_ARB_compressed_texture_pixel_storage GL_ARB_conservative_depth GL_ARB_compute_shader GL_ARB_compute_variable_group_size GL_ARB_conditional_render_inverted GL_ARB_copy_buffer GL_ARB_copy_image GL_ARB_cull_distance GL_ARB_debug_output GL_ARB_depth_buffer_float GL_ARB_depth_clamp GL_ARB_depth_texture GL_ARB_derivative_control GL_ARB_direct_state_access GL_ARB_draw_buffers GL_ARB_draw_buffers_blend GL_ARB_draw_indirect GL_ARB_draw_elements_base_vertex GL_ARB_draw_instanced GL_ARB_enhanced_layouts GL_ARB_ES2_compatibility GL_ARB_ES3_compatibility GL_ARB_ES3_1_compatibility GL_ARB_ES3_2_compatibility GL_ARB_explicit_attrib_location GL_ARB_explicit_uniform_location GL_ARB_fragment_coord_conventions GL_ARB_fragment_layer_viewport GL_ARB_fragment_program GL_ARB_fragment_program_shadow GL_ARB_fragment_shader GL_ARB_fragment_shader_interlock GL_ARB_framebuffer_no_attachments GL_ARB_framebuffer_object GL_ARB_framebuffer_sRGB GL_ARB_geometry_shader4 GL_ARB_get_program_binary GL_ARB_get_texture_sub_image GL_ARB_gl_spirv GL_ARB_gpu_shader5 GL_ARB_gpu_shader_fp64 GL_ARB_gpu_shader_int64 GL_ARB_half_float_pixel GL_ARB_half_float_vertex GL_ARB_imaging GL_ARB_indirect_parameters GL_ARB_instanced_arrays GL_ARB_internalformat_query GL_ARB_internalformat_query2 GL_ARB_invalidate_subdata GL_ARB_map_buffer_alignment GL_ARB_map_buffer_range GL_ARB_multi_bind GL_ARB_multi_draw_indirect GL_ARB_multisample GL_ARB_multitexture GL_ARB_occlusion_query GL_ARB_occlusion_query2 GL_ARB_parallel_shader_compile GL_ARB_pipeline_statistics_query GL_ARB_pixel_buffer_object GL_ARB_point_parameters GL_ARB_point_sprite GL_ARB_polygon_offset_clamp GL_ARB_post_depth_coverage GL_ARB_program_interface_query GL_ARB_provoking_vertex GL_ARB_query_buffer_object GL_ARB_robust_buffer_access_behavior GL_ARB_robustness GL_ARB_sample_locations GL_ARB_sample_shading GL_ARB_sampler_objects GL_ARB_seamless_cube_map GL_ARB_seamless_cubemap_per_texture GL_ARB_separate_shader_objects GL_ARB_shader_atomic_counter_ops GL_ARB_shader_atomic_counters GL_ARB_shader_ballot GL_ARB_shader_bit_encoding GL_ARB_shader_clock GL_ARB_shader_draw_parameters GL_ARB_shader_group_vote GL_ARB_shader_image_load_store GL_ARB_shader_image_size GL_ARB_shader_objects GL_ARB_shader_precision GL_ARB_shader_storage_buffer_object GL_ARB_shader_subroutine GL_ARB_shader_texture_image_samples GL_ARB_shader_texture_lod GL_ARB_shading_language_100 GL_ARB_shader_viewport_layer_array GL_ARB_shading_language_420pack GL_ARB_shading_language_include GL_ARB_shading_language_packing GL_ARB_shadow GL_ARB_sparse_buffer GL_ARB_sparse_texture GL_ARB_sparse_texture2 GL_ARB_sparse_texture_clamp GL_ARB_spirv_extensions GL_ARB_stencil_texturing GL_ARB_sync GL_ARB_tessellation_shader GL_ARB_texture_barrier GL_ARB_texture_border_clamp GL_ARB_texture_buffer_object GL_ARB_texture_buffer_object_rgb32 GL_ARB_texture_buffer_range GL_ARB_texture_compression GL_ARB_texture_compression_bptc GL_ARB_texture_compression_rgtc GL_ARB_texture_cube_map GL_ARB_texture_cube_map_array GL_ARB_texture_env_add GL_ARB_texture_env_combine GL_ARB_texture_env_crossbar GL_ARB_texture_env_dot3 GL_ARB_texture_filter_anisotropic GL_ARB_texture_filter_minmax GL_ARB_texture_float GL_ARB_texture_gather GL_ARB_texture_mirror_clamp_to_edge GL_ARB_texture_mirrored_repeat GL_ARB_texture_multisample GL_ARB_texture_non_power_of_two GL_ARB_texture_query_levels GL_ARB_texture_query_lod GL_ARB_texture_rectangle GL_ARB_texture_rg GL_ARB_texture_rgb10_a2ui GL_ARB_texture_stencil8 GL_ARB_texture_storage GL_ARB_texture_storage_multisample GL_ARB_texture_swizzle GL_ARB_texture_view GL_ARB_timer_query GL_ARB_transform_feedback2 GL_ARB_transform_feedback3 GL_ARB_transform_feedback_instanced GL_ARB_transform_feedback_overflow_query GL_ARB_transpose_matrix GL_ARB_uniform_buffer_object GL_ARB_vertex_array_bgra GL_ARB_vertex_array_object GL_ARB_vertex_attrib_64bit GL_ARB_vertex_attrib_binding GL_ARB_vertex_buffer_object GL_ARB_vertex_program GL_ARB_vertex_shader GL_ARB_vertex_type_10f_11f_11f_rev GL_ARB_vertex_type_2_10_10_10_rev GL_ARB_viewport_array GL_ARB_window_pos GL_ATI_draw_buffers GL_ATI_texture_float GL_ATI_texture_mirror_once GL_S3_s3tc GL_EXT_texture_env_add GL_EXT_abgr GL_EXT_bgra GL_EXT_bindable_uniform GL_EXT_blend_color GL_EXT_blend_equation_separate GL_EXT_blend_func_separate GL_EXT_blend_minmax GL_EXT_blend_subtract GL_EXT_compiled_vertex_array GL_EXT_Cg_shader GL_EXT_depth_bounds_test GL_EXT_direct_state_access GL_EXT_draw_buffers2 GL_EXT_draw_instanced GL_EXT_draw_range_elements GL_EXT_fog_coord GL_EXT_framebuffer_blit GL_EXT_framebuffer_multisample GL_EXTX_framebuffer_mixed_formats GL_EXT_framebuffer_multisample_blit_scaled GL_EXT_framebuffer_object GL_EXT_framebuffer_sRGB GL_EXT_geometry_shader4 GL_EXT_gpu_program_parameters GL_EXT_gpu_shader4 GL_EXT_multi_draw_arrays GL_EXT_multiview_texture_multisample GL_EXT_multiview_timer_query GL_EXT_packed_depth_stencil GL_EXT_packed_float GL_EXT_packed_pixels GL_EXT_pixel_buffer_object GL_EXT_point_parameters GL_EXT_polygon_offset_clamp GL_EXT_post_depth_coverage GL_EXT_provoking_vertex GL_EXT_raster_multisample GL_EXT_rescale_normal GL_EXT_secondary_color GL_EXT_separate_shader_objects GL_EXT_separate_specular_color GL_EXT_shader_image_load_formatted GL_EXT_shader_image_load_store GL_EXT_shader_integer_mix GL_EXT_shadow_funcs GL_EXT_sparse_texture2 GL_EXT_stencil_two_side GL_EXT_stencil_wrap GL_EXT_texture3D GL_EXT_texture_array GL_EXT_texture_buffer_object GL_EXT_texture_compression_dxt1 GL_EXT_texture_compression_latc GL_EXT_texture_compression_rgtc GL_EXT_texture_compression_s3tc GL_EXT_texture_cube_map GL_EXT_texture_edge_clamp GL_EXT_texture_env_combine GL_EXT_texture_env_dot3 GL_EXT_texture_filter_anisotropic GL_EXT_texture_filter_minmax GL_EXT_texture_integer GL_EXT_texture_lod GL_EXT_texture_lod_bias GL_EXT_texture_mirror_clamp GL_EXT_texture_object GL_EXT_texture_shadow_lod GL_EXT_texture_shared_exponent GL_EXT_texture_sRGB GL_EXT_texture_sRGB_R8 GL_EXT_texture_sRGB_decode GL_EXT_texture_storage GL_EXT_texture_swizzle GL_EXT_timer_query GL_EXT_transform_feedback2 GL_EXT_vertex_array GL_EXT_vertex_array_bgra GL_EXT_vertex_attrib_64bit GL_EXT_window_rectangles GL_EXT_x11_sync_object GL_EXT_import_sync_object GL_NV_robustness_video_memory_purge GL_IBM_rasterpos_clip GL_IBM_texture_mirrored_repeat GL_KHR_context_flush_control GL_KHR_debug GL_EXT_memory_object GL_EXT_memory_object_fd GL_NV_memory_object_sparse GL_KHR_parallel_shader_compile GL_KHR_no_error GL_KHR_robust_buffer_access_behavior GL_KHR_robustness GL_EXT_semaphore GL_EXT_semaphore_fd GL_NV_timeline_semaphore GL_KHR_shader_subgroup GL_KTX_buffer_region GL_NV_alpha_to_coverage_dither_control GL_NV_bindless_multi_draw_indirect GL_NV_bindless_multi_draw_indirect_count GL_NV_bindless_texture GL_NV_blend_equation_advanced GL_NV_blend_equation_advanced_coherent GL_NVX_blend_equation_advanced_multi_draw_buffers GL_NV_blend_minmax_factor GL_NV_blend_square GL_NV_clip_space_w_scaling GL_NV_command_list GL_NV_compute_program5 GL_NV_compute_shader_derivatives GL_NV_conditional_render GL_NV_conservative_raster GL_NV_conservative_raster_dilate GL_NV_conservative_raster_pre_snap GL_NV_conservative_raster_pre_snap_triangles GL_NV_conservative_raster_underestimation GL_NV_copy_depth_to_color GL_NV_copy_image GL_NV_depth_buffer_float GL_NV_depth_clamp GL_NV_draw_texture GL_NV_draw_vulkan_image GL_NV_ES1_1_compatibility GL_NV_ES3_1_compatibility GL_NV_explicit_multisample GL_NV_feature_query GL_NV_fence GL_NV_fill_rectangle GL_NV_float_buffer GL_NV_fog_distance GL_NV_fragment_coverage_to_color GL_NV_fragment_program GL_NV_fragment_program_option GL_NV_fragment_program2 GL_NV_fragment_shader_barycentric GL_NV_fragment_shader_interlock GL_NV_framebuffer_mixed_samples GL_NV_framebuffer_multisample_coverage GL_NV_geometry_shader4 GL_NV_geometry_shader_passthrough GL_NV_gpu_program4 GL_NV_internalformat_sample_query GL_NV_gpu_program4_1 GL_NV_gpu_program5 GL_NV_gpu_program5_mem_extended GL_NV_gpu_program_fp64 GL_NV_gpu_program_multiview GL_NV_gpu_shader5 GL_NV_half_float GL_NV_light_max_exponent GL_NV_memory_attachment GL_NV_mesh_shader GL_NV_multisample_coverage GL_NV_multisample_filter_hint GL_NV_occlusion_query GL_NV_packed_depth_stencil GL_NV_parameter_buffer_object GL_NV_parameter_buffer_object2 GL_NV_path_rendering GL_NV_path_rendering_shared_edge GL_NV_pixel_data_range GL_NV_point_sprite GL_NV_primitive_restart GL_NV_primitive_shading_rate GL_NV_query_resource GL_NV_query_resource_tag GL_NV_register_combiners GL_NV_register_combiners2 GL_NV_representative_fragment_test GL_NV_sample_locations GL_NV_sample_mask_override_coverage GL_NV_scissor_exclusive GL_NV_shader_atomic_counters GL_NV_shader_atomic_float GL_NV_shader_atomic_float64 GL_NV_shader_atomic_fp16_vector GL_NV_shader_atomic_int64 GL_NV_shader_buffer_load GL_NV_shader_storage_buffer_object GL_NV_shader_subgroup_partitioned GL_NV_shader_texture_footprint GL_NV_shading_rate_image GL_NV_stereo_view_rendering GL_NV_texgen_reflection GL_NV_texture_barrier GL_NV_texture_compression_vtc GL_NV_texture_dirty_tile_map GL_NV_texture_env_combine4 GL_NV_texture_multisample GL_NV_texture_rectangle GL_NV_texture_rectangle_compressed GL_NV_texture_shader GL_NV_texture_shader2 GL_NV_texture_shader3 GL_NV_transform_feedback GL_NV_transform_feedback2 GL_NV_uniform_buffer_unified_memory GL_NV_uniform_buffer_std430_layout GL_NV_vdpau_interop GL_NV_vdpau_interop2 GL_NV_vertex_array_range GL_NV_vertex_array_range2 GL_NV_vertex_attrib_integer_64bit GL_NV_vertex_buffer_unified_memory GL_NV_vertex_program GL_NV_vertex_program1_1 GL_NV_vertex_program2 GL_NV_vertex_program2_option GL_NV_vertex_program3 GL_NV_viewport_array2 GL_NV_viewport_swizzle GL_NVX_conditional_render GL_NV_gpu_multicast GL_NVX_progress_fence GL_NVX_gpu_memory_info GL_NVX_nvenc_interop GL_NV_shader_thread_group GL_NV_shader_thread_shuffle GL_KHR_blend_equation_advanced GL_KHR_blend_equation_advanced_coherent GL_OVR_multiview GL_OVR_multiview2 GL_SGIS_generate_mipmap GL_SGIS_texture_lod GL_SGIX_depth_texture GL_SGIX_shadow GL_SUN_slice_accum 
+2025/07/30 05:09:44 OpenGL initialized!
+2025/07/30 05:09:44 Quicksand Bold loaded!
+2025/07/30 05:09:44 Initializing BASS...
+2025/07/30 05:09:44 BASS Initialized!
+2025/07/30 05:09:44 BASS Version:        2.4.17.24
+2025/07/30 05:09:44 BASS FX Version:     2.4.12.14
+2025/07/30 05:09:44 BASS Mix Version:    2.4.12.4
+2025/07/30 05:09:44 SkinManager: Loading skin: Moonshine 2.1 [NM] (moonstaar)
+2025/07/30 05:09:44 SkinManager: Skin "Moonshine 2.1 [NM] (moonstaar)" loaded.
+2025/07/30 05:09:44 Loading texture into atlas: assets/textures/cursor.png
+2025/07/30 05:09:44 Loading texture into atlas: assets/textures/cursor-top.png
+2025/07/30 05:09:44 Loading texture into atlas: assets/default-skin/hit50.png
+2025/07/30 05:09:44 Loading texture into atlas: assets/default-skin/hit100.png
+2025/07/30 05:09:44 Loading texture into atlas: assets/textures/triangle.png
+2025/07/30 05:09:44 Loading texture into atlas: assets/textures/triangle-shadow.png
+2025/07/30 05:09:44 Loading texture into atlas: assets/textures/triangle-small.png
+2025/07/30 05:09:44 Loading texture into atlas: assets/textures/cross.png
+2025/07/30 05:09:44 Loading texture: assets/textures/cursortrail.png
+2025/07/30 05:09:44 Playing: Turbo - PADORU / PADORU [Gift]
+2025/07/30 05:09:44 Audio track: audio.mp3
+2025/07/30 05:09:44 Loading texture into atlas: assets/textures/warning.png
+2025/07/30 05:09:44 Trying to load storyboard from:  /home/shoukko/danser/Songs/1073074 Turbo - PADORU _ PADORU/Turbo - PADORU  PADORU (Sotarks) [Gift].osu
+2025/07/30 05:09:44 Storyboard not found!
+2025/07/30 05:09:44 Loading:  /home/shoukko/.local/share/osu/exports/Shoukko playing Turbo - PADORU  PADORU (Sotarks) [Gift] (2025-07-29_02-30).osr
+2025/07/30 05:09:44 Loading replay for "Shoukko":
+2025/07/30 05:09:44 	Mods: LZ
+2025/07/30 05:09:44 	Median cv frametime: 17.00ms
+2025/07/30 05:09:44 	Replay duration: 32128ms
+2025/07/30 05:09:44 	Expected score: 646649
+2025/07/30 05:09:44 	Replay loaded!
+2025/07/30 05:09:44 Creating osu! ruleset...
+2025/07/30 05:09:44 Using pp calc version 2025-03-06: https://osu.ppy.sh/home/news/2025-03-06-performance-points-star-rating-updates
+2025/07/30 05:09:44 Calculating step SR for mods: NM
+2025/07/30 05:09:44 Calculations finished! Took  0s
+2025/07/30 05:09:44 Stars:
+2025/07/30 05:09:44 	Aim:   3.325231373603023
+2025/07/30 05:09:44 	Speed: 2.278183077547667
+2025/07/30 05:09:44 	Total: 6.1005428113873705
+2025/07/30 05:09:44 SS PP:
+2025/07/30 05:09:44 	Aim:   141.27615208944235
+2025/07/30 05:09:44 	Tap:   46.55257705521153
+2025/07/30 05:09:44 	Acc:   75.72250498420891
+2025/07/30 05:09:44 	Total: 277.01166035604837
+2025/07/30 05:09:44 Calculating HP rates for "Shoukko"...
+2025/07/30 05:09:44 	Passive drain rate: 0.156402587890625
+2025/07/30 05:09:44 Ubuntu Regular loaded!
+2025/07/30 05:09:45 Error connecting to osu!api: oauth2: "invalid_request" "The request is missing a required parameter, includes an invalid parameter value, includes a parameter more than once, or is otherwise malformed."
+2025/07/30 05:09:45 Creating HitObject container...
+2025/07/30 05:09:45 Container created.
+2025/07/30 05:09:45 SkinManager: Texture uploaded as single texture: cursor-ripple.png
+2025/07/30 05:09:45 SkinManager: Texture uploaded as single texture: scorebar-bg.png
+2025/07/30 05:09:45 SkinManager: Texture uploaded as single texture: menu-button-background.png
+2025/07/30 05:09:45 FFmpeg exec location: /usr/bin/ffmpeg
+2025/07/30 05:09:45 Starting encoding!
+2025/07/30 05:09:45 Running ffmpeg with options: [-y -an -f rawvideo -c:v rawvideo -s 1920x1080 -pix_fmt yuv420p -r 60 -color_range 1 -colorspace 1 -color_trc 1 -color_primaries 1 -i .ro2d97d6819b4eb1aa64c04cecfb5232b80f -c:v h264_nvenc -color_range 1 -colorspace 1 -color_trc 1 -color_primaries 1 -movflags +write_colr -rc vbr -b:v 400M -cq 22 -profile:v high -preset p7 /home/shoukko/RiderProjects/SosuBot/SosuBot.DanserWrapper/danser/videos/test1mb_temp/video.mp4]
+2025/07/30 05:09:45 Running ffmpeg with options: [-y -f f32le -acodec pcm_f32le -ar 48000 -ac 2 -i .ro2d34932a9e2dd7e8533f3c3055d39ed8aa -nostats -vn -c:a libopus -strict -2 -b:a 192k /home/shoukko/RiderProjects/SosuBot/SosuBot.DanserWrapper/danser/videos/test1mb_temp/audio.mp4]
+2025/07/30 05:09:45 Progress: 5%, Speed: 5.19x, ETA: 8s
+2025/07/30 05:09:46 Progress: 10%, Speed: 4.16x, ETA: 10s
+2025/07/30 05:09:46 Progress: 15%, Speed: 3.83x, ETA: 10s
+2025/07/30 05:09:47 Progress: 20%, Speed: 3.86x, ETA: 9s
+2025/07/30 05:09:48 Progress: 25%, Speed: 3.03x, ETA: 11s
+2025/07/30 05:09:48 Progress: 30%, Speed: 3.54x, ETA: 9s
+2025/07/30 05:09:49 Progress: 35%, Speed: 3.48x, ETA: 8s
+2025/07/30 05:09:50 Progress: 40%, Speed: 3.55x, ETA: 8s
+2025/07/30 05:09:50 Progress: 45%, Speed: 3.48x, ETA: 7s
+2025/07/30 05:09:51 Progress: 50%, Speed: 3.39x, ETA: 7s
+2025/07/30 05:09:52 Progress: 55%, Speed: 3.39x, ETA: 6s
+2025/07/30 05:09:53 Progress: 60%, Speed: 3.35x, ETA: 5s
+2025/07/30 05:09:53 Progress: 65%, Speed: 3.42x, ETA: 4s
+2025/07/30 05:09:54 Progress: 70%, Speed: 3.37x, ETA: 4s
+2025/07/30 05:09:55 Progress: 75%, Speed: 3.35x, ETA: 3s
+2025/07/30 05:09:55 Progress: 80%, Speed: 3.32x, ETA: 2s
+2025/07/30 05:09:56 +---+---------+---------+----------+-------+-----+-----+----+------+-------+-----------+------+--------+
+2025/07/30 05:09:56 | # | PLAYER  |  SCORE  | ACCURACY | GRADE | 300 | 100 | 50 | MISS | COMBO | MAX COMBO | MODS |   PP   |
+2025/07/30 05:09:56 +---+---------+---------+----------+-------+-----+-----+----+------+-------+-----------+------+--------+
+2025/07/30 05:09:56 | 1 | Shoukko | 646,649 |    95.22 | A     | 138 |   3 |  0 |    6 |     8 |        91 | LZ   | 146.15 |
+2025/07/30 05:09:56 +---+---------+---------+----------+-------+-----+-----+----+------+-------+-----------+------+--------+
+2025/07/30 05:09:56 
+2025/07/30 05:09:56 Progress: 85%, Speed: 3.34x, ETA: 2s
+2025/07/30 05:09:57 SkinManager: Texture uploaded as single texture: ranking-panel.png
+2025/07/30 05:09:57 SkinManager: Texture uploaded as single texture: ranking-a.png
+2025/07/30 05:09:57 SkinManager: Texture uploaded as single texture: ranking-title.png
+2025/07/30 05:09:57 Progress: 90%, Speed: 3.58x, ETA: 1s
+2025/07/30 05:09:57 Progress: 95%, Speed: 3.63x, ETA: 0s
+2025/07/30 05:09:58 Progress: 100%, Speed: 4.18x, ETA: 0s
+2025/07/30 05:09:58 Finishing rendering...
+2025/07/30 05:09:58 Waiting for video to finish writing...
+2025/07/30 05:09:58 Finished! Stopping video pipe...
+2025/07/30 05:09:58 Video pipe closed. Waiting for video ffmpeg process to finish...
+2025/07/30 05:09:59 Video process finished.
+2025/07/30 05:09:59 Audio finished! Stopping audio pipe...
+2025/07/30 05:09:59 Audio pipe closed. Waiting for audio ffmpeg process to finish...
+2025/07/30 05:09:59 Audio process finished.
+2025/07/30 05:09:59 Ffmpeg finished.
+2025/07/30 05:09:59 Starting composing audio and video into one file...
+2025/07/30 05:09:59 Running ffmpeg with options: [-y -i /home/shoukko/RiderProjects/SosuBot/SosuBot.DanserWrapper/danser/videos/test1mb_temp/video.mp4 -i /home/shoukko/RiderProjects/SosuBot/SosuBot.DanserWrapper/danser/videos/test1mb_temp/audio.mp4 -c:v copy -c:a copy -strict -2 -movflags +faststart /home/shoukko/RiderProjects/SosuBot/SosuBot.DanserWrapper/danser/videos/test1mb.mp4]
+2025/07/30 05:09:59 Finished!
+2025/07/30 05:09:59 Video is available at: /home/shoukko/RiderProjects/SosuBot/SosuBot.DanserWrapper/danser/videos/test1mb.mp4
+2025/07/30 05:09:59 Cleaning up intermediate files...
+2025/07/30 05:09:59 Finished.
+2025/07/30 05:09:59 Exiting normally.
