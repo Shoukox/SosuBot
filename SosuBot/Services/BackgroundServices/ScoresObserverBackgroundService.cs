@@ -48,7 +48,7 @@ public sealed class ScoresObserverBackgroundService(
 
         _adminTelegramId = (await database.OsuUsers.FirstAsync((m) => m.IsAdmin, cancellationToken: stoppingToken))
             .TelegramId;
-        
+
         await AddPlayersToObserverList("uz");
         await AddPlayersToObserverList();
 
@@ -59,7 +59,7 @@ public sealed class ScoresObserverBackgroundService(
     {
         await LoadDailyStatistics();
         await _userDatabase.CacheIfNeeded();
-        
+
         DailyStatistics dailyStatistics;
         if (AllDailyStatistics.Count > 0 && AllDailyStatistics.Last().DayOfStatistic.Day == DateTime.UtcNow.Day)
         {
@@ -112,8 +112,7 @@ public sealed class ScoresObserverBackgroundService(
                 }
 
                 // New day => send statistics
-                if (uzScores.Length != 0 && uzScores.Last().EndedAt!.Value.ToUniversalTime().Day !=
-                    dailyStatistics.DayOfStatistic.Day)
+                if (DateTime.UtcNow.Day != dailyStatistics.DayOfStatistic.Day)
                 {
                     string sendText = await ScoreHelper.GetDailyStatisticsSendText(dailyStatistics, osuApi, logger);
 
@@ -123,7 +122,7 @@ public sealed class ScoresObserverBackgroundService(
                     dailyStatistics = new DailyStatistics(CountryCode.Uzbekistan, DateTime.UtcNow);
                     AllDailyStatistics.Add(dailyStatistics);
                 }
-                
+
                 // Save every timedelay*100 seconds
                 if (counter % 100 == 0)
                 {

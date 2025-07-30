@@ -8,7 +8,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\SosuBot.Graphics\SosuBot.Graphics.csproj" />
+    <ProjectReference Include="..\SosuBot.OsuCard\SosuBot.OsuCard.csproj" />
   </ItemGroup>
 
 </Project>

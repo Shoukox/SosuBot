@@ -21,9 +21,16 @@ namespace SosuBot.Services.Handlers.Commands
             
             ILocalization language = new Russian();
             Message waitMessage = await Context.Update.ReplyAsync(Context.BotClient, language.waiting);
+
+            if (ScoresObserverBackgroundService.AllDailyStatistics.Last() is var dailyStatistics &&
+                (dailyStatistics.Scores.Count == 0 || dailyStatistics.ActiveUsers.Count == 0))
+            {
+                await waitMessage.EditAsync(Context.BotClient, language.error_noRecords);
+                return;
+            }
             
             string sendText = await ScoreHelper.GetDailyStatisticsSendText(
-                ScoresObserverBackgroundService.AllDailyStatistics.Last(), Context.OsuApiV2, Context.Logger);
+                dailyStatistics, Context.OsuApiV2, Context.Logger);
             await waitMessage.EditAsync(Context.BotClient, sendText);
         }
     }

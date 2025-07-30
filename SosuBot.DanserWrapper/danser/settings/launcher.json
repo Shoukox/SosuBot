@@ -1,0 +1,16 @@
+{
+	"Profile": "default",
+	"CheckForUpdates": true,
+	"ShowFileAfter": true,
+	"PreviewSelected": true,
+	"PreviewVolume": 0.25,
+	"SortMapsBy": 0,
+	"SortAscending": true,
+	"LoadLatestReplay": false,
+	"SkipMapUpdate": false,
+	"AutoRefreshDB": false,
+	"ShowJSONPaths": false,
+	"LastKnockoutPath": "",
+	"CurrentMode": 0,
+	"CurrentPMode": 0
+}
