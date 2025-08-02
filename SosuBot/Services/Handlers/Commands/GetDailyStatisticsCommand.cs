@@ -68,7 +68,7 @@ namespace SosuBot.Services.Handlers.Commands
                     );
 
                 sendText = $"Онлайн пользователи из <b>{countryCode.ToUpperInvariant()}</b>.\n" +
-                           $"Последнее отслеживание: <b>{ranking.StatisticFrom:dd.MM.yyyy HH:mm}</b>\n" +
+                           $"Последнее отслеживание: <b>{ranking.StatisticFrom:dd.MM.yyyy HH:mm}UTC</b>\n" +
                            $"Количество: <b>{onlineUsers.Length}</b>\n\n" +
                            $"{onlineUsersText}";
             }
