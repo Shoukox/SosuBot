@@ -15,12 +15,12 @@ public static class OsuApiHelper
     /// <param name="countryCode">See <see cref="CountryCode"/></param>
     /// <param name="count">How much players to return. If null, return the whole ranking</param>
     /// <returns></returns>
-    public static async Task<List<UserStatistics>> GetUsersFromRanking(ApiV2 api, string? countryCode = "uz", int? count = null)
+    public static async Task<List<UserStatistics>> GetUsersFromRanking(ApiV2 api, string? countryCode = "uz", int? count = null, CancellationToken token = default)
     {
         List<UserStatistics> users = new List<UserStatistics>();
 
         int page = 1;
-        while (true)
+        while (!token.IsCancellationRequested)
         {
             Rankings? ranking = await api.Rankings.GetRanking(Ruleset.Osu, RankingType.Performance,
                 new() { Country = countryCode, CursorPage = page });
@@ -43,7 +43,7 @@ public static class OsuApiHelper
             }
             
             page += 1;
-            await Task.Delay(1000);
+            await Task.Delay(1000, token);
         }
 
         if (count != null)

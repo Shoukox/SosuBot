@@ -4,6 +4,7 @@ using Microsoft.Extensions.Logging;
 using OsuApi.V2;
 using OsuApi.V2.Models;
 using OsuApi.V2.Users.Models;
+using Polly;
 using SosuBot.Helpers;
 using SosuBot.Helpers.Types;
 

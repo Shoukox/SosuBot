@@ -204,7 +204,7 @@ public sealed class ScoresObserverBackgroundService(
     {
         while (!stoppingToken.IsCancellationRequested)
         {
-            List<UserStatistics> users = await OsuApiHelper.GetUsersFromRanking(osuApi, countryCode);
+            List<UserStatistics> users = await OsuApiHelper.GetUsersFromRanking(osuApi, countryCode, token: stoppingToken);
 
             CountryRanking? countryRanking = ActualCountryRankings.FirstOrDefault(m => m.CountryCode == countryCode);
             if (countryRanking == null)
