@@ -1,6 +1,0 @@
-@SosuBot.Web_HostAddress = http://localhost:5063
-
-GET {{SosuBot.Web_HostAddress}}/weatherforecast/
-Accept: application/json
-
-###
