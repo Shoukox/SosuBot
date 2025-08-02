@@ -1,27 +1,27 @@
 ﻿using System.Collections.Concurrent;
 
-namespace SosuBot.Synchronization
+namespace SosuBot.Synchronization;
+
+public class BotSynchronization
 {
-    public class BotSynchronization
+    private static readonly Lazy<BotSynchronization> instanceHolder = new(() => new BotSynchronization());
+
+    private readonly ConcurrentDictionary<long, SemaphoreSlim> _syncDict;
+
+    public BotSynchronization()
     {
-        private static readonly Lazy<BotSynchronization> instanceHolder = new Lazy<BotSynchronization>(() => new BotSynchronization());
-        public static BotSynchronization Instance => instanceHolder.Value;
+        _syncDict = new ConcurrentDictionary<long, SemaphoreSlim>();
+    }
 
-        private ConcurrentDictionary<long, SemaphoreSlim> _syncDict;
+    public static BotSynchronization Instance => instanceHolder.Value;
 
-        public BotSynchronization()
-        {
-            _syncDict = new ConcurrentDictionary<long, SemaphoreSlim>();
-        }
+    public bool AddNewServerIfNeeded(long chatId)
+    {
+        return _syncDict.TryAdd(chatId, new SemaphoreSlim(1, 1));
+    }
 
-        public bool AddNewServerIfNeeded(long chatId)
-        {
-            return _syncDict.TryAdd(chatId, new SemaphoreSlim(1, 1));
-        }
-
-        public SemaphoreSlim GetSemaphoreSlim(long chatId)
-        {
-            return _syncDict.GetOrAdd(chatId, new SemaphoreSlim(1, 1));
-        }
+    public SemaphoreSlim GetSemaphoreSlim(long chatId)
+    {
+        return _syncDict.GetOrAdd(chatId, new SemaphoreSlim(1, 1));
     }
 }

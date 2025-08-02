@@ -9,12 +9,11 @@ public class DanserGo
 
     public DanserGo(string? danserGoPath = null)
     {
-        _danserGoPath = danserGoPath ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "danser", "danser-cli");
+        _danserGoPath = danserGoPath ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
+            "danser", "danser-cli");
 
         if (!File.Exists(_danserGoPath))
-        {
             throw new FileNotFoundException($"danser-go executable not found at: {_danserGoPath}");
-        }
     }
 
     public async Task<DanserResult> ExecuteAsync(string arguments, int timeoutMs = 30000)
@@ -70,7 +69,7 @@ public class DanserGo
     }
 
     /// <summary>
-    /// Synchronous version for simple cases
+    ///     Synchronous version for simple cases
     /// </summary>
     /// <param name="arguments"></param>
     /// <param name="timeoutMs"></param>

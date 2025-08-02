@@ -10,79 +10,81 @@ using SosuBot.Services.Handlers.Abstract;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.ReplyMarkups;
 
-namespace SosuBot.Services.Handlers.Callbacks
+namespace SosuBot.Services.Handlers.Callbacks;
+
+public class OsuUserBestCallbackCommand : CommandBase<CallbackQuery>
 {
-    public class OsuUserBestCallbackCommand : CommandBase<CallbackQuery>
+    public static string Command = "userbest";
+
+    public override async Task ExecuteAsync()
     {
-        public static string Command = "userbest";
+        ILocalization language = new Russian();
 
-        public override async Task ExecuteAsync()
+        var parameters = Context.Update.Data!.Split(' ');
+        var chatId = long.Parse(parameters[0]);
+        var directionOfPaging = parameters[2];
+        var page = int.Parse(parameters[3]);
+        var playmode = (Playmode)int.Parse(parameters[4]);
+        var osuUserId = long.Parse(parameters[5]);
+        var osuUsername = string.Join(" ", parameters[6..]);
+
+        Score[] scores;
+        GetUserScoresResponse userScoreResponse;
+        var offset = -1;
+
+        if (directionOfPaging == "next")
         {
-            ILocalization language = new Russian();
-
-            string[] parameters = Context.Update.Data!.Split(' ');
-            long chatId = long.Parse(parameters[0]);
-            string directionOfPaging = parameters[2];
-            int page = int.Parse(parameters[3]);
-            Playmode playmode = (Playmode)int.Parse(parameters[4]);
-            long osuUserId = long.Parse(parameters[5]);
-            string osuUsername = string.Join(" ", parameters[6..]);
-
-            Score[] scores;
-            GetUserScoresResponse userScoreResponse;
-            int offset = -1;
-
-            if (directionOfPaging == "next")
-            {
-                offset = 5 * (page + 1);
-                page += 1;
-            }
-            else if (directionOfPaging == "previous")
-            {
-                if (page == 0)
-                {
-                    return;
-                }
-                offset = 5 * (page - 1);
-                page -= 1;
-            }
-            else throw new NotImplementedException();
-
-            userScoreResponse = (await Context.OsuApiV2.Users.GetUserScores(osuUserId, ScoreType.Best, new() { Mode = playmode.ToRuleset(), Limit = 5, Offset = offset }))!;
-            scores = userScoreResponse.Scores;
-            if (scores.Length == 0)
-            {
-                return;
-            }
-
-            BeatmapExtended[] beatmaps = scores.Select(async score => await Context.OsuApiV2.Beatmaps.GetBeatmap((long)score.Beatmap!.Id)).Select(t => t.Result!.BeatmapExtended).ToArray()!;
-
-            string textToSend = $"{osuUsername}({playmode.ToGamemode()})\n\n";
-            int index = page * 5;
-            foreach (var score in scores)
-            {
-                var beatmap = beatmaps[index - page * 5];
-                textToSend += language.command_userbest.Fill([
-                    $"{index + 1}",
-                    $"{score.Rank}",
-                    $"{score.BeatmapId}",
-                    $"{score.Beatmapset!.Title.EncodeHtml()}",
-                    $"{score.Beatmap!.Version.EncodeHtml()}",
-                    $"{score.Beatmapset.Status}",
-                    $"{ScoreHelper.GetScoreStatisticsText(score.Statistics!, playmode)}",
-                    $"{score.Statistics!.Miss}",
-                    $"{score.Accuracy * 100:N2}",
-                    $"{ScoreHelper.GetModsText(score.Mods!)}",
-                    $"{score.MaxCombo}",
-                    $"{beatmap.MaxCombo}",
-                    $"{ScoreHelper.GetScorePPText(score.Pp)}"]);
-                index += 1;
-            }
-            var ik = new InlineKeyboardMarkup(
-                    new InlineKeyboardButton[] { new InlineKeyboardButton("Previous") { CallbackData = $"{chatId} userbest previous {page} {(int)playmode} {osuUserId} {osuUsername}" },
-                    new InlineKeyboardButton("Next") { CallbackData = $"{chatId} userbest next {page} {(int)playmode} {osuUserId} {osuUsername}" } }
-               );
-            await Context.Update.Message!.EditAsync(Context.BotClient, textToSend, replyMarkup: ik);
+            offset = 5 * (page + 1);
+            page += 1;
         }
+        else if (directionOfPaging == "previous")
+        {
+            if (page == 0) return;
+            offset = 5 * (page - 1);
+            page -= 1;
+        }
+        else
+        {
+            throw new NotImplementedException();
+        }
+
+        userScoreResponse = (await Context.OsuApiV2.Users.GetUserScores(osuUserId, ScoreType.Best,
+            new GetUserScoreQueryParameters { Mode = playmode.ToRuleset(), Limit = 5, Offset = offset }))!;
+        scores = userScoreResponse.Scores;
+        if (scores.Length == 0) return;
+
+        BeatmapExtended[] beatmaps = scores
+            .Select(async score => await Context.OsuApiV2.Beatmaps.GetBeatmap((long)score.Beatmap!.Id))
+            .Select(t => t.Result!.BeatmapExtended).ToArray()!;
+
+        var textToSend = $"{osuUsername}({playmode.ToGamemode()})\n\n";
+        var index = page * 5;
+        foreach (var score in scores)
+        {
+            var beatmap = beatmaps[index - page * 5];
+            textToSend += language.command_userbest.Fill([
+                $"{index + 1}",
+                $"{score.Rank}",
+                $"{score.BeatmapId}",
+                $"{score.Beatmapset!.Title.EncodeHtml()}",
+                $"{score.Beatmap!.Version.EncodeHtml()}",
+                $"{score.Beatmapset.Status}",
+                $"{ScoreHelper.GetScoreStatisticsText(score.Statistics!, playmode)}",
+                $"{score.Statistics!.Miss}",
+                $"{score.Accuracy * 100:N2}",
+                $"{ScoreHelper.GetModsText(score.Mods!)}",
+                $"{score.MaxCombo}",
+                $"{beatmap.MaxCombo}",
+                $"{ScoreHelper.GetScorePPText(score.Pp)}"
+            ]);
+            index += 1;
+        }
+
+        var ik = new InlineKeyboardMarkup(
+            new InlineKeyboardButton("Previous")
+                { CallbackData = $"{chatId} userbest previous {page} {(int)playmode} {osuUserId} {osuUsername}" },
+            new InlineKeyboardButton("Next")
+                { CallbackData = $"{chatId} userbest next {page} {(int)playmode} {osuUserId} {osuUsername}" });
+        await Context.Update.Message!.EditAsync(Context.BotClient, textToSend, replyMarkup: ik);
     }
 }

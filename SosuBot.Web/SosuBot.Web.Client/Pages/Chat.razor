@@ -1,7 +1,7 @@
 @page "/chat"
 @rendermode InteractiveWebAssembly
-@using Microsoft.AspNetCore.SignalR.Client
 @inject NavigationManager Navigation
+@using Microsoft.AspNetCore.SignalR.Client
 @implements IAsyncDisposable
 
 <PageTitle>Chat</PageTitle>
@@ -9,13 +9,13 @@
 <div class="form-group">
     <label>
         User:
-        <input @bind="userInput" />
+        <input @bind="userInput"/>
     </label>
 </div>
 <div class="form-group">
     <label>
         Message:
-        <input @bind="messageInput" size="50" />
+        <input @bind="messageInput" size="50"/>
     </label>
 </div>
 <button @onclick="Send" disabled="@(!IsConnected)">Send</button>
@@ -31,7 +31,7 @@
 
 @code {
     private HubConnection? hubConnection;
-    private List<string> messages = [];
+    private readonly List<string> messages = [];
     private string? userInput;
     private string? messageInput;
 
@@ -69,4 +69,5 @@
             await hubConnection.DisposeAsync();
         }
     }
+
 }

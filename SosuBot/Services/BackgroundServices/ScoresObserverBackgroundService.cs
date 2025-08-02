@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using OsuApi.V2;
+using OsuApi.V2.Clients.Rankings.HttpIO;
 using OsuApi.V2.Clients.Scores.HttpIO;
 using OsuApi.V2.Clients.Users.HttpIO;
 using OsuApi.V2.Models;
@@ -32,13 +33,13 @@ public sealed class ScoresObserverBackgroundService(
 
     private static readonly ScoreEqualityComparer ScoreComparer = new();
 
-    private readonly UserStatisticsCacheDatabase _userDatabase = new(osuApi);
-
     private static readonly string CacheDirectory =
         Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "cache", "daily_statistics");
 
     private static readonly string CachePath =
         Path.Combine(CacheDirectory, "statistics.cache");
+
+    private readonly UserStatisticsCacheDatabase _userDatabase = new(osuApi);
 
     private long _adminTelegramId;
 
@@ -47,7 +48,7 @@ public sealed class ScoresObserverBackgroundService(
     {
         logger.LogInformation("Scores observer background service started");
 
-        _adminTelegramId = (await database.OsuUsers.FirstAsync((m) => m.IsAdmin, cancellationToken: stoppingToken))
+        _adminTelegramId = (await database.OsuUsers.FirstAsync(m => m.IsAdmin, stoppingToken))
             .TelegramId;
 
         await AddPlayersToObserverList("uz");
@@ -77,13 +78,13 @@ public sealed class ScoresObserverBackgroundService(
         }
 
         string? cursor = null;
-        int counter = 0;
+        var counter = 0;
         while (!stoppingToken.IsCancellationRequested)
-        {
             try
             {
-                ScoresResponse? response =
-                    await osuApi.Scores.GetScores(new() { CursorString = cursor, Ruleset = Ruleset.Osu });
+                var response =
+                    await osuApi.Scores.GetScores(new ScoresQueryParameters
+                        { CursorString = cursor, Ruleset = Ruleset.Osu });
                 if (response == null)
                 {
                     logger.LogWarning("GetScores() returned null");
@@ -91,11 +92,11 @@ public sealed class ScoresObserverBackgroundService(
                 }
 
                 // For UZ daily statistics
-                Score[] uzScores = response.Scores!.Where(m => _userDatabase.ContainsUserStatistics(m.UserId!.Value))
+                var uzScores = response.Scores!.Where(m => _userDatabase.ContainsUserStatistics(m.UserId!.Value))
                     .ToArray();
                 foreach (var score in uzScores)
                 {
-                    UserStatistics? userStatistics = await _userDatabase.GetUserStatistics(score.UserId!.Value);
+                    var userStatistics = await _userDatabase.GetUserStatistics(score.UserId!.Value);
                     if (userStatistics == null)
                     {
                         logger.LogError($"User statistics is null for userId = {score.UserId!.Value}");
@@ -106,21 +107,17 @@ public sealed class ScoresObserverBackgroundService(
 
                     // ReSharper disable once SimplifyLinqExpressionUseAll
                     if (!dailyStatistics.ActiveUsers.Any(m => m.Id == userStatistics.User!.Id))
-                    {
                         dailyStatistics.ActiveUsers.Add(userStatistics.User!);
-                    }
 
                     // ReSharper disable once SimplifyLinqExpressionUseAll
                     if (!dailyStatistics.BeatmapsPlayed.Any(m => m == score.BeatmapId!.Value))
-                    {
                         dailyStatistics.BeatmapsPlayed.Add(score.BeatmapId!.Value);
-                    }
                 }
 
                 // New day => send statistics
                 if (DateTime.UtcNow.Day != dailyStatistics.DayOfStatistic.Day)
                 {
-                    string sendText = await ScoreHelper.GetDailyStatisticsSendText(dailyStatistics, osuApi);
+                    var sendText = await ScoreHelper.GetDailyStatisticsSendText(dailyStatistics, osuApi);
 
                     await botClient.SendMessage(_adminTelegramId, sendText,
                         ParseMode.Html, linkPreviewOptions: true, cancellationToken: stoppingToken);
@@ -130,10 +127,7 @@ public sealed class ScoresObserverBackgroundService(
                 }
 
                 // Save every timedelay*100 seconds
-                if (counter % 100 == 0)
-                {
-                    await SaveDailyStatistics();
-                }
+                if (counter % 100 == 0) await SaveDailyStatistics();
 
                 counter = (counter + 1) % int.MaxValue;
                 cursor = response.CursorString;
@@ -148,20 +142,19 @@ public sealed class ScoresObserverBackgroundService(
             {
                 logger.LogError(e, "Unexpected exception");
             }
-        }
     }
 
     private async Task ObserveScores(CancellationToken stoppingToken)
     {
         Dictionary<int, GetUserScoresResponse> scores = new();
         while (!stoppingToken.IsCancellationRequested)
-        {
             try
             {
                 foreach (int userId in ObservedUsers)
                 {
-                    GetUserScoresResponse? userBestScores =
-                        await osuApi.Users.GetUserScores(userId, ScoreType.Best, new() { Limit = 50 });
+                    var userBestScores =
+                        await osuApi.Users.GetUserScores(userId, ScoreType.Best,
+                            new GetUserScoreQueryParameters { Limit = 50 });
                     if (userBestScores == null)
                     {
                         logger.LogWarning($"{userId} has no scores!");
@@ -171,9 +164,9 @@ public sealed class ScoresObserverBackgroundService(
                     // ReSharper disable once CanSimplifyDictionaryLookupWithTryGetValue
                     if (scores.ContainsKey(userId))
                     {
-                        IEnumerable<Score> newScores =
+                        var newScores =
                             userBestScores.Scores.Except(scores[userId].Scores, ScoreComparer);
-                        foreach (Score score in newScores)
+                        foreach (var score in newScores)
                         {
                             await botClient.SendMessage(_adminTelegramId,
                                 $"<b>{score.User?.Username}</b> set a <b>{score.Pp}pp</b> {ScoreHelper.GetScoreUrlWrappedInString(score.Id!.Value, "score!")}",
@@ -195,7 +188,6 @@ public sealed class ScoresObserverBackgroundService(
             {
                 logger.LogError(e, "Unexpected exception");
             }
-        }
 
         logger.LogWarning("Finished its work");
     }
@@ -204,15 +196,15 @@ public sealed class ScoresObserverBackgroundService(
     {
         while (!stoppingToken.IsCancellationRequested)
         {
-            List<UserStatistics> users = await OsuApiHelper.GetUsersFromRanking(osuApi, countryCode, token: stoppingToken);
+            var users = await OsuApiHelper.GetUsersFromRanking(osuApi, countryCode, token: stoppingToken);
 
-            CountryRanking? countryRanking = ActualCountryRankings.FirstOrDefault(m => m.CountryCode == countryCode);
+            var countryRanking = ActualCountryRankings.FirstOrDefault(m => m.CountryCode == countryCode);
             if (countryRanking == null)
             {
                 countryRanking = new CountryRanking(countryCode);
                 ActualCountryRankings.Add(countryRanking);
             }
-            
+
             countryRanking.StatisticFrom = DateTime.UtcNow;
             countryRanking.Ranking = users;
 
@@ -221,15 +213,15 @@ public sealed class ScoresObserverBackgroundService(
     }
 
     /// <summary>
-    /// Get the best players using some filter
+    ///     Get the best players using some filter
     /// </summary>
     /// <param name="countryCode">If null, take from the global ranking</param>
     /// <returns></returns>
     /// <exception cref="Exception"></exception>
     private async Task<UserStatistics[]> GetBestPlayersFor(string? countryCode = null)
     {
-        Rankings? rankings = await osuApi.Rankings.GetRanking(Ruleset.Osu, RankingType.Performance,
-            new() { Country = countryCode, Filter = Filter.All });
+        var rankings = await osuApi.Rankings.GetRanking(Ruleset.Osu, RankingType.Performance,
+            new GetRankingQueryParameters { Country = countryCode, Filter = Filter.All });
         if (rankings == null)
         {
             logger.LogError($"Ranking is null. {countryCode}");
@@ -240,25 +232,19 @@ public sealed class ScoresObserverBackgroundService(
     }
 
     /// <summary>
-    /// Add players to the <see cref="ObservedUsers"/>
+    ///     Add players to the <see cref="ObservedUsers" />
     /// </summary>
     /// <param name="countryCode">If null, take from global ranking</param>
     /// <param name="count">Amount of players to add</param>
     private async Task AddPlayersToObserverList(string? countryCode = null, int count = 50)
     {
-        UserStatistics[] bestPlayersStatistics = (await GetBestPlayersFor(countryCode)).Take(count).ToArray();
-        foreach (UserStatistics playerStatistics in bestPlayersStatistics)
-        {
-            ObservedUsers.Add(playerStatistics.User!.Id.Value);
-        }
+        var bestPlayersStatistics = (await GetBestPlayersFor(countryCode)).Take(count).ToArray();
+        foreach (var playerStatistics in bestPlayersStatistics) ObservedUsers.Add(playerStatistics.User!.Id.Value);
     }
 
     private async Task SaveDailyStatistics()
     {
-        if (!Directory.Exists(CacheDirectory))
-        {
-            Directory.CreateDirectory(CacheDirectory);
-        }
+        if (!Directory.Exists(CacheDirectory)) Directory.CreateDirectory(CacheDirectory);
 
         await File.WriteAllTextAsync(CachePath, JsonSerializer.Serialize(AllDailyStatistics));
     }
