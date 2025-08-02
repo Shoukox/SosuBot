@@ -27,12 +27,12 @@ namespace SosuBot.Services.Handlers.Commands
             string[] parameters = Context.Update.Text!.GetCommandParameters()!;
 
             string? countryCode = parameters.Length > 0 ? parameters[0] : null;
-            List<UserStatistics> users = await OsuApiHelper.GetUsersFromRanking(Context.OsuApiV2, countryCode, 50);
+            List<UserStatistics> users = await OsuApiHelper.GetUsersFromRanking(Context.OsuApiV2, countryCode, 20);
 
             string rankingText = "";
             for (int i = 0; i < users.Count; i++)
             {
-                rankingText += $"{i+1}. {UserHelper.GetUserProfileUrlWrappedInUsernameString(users[i].User!.Id!.Value, users[i].User!.Username!)}\n";
+                rankingText += $"{i+1}. {UserHelper.GetUserProfileUrlWrappedInUsernameString(users[i].User!.Id!.Value, users[i].User!.Username!)} - <b>{users[i].Pp:N0}</b>\n";
             }
 
             string sendText = $"Топ игроков в <b>{countryCode?.ToUpperInvariant() ?? "global"}</b>:\n\n" +
