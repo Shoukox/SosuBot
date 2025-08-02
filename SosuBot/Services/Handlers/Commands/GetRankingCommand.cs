@@ -32,7 +32,7 @@ namespace SosuBot.Services.Handlers.Commands
             string rankingText = "";
             for (int i = 0; i < users.Count; i++)
             {
-                rankingText += $"{i+1}. {UserHelper.GetUserProfileUrlWrappedInUsernameString(users[i].User!.Id!.Value, users[i].User!.Username!)} - <b>{users[i].Pp:N0}</b>\n";
+                rankingText += $"{i+1}. {UserHelper.GetUserProfileUrlWrappedInUsernameString(users[i].User!.Id!.Value, users[i].User!.Username!)} - <b>{users[i].Pp:N0}pp</b>\n";
             }
 
             string sendText = $"Топ игроков в <b>{countryCode?.ToUpperInvariant() ?? "global"}</b>:\n\n" +
