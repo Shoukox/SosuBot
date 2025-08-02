@@ -1,0 +1,13 @@
+﻿services:
+  sosubot.web:
+    image: sosubot.web
+    build:
+      context: .
+      dockerfile: SosuBot.Web/SosuBot.Web/Dockerfile
+
+  sosubot.web.client:
+    image: sosubot.web.client
+    build:
+      context: .
+      dockerfile: SosuBot.Web/SosuBot.Web.Client/Dockerfile
+

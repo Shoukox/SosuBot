@@ -1,0 +1,8 @@
+Download your aspect ratio (16:10/16:9/21:9) files here :
+
+- Moonshine 2.1 [NM] : https://drive.google.com/file/d/116fFfIVoHmOOWrTgWPh5VQpLDtc4pHgl/view?usp=sharing
+- Moonshine 2.1 [Eclipse] : https://drive.google.com/file/d/1-SBoqcVG1wbYAh6UUEA1CK4UcHU0SkyR/view?usp=sharing
+
+
+
+Copy everything inside your ratio's folder and paste in Moonshine 2.1 skin folder :)
