@@ -40,7 +40,11 @@ namespace SosuBot.Services.Handlers.Commands
 
             var danser = new DanserGo();
             var result = await danser.ExecuteAsync($"-r {replayPath} -out {Context.Update.From!.Id}{Path.GetFileNameWithoutExtension(replayPath)}");
-            string sendText = Regex.Match(result.Output, "Video is available at: .*mp4").Value;
+
+            var match = Regex.Match(result.Output, "Video is available at: (\\S+)");
+            string fileName = match.Groups[1].Value;
+            string sendText = $"{match.Value}\n\n" +
+                              "http://[2a03:4000:6:417a:1::105]/" + fileName;
             await waitMessage.EditAsync(Context.BotClient, sendText);
         }
     }
