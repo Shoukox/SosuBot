@@ -27,7 +27,7 @@ namespace SosuBot.Services.Handlers.Commands
             string[] parameters = Context.Update.Text!.GetCommandParameters()!;
 
             string? countryCode = parameters.Length > 0 ? parameters[0] : null;
-            List<UserStatistics> users = await OsuApiHelper.GetUsersFromRanking(Context.OsuApiV2, countryCode, 20);
+            List<UserStatistics> users = await OsuApiHelper.GetUsersFromRanking(Context.OsuApiV2, countryCode, 20, Context.CancellationToken);
 
             string rankingText = "";
             for (int i = 0; i < users.Count; i++)
