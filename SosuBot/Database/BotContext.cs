@@ -6,7 +6,9 @@ namespace SosuBot.Database;
 
 public class BotContext : DbContext
 {
-    public BotContext(DbContextOptions<BotContext> options) : base(options) { }
+    public BotContext(DbContextOptions<BotContext> options) : base(options)
+    {
+    }
 
     public DbSet<TelegramChat> TelegramChats { get; set; }
     public DbSet<OsuUser> OsuUsers { get; set; }
@@ -15,7 +17,7 @@ public class BotContext : DbContext
     {
         base.OnModelCreating(modelBuilder);
 
-        modelBuilder.Entity<OsuUser>().HasData(new OsuUser()
+        modelBuilder.Entity<OsuUser>().HasData(new OsuUser
         {
             OsuUserId = 15319810,
             OsuMode = Playmode.Osu,

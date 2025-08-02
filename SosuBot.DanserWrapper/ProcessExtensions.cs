@@ -5,7 +5,7 @@ namespace SosuBot.DanserWrapper;
 public static class ProcessExtensions
 {
     /// <summary>
-    /// Extension method for timeout support
+    ///     Extension method for timeout support
     /// </summary>
     /// <param name="process"></param>
     /// <param name="timeout"></param>

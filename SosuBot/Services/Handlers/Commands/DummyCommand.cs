@@ -1,13 +1,12 @@
 ﻿using SosuBot.Services.Handlers.Abstract;
 using Telegram.Bot.Types;
 
-namespace SosuBot.Services.Handlers.Commands
+namespace SosuBot.Services.Handlers.Commands;
+
+public class DummyCommand : CommandBase<Message>
 {
-    public class DummyCommand : CommandBase<Message>
+    public override Task ExecuteAsync()
     {
-        public override Task ExecuteAsync()
-        {
-            return Task.CompletedTask;
-        }
+        return Task.CompletedTask;
     }
 }

@@ -9,11 +9,11 @@ using SosuBot.Services.Handlers.Abstract;
 using SosuBot.Services.Handlers.Callbacks;
 using SosuBot.Services.Handlers.Commands;
 using SosuBot.Services.Handlers.Text;
-using SosuBot.Synchonization.MessageSpamResistance;
 using Telegram.Bot;
 using Telegram.Bot.Polling;
 using Telegram.Bot.Types;
-using Telegram.Bot.Types.Enums;
+using DummyCommand = SosuBot.Services.Handlers.Callbacks.DummyCommand;
+
 // ReSharper disable ConvertTypeCheckPatternToNullCheck
 
 namespace SosuBot.Services.Handlers;
@@ -27,13 +27,14 @@ public class UpdateHandler(
 {
     private Update? _currentUpdate;
 
-    public async Task HandleErrorAsync(ITelegramBotClient botClient, Exception exception, HandleErrorSource source, CancellationToken cancellationToken)
+    public async Task HandleErrorAsync(ITelegramBotClient botClient, Exception exception, HandleErrorSource source,
+        CancellationToken cancellationToken)
     {
         // if a text-command message
         if (_currentUpdate!.Message is { Text: string } msg && msg.Text!.IsCommand())
         {
-            long userId = (await database.OsuUsers.FirstAsync(u => u.IsAdmin)).TelegramId;
-            string errorText =
+            var userId = (await database.OsuUsers.FirstAsync(u => u.IsAdmin)).TelegramId;
+            var errorText =
                 $"Произошла ошибка.\n" +
                 $"Пожалуйста, сообщите о ней <a href=\"tg://user?id={userId}\">создателю</a> (@Shoukkoo)";
             await msg.ReplyAsync(botClient, errorText);
@@ -48,19 +49,20 @@ public class UpdateHandler(
         logger.LogError("HandleError: {Exception}", exception);
     }
 
-    public async Task HandleUpdateAsync(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
+    public async Task HandleUpdateAsync(ITelegramBotClient botClient, Update update,
+        CancellationToken cancellationToken)
     {
         _currentUpdate = update;
         cancellationToken.ThrowIfCancellationRequested();
 
-        Task eventHandler = update switch
+        var eventHandler = update switch
         {
             { Message: { } message } => OnMessage(botClient, message, cancellationToken),
             { CallbackQuery: { } callbackQuery } => OnCallbackQuery(botClient, callbackQuery, cancellationToken),
             _ => DoNothing()
         };
 
-        try 
+        try
         {
             await eventHandler;
         }
@@ -80,20 +82,17 @@ public class UpdateHandler(
 
         // Execute necessary functions
         if (text.IsCommand())
-        {
             await OnCommand(botClient, msg, cancellationToken);
-        }
         else
-        {
             await OnText(botClient, msg, cancellationToken);
-        }
     }
 
-    private async Task OnCallbackQuery(ITelegramBotClient botClient, CallbackQuery callbackQuery, CancellationToken cancellationToken)
+    private async Task OnCallbackQuery(ITelegramBotClient botClient, CallbackQuery callbackQuery,
+        CancellationToken cancellationToken)
     {
         if (callbackQuery.Data is not { } data) return;
 
-        string command = data.Split(" ")[1];
+        var command = data.Split(" ")[1];
         CommandBase<CallbackQuery> executableCommand;
         switch (command)
         {
@@ -107,9 +106,10 @@ public class UpdateHandler(
                 executableCommand = new OsuSongPreviewCallbackCommand();
                 break;
             default:
-                executableCommand = new Callbacks.DummyCommand();
+                executableCommand = new DummyCommand();
                 break;
         }
+
         executableCommand.SetContext(
             new CommandContext<CallbackQuery>(
                 botClient,
@@ -126,7 +126,7 @@ public class UpdateHandler(
 
     private async Task OnCommand(ITelegramBotClient botClient, Message msg, CancellationToken cancellationToken)
     {
-        string command = msg.Text!.GetCommand().RemoveUsernamePostfix(botConfig.Value.Username);
+        var command = msg.Text!.GetCommand().RemoveUsernamePostfix(botConfig.Value.Username);
         CommandBase<Message> executableCommand;
         switch (command)
         {
@@ -198,6 +198,7 @@ public class UpdateHandler(
                 executableCommand = new Commands.DummyCommand();
                 break;
         }
+
         executableCommand.SetContext(
             new CommandContext<Message>(
                 botClient,
@@ -227,5 +228,8 @@ public class UpdateHandler(
         await database.SaveChangesAsync();
     }
 
-    private Task DoNothing() => Task.CompletedTask;
+    private Task DoNothing()
+    {
+        return Task.CompletedTask;
+    }
 }

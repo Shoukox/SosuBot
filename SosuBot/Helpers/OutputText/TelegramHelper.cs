@@ -22,30 +22,29 @@ public static class TelegramHelper
         return $"{telegramUser.FirstName} {telegramUser.LastName}";
     }
 
-    public static async Task<Message> SendMessageConsideringTelegramLength(int messageId, long chatId, ITelegramBotClient botClient, string text,
+    public static async Task<Message> SendMessageConsideringTelegramLength(int messageId, long chatId,
+        ITelegramBotClient botClient, string text,
         ParseMode parseMode = ParseMode.Html, InlineKeyboardMarkup? replyMarkup = null, bool edit = false)
     {
-        int messagesToBeSent = (text.Length / TelegramConstants.MaximumMessageLength) + Math.Sign(text.Length % TelegramConstants.MaximumMessageLength);
+        var messagesToBeSent = text.Length / TelegramConstants.MaximumMessageLength +
+                               Math.Sign(text.Length % TelegramConstants.MaximumMessageLength);
         Message returnMessage = null!;
-        for (int i = 0; i < messagesToBeSent; i++)
+        for (var i = 0; i < messagesToBeSent; i++)
         {
-            int skipLength = i * TelegramConstants.MaximumMessageLength;
-            string textPart = text.Substring(skipLength, Math.Min(text.Length - skipLength, TelegramConstants.MaximumMessageLength));
+            var skipLength = i * TelegramConstants.MaximumMessageLength;
+            var textPart = text.Substring(skipLength,
+                Math.Min(text.Length - skipLength, TelegramConstants.MaximumMessageLength));
 
             if (i == 0 && edit)
-            {
                 returnMessage = await botClient.EditMessageText(chatId, messageId, textPart,
-                    parseMode: parseMode,
+                    parseMode,
                     linkPreviewOptions: new LinkPreviewOptions { IsDisabled = true }, replyMarkup: replyMarkup);
-            }
             else
-            {
                 returnMessage = await botClient.SendMessage(chatId, textPart,
-                    parseMode: parseMode,
+                    parseMode,
                     linkPreviewOptions: new LinkPreviewOptions { IsDisabled = true },
                     replyParameters: messageId,
                     replyMarkup: replyMarkup);
-            }
         }
 
         return returnMessage;

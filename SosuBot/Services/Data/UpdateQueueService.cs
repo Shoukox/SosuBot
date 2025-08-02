@@ -3,9 +3,10 @@ using Telegram.Bot.Types;
 
 namespace SosuBot.Services.Data;
 
-public class UpdateQueueService()
+public class UpdateQueueService
 {
     private readonly Channel<Update> _channel = Channel.CreateUnbounded<Update>();
+
     public async Task EnqueueUpdateAsync(Update update, CancellationToken stoppingToken)
     {
         await _channel.Writer.WriteAsync(update, stoppingToken);

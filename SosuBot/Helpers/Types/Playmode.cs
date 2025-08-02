@@ -1,10 +1,9 @@
-﻿namespace SosuBot.Helpers.Types
+﻿namespace SosuBot.Helpers.Types;
+
+public enum Playmode
 {
-    public enum Playmode
-    {
-        Osu = 0,
-        Taiko = 1,
-        Catch = 2,
-        Mania = 3
-    }
+    Osu = 0,
+    Taiko = 1,
+    Catch = 2,
+    Mania = 3
 }

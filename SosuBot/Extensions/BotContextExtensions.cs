@@ -1,47 +1,37 @@
-﻿using System.Data;
-using System.Data.Common;
-using Microsoft.EntityFrameworkCore;
-using Realms;
-using SosuBot.Database;
+﻿using SosuBot.Database;
 using SosuBot.Database.Models;
 using SosuBot.Synchronization;
 using Telegram.Bot.Types;
 
-namespace SosuBot.Extensions
+namespace SosuBot.Extensions;
+
+public static class BotContextExtensions
 {
-    public static class BotContextExtensions
+    public static async Task AddOrUpdateTelegramChat(this BotContext database, Message message)
     {
-        public static async Task AddOrUpdateTelegramChat(this BotContext database, Message message)
+        var semaphoreSlim = BotSynchronization.Instance.GetSemaphoreSlim(message.Chat.Id);
+        await semaphoreSlim.WaitAsync();
+
+        if (await database.TelegramChats.FindAsync(message.Chat.Id) is TelegramChat chat)
         {
-            var semaphoreSlim = BotSynchronization.Instance.GetSemaphoreSlim(message.Chat.Id);
-            await semaphoreSlim.WaitAsync();
+            chat.ChatMembers = chat.ChatMembers ?? new List<long>();
 
-            if (await database.TelegramChats.FindAsync(message.Chat.Id) is TelegramChat chat)
-            {
-                chat.ChatMembers = chat.ChatMembers ?? new List<long>();
-
-                // check whether someone left
-                if (message.LeftChatMember is User user)
-                {
-                    chat.ChatMembers.Remove(user.Id);
-                }
-                else if (!chat.ChatMembers!.Contains(message.From!.Id))
-                {
-                    chat.ChatMembers.Add(message.From!.Id);
-                }
-            }
-            else
-            {
-                TelegramChat newChat = new TelegramChat()
-                {
-                    ChatId = message.Chat!.Id,
-                    ChatMembers = new List<long>(),
-                    LastBeatmapId = null
-                };
-                await database.AddAsync(newChat);
-            }
-
-            semaphoreSlim.Release();
+            // check whether someone left
+            if (message.LeftChatMember is User user)
+                chat.ChatMembers.Remove(user.Id);
+            else if (!chat.ChatMembers!.Contains(message.From!.Id)) chat.ChatMembers.Add(message.From!.Id);
         }
+        else
+        {
+            var newChat = new TelegramChat
+            {
+                ChatId = message.Chat!.Id,
+                ChatMembers = new List<long>(),
+                LastBeatmapId = null
+            };
+            await database.AddAsync(newChat);
+        }
+
+        semaphoreSlim.Release();
     }
 }
