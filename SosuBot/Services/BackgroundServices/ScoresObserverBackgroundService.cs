@@ -209,9 +209,11 @@ public sealed class ScoresObserverBackgroundService(
             CountryRanking? countryRanking = ActualCountryRankings.FirstOrDefault(m => m.CountryCode == countryCode);
             if (countryRanking == null)
             {
-                countryRanking = new CountryRanking(countryCode, DateTime.UtcNow);
+                countryRanking = new CountryRanking(countryCode);
                 ActualCountryRankings.Add(countryRanking);
             }
+            
+            countryRanking.StatisticFrom = DateTime.UtcNow;
             countryRanking.Ranking = users;
 
             await Task.Delay(TimeSpan.FromMinutes(2), stoppingToken);
