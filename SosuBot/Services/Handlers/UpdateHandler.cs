@@ -14,6 +14,7 @@ using Telegram.Bot;
 using Telegram.Bot.Polling;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
+// ReSharper disable ConvertTypeCheckPatternToNullCheck
 
 namespace SosuBot.Services.Handlers;
 
@@ -186,6 +187,12 @@ public class UpdateHandler(
                 break;
             case string get when GetDailyStatisticsCommand.Commands.Contains(get):
                 executableCommand = new GetDailyStatisticsCommand();
+                break;
+            case string ranking when GetRankingCommand.Commands.Contains(ranking):
+                executableCommand = new GetRankingCommand();
+                break;
+            case string render when ReplayRenderCommand.Commands.Contains(render):
+                executableCommand = new ReplayRenderCommand();
                 break;
             default:
                 executableCommand = new Commands.DummyCommand();

@@ -38,7 +38,6 @@ namespace SosuBot.Services.Handlers.Commands
                 return;
             }
 
-
             UserExtend user = response.UserExtend!;
 
             Playmode playmode = user.Playmode!.ParseRulesetToPlaymode();

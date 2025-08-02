@@ -122,44 +122,52 @@ namespace SosuBot.Database.Extensions
 
         public static List<List<string>> RawSqlQuery(this DbContext context, string query)
         {
-            Func<DbDataReader, List<string>> readRow = (DbDataReader reader) =>
-            {
-                List<string> row = new List<string>();
-                for (int i = 0; i < reader.FieldCount; i++)
-                {
-                    row.Add(reader.IsDBNull(i) ? "null" : reader.GetString(i));
-                }
-                return row;
-            };
-            
-            Func<DbDataReader, List<string>> readFieldNames = (DbDataReader reader) =>
-            {
-                List<string> row = new List<string>();
-                for (int i = 0; i < reader.FieldCount; i++)
-                {
-                    row.Add(reader.GetName(i));
-                }
-                return row;
-            };
-            using (var command = context.Database.GetDbConnection().CreateCommand())
-            {
-                command.CommandText = query;
-                command.CommandType = CommandType.Text;
+            using var command = context.Database.GetDbConnection().CreateCommand();
+            command.CommandText = query;
+            command.CommandType = CommandType.Text;
 
-                context.Database.OpenConnection();
-                
-                using (var result = command.ExecuteReader())
+            context.Database.OpenConnection();
+
+            using (var result = command.ExecuteReader())
+            {
+                var entities = new List<List<string>>();
+                entities.Add(result.ReadDbRow(readerHeaderRow: true));
+
+                while (result.Read())
                 {
-                    var entities = new List<List<string>>();
-                    entities.Add(readFieldNames(result));
-                    
-                    while (result.Read())
-                    {
-                        entities.Add(readRow(result));
-                    }
-                    return entities;
+                    entities.Add(result.ReadDbRow());
                 }
+
+                return entities;
             }
+        }
+
+        private static List<string> ReadDbRow(this DbDataReader reader, bool readerHeaderRow = false)
+        {
+            List<string> row = new List<string>();
+            for (int i = 0; i < reader.FieldCount; i++)
+            {
+                string stringValue;
+                if (reader.IsDBNull(i))
+                {
+                    stringValue = "null";
+                }
+                else
+                {
+                    if (readerHeaderRow)
+                    {
+                        stringValue = reader.GetName(i);
+                    }
+                    else
+                    {
+                        stringValue = reader.GetString(i);
+                    }
+                }
+
+                row.Add(stringValue);
+            }
+
+            return row;
         }
     }
 }

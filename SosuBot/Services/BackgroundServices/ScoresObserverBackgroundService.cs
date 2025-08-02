@@ -28,6 +28,7 @@ public sealed class ScoresObserverBackgroundService(
 {
     public static readonly ConcurrentBag<long> ObservedUsers = new();
     public static List<DailyStatistics> AllDailyStatistics = new();
+    public static List<CountryRanking> ActualCountryRankings = new();
 
     private static readonly ScoreEqualityComparer ScoreComparer = new();
 
@@ -52,7 +53,11 @@ public sealed class ScoresObserverBackgroundService(
         await AddPlayersToObserverList("uz");
         await AddPlayersToObserverList();
 
-        await Task.WhenAll(ObserveScoresGetScores(stoppingToken), ObserveScores(stoppingToken));
+        await Task.WhenAll(
+            ObserveScoresGetScores(stoppingToken),
+            ObserveScores(stoppingToken),
+            CheckOnlineForCountry(stoppingToken)
+        );
     }
 
     private async Task ObserveScoresGetScores(CancellationToken stoppingToken)
@@ -85,6 +90,7 @@ public sealed class ScoresObserverBackgroundService(
                     continue;
                 }
 
+                // For UZ daily statistics
                 Score[] uzScores = response.Scores!.Where(m => _userDatabase.ContainsUserStatistics(m.UserId!.Value))
                     .ToArray();
                 foreach (var score in uzScores)
@@ -114,7 +120,7 @@ public sealed class ScoresObserverBackgroundService(
                 // New day => send statistics
                 if (DateTime.UtcNow.Day != dailyStatistics.DayOfStatistic.Day)
                 {
-                    string sendText = await ScoreHelper.GetDailyStatisticsSendText(dailyStatistics, osuApi, logger);
+                    string sendText = await ScoreHelper.GetDailyStatisticsSendText(dailyStatistics, osuApi);
 
                     await botClient.SendMessage(_adminTelegramId, sendText,
                         ParseMode.Html, linkPreviewOptions: true, cancellationToken: stoppingToken);
@@ -192,6 +198,24 @@ public sealed class ScoresObserverBackgroundService(
         }
 
         logger.LogWarning("Finished its work");
+    }
+
+    private async Task CheckOnlineForCountry(CancellationToken stoppingToken, string countryCode = "uz")
+    {
+        while (!stoppingToken.IsCancellationRequested)
+        {
+            List<UserStatistics> users = await OsuApiHelper.GetUsersFromRanking(osuApi, countryCode);
+
+            CountryRanking? countryRanking = ActualCountryRankings.FirstOrDefault(m => m.CountryCode == countryCode);
+            if (countryRanking == null)
+            {
+                countryRanking = new CountryRanking(countryCode, DateTime.UtcNow);
+                ActualCountryRankings.Add(countryRanking);
+            }
+            countryRanking.Ranking = users;
+
+            await Task.Delay(TimeSpan.FromMinutes(2), stoppingToken);
+        }
     }
 
     /// <summary>

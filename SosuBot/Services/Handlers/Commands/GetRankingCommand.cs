@@ -1,4 +1,6 @@
-﻿using SosuBot.Extensions;
+﻿using OsuApi.V2.Users.Models;
+using SosuBot.Extensions;
+using SosuBot.Helpers;
 using SosuBot.Helpers.OutputText;
 using SosuBot.Helpers.Scoring;
 using SosuBot.Helpers.Types.Statistics;
@@ -10,68 +12,31 @@ using Telegram.Bot.Types;
 
 namespace SosuBot.Services.Handlers.Commands
 {
-    public class GetDailyStatisticsCommand : CommandBase<Message>
+    public class GetRankingCommand : CommandBase<Message>
     {
-        public static string[] Commands = ["/get", "/daily_stats"];
+        public static string[] Commands = ["/ranking"];
 
         public override async Task ExecuteAsync()
         {
             if (await Context.Update.IsUserSpamming(Context.BotClient))
                 return;
 
-            if (ScoresObserverBackgroundService.AllDailyStatistics.Count == 0) return;
-
             ILocalization language = new Russian();
             Message waitMessage = await Context.Update.ReplyAsync(Context.BotClient, language.waiting);
 
             string[] parameters = Context.Update.Text!.GetCommandParameters()!;
 
-            string sendText = "";
-            if (parameters.Length == 0)
+            string? countryCode = parameters.Length > 0 ? parameters[0] : null;
+            List<UserStatistics> users = await OsuApiHelper.GetUsersFromRanking(Context.OsuApiV2, countryCode, 50);
+
+            string rankingText = "";
+            for (int i = 0; i < users.Count; i++)
             {
-                if (ScoresObserverBackgroundService.AllDailyStatistics.Last() is var dailyStatistics &&
-                    (dailyStatistics.Scores.Count == 0 || dailyStatistics.ActiveUsers.Count == 0))
-                {
-                    await waitMessage.EditAsync(Context.BotClient, language.error_noRecords);
-                    return;
-                }
-
-                sendText = await ScoreHelper.GetDailyStatisticsSendText(
-                    dailyStatistics, Context.OsuApiV2);
+                rankingText += $"{i+1}. {UserHelper.GetUserProfileUrlWrappedInUsernameString(users[i].User!.Id!.Value, users[i].User!.Username!)}\n";
             }
-            else if (parameters[0] == "online")
-            {
-                string countryCode = "uz";
-                if (parameters.Length > 1 && parameters[1].Length == 2)
-                {
-                    await waitMessage.EditAsync(Context.BotClient,
-                        $"Бот не отлеживает страну с кодом <b>{parameters[1]}</b>");
-                    return;
-                }
 
-                CountryRanking? ranking =
-                    ScoresObserverBackgroundService.ActualCountryRankings.FirstOrDefault(m =>
-                        m.CountryCode == countryCode);
-                if (ranking == null)
-                {
-                    await waitMessage.EditAsync(Context.BotClient,
-                        $"Подожди некоторое время... отслеживание в процессе.\n\nЕсли ты ждешь больше 10 минут, то скорее всего случилась ошибка.");
-                    return;
-                }
-
-                var onlineUsers = ranking.Ranking.Where(m => m.User!.IsOnline!.Value).ToArray();
-                string onlineUsersText =
-                    string.Join(" ",
-                        onlineUsers
-                            .Select(m =>
-                                UserHelper.GetUserProfileUrlWrappedInUsernameString(m.User!.Id!.Value, m.User.Username!))
-                    );
-
-                sendText = $"Онлайн пользователи из <b>{countryCode.ToUpperInvariant()}</b>.\n" +
-                           $"Последнее отслеживание: <b>{ranking.StatisticFrom:dd.MM.yyyy HH:mm}</b>\n" +
-                           $"Количество: <b>{onlineUsers.Length}</b>\n\n" +
-                           $"{onlineUsersText}";
-            }
+            string sendText = $"Топ игроков в <b>{countryCode?.ToUpperInvariant() ?? "global"}</b>:\n\n" +
+                              rankingText;
 
             await waitMessage.EditAsync(Context.BotClient, sendText);
         }

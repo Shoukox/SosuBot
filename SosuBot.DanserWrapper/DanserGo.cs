@@ -7,10 +7,10 @@ public class DanserGo
 {
     private readonly string _danserGoPath;
 
-    public DanserGo(string danserGoPath)
+    public DanserGo(string? danserGoPath = null)
     {
-        _danserGoPath = danserGoPath ?? throw new ArgumentNullException(nameof(danserGoPath));
-        
+        _danserGoPath = danserGoPath ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "danser", "danser-cli");
+
         if (!File.Exists(_danserGoPath))
         {
             throw new FileNotFoundException($"danser-go executable not found at: {_danserGoPath}");
@@ -31,7 +31,7 @@ public class DanserGo
         };
 
         using var process = new Process { StartInfo = processStartInfo };
-        
+
         var outputBuilder = new StringBuilder();
         var errorBuilder = new StringBuilder();
 
@@ -53,7 +53,7 @@ public class DanserGo
         process.BeginErrorReadLine();
 
         var completed = await process.WaitForExitAsync(TimeSpan.FromMilliseconds(timeoutMs));
-        
+
         if (!completed)
         {
             process.Kill();
@@ -68,12 +68,13 @@ public class DanserGo
             Success = process.ExitCode == 0
         };
     }
-/// <summary>
-/// Synchronous version for simple cases
-/// </summary>
-/// <param name="arguments"></param>
-/// <param name="timeoutMs"></param>
-/// <returns></returns>
+
+    /// <summary>
+    /// Synchronous version for simple cases
+    /// </summary>
+    /// <param name="arguments"></param>
+    /// <param name="timeoutMs"></param>
+    /// <returns></returns>
     public DanserResult Execute(string arguments, int timeoutMs = 30000)
     {
         return ExecuteAsync(arguments, timeoutMs).GetAwaiter().GetResult();

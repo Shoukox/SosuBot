@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using OsuApi.V2.Models;
 using OsuApi.V2.Users.Models;
 
@@ -13,4 +14,7 @@ public record DailyStatistics (string CountryCode, DateTime DayOfStatistic)
     public List<User> ActiveUsers { get; set; } = new();
     public List<int> BeatmapsPlayed { get; set; } = new();
     public List<Score> Scores { get; set; } = new();
+    
+    public ConcurrentDictionary<int, BeatmapExtended> CachedBeatmapsFromOsuApi { get; set; } = new();
+    public ConcurrentDictionary<int, BeatmapsetExtended> CachedBeatmapsetsFromOsuApi { get; set; } = new();
 }

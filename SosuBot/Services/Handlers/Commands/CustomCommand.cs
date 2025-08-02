@@ -24,7 +24,12 @@ namespace SosuBot.Services.Handlers.Commands
                 string result = JsonConvert.SerializeObject(Context.Update,
                     Formatting.Indented,
                     new JsonSerializerSettings() { NullValueHandling = NullValueHandling.Ignore });
-                await Context.Update.ReplyDocumentAsync(Context.BotClient,  TextHelper.TextToStream(result));
+                await Context.Update.EditAsync(Context.BotClient, result);
+            }
+            else if (parameters[0] == "test")
+            {
+                Message waitMessage = await Context.Update.ReplyAsync(Context.BotClient, "wait");
+                await waitMessage.EditAsync(Context.BotClient, new string('a', (int)Math.Pow(2, 14)));
             }
         }
     }

@@ -4,13 +4,14 @@ using Microsoft.Extensions.Logging;
 using OsuApi.V2;
 using OsuApi.V2.Models;
 using OsuApi.V2.Users.Models;
+using SosuBot.Helpers;
 using SosuBot.Helpers.Types;
 
 namespace SosuBot.Services.Data.OsuApi;
 
 public class UserStatisticsCacheDatabase
 {
-    public ApiV2 api { get; }
+    public ApiV2 Api { get; }
     private string UsersCachePath { get; }
 
     public const int CACHING_DAYS = 31;
@@ -19,7 +20,7 @@ public class UserStatisticsCacheDatabase
 
     public UserStatisticsCacheDatabase(ApiV2 api, string? usersCachePath = null)
     {
-        this.api = api;
+        this.Api = api;
         UsersCachePath = usersCachePath ?? Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "cache", "users");
     }
 
@@ -79,47 +80,12 @@ public class UserStatisticsCacheDatabase
     {
         CreateCacheDirectoryIfNeeded();
 
-        List<UserStatistics> users = await GetUsersFromSpecificCountry(country);
+        List<UserStatistics> users = await OsuApiHelper.GetUsersFromRanking(Api, country);
         foreach (var user in users)
         {
             await File.WriteAllTextAsync(GetCachedUserStatisticsPath(user.User!.Id.Value),
                 JsonSerializer.Serialize(user, new JsonSerializerOptions { WriteIndented = false }));
         }
-    }
-
-    /// <summary>
-    /// Gets all users from country ranking
-    /// </summary>
-    /// <param name="country">See <see cref="CountryCode"/></param>
-    /// <returns></returns>
-    private async Task<List<UserStatistics>> GetUsersFromSpecificCountry(string country)
-    {
-        List<UserStatistics> users = new List<UserStatistics>();
-
-        int page = 1;
-        while (true)
-        {
-            Rankings? ranking = await api.Rankings.GetRanking(Ruleset.Osu, RankingType.Performance,
-                new() { Country = "uz", CursorPage = page });
-
-            if (ranking == null)
-            {
-                api.Logger.LogWarning("Ranking is null");
-                continue;
-            }
-
-            foreach (var userStatistics in ranking.Ranking!)
-            {
-                users.Add(userStatistics);
-            }
-
-            if (ranking.Cursor == null) break;
-            page += 1;
-
-            await Task.Delay(1000);
-        }
-
-        return users;
     }
 
     private string GetCachedUserStatisticsPath(int userId)
