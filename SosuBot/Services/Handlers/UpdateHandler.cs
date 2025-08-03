@@ -5,6 +5,7 @@ using Microsoft.Extensions.Options;
 using OsuApi.V2;
 using SosuBot.Database;
 using SosuBot.Extensions;
+using SosuBot.Services.Data;
 using SosuBot.Services.Handlers.Abstract;
 using SosuBot.Services.Handlers.Callbacks;
 using SosuBot.Services.Handlers.Commands;
@@ -20,6 +21,7 @@ namespace SosuBot.Services.Handlers;
 
 public class UpdateHandler(
     ApiV2 osuApi,
+    RabbitMQService rabbitMqService,
     BotContext database,
     ILogger<UpdateHandler> logger,
     IOptions<BotConfiguration> botConfig,
@@ -116,6 +118,7 @@ public class UpdateHandler(
                 callbackQuery,
                 database,
                 osuApi,
+                rabbitMqService,
                 serviceProvider.GetRequiredService<ILogger<ICommandContext<CallbackQuery>>>(),
                 cancellationToken));
 
@@ -205,6 +208,7 @@ public class UpdateHandler(
                 msg,
                 database,
                 osuApi,
+                rabbitMqService,
                 serviceProvider.GetRequiredService<ILogger<ICommandContext<Message>>>(),
                 cancellationToken));
 
@@ -221,6 +225,7 @@ public class UpdateHandler(
                 msg,
                 database,
                 osuApi,
+                rabbitMqService,
                 serviceProvider.GetRequiredService<ILogger<ICommandContext<Message>>>(),
                 cancellationToken));
 
