@@ -56,6 +56,7 @@ internal class Program
             return new ApiV2(config.ClientId, config.ClientSecret, httpClient);
         });
         builder.Services.AddSingleton<UpdateQueueService>();
+        builder.Services.AddSingleton<RabbitMQService>();
         builder.Services.AddScoped<UpdateHandler>();
         builder.Services.AddHostedService<PollingBackgroundService>();
         builder.Services.AddHostedService<UpdateHandlerBackgroundService>();
