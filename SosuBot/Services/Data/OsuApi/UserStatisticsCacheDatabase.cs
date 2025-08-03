@@ -6,20 +6,14 @@ using SosuBot.Helpers.Types;
 
 namespace SosuBot.Services.Data.OsuApi;
 
-public class UserStatisticsCacheDatabase
+public class UserStatisticsCacheDatabase(ApiV2 api, string? usersCachePath = null)
 {
-    public const int CACHING_DAYS = 31;
+    public const int CachingDays = 31;
 
     private readonly SemaphoreSlim _semaphoreSlim = new(1, 1);
 
-    public UserStatisticsCacheDatabase(ApiV2 api, string? usersCachePath = null)
-    {
-        Api = api;
-        UsersCachePath = usersCachePath ?? Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "cache", "users");
-    }
-
-    public ApiV2 Api { get; }
-    private string UsersCachePath { get; }
+    public ApiV2 Api { get; } = api;
+    private string UsersCachePath { get; } = usersCachePath ?? Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "cache", "users");
 
     public void CreateCacheDirectoryIfNeeded()
     {
@@ -68,6 +62,11 @@ public class UserStatisticsCacheDatabase
         CreateCacheDirectoryIfNeeded();
 
         var users = await OsuApiHelper.GetUsersFromRanking(Api, country);
+        if (users == null)
+        {
+            throw new Exception("Could not get users from ranking");
+        }
+        
         foreach (var user in users)
             await File.WriteAllTextAsync(GetCachedUserStatisticsPath(user.User!.Id.Value),
                 JsonSerializer.Serialize(user, new JsonSerializerOptions { WriteIndented = false }));
@@ -81,6 +80,6 @@ public class UserStatisticsCacheDatabase
     private bool IsUserStatisticsCacheExpired(int userId)
     {
         var lastModified = File.GetLastWriteTime(GetCachedUserStatisticsPath(userId));
-        return (DateTime.Now - lastModified).TotalDays > CACHING_DAYS;
+        return (DateTime.Now - lastModified).TotalDays > CachingDays;
     }
 }

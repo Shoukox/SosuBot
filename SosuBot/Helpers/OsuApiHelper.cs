@@ -16,7 +16,7 @@ public static class OsuApiHelper
     /// <param name="countryCode">See <see cref="CountryCode" /></param>
     /// <param name="count">How much players to return. If null, return the whole ranking</param>
     /// <returns></returns>
-    public static async Task<List<UserStatistics>> GetUsersFromRanking(ApiV2 api, string? countryCode = "uz",
+    public static async Task<List<UserStatistics>?> GetUsersFromRanking(ApiV2 api, string? countryCode = "uz",
         int? count = null, CancellationToken token = default)
     {
         var users = new List<UserStatistics>();
@@ -29,8 +29,7 @@ public static class OsuApiHelper
 
             if (ranking == null)
             {
-                api.Logger.LogWarning("Ranking is null");
-                continue;
+                return null;
             }
 
             foreach (var userStatistics in ranking.Ranking!) users.Add(userStatistics);

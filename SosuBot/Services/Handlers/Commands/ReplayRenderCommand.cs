@@ -33,9 +33,6 @@ public class ReplayRenderCommand : CommandBase<Message>
         sw.Close();
 
         await Context.RabbitMqService.QueueJob(tempFileName);
-        // var fileName = match.Groups[1].Value;
-        // var sendText = $"{match.Value}\n\n" +
-        //                "http://[2a03:4000:6:417a:1::105]/" + fileName;
 
         string mp4FileName = tempFileName[..^4] + ".mp4";
         string sendText = $"http://[2a03:4000:6:417a:1::105]/videos/{mp4FileName}";

@@ -26,6 +26,12 @@ public class GetRankingCommand : CommandBase<Message>
         var users = await OsuApiHelper.GetUsersFromRanking(Context.OsuApiV2, countryCode, 20,
             Context.CancellationToken);
 
+        if (users == null)
+        {
+            await waitMessage.EditAsync(Context.BotClient, language.error_noRankings);
+            return;
+        }
+
         var rankingText = "";
         for (var i = 0; i < users.Count; i++)
             rankingText +=
