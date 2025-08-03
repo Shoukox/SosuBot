@@ -125,6 +125,7 @@ public struct Russian : ILocalization
     public string error_specificUserNotFound => $"{error_baseMessage}\n" + "Игрок {} не найден";
     public string error_userNotFoundInBotsDatabase => $"{error_baseMessage}\nИгрок не найден в базе данных бота";
     public string error_noRecords => $"{error_baseMessage}\nРекорды не найдены";
+    public string error_noRankings => $"{error_baseMessage}\nТаблица рейтинга по данному запросу не найдена";
     public string error_argsLength => $"{error_baseMessage}\nНеверное количество аргументов";
     public string error_noPreviousScores => $"{error_baseMessage}\nЭтот пользователь не играл последние 24 часа в {{}}";
     public string error_noBestScores => $"{error_baseMessage}\nУ этого пользователя еще нету лучших рекордов";

@@ -1,4 +1,5 @@
-﻿namespace SosuBot.Localization;
+﻿// ReSharper disable InconsistentNaming
+namespace SosuBot.Localization;
 
 public interface ILocalization
 {
@@ -34,6 +35,7 @@ public interface ILocalization
     public string error_specificUserNotFound { get; }
     public string error_userNotFoundInBotsDatabase { get; }
     public string error_noRecords { get; }
+    public string error_noRankings { get; }
     public string error_argsLength { get; }
     public string error_noPreviousScores { get; }
     public string error_noBestScores { get; }

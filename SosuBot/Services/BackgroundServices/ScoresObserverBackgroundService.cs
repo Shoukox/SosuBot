@@ -206,7 +206,7 @@ public sealed class ScoresObserverBackgroundService(
             }
 
             countryRanking.StatisticFrom = DateTime.UtcNow;
-            countryRanking.Ranking = users;
+            countryRanking.Ranking = users!;
 
             await Task.Delay(TimeSpan.FromMinutes(2), stoppingToken);
         }
