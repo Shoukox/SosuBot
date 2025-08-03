@@ -27,7 +27,7 @@ public class ReplayRenderCommand : CommandBase<Message>
         var tempFileName = Path.GetFileName(tempFilePath);
         var tgfile = await Context.BotClient.GetFile(Context.Update.ReplyToMessage.Document.FileId);
 
-        var replayPath = $"/home/shoukko/danser/replays/{tempFileName}";
+        var replayPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "danser", "replays", tempFileName);
         var sw = new StreamWriter(replayPath);
         await Context.BotClient.DownloadFile(tgfile, sw.BaseStream);
         sw.Close();
