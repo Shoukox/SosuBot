@@ -7,14 +7,17 @@ namespace SosuBot.Services.Data;
 public class RabbitMQService(ILogger<RabbitMQService> logger)
 {
     private IChannel? _channel;
-    
+
     private static readonly object Locker = new object();
+
+    private ConnectionFactory? _factory;
+    private IConnection? _connection;
 
     public async Task Initialize()
     {
-        var factory = new ConnectionFactory { HostName = "localhost" };
-        var connection = await factory.CreateConnectionAsync();
-        _channel = await connection.CreateChannelAsync();
+        _factory = new ConnectionFactory { HostName = "localhost" };
+        _connection = await _factory.CreateConnectionAsync();
+        _channel = await _connection.CreateChannelAsync();
 
         await _channel.QueueDeclareAsync(queue: "task_queue", durable: true, exclusive: false,
             autoDelete: false, arguments: null);
@@ -28,8 +31,9 @@ public class RabbitMQService(ILogger<RabbitMQService> logger)
     {
         lock (Locker)
         {
-            if(_channel == null) Initialize().GetAwaiter().GetResult();
+            if (_channel == null) Initialize().GetAwaiter().GetResult();
         }
+
         var message = replayName;
         var body = Encoding.UTF8.GetBytes(message);
 
@@ -42,6 +46,7 @@ public class RabbitMQService(ILogger<RabbitMQService> logger)
         {
             throw new Exception("Channel not initialized");
         }
+
         await _channel.BasicPublishAsync(exchange: string.Empty, routingKey: "render-job-queue", mandatory: true,
             basicProperties: properties, body: body);
         logger.LogInformation("Job queued");
