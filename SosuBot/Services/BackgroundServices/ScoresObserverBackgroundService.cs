@@ -196,19 +196,30 @@ public sealed class ScoresObserverBackgroundService(
     {
         while (!stoppingToken.IsCancellationRequested)
         {
-            var users = await OsuApiHelper.GetUsersFromRanking(osuApi, countryCode, token: stoppingToken);
-
-            var countryRanking = ActualCountryRankings.FirstOrDefault(m => m.CountryCode == countryCode);
-            if (countryRanking == null)
+            try
             {
-                countryRanking = new CountryRanking(countryCode);
-                ActualCountryRankings.Add(countryRanking);
+                var users = await OsuApiHelper.GetUsersFromRanking(osuApi, countryCode, token: stoppingToken);
+
+                var countryRanking = ActualCountryRankings.FirstOrDefault(m => m.CountryCode == countryCode);
+                if (countryRanking == null)
+                {
+                    countryRanking = new CountryRanking(countryCode);
+                    ActualCountryRankings.Add(countryRanking);
+                }
+
+                countryRanking.StatisticFrom = DateTime.UtcNow;
+                countryRanking.Ranking = users!;
+
+                await Task.Delay(TimeSpan.FromMinutes(2), stoppingToken);
             }
-
-            countryRanking.StatisticFrom = DateTime.UtcNow;
-            countryRanking.Ranking = users!;
-
-            await Task.Delay(TimeSpan.FromMinutes(2), stoppingToken);
+            catch (OperationCanceledException)
+            {
+                logger.LogInformation("Operation cancelled");
+            }
+            catch (Exception e)
+            {
+                logger.LogError(e, "Unexpected exception");
+            }
         }
     }
 
