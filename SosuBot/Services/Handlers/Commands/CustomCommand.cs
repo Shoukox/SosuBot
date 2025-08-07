@@ -21,12 +21,11 @@ public class CustomCommand : CommandBase<Message>
             var result = JsonConvert.SerializeObject(Context.Update,
                 Formatting.Indented,
                 new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore });
-            await Context.Update.EditAsync(Context.BotClient, result);
+            await Context.Update.ReplyAsync(Context.BotClient, result);
         }
         else if (parameters[0] == "test")
         {
-            var waitMessage = await Context.Update.ReplyAsync(Context.BotClient, "wait");
-            await waitMessage.EditAsync(Context.BotClient, new string('a', (int)Math.Pow(2, 14)));
+            await Context.Update.ReplyAsync(Context.BotClient, new string('a', (int)Math.Pow(2, 14)));
         }
     }
 }
