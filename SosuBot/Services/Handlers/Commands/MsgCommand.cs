@@ -14,12 +14,9 @@ public class MsgCommand : CommandBase<Message>
 
     public override async Task ExecuteAsync()
     {
-        var chatInDatabase = await Context.Database.TelegramChats.FindAsync(Context.Update.Chat.Id);
         var osuUserInDatabase = await Context.Database.OsuUsers.FindAsync(Context.Update.From!.Id);
 
         if (osuUserInDatabase is null || !osuUserInDatabase.IsAdmin) return;
-
-        var waitMessage = await Context.Update.ReplyAsync(Context.BotClient, "Подожди...");
 
         var parameters = Context.Update.Text!.GetCommandParameters()!;
         if (parameters[0] == "groups")
@@ -46,7 +43,15 @@ public class MsgCommand : CommandBase<Message>
         else if (parameters[0] == "me")
         {
             var msg = string.Join(" ", parameters[1..]);
-            await waitMessage.EditAsync(Context.BotClient, msg);
+            await Context.Update.ReplyAsync(Context.BotClient, msg);
+        }
+        else if (parameters[0] == "to")
+        {
+            long chatId = long.Parse(parameters[1]);
+            int? messageId = parameters[2] == "null" ? null : int.Parse(parameters[2]);
+            var msg = string.Join(" ", parameters[3..]);
+            
+            await Context.BotClient.SendMessage(chatId, msg, ParseMode.Html, messageId, linkPreviewOptions: false);
         }
         else if (parameters[0] == "check")
         {
@@ -70,13 +75,13 @@ public class MsgCommand : CommandBase<Message>
                         await Context.Update.ReplyAsync(Context.BotClient, ex.ToString());
                     }
 
-                await waitMessage.EditAsync(Context.BotClient,
+                await Context.Update.ReplyAsync(Context.BotClient,
                     $"chats: {chats}/{Context.Database.TelegramChats.Count()}");
             }
         }
         else
         {
-            await waitMessage.EditAsync(Context.BotClient, "Неизвестная команда");
+            await Context.Update.ReplyAsync(Context.BotClient, "Неизвестная команда");
         }
     }
 }

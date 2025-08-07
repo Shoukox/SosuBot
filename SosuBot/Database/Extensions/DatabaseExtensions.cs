@@ -129,7 +129,7 @@ public static class DatabaseExtensions
         for (var i = 0; i < reader.FieldCount; i++)
         {
             string stringValue;
-            if (reader.IsDBNull(i))
+            if (!readerHeaderRow && reader.IsDBNull(i))
             {
                 stringValue = "null";
             }

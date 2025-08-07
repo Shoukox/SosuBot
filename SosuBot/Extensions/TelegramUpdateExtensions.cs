@@ -11,10 +11,16 @@ public static class TelegramUpdateExtensions
 {
     public static Task<Message> ReplyAsync(this Message message, ITelegramBotClient botClient, string text,
         bool privateAsnwer = false, ParseMode parseMode = ParseMode.Html,
-        InlineKeyboardMarkup? replyMarkup = null)
+        InlineKeyboardMarkup? replyMarkup = null, string? splitValue = null)
     {
-        return TelegramHelper.SendMessageConsideringTelegramLength(message.Id, message.Chat.Id, botClient, text,
-            parseMode, replyMarkup, false);
+        if (splitValue == null)
+        {
+            return TelegramHelper.SendMessageConsideringTelegramLength(message.Id, message.Chat.Id, botClient, text,
+                parseMode, replyMarkup, edit: false);
+        }
+
+        return TelegramHelper.SendMessageConsideringTelegramLengthAndSplitValue(message.Id, message.Chat.Id, botClient, text,
+            parseMode, replyMarkup, edit: false, splitValue: splitValue);
     }
 
     public static Task<Message> ReplyPhotoAsync(this Message message, ITelegramBotClient botClient, InputFile photo,
@@ -36,10 +42,16 @@ public static class TelegramUpdateExtensions
     }
 
     public static Task<Message> EditAsync(this Message message, ITelegramBotClient botClient, string text,
-        ParseMode parseMode = ParseMode.Html, InlineKeyboardMarkup? replyMarkup = null)
+        ParseMode parseMode = ParseMode.Html, InlineKeyboardMarkup? replyMarkup = null, string? splitValue = null)
     {
-        return TelegramHelper.SendMessageConsideringTelegramLength(message.Id, message.Chat.Id, botClient, text,
-            parseMode, replyMarkup, true);
+        if (splitValue == null)
+        {
+            return TelegramHelper.SendMessageConsideringTelegramLength(message.Id, message.Chat.Id, botClient, text,
+                parseMode, replyMarkup, edit: true);
+        }
+
+        return TelegramHelper.SendMessageConsideringTelegramLengthAndSplitValue(message.Id, message.Chat.Id, botClient, text,
+            parseMode, replyMarkup, edit: true, splitValue: splitValue);
     }
 
     public static Task AnswerAsync(this CallbackQuery callbackQuery, ITelegramBotClient botClient,

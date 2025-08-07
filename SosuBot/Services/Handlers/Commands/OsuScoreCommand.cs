@@ -29,7 +29,7 @@ public class OsuScoreCommand : CommandBase<Message>
 
         Score[] scores;
         Playmode? playmode;
-        int? beatmapId = null;
+        int? beatmapId;
         var osuUsernameForScore = string.Empty;
         var parameters = Context.Update.Text!.GetCommandParameters()!;
 
@@ -37,12 +37,12 @@ public class OsuScoreCommand : CommandBase<Message>
         if (parameters.Length == 0)
         {
             if (OsuHelper.ParseOsuBeatmapLink(Context.Update.ReplyToMessage?.GetAllLinks(), out var beatmapsetId,
-                    out beatmapId) is string link)
+                    out beatmapId) is not null)
             {
                 if (beatmapId is null && beatmapsetId is not null)
                 {
                     var beatmapset = await Context.OsuApiV2.Beatmapsets.GetBeatmapset(beatmapsetId.Value);
-                    beatmapId = beatmapset.Beatmaps![0].Id!;
+                    beatmapId = beatmapset.Beatmaps![0].Id;
                 }
             }
             else
@@ -72,7 +72,7 @@ public class OsuScoreCommand : CommandBase<Message>
                 if (beatmapId is null && beatmapsetId is not null)
                 {
                     var beatmapset = await Context.OsuApiV2.Beatmapsets.GetBeatmapset(beatmapsetId.Value);
-                    beatmapId = beatmapset.Beatmaps![0].Id!;
+                    beatmapId = beatmapset.Beatmaps![0].Id;
                 }
 
                 osuUsernameForScore = parameters[0];
@@ -87,7 +87,7 @@ public class OsuScoreCommand : CommandBase<Message>
                     if (beatmapId is null && beatmapsetId is not null)
                     {
                         var beatmapset = await Context.OsuApiV2.Beatmapsets.GetBeatmapset(beatmapsetId.Value);
-                        beatmapId = beatmapset.Beatmaps![0].Id!;
+                        beatmapId = beatmapset.Beatmaps![0].Id;
                     }
 
                     if (osuUserInDatabase is null)
@@ -118,7 +118,7 @@ public class OsuScoreCommand : CommandBase<Message>
                 if (beatmapId is null && beatmapsetId is not null)
                 {
                     var beatmapset = await Context.OsuApiV2.Beatmapsets.GetBeatmapset(beatmapsetId.Value);
-                    beatmapId = beatmapset.Beatmaps![0].Id!;
+                    beatmapId = beatmapset.Beatmaps![0].Id;
                 }
 
                 if (parameters[0] == link.Trim())
@@ -179,7 +179,7 @@ public class OsuScoreCommand : CommandBase<Message>
             var beatmap = (await Context.OsuApiV2.Beatmaps.GetBeatmap(scores[i].BeatmapId!.Value))!.BeatmapExtended;
             var beatmapset = await Context.OsuApiV2.Beatmapsets.GetBeatmapset(beatmap!.BeatmapsetId.Value);
 
-            if (i == 0) chatInDatabase!.LastBeatmapId = beatmap!.Id;
+            if (i == 0) chatInDatabase!.LastBeatmapId = beatmap.Id;
 
             textToSend += language.command_score.Fill([
                 $"{score.Rank}",
@@ -198,6 +198,6 @@ public class OsuScoreCommand : CommandBase<Message>
             ]);
         }
 
-        await waitMessage.EditAsync(Context.BotClient, textToSend);
+        await waitMessage.EditAsync(Context.BotClient, textToSend, splitValue: "\n\n");
     }
 }
