@@ -1,5 +1,6 @@
 using System.Text.RegularExpressions;
 using osu.Game.Rulesets.Scoring;
+using osu.Game.Rulesets.Taiko.Objects;
 using OsuApi.V2.Clients.Beatmaps.HttpIO;
 using OsuApi.V2.Clients.Users.HttpIO;
 using OsuApi.V2.Models;
@@ -138,25 +139,24 @@ public class OsuLastCommand : CommandBase<Message>
             if (i == 0) chatInDatabase!.LastBeatmapId = beatmap!.Id;
 
             var scoreStatistics = score.Statistics!.ToStatistics();
-
+            var scoreStatisticsIfFC = scoreStatistics.ToDictionary();
+            scoreStatisticsIfFC[HitResult.Miss] = 0;
+            scoreStatisticsIfFC[HitResult.LargeTickMiss] = 0;
+            scoreStatisticsIfFC[HitResult.SmallTickMiss] = 0;
             // calculate pp
             var calculatedPP = new PPResult
             {
-                Current = score.Pp ?? await ppCalculator.CalculatePPAsync(
-                    accuracy: score.Accuracy,
-                    beatmapId: beatmap.Id.Value,
+                Current = score.Pp ?? await ppCalculator.CalculatePPAsync(beatmap.Id.Value, (double)score.Accuracy!,
                     scoreMaxCombo: score.MaxCombo!.Value,
                     scoreMods: mods.ToOsuMods(playmode),
                     scoreStatistics: scoreStatistics,
                     rulesetId: (int)playmode,
                     cancellationToken: Context.CancellationToken),
 
-                IfFC = await ppCalculator.CalculatePPAsync(
-                    accuracy: score.Accuracy,
-                    beatmapId: beatmap.Id.Value,
+                IfFC = await ppCalculator.CalculatePPAsync(beatmap.Id.Value, (double)score.Accuracy!,
                     scoreMaxCombo: beatmap.MaxCombo!.Value,
                     scoreMods: mods.ToOsuMods(playmode),
-                    scoreStatistics: scoreStatistics,
+                    scoreStatistics: scoreStatisticsIfFC,
                     rulesetId: (int)playmode,
                     cancellationToken: Context.CancellationToken),
 
