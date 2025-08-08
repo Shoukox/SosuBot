@@ -59,8 +59,16 @@ public static class OsuTypesExtensions
                 dtMode.SpeedChange.Value = mod.Settings.SpeedChange.Value;
                 osuMod = dtMode;
             }
+            else if (osuMod is ModRandom rdMode && mod.Settings?.Seed != null)
+            {
+                rdMode.Seed.Value = mod.Settings.Seed.Value;
+                osuMod = rdMode;
+            }
 
-            if (osuMod is not null) osuMods.Add(osuMod);
+            if (osuMod is not null)
+            {
+                osuMods.Add(osuMod);
+            }
         }
 
         return osuMods.ToArray();
