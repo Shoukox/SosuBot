@@ -68,10 +68,9 @@ public static class TelegramHelper
         bool sentOrEdited = false;
         for (int i = 0; i < splittedText.Length; i++)
         {
-            if (i != splittedText.Length - 1 && currentText + splittedText[i] is
-                    { Length: > TelegramConstants.MaximumMessageLength } textPart)
+            if (i != splittedText.Length - 1 && currentText + splittedText[i] is { Length: > TelegramConstants.MaximumMessageLength })
             {
-                await SendOrEditMessage(messageId, chatId, botClient, textPart, !sentOrEdited, edit, parseMode,
+                await SendOrEditMessage(messageId, chatId, botClient, currentText, !sentOrEdited, edit, parseMode,
                     replyMarkup: replyMarkup);
                 currentText = "";
                 sentOrEdited = true;
