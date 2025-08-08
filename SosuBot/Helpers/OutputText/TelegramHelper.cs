@@ -42,6 +42,7 @@ public static class TelegramHelper
         var messagesToBeSent = text.Length / TelegramConstants.MaximumMessageLength +
                                Math.Sign(text.Length % TelegramConstants.MaximumMessageLength);
         Message returnMessage = null!;
+        bool sentOrEdited = false;
         for (var i = 0; i < messagesToBeSent; i++)
         {
             var skipLength = i * TelegramConstants.MaximumMessageLength;
@@ -49,8 +50,9 @@ public static class TelegramHelper
             var textPart = text.Substring(skipLength,
                 Math.Min(text.Length - skipLength, TelegramConstants.MaximumMessageLength));
 
-            returnMessage = await SendOrEditMessage(messageId, chatId, botClient, textPart, i == 0, edit, parseMode,
+            returnMessage = await SendOrEditMessage(messageId, chatId, botClient, textPart, !sentOrEdited, edit, parseMode,
                 replyMarkup: replyMarkup);
+            sentOrEdited = true;
         }
 
         return returnMessage;
@@ -63,20 +65,22 @@ public static class TelegramHelper
     {
         string[] splittedText = text.Split(splitValue);
         string currentText = "";
+        bool sentOrEdited = false;
         for (int i = 0; i < splittedText.Length; i++)
         {
-            if (i != splittedText.Length - 1 && currentText + splittedText[i] is string textPart &&
-                textPart.Length > TelegramConstants.MaximumMessageLength)
+            if (i != splittedText.Length - 1 && currentText + splittedText[i] is
+                    { Length: > TelegramConstants.MaximumMessageLength } textPart)
             {
-                await SendOrEditMessage(messageId, chatId, botClient, textPart, i == 0, edit, parseMode,
+                await SendOrEditMessage(messageId, chatId, botClient, textPart, !sentOrEdited, edit, parseMode,
                     replyMarkup: replyMarkup);
                 currentText = "";
+                sentOrEdited = true;
             }
 
             currentText += splittedText[i] + "\n\n";
         }
 
-        return await SendOrEditMessage(messageId, chatId, botClient, currentText, false, edit, parseMode,
+        return await SendOrEditMessage(messageId, chatId, botClient, currentText, !sentOrEdited, edit, parseMode,
             replyMarkup: replyMarkup);
     }
 }
