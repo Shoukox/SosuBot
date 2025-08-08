@@ -1,4 +1,5 @@
 using System.Text.RegularExpressions;
+using osu.Game.Rulesets.Scoring;
 using OsuApi.V2.Clients.Beatmaps.HttpIO;
 using OsuApi.V2.Clients.Users.HttpIO;
 using OsuApi.V2.Models;
@@ -137,6 +138,7 @@ public class OsuLastCommand : CommandBase<Message>
             if (i == 0) chatInDatabase!.LastBeatmapId = beatmap!.Id;
 
             var scoreStatistics = score.Statistics!.ToStatistics();
+
             // calculate pp
             var calculatedPP = new PPResult
             {
@@ -154,7 +156,7 @@ public class OsuLastCommand : CommandBase<Message>
                     beatmapId: beatmap.Id.Value,
                     scoreMaxCombo: beatmap.MaxCombo!.Value,
                     scoreMods: mods.ToOsuMods(playmode),
-                    scoreStatistics: null,
+                    scoreStatistics: scoreStatistics,
                     rulesetId: (int)playmode,
                     cancellationToken: Context.CancellationToken),
 
