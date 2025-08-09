@@ -38,15 +38,15 @@ public static class ScoreHelper
             case Playmode.Osu:
             case Playmode.Taiko:
                 scoreStatisticsText +=
-                    $"{scoreStatistics.Great}x300 / {scoreStatistics.Ok}x100 / {scoreStatistics.Meh}x50";
+                    $"{scoreStatistics.Great}🔵 / {scoreStatistics.Ok}🟢 / {scoreStatistics.Meh}🟡";
                 break;
             case Playmode.Catch:
                 scoreStatisticsText +=
-                    $"{scoreStatistics.Great}x300 / {scoreStatistics.LargeTickHit}x100 / {scoreStatistics.SmallTickHit}x50 / {scoreStatistics.SmallTickMiss}xKatu";
+                    $"{scoreStatistics.Great}🔵 / {scoreStatistics.LargeTickHit}🟢 / {scoreStatistics.SmallTickHit}🟡 / {scoreStatistics.SmallTickMiss}xKatu";
                 break;
             case Playmode.Mania:
                 scoreStatisticsText +=
-                    $"{scoreStatistics.Perfect}x320 / {scoreStatistics.Great}x300 / {scoreStatistics.Good}x200 / {scoreStatistics.Ok}x100 / {scoreStatistics.Meh}x50";
+                    $"{scoreStatistics.Perfect}🟣 / {scoreStatistics.Great}🔵 / {scoreStatistics.Good}🟩 / {scoreStatistics.Ok}🟢 / {scoreStatistics.Meh}🟡";
                 break;
         }
 
