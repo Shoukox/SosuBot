@@ -140,9 +140,16 @@ public class OsuLastCommand : CommandBase<Message>
 
             var scoreStatistics = score.Statistics!.ToStatistics();
             var scoreStatisticsIfFC = scoreStatistics.ToDictionary();
+            scoreStatisticsIfFC[HitResult.Ok] += scoreStatisticsIfFC[HitResult.Miss];
             scoreStatisticsIfFC[HitResult.Miss] = 0;
+                
+            scoreStatisticsIfFC[HitResult.LargeTickHit] += scoreStatisticsIfFC.GetValueOrDefault(HitResult.LargeTickMiss);
             scoreStatisticsIfFC[HitResult.LargeTickMiss] = 0;
+            
+            scoreStatisticsIfFC[HitResult.SmallTickHit] += scoreStatisticsIfFC.GetValueOrDefault(HitResult.SmallTickMiss);
             scoreStatisticsIfFC[HitResult.SmallTickMiss] = 0;
+            
+            scoreStatisticsIfFC[HitResult.SliderTailHit] = -1; // set to max when calculating pp
             // calculate pp
             var calculatedPP = new PPResult
             {
@@ -156,7 +163,7 @@ public class OsuLastCommand : CommandBase<Message>
                 IfFC = await ppCalculator.CalculatePPAsync(beatmap.Id.Value, (double)score.Accuracy!,
                     scoreMaxCombo: beatmap.MaxCombo!.Value,
                     scoreMods: mods.ToOsuMods(playmode),
-                    scoreStatistics: scoreStatisticsIfFC,
+                    scoreStatistics: null,
                     rulesetId: (int)playmode,
                     cancellationToken: Context.CancellationToken),
 
