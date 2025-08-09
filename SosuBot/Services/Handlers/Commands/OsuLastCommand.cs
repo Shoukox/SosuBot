@@ -139,18 +139,6 @@ public class OsuLastCommand : CommandBase<Message>
             if (i == 0) chatInDatabase!.LastBeatmapId = beatmap!.Id;
 
             var scoreStatistics = score.Statistics!.ToStatistics();
-            var scoreStatisticsIfFC = scoreStatistics.ToDictionary();
-            scoreStatisticsIfFC[HitResult.Ok] += scoreStatisticsIfFC[HitResult.Miss];
-            scoreStatisticsIfFC[HitResult.Miss] = 0;
-                
-            scoreStatisticsIfFC[HitResult.LargeTickHit] += scoreStatisticsIfFC.GetValueOrDefault(HitResult.LargeTickMiss);
-            scoreStatisticsIfFC[HitResult.LargeTickMiss] = 0;
-            
-            scoreStatisticsIfFC[HitResult.SmallTickHit] += scoreStatisticsIfFC.GetValueOrDefault(HitResult.SmallTickMiss);
-            scoreStatisticsIfFC[HitResult.SmallTickMiss] = 0;
-            
-            scoreStatisticsIfFC[HitResult.SliderTailHit] = -1; // set to max when calculating pp
-            // calculate pp
             var calculatedPP = new PPResult
             {
                 Current = score.Pp ?? await ppCalculator.CalculatePPAsync(beatmap.Id.Value, (double)score.Accuracy!,
