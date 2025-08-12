@@ -38,15 +38,15 @@ public static class ScoreHelper
             case Playmode.Osu:
             case Playmode.Taiko:
                 scoreStatisticsText +=
-                    $"{scoreStatistics.Great}🔵 / {scoreStatistics.Ok}🟢 / {scoreStatistics.Meh}🟡";
+                    $"{scoreStatistics.Great}/{scoreStatistics.Ok}/{scoreStatistics.Meh}";
                 break;
             case Playmode.Catch:
                 scoreStatisticsText +=
-                    $"{scoreStatistics.Great}🔵 / {scoreStatistics.LargeTickHit}🟢 / {scoreStatistics.SmallTickHit}🟡 / {scoreStatistics.SmallTickMiss}xKatu";
+                    $"{scoreStatistics.Great}/{scoreStatistics.LargeTickHit}/{scoreStatistics.SmallTickHit}/{scoreStatistics.SmallTickMiss}xKatu";
                 break;
             case Playmode.Mania:
                 scoreStatisticsText +=
-                    $"{scoreStatistics.Perfect}🟣 / {scoreStatistics.Great}🔵 / {scoreStatistics.Good}🟩 / {scoreStatistics.Ok}🟢 / {scoreStatistics.Meh}🟡";
+                    $"{scoreStatistics.Perfect}/{scoreStatistics.Great}/{scoreStatistics.Good}/{scoreStatistics.Ok}/{scoreStatistics.Meh}";
                 break;
         }
 
@@ -136,8 +136,9 @@ public static class ScoreHelper
             count += 1;
         }
 
+        DateTime tashkentNow = TimeZoneInfo.ConvertTime(dailyStatistics.DayOfStatistic, TimeZoneInfo.FindSystemTimeZoneById("West Asia Standard Time"));
         var sendText = language.send_dailyStatistic.Fill([
-            $"{dailyStatistics.DayOfStatistic:dd.MM.yyyy HH:mm}",
+            $"{tashkentNow:dd.MM.yyyy HH:mm} (по тшк.)",
             $"{activePlayersCount}",
             $"{passedScores}",
             $"{beatmapsPlayed}",

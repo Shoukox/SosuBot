@@ -54,7 +54,7 @@ public class OsuChatstatsCommand : CommandBase<Message>
             sendText += language.command_chatstats_row.Fill([
                 $"{i}",
                 $"{chatMember.OsuUsername}",
-                $"{chatMember.GetPP(playmode):N0}"
+                $"{chatMember.GetPP(playmode):N2}"
             ]);
             i += 1;
         }

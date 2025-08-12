@@ -31,8 +31,8 @@ public struct Russian : ILocalization
 
     public string command_last =>
         "{}<b>({})</b> <a href=\"https://osu.ppy.sh/beatmaps/{}\">{} [{}]</a> <b>({}, {}⭐️)</b>\n" +
-        "{} / {}❌ - <b><i>{}</i></b>%\n" +
-        "<b>{}</b> <i>{}/{}</i> <b><u>{}pp</u></b> (<b><u>{}pp/{}pp</u></b> FC/SS)\n({}) {}% пройдено\n\n";
+        "{}/{}❌ - <b><i>{}</i></b>%\n" +
+        "<b>{}</b> <i>{}/{}</i> <b><u>{}pp</u></b> (<b><u>{}pp</u></b> if <b>{}%</b> FC)\n({}) {}% пройдено\n\n";
 
     public string command_set =>
         "Теперь ты <b>{}</b>, {}pp\n" +
@@ -87,15 +87,22 @@ public struct Russian : ILocalization
         "<b>CS</b>: {} | <b>AR</b>: {} | <b>HP</b>: {} | <b>BPM</b>: {}\n\n" +
         "<b>+{} ({}⭐️) pp calculation:</b>\n" +
         "<code>" +
-        "acc  | classic | lazer\n" +
-        "-----+---------+---------\n" +
-        "100% | {}pp   | {}pp\n" +
-        "99%  | {}pp   | {}pp\n" +
-        "98%  | {}pp   | {}pp\n" +
+        "acc      | classic\n" +
+        "---------+---------\n" +
+        "{}| {}pp\n" +
+        "{}| {}pp\n" +
+        "{}| {}pp\n" +
+        "</code>\n\n" +
+        "<code>" +
+        "acc      | lazer\n" +
+        "---------+---------\n" +
+        "{}| {}pp\n" +
+        "{}| {}pp\n" +
+        "{}| {}pp\n" +
         "</code>\n";
 
     public string send_dailyStatistic =>
-        "<b>🇺🇿 Отчёт с момента {}UTC:</b>\n\n" +
+        "<b>🇺🇿 Отчёт с момента {}:</b>\n\n" +
         "<b>Активных игроков:</b> {}\n" +
         "<b>Пасснутых скоров:</b> {}\n" +
         "<b>Сыгранных уникальных карт:</b> {}\n\n" +

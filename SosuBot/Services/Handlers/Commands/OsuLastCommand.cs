@@ -1,4 +1,5 @@
 using System.Text.RegularExpressions;
+using osu.Framework.Extensions.ObjectExtensions;
 using osu.Game.Rulesets.Scoring;
 using osu.Game.Rulesets.Taiko.Objects;
 using OsuApi.V2.Clients.Beatmaps.HttpIO;
@@ -138,11 +139,14 @@ public class OsuLastCommand : CommandBase<Message>
 
             if (i == 0) chatInDatabase!.LastBeatmapId = beatmap!.Id;
 
+            bool passed = score.Passed!.Value;
             var scoreStatistics = score.Statistics!.ToStatistics();
+
             var calculatedPP = new PPResult
             {
-                Current = score.Pp ?? await ppCalculator.CalculatePPAsync(beatmap.Id.Value, (double)score.Accuracy!,
+                Current = score.Pp != null ? null : await ppCalculator.CalculatePPAsync(beatmap.Id.Value, (double)score.Accuracy!,
                     scoreMaxCombo: score.MaxCombo!.Value,
+                    passed: passed,
                     scoreMods: mods.ToOsuMods(playmode),
                     scoreStatistics: scoreStatistics,
                     rulesetId: (int)playmode,
@@ -167,6 +171,17 @@ public class OsuLastCommand : CommandBase<Message>
 
             var scoreRank = score.Passed!.Value ? score.Rank! : "F";
             var textBeforeBeatmapLink = lastScores.Length == 1 ? "" : $"{i + 1}. ";
+            bool isFc = score.MaxCombo == beatmap.MaxCombo;
+            double scorePp = calculatedPP.Current?.Pp ?? (double)score.Pp!.Value;
+
+            var duration = (score.EndedAt!.Value - score.StartedAt!.Value).Seconds;
+            var beatmapDuration = beatmap.TotalLength;
+
+            // if score is FC, then ifFC.Pp = Current.Pp
+            //if (isFc)
+            //{
+            //    calculatedPP.IfFC.Pp = scorePp;
+            //}
             textToSend += language.command_last.Fill([
                 $"{textBeforeBeatmapLink}",
                 $"{scoreRank}",
@@ -181,9 +196,9 @@ public class OsuLastCommand : CommandBase<Message>
                 $"{ScoreHelper.GetModsText(mods)}",
                 $"{score.MaxCombo}",
                 $"{beatmap.MaxCombo}",
-                $"{calculatedPP.Current:N2}",
-                $"{calculatedPP.IfFC:N2}",
-                $"{calculatedPP.IfSS:N2}",
+                $"{scorePp:N2}",
+                $"{calculatedPP.IfFC.Pp:N2}",
+                $"{calculatedPP.IfFC.CalculatedAccuracy*100:N2}",
                 $"{score.EndedAt!.Value:dd.MM.yyyy HH:mm zzz}",
                 $"{score.CalculateCompletion(beatmap.CalculateObjectsAmount()):N1}"
             ]);

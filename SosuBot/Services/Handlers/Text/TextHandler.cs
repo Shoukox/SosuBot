@@ -1,4 +1,5 @@
 using osu.Game.Rulesets.Mods;
+using osu.Game.Rulesets.Osu.Mods;
 using OsuApi.V2.Clients.Users.HttpIO;
 using OsuApi.V2.Users.Models;
 using SosuBot.Extensions;
@@ -101,7 +102,7 @@ public class TextHandler : CommandBase<Message>
         var classicMod = OsuHelper.GetClassicMode(playmode);
         Mod[] modsFromMessage;
         if (beatmapLink.Contains('+'))
-            modsFromMessage = beatmapLink.Split('+')[1].ToMods(playmode);
+            modsFromMessage = beatmapLink.Split('+')[1].ToMods(playmode).Except([classicMod]).ToArray();
         else
             modsFromMessage = [];
 
@@ -167,6 +168,9 @@ public class TextHandler : CommandBase<Message>
         };
 
         var duration = $"{beatmap.TotalLength / 60}:{beatmap.TotalLength % 60:00}";
+
+
+        int padLength = 9;
         var textToSend = language.send_mapInfo.Fill([
             $"{playmode.ToGamemode()}",
             $"{beatmap.Version.EncodeHtml()}",
@@ -180,15 +184,25 @@ public class TextHandler : CommandBase<Message>
             $"{beatmap.Drain}",
             $"{beatmap.BPM}",
             $"{lazerModsToApply.ModsToString(playmode)}",
+
             $"{ppCalculator.LastDifficultyAttributes.StarRating:N2}",
-            $"{calculatedPP.ClassicSS:N0}",
-            $"{calculatedPP.LazerSS:N0}",
+            $"{calculatedPP.ClassicSS.CalculatedAccuracy*100:N2}%".PadRight(padLength),
+            $"{calculatedPP.ClassicSS.Pp:N2}",
 
-            $"{calculatedPP.Classic99:N0}",
-            $"{calculatedPP.Lazer99:N0}",
+            $"{calculatedPP.Classic99.CalculatedAccuracy*100:N2}%".PadRight(padLength),
+            $"{calculatedPP.Classic99.Pp:N2}",
 
-            $"{calculatedPP.Classic98:N0}",
-            $"{calculatedPP.Lazer98:N0}"
+            $"{calculatedPP.Classic98.CalculatedAccuracy*100:N2}%".PadRight(padLength),
+            $"{calculatedPP.Classic98.Pp:N2}",
+
+            $"{calculatedPP.LazerSS.CalculatedAccuracy*100:N2}%".PadRight(padLength),
+            $"{calculatedPP.LazerSS.Pp:N2}",
+
+            $"{calculatedPP.Lazer99.CalculatedAccuracy*100:N2}%".PadRight(padLength),
+            $"{calculatedPP.Lazer99.Pp:N2}",
+
+            $"{calculatedPP.Lazer98.CalculatedAccuracy*100:N2}%".PadRight(padLength),
+            $"{calculatedPP.Lazer98.Pp:N2}"
         ]);
 
         var photo = new InputFileUrl(
