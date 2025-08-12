@@ -1,5 +1,7 @@
 using System.Text.RegularExpressions;
+using Microsoft.Extensions.Logging;
 using osu.Framework.Extensions.ObjectExtensions;
+using osu.Game.Online.Solo;
 using osu.Game.Rulesets.Scoring;
 using osu.Game.Rulesets.Taiko.Objects;
 using OsuApi.V2.Clients.Beatmaps.HttpIO;
@@ -127,6 +129,7 @@ public class OsuLastCommand : CommandBase<Message>
         {
             var score = lastScores[i];
             var beatmap = beatmaps[i].BeatmapExtended!;
+
             var sum = beatmap.CountCircles + beatmap.CountSliders + beatmap.CountSpinners;
             if (sum is > 20_000)
             {
@@ -158,26 +161,27 @@ public class OsuLastCommand : CommandBase<Message>
                     scoreStatistics: null,
                     rulesetId: (int)playmode,
                     cancellationToken: Context.CancellationToken),
-
-                IfSS = await ppCalculator.CalculatePPAsync(
-                    accuracy: 1,
-                    beatmapId: beatmap.Id.Value,
-                    scoreMaxCombo: beatmap.MaxCombo!.Value,
-                    scoreMods: mods.ToOsuMods(playmode),
-                    scoreStatistics: null,
-                    rulesetId: (int)playmode,
-                    cancellationToken: Context.CancellationToken)
             };
 
             var scoreRank = score.Passed!.Value ? score.Rank! : "F";
             var textBeforeBeatmapLink = lastScores.Length == 1 ? "" : $"{i + 1}. ";
             double scorePp = calculatedPP.Current?.Pp ?? (double)score.Pp!.Value;
+            double scorePpIfFc = calculatedPP.IfFC.Pp;
+            double accuracyIfFc = calculatedPP.IfFC.CalculatedAccuracy;
+            bool isFC = score.MaxCombo == beatmap.MaxCombo;
+
+            if (isFC)
+            {
+                Context.Logger.LogWarning($"PP Calculation for fc and the gotten pp from the api do not match: scoreId={score.Id} calculatedPpForFC={calculatedPP.IfFC.Pp} gottenPp:{score.Pp}");
+                scorePpIfFc = scorePp;
+                accuracyIfFc = (double)score.Accuracy;
+            }
 
             textToSend += language.command_last.Fill([
                 $"{textBeforeBeatmapLink}",
                 $"{scoreRank}",
                 $"{beatmap.Id}",
-                $"{score.Beatmapset!.Title.EncodeHtml()}",
+                $"{score.Beatmapset?.Title.EncodeHtml()}",
                 $"{beatmap.Version.EncodeHtml()}",
                 $"{beatmap.Status}",
                 $"{ppCalculator.LastDifficultyAttributes.StarRating:N2}",
@@ -188,9 +192,9 @@ public class OsuLastCommand : CommandBase<Message>
                 $"{score.MaxCombo}",
                 $"{beatmap.MaxCombo}",
                 $"{scorePp:N2}",
-                $"{calculatedPP.IfFC.Pp:N2}",
-                $"{calculatedPP.IfFC.CalculatedAccuracy*100:N2}",
-                $"{score.EndedAt!.Value:dd.MM.yyyy HH:mm zzz}",
+                $"{scorePpIfFc:N2}",
+                $"{accuracyIfFc*100:N2}",
+                $"{score.EndedAt!.Value:dd.MM.yyyy HH:mm zz}",
                 $"{score.CalculateCompletion(beatmap.CalculateObjectsAmount()):N1}"
             ]);
         }
