@@ -1,5 +1,6 @@
 ﻿using Newtonsoft.Json;
 using SosuBot.Extensions;
+using SosuBot.Helpers.OutputText;
 using SosuBot.Services.Handlers.Abstract;
 using Telegram.Bot.Types;
 
@@ -21,7 +22,15 @@ public class CustomCommand : CommandBase<Message>
             var result = JsonConvert.SerializeObject(Context.Update,
                 Formatting.Indented,
                 new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore });
-            await Context.Update.ReplyAsync(Context.BotClient, result);
+
+            if (parameters.Length >= 2 && parameters[1] == "text")
+            {
+                await Context.Update.ReplyAsync(Context.BotClient, result);
+            }
+            else
+            {
+                await Context.Update.ReplyDocumentAsync(Context.BotClient, TextHelper.TextToStream(result));
+            }
         }
         else if (parameters[0] == "test")
         {
