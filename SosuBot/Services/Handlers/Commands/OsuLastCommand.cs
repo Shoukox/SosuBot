@@ -171,17 +171,8 @@ public class OsuLastCommand : CommandBase<Message>
 
             var scoreRank = score.Passed!.Value ? score.Rank! : "F";
             var textBeforeBeatmapLink = lastScores.Length == 1 ? "" : $"{i + 1}. ";
-            bool isFc = score.MaxCombo == beatmap.MaxCombo;
             double scorePp = calculatedPP.Current?.Pp ?? (double)score.Pp!.Value;
 
-            var duration = (score.EndedAt!.Value - score.StartedAt!.Value).Seconds;
-            var beatmapDuration = beatmap.TotalLength;
-
-            // if score is FC, then ifFC.Pp = Current.Pp
-            //if (isFc)
-            //{
-            //    calculatedPP.IfFC.Pp = scorePp;
-            //}
             textToSend += language.command_last.Fill([
                 $"{textBeforeBeatmapLink}",
                 $"{scoreRank}",
