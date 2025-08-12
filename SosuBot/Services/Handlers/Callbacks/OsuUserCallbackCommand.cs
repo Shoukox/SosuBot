@@ -40,7 +40,7 @@ public class OsuUserCallbackCommand : CommandBase<CallbackQuery>
             $"{currentPP:N2}",
             $"{ppDifferenceText}",
             $"{user.Statistics.HitAccuracy:N2}%",
-            $"{user.Statistics.PlayCount:N0}",
+            $"{user.Statistics.PlayCount:N2}",
             $"{user.Statistics.PlayTime / 3600}",
             $"{user.Statistics.GradeCounts!.SSH}",
             $"{user.Statistics.GradeCounts!.SH}",

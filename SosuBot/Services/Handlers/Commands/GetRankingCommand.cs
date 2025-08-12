@@ -35,7 +35,7 @@ public class GetRankingCommand : CommandBase<Message>
         var rankingText = "";
         for (var i = 0; i < users.Count; i++)
             rankingText +=
-                $"{i + 1}. {UserHelper.GetUserProfileUrlWrappedInUsernameString(users[i].User!.Id!.Value, users[i].User!.Username!)} - <b>{users[i].Pp:N0}pp</b>\n";
+                $"{i + 1}. {UserHelper.GetUserProfileUrlWrappedInUsernameString(users[i].User!.Id!.Value, users[i].User!.Username!)} - <b>{users[i].Pp:N2}pp</b>\n";
 
         var sendText = $"Топ игроков в <b>{countryCode?.ToUpperInvariant() ?? "global"}</b>:\n\n" +
                        rankingText;

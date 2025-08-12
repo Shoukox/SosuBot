@@ -7,6 +7,7 @@ using osu.Game.Rulesets.Taiko.Mods;
 using OsuApi.V2.Models;
 using OsuApi.V2.Users.Models;
 using SosuBot.Helpers.Types;
+using static osu.Game.Screens.SelectV2.BeatmapTitleWedge;
 using Mod = osu.Game.Rulesets.Mods.Mod;
 
 namespace SosuBot.Extensions;
@@ -114,7 +115,12 @@ public static class OsuTypesExtensions
 
     public static int CalculateObjectsAmount(this Score score)
     {
-        return score.Statistics!.Great + score.Statistics.Ok + score.Statistics.Meh + score.Statistics.Miss;
+        return score.Statistics!.Perfect 
+            + score.Statistics.Great 
+            + score.Statistics.Good 
+            + score.Statistics.Ok 
+            + score.Statistics.Meh 
+            + score.Statistics.Miss;
     }
 
     public static int CalculateObjectsAmount(this BeatmapExtended beatmapExtended)

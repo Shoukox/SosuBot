@@ -18,17 +18,18 @@ public class GetDailyStatisticsCommand : CommandBase<Message>
         if (await Context.Update.IsUserSpamming(Context.BotClient))
             return;
 
-        if (ScoresObserverBackgroundService.AllDailyStatistics.Count == 0) return;
-
         ILocalization language = new Russian();
         var waitMessage = await Context.Update.ReplyAsync(Context.BotClient, language.waiting);
 
-        var parameters = Context.Update.Text!.GetCommandParameters()!;
+        // Fake 500ms wait
+        await Task.Delay(500);
 
+        var parameters = Context.Update.Text!.GetCommandParameters()!;
         var sendText = "";
         if (parameters.Length == 0)
         {
-            if (ScoresObserverBackgroundService.AllDailyStatistics.Last() is var dailyStatistics &&
+            if (ScoresObserverBackgroundService.AllDailyStatistics.Count == 0 ||
+                ScoresObserverBackgroundService.AllDailyStatistics.Last() is var dailyStatistics &&
                 (dailyStatistics.Scores.Count == 0 || dailyStatistics.ActiveUsers.Count == 0))
             {
                 await waitMessage.EditAsync(Context.BotClient, language.error_noRecords);
@@ -66,8 +67,9 @@ public class GetDailyStatisticsCommand : CommandBase<Message>
                             UserHelper.GetUserProfileUrlWrappedInUsernameString(m.User!.Id!.Value, m.User.Username!))
                 );
 
+            DateTime tashkentNow = TimeZoneInfo.ConvertTime(ranking.StatisticFrom, TimeZoneInfo.FindSystemTimeZoneById("West Asia Standard Time"));
             sendText = $"Онлайн пользователи из <b>{countryCode.ToUpperInvariant()}</b>.\n" +
-                       $"Последнее отслеживание: <b>{ranking.StatisticFrom:dd.MM.yyyy HH:mm}UTC</b>\n" +
+                       $"Последнее отслеживание: <b>{tashkentNow:dd.MM.yyyy HH:mm} (по тшк.)</b>\n" +
                        $"Количество: <b>{onlineUsers.Length}</b>\n\n" +
                        $"{onlineUsersText}";
         }
