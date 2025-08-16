@@ -17,7 +17,7 @@ public static class ScoreHelper
         var modsText = "+" + string.Join("", mods!.Select(m =>
         {
             var speedChangeString = "";
-            if (m.Settings?.SpeedChange.HasValue ?? false) speedChangeString = $"({m.Settings.SpeedChange:0.0}x)";
+            if (m.Settings?.SpeedChange.HasValue ?? false) speedChangeString = $"({m.Settings.SpeedChange:0.00}x)";
             return m.Acronym + speedChangeString;
         }));
         if (modsText == "+") modsText += "NM";
