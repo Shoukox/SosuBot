@@ -1,6 +1,6 @@
-.vs
-.idea
-Sosu*/appsettings*
-**/bin
-**/obj
+.vs/
+.idea/
+appsettings*
+bin/
+obj/
 *.db
