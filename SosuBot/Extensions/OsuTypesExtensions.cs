@@ -1,4 +1,5 @@
-﻿using osu.Game.Rulesets.Catch.Mods;
+﻿using Microsoft.Extensions.Logging;
+using osu.Game.Rulesets.Catch.Mods;
 using osu.Game.Rulesets.Mania.Mods;
 using osu.Game.Rulesets.Mods;
 using osu.Game.Rulesets.Osu.Mods;
@@ -47,14 +48,17 @@ public static class OsuTypesExtensions
         var osuMods = new List<Mod>();
         foreach (var mod in mods)
         {
-            var osuMod = playmode switch
+            var rulesetMods = playmode switch
             {
-                Playmode.Osu => AllOsuMods.FirstOrDefault(m => m.Acronym == mod.Acronym),
-                Playmode.Taiko => AllTaikoMods.FirstOrDefault(m => m.Acronym == mod.Acronym),
-                Playmode.Mania => AllManiaMods.FirstOrDefault(m => m.Acronym == mod.Acronym),
-                Playmode.Catch => AllCatchMods.FirstOrDefault(m => m.Acronym == mod.Acronym),
+                Playmode.Osu => AllOsuMods,
+                Playmode.Taiko => AllTaikoMods,
+                Playmode.Mania => AllManiaMods,
+                Playmode.Catch => AllCatchMods,
                 _ => throw new NotImplementedException()
             };
+            Type modType = rulesetMods.FirstOrDefault(m => m.Acronym.Equals(mod.Acronym, StringComparison.InvariantCultureIgnoreCase))!.GetType();
+            Mod? osuMod = Activator.CreateInstance(modType) as Mod;
+
             if (osuMod is ModDoubleTime dtMode && mod.Settings?.SpeedChange != null)
             {
                 dtMode.SpeedChange.Value = mod.Settings.SpeedChange.Value;
