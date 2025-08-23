@@ -2,6 +2,7 @@ using osu.Game.Rulesets.Mods;
 using OsuApi.V2.Clients.Users.HttpIO;
 using OsuApi.V2.Users.Models;
 using SosuBot.Extensions;
+using SosuBot.Helpers;
 using SosuBot.Helpers.OutputText;
 using SosuBot.Localization;
 using SosuBot.Localization.Languages;
@@ -39,14 +40,16 @@ public class TextHandler : CommandBase<Message>
         var textToSend = language.command_user.Fill([
             $"{playmode.ToGamemode()}",
             $"{UserHelper.GetUserProfileUrlWrappedInUsernameString(user.Id.Value, user.Username!)}",
-            $"{user.Statistics.GlobalRank}",
-            $"{user.Statistics.CountryRank}",
-            $"{user.CountryCode}",
-            $"{currentPp:N2}",
+            $"{UserHelper.GetUserRankText(user.Statistics.GlobalRank)}",
+            $"{UserHelper.GetUserRankText(user.Statistics.CountryRank)}",
+            $"{UserHelper.CountryCodeToFlag(user.CountryCode ?? "nn")}",
+            $"{ScoreHelper.GetFormattedPpTextConsideringNull(currentPp)}",
             $"{ppDifferenceText}",
             $"{user.Statistics.HitAccuracy:N2}%",
             $"{user.Statistics.PlayCount:N0}",
             $"{user.Statistics.PlayTime / 3600}",
+            $"{user.UserAchievements?.Length ?? 0}",
+            $"{OsuConstants.TotalAchievementsCount}",
             $"{user.Statistics.GradeCounts!.SSH}",
             $"{user.Statistics.GradeCounts!.SH}",
             $"{user.Statistics.GradeCounts!.SS}",
