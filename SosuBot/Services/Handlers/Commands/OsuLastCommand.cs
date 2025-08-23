@@ -101,6 +101,8 @@ public class OsuLastCommand(bool onlyPassed = false) : CommandBase<Message>
             return;
         }
 
+        osuUsernameForLastScores = userResponse.UserExtend!.Username!;
+
         // if username was entered, then use as ruleset his (this username) standard ruleset.
         ruleset ??= userResponse.UserExtend!.Playmode!;
 

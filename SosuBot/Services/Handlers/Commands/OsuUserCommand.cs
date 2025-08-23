@@ -12,7 +12,7 @@ using Telegram.Bot.Types.ReplyMarkups;
 
 namespace SosuBot.Services.Handlers.Commands;
 
-public class OsuUserCommand : CommandBase<Message>
+public class OsuUserCommand(bool includeIdInSearch = false) : CommandBase<Message>
 {
     public static string[] Commands = ["/user", "/u"];
 
@@ -30,6 +30,12 @@ public class OsuUserCommand : CommandBase<Message>
         UserExtend user;
         Playmode playmode;
 
+        string searchPrefix = "@";
+        if (includeIdInSearch)
+        {
+            searchPrefix = "";
+        }
+        
         if (parameters.Length == 0)
         {
             if (osuUserInDatabase is null)
@@ -39,7 +45,7 @@ public class OsuUserCommand : CommandBase<Message>
             }
 
             playmode = osuUserInDatabase.OsuMode;
-            user = (await Context.OsuApiV2.Users.GetUser($"@{osuUserInDatabase.OsuUsername}",
+            user = (await Context.OsuApiV2.Users.GetUser($"{searchPrefix}{osuUserInDatabase.OsuUsername}",
                 new GetUserQueryParameters(), playmode.ToRuleset()))!.UserExtend!;
         }
         else if (parameters.Length == 1)
@@ -61,7 +67,7 @@ public class OsuUserCommand : CommandBase<Message>
 
                 playmode = ruleset.ParseRulesetToPlaymode();
 
-                var userResponse = await Context.OsuApiV2.Users.GetUser($"@{osuUserInDatabase.OsuUsername}",
+                var userResponse = await Context.OsuApiV2.Users.GetUser($"{searchPrefix}{osuUserInDatabase.OsuUsername}",
                     new GetUserQueryParameters(), ruleset);
                 if (userResponse is null)
                 {
@@ -74,7 +80,7 @@ public class OsuUserCommand : CommandBase<Message>
             else
             {
                 var userResponse =
-                    await Context.OsuApiV2.Users.GetUser($"@{parameters[0]}", new GetUserQueryParameters());
+                    await Context.OsuApiV2.Users.GetUser($"{searchPrefix}{parameters[0]}", new GetUserQueryParameters());
                 if (userResponse is null)
                 {
                     await waitMessage.EditAsync(Context.BotClient, language.error_userNotFound);

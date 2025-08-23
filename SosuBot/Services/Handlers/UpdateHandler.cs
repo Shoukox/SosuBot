@@ -131,13 +131,6 @@ public class UpdateHandler(
         CommandBase<Message> executableCommand;
         switch (command)
         {
-            //~~~~~~admin~~~~~~~~
-            //"/sendm" => new SendMessageCommand(),
-            //DeleteCommand.commandText => new DeleteCommand(),
-            //GetCommand.commandText => new GetCommand(),
-            //ForceSaveCommand.commandText => new ForceSaveCommand(),
-            //~~~~~~~~~~~~~~~~~~~
-
             case string start when StartCommand.Commands.Contains(start):
                 executableCommand = new StartCommand();
                 break;
@@ -173,6 +166,9 @@ public class UpdateHandler(
                 break;
             case string user when OsuUserCommand.Commands.Contains(user):
                 executableCommand = new OsuUserCommand();
+                break;
+            case string userId when OsuUserIdCommand.Commands.Contains(userId):
+                executableCommand = new OsuUserIdCommand();
                 break;
             case string score when OsuScoreCommand.Commands.Contains(score):
                 executableCommand = new OsuScoreCommand();
