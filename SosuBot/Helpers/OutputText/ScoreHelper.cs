@@ -71,8 +71,8 @@ public static class ScoreHelper
         return scoreRank switch
         {
             "XH" => "⚪️",
-            "X" => "⚪️",
-            "SH" => "🟡",
+            "X" => "🟡",
+            "SH" => "⚪️",
             "S" => "🟡",
             "A" => "🟢",
             "B" => "🔵",
