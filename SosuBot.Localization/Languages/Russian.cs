@@ -61,8 +61,8 @@ public struct Russian : ILocalization
         "🔢<b>playcount</b>: <i>{}</i>\n" +
         "⏱️<b>playtime</b>: <i>{}h</i>\n" +
         "🏆<b>achievements</b>: <i>{}/{}</i>\n\n" +
-        "<i>{}</i> <b>SSH</b>⚪️ - <i>{}</i> <b>SH</b>🟡\n" +
-        "<i>{}</i> <b>SS</b>⚪️ - <i>{}</i> <b>S</b>🟡 - <i>{}</i> <b>A</b>🟢";
+        "<i>{}</i> <b>SSH</b>⚪️ - <i>{}</i> <b>SH</b>⚪️\n" +
+        "<i>{}</i> <b>SS</b>🟡 - <i>{}</i> <b>S</b>🟡 - <i>{}</i> <b>A</b>🟢";
 
     public string command_compare =>
         "<pre>" +
