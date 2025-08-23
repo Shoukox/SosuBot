@@ -98,13 +98,12 @@ public class OsuUserCommand : CommandBase<Message>
         var ppDifferenceText =
             await UserHelper.GetPpDifferenceTextAsync(Context.Database, user, playmode, currentPp);
         
-        
         var textToSend = language.command_user.Fill([
             $"{playmode.ToGamemode()}",
             $"{UserHelper.GetUserProfileUrlWrappedInUsernameString(user.Id.Value, user.Username!)}",
             $"{UserHelper.GetUserRankText(user.Statistics.GlobalRank)}",
             $"{UserHelper.GetUserRankText(user.Statistics.CountryRank)}",
-            $"{user.CountryCode}",
+            $"{UserHelper.CountryCodeToFlag(user.CountryCode ?? "nn")}",
             $"{ScoreHelper.GetFormattedPpTextConsideringNull(currentPp)}",
             $"{ppDifferenceText}",
             $"{user.Statistics.HitAccuracy:N2}%",

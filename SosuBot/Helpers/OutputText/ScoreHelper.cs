@@ -37,19 +37,50 @@ public static class ScoreHelper
             case Playmode.Osu:
             case Playmode.Taiko:
                 scoreStatisticsText +=
-                    $"{scoreStatistics.Great}/{scoreStatistics.Ok}/{scoreStatistics.Meh}";
+                    $"{scoreStatistics.Great}🔵/{scoreStatistics.Ok}🟢/{scoreStatistics.Meh}🟠";
                 break;
             case Playmode.Catch:
                 scoreStatisticsText +=
-                    $"{scoreStatistics.Great}/{scoreStatistics.LargeTickHit}/{scoreStatistics.SmallTickHit}/{scoreStatistics.SmallTickMiss}xKatu";
+                    $"{scoreStatistics.Great}🔵/{scoreStatistics.Ok}🟢/{scoreStatistics.SmallTickHit}🟢/{scoreStatistics.SmallTickMiss}🟠";
                 break;
             case Playmode.Mania:
                 scoreStatisticsText +=
-                    $"{scoreStatistics.Perfect}/{scoreStatistics.Great}/{scoreStatistics.Good}/{scoreStatistics.Ok}/{scoreStatistics.Meh}";
+                    $"{scoreStatistics.Perfect}🟦/{scoreStatistics.Great}🔵/{scoreStatistics.Good}🟩/{scoreStatistics.Ok}🟢/{scoreStatistics.Meh}🟠";
                 break;
         }
 
         return scoreStatisticsText;
+    }
+
+    /// <summary>
+    /// Get an emoji for the score rank (X, XH, S)
+    /// </summary>
+    /// <param name="scoreRank">Score rank from API</param>
+    /// <returns></returns>
+    public static string GetScoreRankEmoji(string? scoreRank, bool passed = true)
+    {
+        if(scoreRank == null) return string.Empty;
+        
+        scoreRank = scoreRank.ToUpperInvariant();
+
+        if (!passed)
+        {
+            scoreRank = "F";
+        }
+
+        return scoreRank switch
+        {
+            "XH" => "⚪️",
+            "X" => "⚪️",
+            "SH" => "🟡",
+            "S" => "🟡",
+            "A" => "🟢",
+            "B" => "🔵",
+            "C" => "🟠",
+            "D" => "🔴",
+            "F" => "🟣",
+            _ => ""
+        };
     }
 
     public static string GetScoreUrl(long scoreId)
@@ -94,7 +125,7 @@ public static class ScoreHelper
                 UserHelper.GetUserProfileUrlWrappedInUsernameString(us.Item1.Id.Value,
                     us.Item1.Username!);
             var ppText =
-                GetScoreUrlWrappedInString(us.score.Id!.Value, $"{GetFormattedPpTextConsideringNull(us.score.Pp)}pp");
+                GetScoreUrlWrappedInString(us.score.Id!.Value, $"{GetFormattedPpTextConsideringNull(us.score.Pp)}pp💪");
 
             topPpScores +=
                 $"{count + 1}. <b>{scoreUrlInLink}</b> - {ppText}\n";
@@ -107,7 +138,7 @@ public static class ScoreHelper
         {
             if (count >= 5) break;
             topActivePlayers +=
-                $"{count + 1}. <b>{UserHelper.GetUserProfileUrlWrappedInUsernameString(us.m.Id.Value, us.m.Username!)}</b> — {us.Item2.Length} скоров, макс. <i>{us.Item2.Max(m => m.Pp):N2}pp</i>\n";
+                $"{count + 1}. <b>{UserHelper.GetUserProfileUrlWrappedInUsernameString(us.m.Id.Value, us.m.Username!)}</b> — {us.Item2.Length} скоров, макс. <i>{us.Item2.Max(m => m.Pp):N2}pp💪</i>\n";
             count += 1;
         }
 

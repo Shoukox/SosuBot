@@ -50,5 +50,9 @@ public class CustomCommand : CommandBase<Message>
 
             await Context.Update.ReplyAsync(Context.BotClient, result);
         }
+        else if (parameters[0] == "countryflag")
+        {
+            await Context.Update.ReplyAsync(Context.BotClient, UserHelper.CountryCodeToFlag(parameters[1]));
+        }
     }
 }

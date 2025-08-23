@@ -21,6 +21,7 @@ public struct Russian : ILocalization
         $"/mode [gamemode] - изменить игровой режим по умолчанию.\n" +
         $"/user [nickname] - краткая информация об игроке.\n" +
         $"/last [nickname] [count] - последние сыгранные игры.\n" +
+        $"/lastpassed [nickname] [count] - /last только для пасснутых скоров.\n" +
         $"/score [beatmap_link] - ваши рекорды на этой карте.\n" +
         $"/userbest [nickname] [gamemode] - лучшие игры игрока.\n" +
         $"/compare [nickname1] [nickname2] [gamemode] - сравнить игроков.\n" +
@@ -30,54 +31,57 @@ public struct Russian : ILocalization
         $"По вопросам и предложениям писать создателю @Shoukkoo";
 
     public string command_last =>
-        "{}<b>({})</b> <a href=\"https://osu.ppy.sh/beatmaps/{}\">{} [{}]</a> <b>({}, {}⭐️)</b>\n" +
-        "{}/{}❌ - <b><i>{}</i></b>%\n" +
-        "<b>{}</b> <i>{}/{}</i> <b><u>{}pp</u></b> (<b><u>{}pp</u></b> if <b>{}%</b> FC)\n({}) {}% пройдено\n\n";
+        "🎵{}<b>({})</b> <a href=\"https://osu.ppy.sh/beatmaps/{}\">{} [{}]</a> <b>({}; {}⭐️)</b>\n" +
+        "{}/{}❌ - <b><i>{}</i></b>%🎯\n" +
+        "<b>➕{}</b> <i>{}x/{}x</i> <b><u>{}pp💪</u></b>\n" +
+        "(<b><u>{}pp</u></b> if <b>{}%</b> FC)\n" +
+        "({}) {}% пройдено\n\n";
 
     public string command_set =>
-        "Теперь ты <b>{}</b>, {}pp\n" +
-        "Твой игровой режим: <b>{}</b>\n" +
+        "Теперь ты <b>{}</b>, {}pp💪\n" +
+        "Твой игровой режим: <b>{}</b>🎮\n" +
         "\n" +
         "Для смены режима по умолчанию используй:\n" +
         "<b>/mode</b> osu/taiko/mania/catch";
 
-    public string command_setMode => "Твой режим игры по умолчанию: <b>{}</b>";
+    public string command_setMode => "Твой режим игры по умолчанию: <b>{}</b>🎮";
 
     public string command_score =>
-        "<b>({})</b> <a href=\"{}\">{} [{}]</a> <b>({})</b>\n" +
-        "{} / {}❌ - <b><i>{}</i></b>%\n" +
-        "<b>{}</b> <i>{}/{}</i> <b><u>{}pp</u></b>\n({})\n\n";
+        "🎵<b>({})</b> <a href=\"{}\">{} [{}]</a> <b>({})</b>\n" +
+        "{} / {}❌ - <b><i>{}</i></b>%🎯\n" +
+        "<b>➕{}</b> <i>{}x/{}x</i> <b><u>{}pp💪</u></b>\n" +
+        "({})\n\n";
 
     public string command_user =>
         "<b>{}</b>\n" +
         "<i>{}</i>\n\n" +
-        "<b>rank</b>: <i>#{} (#{} {})</i>\n" +
-        "<b>pp</b>: <i>{} {}</i>\n" +
-        "<b>accuracy</b>: <i>{}</i>\n" +
-        "<b>playcount</b>: <i>{}</i>\n" +
-        "<b>playtime</b>: <i>{}h</i>\n" +
-        "<b>achievements</b>: <i>{}/{}</i>\n\n" +
-        "<i>{}</i> <b>SSH</b> - <i>{}</i> <b>SH</b>\n" +
-        "<i>{}</i> <b>SS</b> - <i>{}</i> <b>S</b> - <i>{}</i> <b>A</b>";
+        "📶<b>rank</b>: <i>#{} (#{} {})</i>\n" +
+        "💪<b>pp</b>: <i>{} {}</i>\n" +
+        "🎯<b>accuracy</b>: <i>{}</i>\n" +
+        "🔢<b>playcount</b>: <i>{}</i>\n" +
+        "⏱️<b>playtime</b>: <i>{}h</i>\n" +
+        "🏆<b>achievements</b>: <i>{}/{}</i>\n\n" +
+        "<i>{}</i> <b>SSH</b>⚪️ - <i>{}</i> <b>SH</b>🟡\n" +
+        "<i>{}</i> <b>SS</b>⚪️ - <i>{}</i> <b>S</b>🟡 - <i>{}</i> <b>A</b>🟢";
 
     public string command_compare =>
         "<pre>" +
         "{}\n\n" +
-        "{}  {}\n" +
-        "{}  {}\n" +
-        "{}  {}\n" +
-        "{}  {}\n" +
-        "{}  {}\n" +
-        "{}  {}\n" +
+        "🐺{}  🐺{}\n" +
+        "📶{}  📶{}\n" + //rank
+        "📶{}  📶{}\n" +
+        "💪{}  💪{}\n" +
+        "🎯{}  🎯{}\n" +
+        "⏱️{}  ⏱️{}\n" +
         "</pre>";
 
     public string command_userbest =>
-        "{}. (<b>{}</b>) <a href=\"http://osu.ppy.sh/b/{}\">{} [{}]</a> (<b>{}</b>)\n" +
-        "{} / {}❌ - <b><i>{}</i></b>%\n" +
-        "<b>{}</b> <i>{}/{}</i> <b><u>{}pp</u></b>\n\n";
+        "{}. 🎵(<b>{}</b>) <a href=\"http://osu.ppy.sh/b/{}\">{} [{}]</a> (<b>{}</b>)\n" +
+        "{} / {}❌ - <b><i>{}</i></b>%🎯\n" +
+        "<b>➕{}</b> <i>{}/{}</i> <b><u>{}pp💪</u></b>\n\n";
 
     public string command_chatstats_title => "Топ-10 осеров (<b>{}</b>) в группе:\n\n";
-    public string command_chatstats_row => "<b>{}. {}</b>: <i>{}pp</i>\n";
+    public string command_chatstats_row => "<b>{}. {}</b>: <i>{}pp💪</i>\n";
     public string command_chatstats_end => "\nИспользуйте <b>/user</b>, чтобы обновить ваш <b>pp</b> в данном списке.";
     public string command_excluded => "<b>{}</b> был успешно исключен из /chatstats";
     public string command_included => "<b>{}</b> снова будет появляться в /chatstats";

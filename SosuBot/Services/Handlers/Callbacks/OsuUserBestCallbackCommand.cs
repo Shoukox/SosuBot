@@ -62,9 +62,11 @@ public class OsuUserBestCallbackCommand : CommandBase<CallbackQuery>
         foreach (var score in scores)
         {
             var beatmap = beatmaps[index - page * 5];
+            
+            // should be equal to the variant from OsuUserbestCommand
             textToSend += language.command_userbest.Fill([
                 $"{index + 1}",
-                $"{score.Rank}",
+                $"{ScoreHelper.GetScoreRankEmoji(score.Rank)}{score.Rank}",
                 $"{score.BeatmapId}",
                 $"{score.Beatmapset!.Title.EncodeHtml()}",
                 $"{score.Beatmap!.Version.EncodeHtml()}",

@@ -1,6 +1,7 @@
 ﻿using OsuApi.V2.Clients.Users.HttpIO;
 using OsuApi.V2.Models;
 using SosuBot.Extensions;
+using SosuBot.Helpers.OutputText;
 using SosuBot.Localization;
 using SosuBot.Localization.Languages;
 using SosuBot.Services.Handlers.Abstract;
@@ -61,7 +62,7 @@ public class OsuCompareCommand : CommandBase<Message>
 
         var max = new[]
         {
-            (user1.Statistics.CountryRank + "# UZ").Length,
+            (user1.Statistics.CountryRank + $"# UZ").Length,
             (user1.Statistics.GlobalRank + "#").Length,
             (user1.Statistics.Pp!.Value.ToString("N2") + "pp").Length,
             acc1.Length, $"{user1.Statistics.PlayTime}h".Length,

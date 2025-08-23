@@ -92,7 +92,7 @@ public class OsuUserbestCommand : CommandBase<Message>
             var beatmap = beatmaps[i];
             textToSend += language.command_userbest.Fill([
                 $"{i + 1}",
-                $"{score.Rank}",
+                $"{ScoreHelper.GetScoreRankEmoji(score.Rank)}{score.Rank}",
                 $"{score.BeatmapId}",
                 $"{score.Beatmapset!.Title.EncodeHtml()}",
                 $"{score.Beatmap!.Version.EncodeHtml()}",

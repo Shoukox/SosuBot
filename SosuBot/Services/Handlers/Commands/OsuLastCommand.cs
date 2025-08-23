@@ -159,7 +159,7 @@ public class OsuLastCommand(bool onlyPassed = false) : CommandBase<Message>
                     cancellationToken: Context.CancellationToken),
             };
 
-            var scoreRank = score.Passed!.Value ? score.Rank! : "F";
+            var scoreRank = ScoreHelper.GetScoreRankEmoji(score.Rank!, score.Passed!.Value) + (score.Passed!.Value ? score.Rank! : "F");
             var textBeforeBeatmapLink = lastScores.Length == 1 ? "" : $"{i + 1}. ";
             double scorePp = calculatedPp.Current?.Pp ?? score.Pp!.Value;
             double scorePpIfFc = calculatedPp.IfFC.Pp;

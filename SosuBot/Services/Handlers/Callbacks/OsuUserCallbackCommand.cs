@@ -1,5 +1,6 @@
 ﻿using OsuApi.V2.Clients.Users.HttpIO;
 using SosuBot.Extensions;
+using SosuBot.Helpers;
 using SosuBot.Helpers.OutputText;
 using SosuBot.Helpers.Types;
 using SosuBot.Localization;
@@ -30,17 +31,20 @@ public class OsuUserCallbackCommand : CommandBase<CallbackQuery>
         var ppDifferenceText =
             await UserHelper.GetPpDifferenceTextAsync(Context.Database, user, playmode, currentPp);
 
+        // should be equal to the variant from OsuUserCommand
         var textToSend = language.command_user.Fill([
             $"{playmode.ToGamemode()}",
             $"{UserHelper.GetUserProfileUrlWrappedInUsernameString(user.Id.Value, user.Username!)}",
             $"{UserHelper.GetUserRankText(user.Statistics.GlobalRank)}",
             $"{UserHelper.GetUserRankText(user.Statistics.CountryRank)}",
-            $"{user.CountryCode}",
-            $"{currentPp:N2}",
+            $"{UserHelper.CountryCodeToFlag(user.CountryCode ?? "nn")}",
+            $"{ScoreHelper.GetFormattedPpTextConsideringNull(currentPp)}",
             $"{ppDifferenceText}",
             $"{user.Statistics.HitAccuracy:N2}%",
-            $"{user.Statistics.PlayCount:N2}",
+            $"{user.Statistics.PlayCount:N0}",
             $"{user.Statistics.PlayTime / 3600}",
+            $"{user.UserAchievements?.Length ?? 0}",
+            $"{OsuConstants.TotalAchievementsCount}",
             $"{user.Statistics.GradeCounts!.SSH}",
             $"{user.Statistics.GradeCounts!.SH}",
             $"{user.Statistics.GradeCounts!.SS}",
