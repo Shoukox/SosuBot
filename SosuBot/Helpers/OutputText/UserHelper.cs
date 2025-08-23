@@ -22,6 +22,21 @@ public static class UserHelper
 
         return ppDifferenceText;
     }
+    
+    public static string CountryCodeToFlag(string countryCode)
+    {
+        // Ensure uppercase
+        countryCode = countryCode.ToUpperInvariant();
+
+        // Regional indicator offset in Unicode
+        const int regionalIndicatorOffset = 0x1F1E6 - 'A';
+
+        var flag = string.Concat(
+            countryCode.Select(c => char.ConvertFromUtf32(c + regionalIndicatorOffset))
+        );
+
+        return flag;
+    }
 
     public static void UpdateOsuUsers(BotContext database, UserExtend user, Playmode playmode)
     {
