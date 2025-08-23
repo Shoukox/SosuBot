@@ -27,6 +27,7 @@
     <ItemGroup>
         <ProjectReference Include="..\OsuApi\OsuApi\OsuApi.csproj"/>
         <ProjectReference Include="..\SosuBot.Localization\SosuBot.Localization.csproj"/>
+        <ProjectReference Include="..\SosuBot.Logging\SosuBot.Logging.csproj" />
         <ProjectReference Include="..\SosuBot.PerformanceCalculator\SosuBot.PerformanceCalculator.csproj"/>
     </ItemGroup>
 
@@ -35,7 +36,7 @@
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </None>
         <None Update="bot.db">
-            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+          <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </None>
     </ItemGroup>
 

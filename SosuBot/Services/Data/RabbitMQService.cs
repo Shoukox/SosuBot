@@ -1,11 +1,13 @@
 using System.Text;
 using Microsoft.Extensions.Logging;
 using RabbitMQ.Client;
+using SosuBot.Logging;
 
 namespace SosuBot.Services.Data;
 
-public class RabbitMQService(ILogger<RabbitMQService> logger)
+public class RabbitMqService
 {
+    private static readonly ILogger Logger = ApplicationLogging.CreateLogger(nameof(RabbitMqService));
     private IChannel? _channel;
     
     private static readonly object Locker = new object();
@@ -44,6 +46,6 @@ public class RabbitMQService(ILogger<RabbitMQService> logger)
         }
         await _channel.BasicPublishAsync(exchange: string.Empty, routingKey: "render-job-queue", mandatory: true,
             basicProperties: properties, body: body);
-        logger.LogInformation("Job queued");
+        Logger.LogInformation("Job queued");
     }
 }

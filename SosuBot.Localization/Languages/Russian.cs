@@ -54,8 +54,9 @@ public struct Russian : ILocalization
         "<b>rank</b>: <i>#{} (#{} {})</i>\n" +
         "<b>pp</b>: <i>{} {}</i>\n" +
         "<b>accuracy</b>: <i>{}</i>\n" +
-        "<b>plays</b>: <i>{}</i>\n" +
-        "<b>playtime</b>: <i>{}h</i>\n\n" +
+        "<b>playcount</b>: <i>{}</i>\n" +
+        "<b>playtime</b>: <i>{}h</i>\n" +
+        "<b>achievements</b>: <i>{}/{}</i>\n\n" +
         "<i>{}</i> <b>SSH</b> - <i>{}</i> <b>SH</b>\n" +
         "<i>{}</i> <b>SS</b> - <i>{}</i> <b>S</b> - <i>{}</i> <b>A</b>";
 

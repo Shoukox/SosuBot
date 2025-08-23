@@ -12,7 +12,6 @@ public interface ICommandContext<TUpdateType> where TUpdateType : class
     public TUpdateType Update { get; }
     public BotContext Database { get; }
     public ApiV2 OsuApiV2 { get; }
-    public RabbitMQService RabbitMqService{ get; }
-    public ILogger<ICommandContext<TUpdateType>> Logger { get; }
+    public RabbitMqService RabbitMqService{ get; }
     public CancellationToken CancellationToken { get; }
 }

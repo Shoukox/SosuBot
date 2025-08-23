@@ -10,13 +10,16 @@ namespace SosuBot.Services.Handlers.Commands;
 
 public class OsuChatstatsCommand : CommandBase<Message>
 {
-    public static string[] Commands = ["/chatstats", "/stats"];
+    public static readonly string[] Commands = ["/chatstats", "/stats"];
 
+    private static readonly IEqualityComparer<OsuUser> OsuUserComparer =
+        EqualityComparer<OsuUser>.Create((u1, u2) => u1?.OsuUserId == u2?.OsuUserId);
+    
+    
     public override async Task ExecuteAsync()
     {
         ILocalization language = new Russian();
         var chatInDatabase = await Context.Database.TelegramChats.FindAsync(Context.Update.Chat.Id);
-        var osuUserInDatabase = await Context.Database.OsuUsers.FindAsync(Context.Update.From!.Id);
 
         var foundChatMembers = new List<OsuUser>();
         var parameters = Context.Update.Text!.GetCommandParameters()!;
@@ -37,14 +40,14 @@ public class OsuChatstatsCommand : CommandBase<Message>
         }
 
         chatInDatabase!.ExcludeFromChatstats = chatInDatabase.ExcludeFromChatstats ?? new List<long>();
-        foreach (var memberId in chatInDatabase!.ChatMembers!)
+        foreach (var memberId in chatInDatabase.ChatMembers!)
         {
             var foundMember = await Context.Database.OsuUsers.FindAsync(memberId);
             if (foundMember != null && !chatInDatabase.ExcludeFromChatstats.Contains(foundMember.OsuUserId))
                 foundChatMembers.Add(foundMember);
         }
 
-        foundChatMembers = foundChatMembers.OrderByDescending(m => m.GetPP(playmode)).Take(10).ToList();
+        foundChatMembers = foundChatMembers.Distinct(OsuUserComparer).OrderByDescending(m => m.GetPP(playmode)).Take(10).ToList();
 
         var sendText = language.command_chatstats_title.Fill([playmode.ToGamemode()]);
 

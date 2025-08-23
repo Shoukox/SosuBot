@@ -26,10 +26,9 @@ public class OsuUserCallbackCommand : CommandBase<CallbackQuery>
         var user = (await Context.OsuApiV2.Users.GetUser($"@{osuUsername}", new GetUserQueryParameters(),
             playmode.ToRuleset()))!.UserExtend!;
 
-        double? savedPPInDatabase = null;
-        double? currentPP = user.Statistics!.Pp;
+        double? currentPp = user.Statistics!.Pp;
         var ppDifferenceText =
-            await UserHelper.GetPPDifferenceTextAsync(Context.Database, user, playmode, currentPP, savedPPInDatabase);
+            await UserHelper.GetPpDifferenceTextAsync(Context.Database, user, playmode, currentPp);
 
         var textToSend = language.command_user.Fill([
             $"{playmode.ToGamemode()}",
@@ -37,7 +36,7 @@ public class OsuUserCallbackCommand : CommandBase<CallbackQuery>
             $"{UserHelper.GetUserRankText(user.Statistics.GlobalRank)}",
             $"{UserHelper.GetUserRankText(user.Statistics.CountryRank)}",
             $"{user.CountryCode}",
-            $"{currentPP:N2}",
+            $"{currentPp:N2}",
             $"{ppDifferenceText}",
             $"{user.Statistics.HitAccuracy:N2}%",
             $"{user.Statistics.PlayCount:N2}",

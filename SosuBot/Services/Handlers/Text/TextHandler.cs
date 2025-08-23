@@ -1,5 +1,4 @@
 using osu.Game.Rulesets.Mods;
-using osu.Game.Rulesets.Osu.Mods;
 using OsuApi.V2.Clients.Users.HttpIO;
 using OsuApi.V2.Users.Models;
 using SosuBot.Extensions;
@@ -33,11 +32,9 @@ public class TextHandler : CommandBase<Message>
         var user = (await Context.OsuApiV2.Users.GetUser($"{userId}", new GetUserQueryParameters()))!.UserExtend!;
 
         var playmode = user.Playmode!.ParseRulesetToPlaymode();
-        double? savedPPInDatabase = null;
-        double? currentPP = user.Statistics!.Pp;
+        double? currentPp = user.Statistics!.Pp;
         var ppDifferenceText =
-            await UserHelper.GetPPDifferenceTextAsync(Context.Database, user, playmode, currentPP,
-                savedPPInDatabase);
+            await UserHelper.GetPpDifferenceTextAsync(Context.Database, user, playmode, currentPp);
 
         var textToSend = language.command_user.Fill([
             $"{playmode.ToGamemode()}",
@@ -45,7 +42,7 @@ public class TextHandler : CommandBase<Message>
             $"{user.Statistics.GlobalRank}",
             $"{user.Statistics.CountryRank}",
             $"{user.CountryCode}",
-            $"{currentPP:N2}",
+            $"{currentPp:N2}",
             $"{ppDifferenceText}",
             $"{user.Statistics.HitAccuracy:N2}%",
             $"{user.Statistics.PlayCount:N0}",
@@ -89,30 +86,27 @@ public class TextHandler : CommandBase<Message>
         {
             beatmapset = await Context.OsuApiV2.Beatmapsets.GetBeatmapset(beatmapsetId.Value);
             beatmapId = beatmapset.Beatmaps!.OrderByDescending(m => m.DifficultyRating).First().Id;
-            ;
         }
 
         beatmap ??= (await Context.OsuApiV2.Beatmaps.GetBeatmap(beatmapId!.Value))!.BeatmapExtended!;
         var sum = beatmap.CountCircles + beatmap.CountSliders + beatmap.CountSpinners;
         if (sum is > 20_000) return;
 
-        beatmapset ??= await Context.OsuApiV2.Beatmapsets.GetBeatmapset(beatmap!.BeatmapsetId.Value);
+        beatmapset ??= await Context.OsuApiV2.Beatmapsets.GetBeatmapset(beatmap.BeatmapsetId.Value);
 
         var playmode = beatmap.Mode!.ParseRulesetToPlaymode();
         var classicMod = OsuHelper.GetClassicMode(playmode);
-        Mod[] modsFromMessage;
-        if (beatmapLink.Contains('+'))
-            modsFromMessage = beatmapLink.Split('+')[1].ToMods(playmode).Except([classicMod]).ToArray();
-        else
-            modsFromMessage = [];
+        Mod[] modsFromMessage = beatmapLink.Contains('+') 
+            ? beatmapLink.Split('+')[1].ToMods(playmode).Except([classicMod]).ToArray() 
+            : [];
 
         var classicModsToApply = modsFromMessage.Concat([classicMod]).Distinct().ToArray();
         var lazerModsToApply = modsFromMessage.Distinct().ToArray();
 
         var ppCalculator = new PPCalculator();
-        var calculatedPP = new
+        var calculatedPp = new
         {
-            ClassicSS = await ppCalculator.CalculatePPAsync(
+            ClassicSS = await ppCalculator.CalculatePpAsync(
                 accuracy: 1,
                 beatmapId: beatmap.Id.Value,
                 scoreMaxCombo: null,
@@ -121,7 +115,7 @@ public class TextHandler : CommandBase<Message>
                 rulesetId: (int)playmode,
                 cancellationToken: Context.CancellationToken),
 
-            Classic99 = await ppCalculator.CalculatePPAsync(
+            Classic99 = await ppCalculator.CalculatePpAsync(
                 accuracy: 0.99,
                 beatmapId: beatmap.Id.Value,
                 scoreMaxCombo: null,
@@ -130,7 +124,7 @@ public class TextHandler : CommandBase<Message>
                 rulesetId: (int)playmode,
                 cancellationToken: Context.CancellationToken),
 
-            Classic98 = await ppCalculator.CalculatePPAsync(
+            Classic98 = await ppCalculator.CalculatePpAsync(
                 accuracy: 0.98,
                 beatmapId: beatmap.Id.Value,
                 scoreMaxCombo: null,
@@ -139,7 +133,7 @@ public class TextHandler : CommandBase<Message>
                 rulesetId: (int)playmode,
                 cancellationToken: Context.CancellationToken),
 
-            LazerSS = await ppCalculator.CalculatePPAsync(
+            LazerSS = await ppCalculator.CalculatePpAsync(
                 accuracy: 1,
                 beatmapId: beatmap.Id.Value,
                 scoreMaxCombo: null,
@@ -148,7 +142,7 @@ public class TextHandler : CommandBase<Message>
                 rulesetId: (int)playmode,
                 cancellationToken: Context.CancellationToken),
 
-            Lazer99 = await ppCalculator.CalculatePPAsync(
+            Lazer99 = await ppCalculator.CalculatePpAsync(
                 accuracy: 0.99,
                 beatmapId: beatmap.Id.Value,
                 scoreMaxCombo: null,
@@ -157,7 +151,7 @@ public class TextHandler : CommandBase<Message>
                 rulesetId: (int)playmode,
                 cancellationToken: Context.CancellationToken),
 
-            Lazer98 = await ppCalculator.CalculatePPAsync(
+            Lazer98 = await ppCalculator.CalculatePpAsync(
                 accuracy: 0.98,
                 beatmapId: beatmap.Id.Value,
                 scoreMaxCombo: null,
@@ -185,24 +179,24 @@ public class TextHandler : CommandBase<Message>
             $"{beatmap.BPM}",
             $"{lazerModsToApply.ModsToString(playmode)}",
 
-            $"{ppCalculator.LastDifficultyAttributes.StarRating:N2}",
-            $"{calculatedPP.ClassicSS.CalculatedAccuracy*100:N2}%".PadRight(padLength),
-            $"{calculatedPP.ClassicSS.Pp:N2}",
+            $"{ppCalculator.LastDifficultyAttributes!.StarRating:N2}",
+            $"{calculatedPp.ClassicSS.CalculatedAccuracy*100:N2}%".PadRight(padLength),
+            $"{calculatedPp.ClassicSS.Pp:N2}",
 
-            $"{calculatedPP.Classic99.CalculatedAccuracy*100:N2}%".PadRight(padLength),
-            $"{calculatedPP.Classic99.Pp:N2}",
+            $"{calculatedPp.Classic99.CalculatedAccuracy*100:N2}%".PadRight(padLength),
+            $"{calculatedPp.Classic99.Pp:N2}",
 
-            $"{calculatedPP.Classic98.CalculatedAccuracy*100:N2}%".PadRight(padLength),
-            $"{calculatedPP.Classic98.Pp:N2}",
+            $"{calculatedPp.Classic98.CalculatedAccuracy*100:N2}%".PadRight(padLength),
+            $"{calculatedPp.Classic98.Pp:N2}",
 
-            $"{calculatedPP.LazerSS.CalculatedAccuracy*100:N2}%".PadRight(padLength),
-            $"{calculatedPP.LazerSS.Pp:N2}",
+            $"{calculatedPp.LazerSS.CalculatedAccuracy*100:N2}%".PadRight(padLength),
+            $"{calculatedPp.LazerSS.Pp:N2}",
 
-            $"{calculatedPP.Lazer99.CalculatedAccuracy*100:N2}%".PadRight(padLength),
-            $"{calculatedPP.Lazer99.Pp:N2}",
+            $"{calculatedPp.Lazer99.CalculatedAccuracy*100:N2}%".PadRight(padLength),
+            $"{calculatedPp.Lazer99.Pp:N2}",
 
-            $"{calculatedPP.Lazer98.CalculatedAccuracy*100:N2}%".PadRight(padLength),
-            $"{calculatedPP.Lazer98.Pp:N2}"
+            $"{calculatedPp.Lazer98.CalculatedAccuracy*100:N2}%".PadRight(padLength),
+            $"{calculatedPp.Lazer98.Pp:N2}"
         ]);
 
         var photo = new InputFileUrl(

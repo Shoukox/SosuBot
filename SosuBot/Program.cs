@@ -3,14 +3,12 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using OsuApi.V2;
 using Polly;
 using Polly.Contrib.WaitAndRetry;
 using Polly.Extensions.Http;
 using SosuBot.Database;
-using SosuBot.Logging;
 using SosuBot.Services.BackgroundServices;
 using SosuBot.Services.Data;
 using SosuBot.Services.Handlers;
@@ -30,10 +28,8 @@ internal class Program
         builder.Configuration.AddJsonFile(fileName, false);
 
         // Logging
-        builder.Logging.ClearProviders();
-        builder.Logging.AddConsole();
-        builder.Logging.AddConsoleFormatter<CustomConsoleFormatter, CustomConsoleFormatterOptions>();
-
+        // Logging is delegated to SosuBot.Logging
+        
         // Services
         builder.Services.Configure<BotConfiguration>(builder.Configuration.GetSection(nameof(BotConfiguration)));
         builder.Services.Configure<OsuApiV2Configuration>(
@@ -56,7 +52,7 @@ internal class Program
             return new ApiV2(config.ClientId, config.ClientSecret, httpClient);
         });
         builder.Services.AddSingleton<UpdateQueueService>();
-        builder.Services.AddSingleton<RabbitMQService>();
+        builder.Services.AddSingleton<RabbitMqService>();
         builder.Services.AddScoped<UpdateHandler>();
         builder.Services.AddHostedService<PollingBackgroundService>();
         builder.Services.AddHostedService<UpdateHandlerBackgroundService>();

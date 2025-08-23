@@ -3,7 +3,7 @@ using OsuApi.V2.Clients.Users.HttpIO;
 using OsuApi.V2.Models;
 using OsuApi.V2.Users.Models;
 using SosuBot.Extensions;
-using SosuBot.Helpers.Scoring;
+using SosuBot.Helpers.OutputText;
 using SosuBot.Localization;
 using SosuBot.Localization.Languages;
 using SosuBot.Services.Handlers.Abstract;
@@ -103,7 +103,7 @@ public class OsuUserbestCommand : CommandBase<Message>
                 $"{ScoreHelper.GetModsText(score.Mods!)}",
                 $"{score.MaxCombo}",
                 $"{beatmap.BeatmapExtended!.MaxCombo}",
-                $"{ScoreHelper.GetScorePPText(score.Pp)}"
+                $"{ScoreHelper.GetFormattedPpTextConsideringNull(score.Pp)}"
             ]);
         }
 

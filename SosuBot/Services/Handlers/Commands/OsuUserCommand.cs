@@ -1,8 +1,8 @@
 ﻿using OsuApi.V2.Clients.Users.HttpIO;
 using OsuApi.V2.Users.Models;
 using SosuBot.Extensions;
+using SosuBot.Helpers;
 using SosuBot.Helpers.OutputText;
-using SosuBot.Helpers.Scoring;
 using SosuBot.Helpers.Types;
 using SosuBot.Localization;
 using SosuBot.Localization.Languages;
@@ -28,7 +28,7 @@ public class OsuUserCommand : CommandBase<Message>
         var waitMessage = await Context.Update.ReplyAsync(Context.BotClient, language.waiting);
 
         UserExtend user;
-        var playmode = Playmode.Osu;
+        Playmode playmode;
 
         if (parameters.Length == 0)
         {
@@ -91,23 +91,27 @@ public class OsuUserCommand : CommandBase<Message>
             await waitMessage.EditAsync(Context.BotClient, language.error_argsLength);
             return;
         }
-
-        double? savedPPInDatabase = null;
-        double? currentPP = user.Statistics!.Pp;
+        
+        UserHelper.UpdateOsuUsers(Context.Database, user, playmode);
+        
+        double? currentPp = user.Statistics!.Pp;
         var ppDifferenceText =
-            await UserHelper.GetPPDifferenceTextAsync(Context.Database, user, playmode, currentPP, savedPPInDatabase);
-
+            await UserHelper.GetPpDifferenceTextAsync(Context.Database, user, playmode, currentPp);
+        
+        
         var textToSend = language.command_user.Fill([
             $"{playmode.ToGamemode()}",
             $"{UserHelper.GetUserProfileUrlWrappedInUsernameString(user.Id.Value, user.Username!)}",
             $"{UserHelper.GetUserRankText(user.Statistics.GlobalRank)}",
             $"{UserHelper.GetUserRankText(user.Statistics.CountryRank)}",
             $"{user.CountryCode}",
-            $"{ScoreHelper.GetScorePPText(currentPP)}",
+            $"{ScoreHelper.GetFormattedPpTextConsideringNull(currentPp)}",
             $"{ppDifferenceText}",
             $"{user.Statistics.HitAccuracy:N2}%",
             $"{user.Statistics.PlayCount:N0}",
             $"{user.Statistics.PlayTime / 3600}",
+            $"{user.UserAchievements?.Length ?? 0}",
+            $"{OsuConstants.TotalAchievementsCount}",
             $"{user.Statistics.GradeCounts!.SSH}",
             $"{user.Statistics.GradeCounts!.SH}",
             $"{user.Statistics.GradeCounts!.SS}",

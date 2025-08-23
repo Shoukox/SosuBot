@@ -14,7 +14,11 @@ public class CustomCommand : CommandBase<Message>
     {
         var osuUserInDatabase = await Context.Database.OsuUsers.FindAsync(Context.Update.From!.Id);
 
-        if (osuUserInDatabase is null || !osuUserInDatabase.IsAdmin) return;
+        if (osuUserInDatabase is null || !osuUserInDatabase.IsAdmin)
+        {
+            await Context.Update.ReplyAsync(Context.BotClient, "Пшол вон!");
+            return;
+        }
 
         var parameters = Context.Update.Text!.GetCommandParameters()!;
         if (parameters[0] == "json")
@@ -35,6 +39,16 @@ public class CustomCommand : CommandBase<Message>
         else if (parameters[0] == "test")
         {
             await Context.Update.ReplyAsync(Context.BotClient, new string('a', (int)Math.Pow(2, 14)));
+        }
+        else if (parameters[0] == "getuser")
+        {
+            var osuUserInReply = await Context.Database.OsuUsers.FindAsync(Context.Update.ReplyToMessage!.From!.Id);
+            
+            var result = JsonConvert.SerializeObject(osuUserInReply,
+                Formatting.Indented,
+                new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore });
+
+            await Context.Update.ReplyAsync(Context.BotClient, result);
         }
     }
 }
