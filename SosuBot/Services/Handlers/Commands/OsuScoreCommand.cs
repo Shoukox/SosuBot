@@ -4,7 +4,6 @@ using OsuApi.V2.Models;
 using OsuApi.V2.Users.Models;
 using SosuBot.Extensions;
 using SosuBot.Helpers.OutputText;
-using SosuBot.Helpers.Scoring;
 using SosuBot.Helpers.Types;
 using SosuBot.Localization;
 using SosuBot.Localization.Languages;
@@ -197,7 +196,7 @@ public class OsuScoreCommand : CommandBase<Message>
                 $"{ScoreHelper.GetModsText(score.Mods!)}",
                 $"{score.MaxCombo}",
                 $"{beatmap.MaxCombo}",
-                $"{ScoreHelper.GetScorePPText(score.Pp)}",
+                $"{ScoreHelper.GetFormattedPpTextConsideringNull(score.Pp)}",
                 $"{score.EndedAt!.Value:dd.MM.yyyy HH:mm zzz}"
             ]);
         }

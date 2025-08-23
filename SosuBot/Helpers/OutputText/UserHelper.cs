@@ -1,7 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using OsuApi.V2.Users.Models;
 using SosuBot.Database;
-using SosuBot.Database.Models;
 using SosuBot.Extensions;
 using SosuBot.Helpers.Types;
 
@@ -9,21 +8,27 @@ namespace SosuBot.Helpers.OutputText;
 
 public static class UserHelper
 {
-    public static async Task<string> GetPPDifferenceTextAsync(BotContext database, UserExtend user, Playmode playmode,
-        double? currentPP, double? savedPPInDatabase)
+    public static async Task<string> GetPpDifferenceTextAsync(BotContext database, UserExtend user, Playmode playmode,
+        double? currentPp)
     {
         var ppDifferenceText = string.Empty;
-        if (await database.OsuUsers.FirstOrDefaultAsync(u => u.OsuUsername == user.Username) is OsuUser userInDatabase)
+        if (await database.OsuUsers.FirstOrDefaultAsync(u => u.OsuUsername == user.Username) is { } userInDatabase)
         {
-            savedPPInDatabase = userInDatabase!.GetPP(playmode);
+            double savedPpInDatabase = userInDatabase.GetPP(playmode);
 
-            var difference = currentPP!.Value - savedPPInDatabase!.Value;
+            var difference = currentPp!.Value - savedPpInDatabase;
             ppDifferenceText = difference.ToString("(+0.00);(-#.##)");
-
-            userInDatabase.Update(user, playmode);
         }
 
         return ppDifferenceText;
+    }
+
+    public static void UpdateOsuUsers(BotContext database, UserExtend user, Playmode playmode)
+    {
+        foreach (var osuUser in database.OsuUsers.Where(u => u.OsuUsername == user.Username))
+        {
+            osuUser.Update(user, playmode);
+        } 
     }
 
     public static string GetUserRankText(int? rank)

@@ -1,6 +1,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using SosuBot.Logging;
 using SosuBot.Services.Data;
 using SosuBot.Services.Handlers;
 using Telegram.Bot;
@@ -11,17 +12,17 @@ namespace SosuBot.Services.BackgroundServices;
 
 public sealed class UpdateHandlerBackgroundService(
     UpdateQueueService updateQueue,
-    IServiceProvider serviceProvider,
-    ILogger<UpdateHandlerBackgroundService> logger)
+    IServiceProvider serviceProvider)
     : BackgroundService
 {
+    private static readonly ILogger Logger = ApplicationLogging.CreateLogger(nameof(UpdateHandlerBackgroundService));
     public int WorkersCount = 100;
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         if (EnableStressTestUsingConsole) _ = Task.Run(() => StressTestUsingConsole(stoppingToken));
 
-        logger.LogInformation($"Starting {WorkersCount} workers to handle updates.");
+        Logger.LogInformation($"Starting {WorkersCount} workers to handle updates.");
         var workers =
             Enumerable.Range(0, WorkersCount)
                 .Select(_ => Task.Run(() => HandleUpdateWorker(stoppingToken)));
@@ -45,7 +46,7 @@ public sealed class UpdateHandlerBackgroundService(
             }
             catch (OperationCanceledException)
             {
-                logger.LogWarning("Operation cancelled");
+                Logger.LogWarning("Operation cancelled");
                 return;
             }
             catch (Exception ex)
@@ -54,7 +55,7 @@ public sealed class UpdateHandlerBackgroundService(
             }
         }
 
-        logger.LogWarning("Finished its work");
+        Logger.LogWarning("Finished its work");
     }
 
     #region stresstest
@@ -72,7 +73,7 @@ public sealed class UpdateHandlerBackgroundService(
                 GC.Collect();
                 GC.WaitForPendingFinalizers();
                 GC.Collect();
-                Console.WriteLine("gc worked!");
+                Logger.LogInformation("gc worked!");
                 continue;
             }
 
@@ -87,7 +88,7 @@ public sealed class UpdateHandlerBackgroundService(
                             Text = DateTime.Now.ToString("dd/MM/yyyy HH:mm:ss.ffff")
                         }
                     }, stoppingToken);
-                Console.WriteLine(messagesCount);
+                Logger.LogInformation(messagesCount.ToString());
             }
             catch (OperationCanceledException)
             {

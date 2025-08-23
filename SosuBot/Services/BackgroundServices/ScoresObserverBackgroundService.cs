@@ -12,9 +12,10 @@ using OsuApi.V2.Users.Models;
 using SosuBot.Database;
 using SosuBot.Helpers;
 using SosuBot.Helpers.Comparers;
-using SosuBot.Helpers.Scoring;
+using SosuBot.Helpers.OutputText;
 using SosuBot.Helpers.Types;
 using SosuBot.Helpers.Types.Statistics;
+using SosuBot.Logging;
 using SosuBot.Services.Data.OsuApi;
 using Telegram.Bot;
 using Telegram.Bot.Types.Enums;
@@ -23,10 +24,10 @@ namespace SosuBot.Services.BackgroundServices;
 
 public sealed class ScoresObserverBackgroundService(
     ApiV2 osuApi,
-    ILogger<ScoresObserverBackgroundService> logger,
     ITelegramBotClient botClient,
     BotContext database) : BackgroundService
 {
+    private static readonly ILogger Logger = ApplicationLogging.CreateLogger(nameof(ScoresObserverBackgroundService));
     public static readonly ConcurrentBag<long> ObservedUsers = new();
     public static List<DailyStatistics> AllDailyStatistics = new();
     public static List<CountryRanking> ActualCountryRankings = new();
@@ -46,7 +47,7 @@ public sealed class ScoresObserverBackgroundService(
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        logger.LogInformation("Scores observer background service started");
+        Logger.LogInformation("Scores observer background service started");
 
         _adminTelegramId = (await database.OsuUsers.FirstAsync(m => m.IsAdmin, stoppingToken))
             .TelegramId;
@@ -87,7 +88,7 @@ public sealed class ScoresObserverBackgroundService(
                         { CursorString = cursor, Ruleset = Ruleset.Osu });
                 if (response == null)
                 {
-                    logger.LogWarning("GetScores() returned null");
+                    Logger.LogWarning("GetScores() returned null");
                     continue;
                 }
 
@@ -99,7 +100,7 @@ public sealed class ScoresObserverBackgroundService(
                     var userStatistics = await _userDatabase.GetUserStatistics(score.UserId!.Value);
                     if (userStatistics == null)
                     {
-                        logger.LogError($"User statistics is null for userId = {score.UserId!.Value}");
+                        Logger.LogError($"User statistics is null for userId = {score.UserId!.Value}");
                         continue;
                     }
 
@@ -135,12 +136,12 @@ public sealed class ScoresObserverBackgroundService(
             }
             catch (OperationCanceledException)
             {
-                logger.LogWarning("Operation cancelled");
+                Logger.LogWarning("Operation cancelled");
                 return;
             }
             catch (Exception e)
             {
-                logger.LogError(e, "Unexpected exception");
+                Logger.LogError(e, "Unexpected exception");
             }
     }
 
@@ -157,7 +158,7 @@ public sealed class ScoresObserverBackgroundService(
                             new GetUserScoreQueryParameters { Limit = 50 });
                     if (userBestScores == null)
                     {
-                        logger.LogWarning($"{userId} has no scores!");
+                        Logger.LogWarning($"{userId} has no scores!");
                         continue;
                     }
 
@@ -181,15 +182,15 @@ public sealed class ScoresObserverBackgroundService(
             }
             catch (OperationCanceledException)
             {
-                logger.LogWarning("Operation cancelled");
+                Logger.LogWarning("Operation cancelled");
                 return;
             }
             catch (Exception e)
             {
-                logger.LogError(e, "Unexpected exception");
+                Logger.LogError(e, "Unexpected exception");
             }
 
-        logger.LogWarning("Finished its work");
+        Logger.LogWarning("Finished its work");
     }
 
     private async Task CheckOnlineForCountry(CancellationToken stoppingToken, string countryCode = "uz")
@@ -214,11 +215,11 @@ public sealed class ScoresObserverBackgroundService(
             }
             catch (OperationCanceledException)
             {
-                logger.LogInformation("Operation cancelled");
+                Logger.LogInformation("Operation cancelled");
             }
             catch (Exception e)
             {
-                logger.LogError(e, "Unexpected exception");
+                Logger.LogError(e, "Unexpected exception");
             }
         }
     }
@@ -235,7 +236,7 @@ public sealed class ScoresObserverBackgroundService(
             new GetRankingQueryParameters { Country = countryCode, Filter = Filter.All });
         if (rankings == null)
         {
-            logger.LogError($"Ranking is null. {countryCode}");
+            Logger.LogError($"Ranking is null. {countryCode}");
             throw new Exception("Ranking is null. See logs for details");
         }
 

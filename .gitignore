@@ -3,4 +3,4 @@
 appsettings*
 bin/
 obj/
-*.db
+*.db*

@@ -1,10 +1,10 @@
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using OsuApi.V2;
 using SosuBot.Database;
 using SosuBot.Extensions;
+using SosuBot.Logging;
 using SosuBot.Services.Data;
 using SosuBot.Services.Handlers.Abstract;
 using SosuBot.Services.Handlers.Callbacks;
@@ -21,12 +21,11 @@ namespace SosuBot.Services.Handlers;
 
 public class UpdateHandler(
     ApiV2 osuApi,
-    RabbitMQService rabbitMqService,
+    RabbitMqService rabbitMqService,
     BotContext database,
-    ILogger<UpdateHandler> logger,
-    IOptions<BotConfiguration> botConfig,
-    IServiceProvider serviceProvider) : IUpdateHandler
+    IOptions<BotConfiguration> botConfig) : IUpdateHandler
 {
+    private static readonly ILogger Logger = ApplicationLogging.CreateLogger(nameof(UpdateHandler));
     private Update? _currentUpdate;
 
     public async Task HandleErrorAsync(ITelegramBotClient botClient, Exception exception, HandleErrorSource source,
@@ -35,7 +34,7 @@ public class UpdateHandler(
         // if a text-command message
         if (_currentUpdate!.Message is { Text: string } msg && msg.Text!.IsCommand())
         {
-            var userId = (await database.OsuUsers.FirstAsync(u => u.IsAdmin)).TelegramId;
+            var userId = (await database.OsuUsers.FirstAsync(u => u.IsAdmin, cancellationToken: cancellationToken)).TelegramId;
             var errorText =
                 $"Произошла ошибка.\n" +
                 $"Пожалуйста, сообщите о ней <a href=\"tg://user?id={userId}\">создателю</a> (@Shoukkoo)";
@@ -48,7 +47,7 @@ public class UpdateHandler(
         }
 
         // log in console
-        logger.LogError("HandleError: {Exception}", exception);
+        Logger.LogError("HandleError: {Exception}", exception);
     }
 
     public async Task HandleUpdateAsync(ITelegramBotClient botClient, Update update,
@@ -80,7 +79,7 @@ public class UpdateHandler(
         await database.AddOrUpdateTelegramChat(msg);
 
         if (msg.Text is not { } text) return;
-        if (msg.Chat is null || msg.From is null) return;
+        if (msg.From is null) return;
 
         // Execute necessary functions
         if (text.IsCommand())
@@ -119,12 +118,11 @@ public class UpdateHandler(
                 database,
                 osuApi,
                 rabbitMqService,
-                serviceProvider.GetRequiredService<ILogger<ICommandContext<CallbackQuery>>>(),
                 cancellationToken));
 
         await executableCommand.ExecuteAsync();
         await callbackQuery.AnswerAsync(botClient);
-        await database.SaveChangesAsync();
+        await database.SaveChangesAsync(cancellationToken);
     }
 
     private async Task OnCommand(ITelegramBotClient botClient, Message msg, CancellationToken cancellationToken)
@@ -170,6 +168,9 @@ public class UpdateHandler(
             case string last when OsuLastCommand.Commands.Contains(last):
                 executableCommand = new OsuLastCommand();
                 break;
+            case string lastpassed when OsuLastPassedCommand.Commands.Contains(lastpassed):
+                executableCommand = new OsuLastPassedCommand();
+                break;
             case string user when OsuUserCommand.Commands.Contains(user):
                 executableCommand = new OsuUserCommand();
                 break;
@@ -209,11 +210,10 @@ public class UpdateHandler(
                 database,
                 osuApi,
                 rabbitMqService,
-                serviceProvider.GetRequiredService<ILogger<ICommandContext<Message>>>(),
                 cancellationToken));
 
         await executableCommand.ExecuteAsync();
-        await database.SaveChangesAsync();
+        await database.SaveChangesAsync(cancellationToken);
     }
 
     private async Task OnText(ITelegramBotClient botClient, Message msg, CancellationToken cancellationToken)
@@ -226,11 +226,10 @@ public class UpdateHandler(
                 database,
                 osuApi,
                 rabbitMqService,
-                serviceProvider.GetRequiredService<ILogger<ICommandContext<Message>>>(),
                 cancellationToken));
 
         await textHandler.ExecuteAsync();
-        await database.SaveChangesAsync();
+        await database.SaveChangesAsync(cancellationToken);
     }
 
     private Task DoNothing()

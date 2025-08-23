@@ -1,28 +1,25 @@
 using System.Text.RegularExpressions;
 using Microsoft.Extensions.Logging;
-using osu.Framework.Extensions.ObjectExtensions;
-using osu.Game.Online.Solo;
-using osu.Game.Rulesets.Scoring;
-using osu.Game.Rulesets.Taiko.Objects;
 using OsuApi.V2.Clients.Beatmaps.HttpIO;
 using OsuApi.V2.Clients.Users.HttpIO;
 using OsuApi.V2.Models;
 using OsuApi.V2.Users.Models;
 using SosuBot.Extensions;
 using SosuBot.Helpers.OutputText;
-using SosuBot.Helpers.Scoring;
 using SosuBot.Helpers.Types;
 using SosuBot.Localization;
 using SosuBot.Localization.Languages;
+using SosuBot.Logging;
 using SosuBot.PerformanceCalculator;
 using SosuBot.Services.Handlers.Abstract;
 using Telegram.Bot.Types;
 
 namespace SosuBot.Services.Handlers.Commands;
 
-public class OsuLastCommand : CommandBase<Message>
+public class OsuLastCommand(bool onlyPassed = false) : CommandBase<Message>
 {
-    public static string[] Commands = ["/last", "/l"];
+    private static readonly ILogger Logger = ApplicationLogging.CreateLogger(nameof(OsuLastCommand));
+    public static readonly string[] Commands = ["/last", "/l"];
 
     public override async Task ExecuteAsync()
     {
@@ -35,7 +32,6 @@ public class OsuLastCommand : CommandBase<Message>
 
         var waitMessage = await Context.Update.ReplyAsync(Context.BotClient, language.waiting);
 
-        Score[] lastScores;
         var osuUsernameForLastScores = string.Empty;
         var parameters = Context.Update.Text!.GetCommandParameters()!;
 
@@ -109,7 +105,7 @@ public class OsuLastCommand : CommandBase<Message>
         ruleset ??= userResponse.UserExtend!.Playmode!;
 
         var lastScoresResponse = await Context.OsuApiV2.Users.GetUserScores(userResponse.UserExtend!.Id.Value,
-            ScoreType.Recent, new GetUserScoreQueryParameters { IncludeFails = 1, Limit = limit, Mode = ruleset });
+            ScoreType.Recent, new GetUserScoreQueryParameters { IncludeFails = Convert.ToInt32(!onlyPassed), Limit = limit, Mode = ruleset });
         if (lastScoresResponse!.Scores.Length == 0)
         {
             await waitMessage.EditAsync(Context.BotClient,
@@ -117,7 +113,7 @@ public class OsuLastCommand : CommandBase<Message>
             return;
         }
 
-        lastScores = lastScoresResponse.Scores;
+        Score[] lastScores = lastScoresResponse.Scores;
         GetBeatmapResponse[] beatmaps = lastScores
             .Select(async score => await Context.OsuApiV2.Beatmaps.GetBeatmap((long)score.Beatmap!.Id))
             .Select(t => t.Result).ToArray()!;
@@ -140,14 +136,14 @@ public class OsuLastCommand : CommandBase<Message>
             var mods = score.Mods!;
             var playmode = (Playmode)score.RulesetId!;
 
-            if (i == 0) chatInDatabase!.LastBeatmapId = beatmap!.Id;
+            if (i == 0) chatInDatabase!.LastBeatmapId = beatmap.Id;
 
             bool passed = score.Passed!.Value;
             var scoreStatistics = score.Statistics!.ToStatistics();
 
-            var calculatedPP = new PPResult
+            var calculatedPp = new PPResult
             {
-                Current = score.Pp != null ? null : await ppCalculator.CalculatePPAsync(beatmap.Id.Value, (double)score.Accuracy!,
+                Current = score.Pp != null ? null : await ppCalculator.CalculatePpAsync(beatmap.Id.Value, (double)score.Accuracy!,
                     scoreMaxCombo: score.MaxCombo!.Value,
                     passed: passed,
                     scoreMods: mods.ToOsuMods(playmode),
@@ -155,7 +151,7 @@ public class OsuLastCommand : CommandBase<Message>
                     rulesetId: (int)playmode,
                     cancellationToken: Context.CancellationToken),
 
-                IfFC = await ppCalculator.CalculatePPAsync(beatmap.Id.Value, (double)score.Accuracy!,
+                IfFC = await ppCalculator.CalculatePpAsync(beatmap.Id.Value, (double)score.Accuracy!,
                     scoreMaxCombo: beatmap.MaxCombo!.Value,
                     scoreMods: mods.ToOsuMods(playmode),
                     scoreStatistics: null,
@@ -165,14 +161,14 @@ public class OsuLastCommand : CommandBase<Message>
 
             var scoreRank = score.Passed!.Value ? score.Rank! : "F";
             var textBeforeBeatmapLink = lastScores.Length == 1 ? "" : $"{i + 1}. ";
-            double scorePp = calculatedPP.Current?.Pp ?? (double)score.Pp!.Value;
-            double scorePpIfFc = calculatedPP.IfFC.Pp;
-            double accuracyIfFc = calculatedPP.IfFC.CalculatedAccuracy;
-            bool isFC = score.MaxCombo == beatmap.MaxCombo;
+            double scorePp = calculatedPp.Current?.Pp ?? score.Pp!.Value;
+            double scorePpIfFc = calculatedPp.IfFC.Pp;
+            double accuracyIfFc = calculatedPp.IfFC.CalculatedAccuracy;
+            bool isFc = score.MaxCombo == beatmap.MaxCombo;
 
-            if (isFC)
+            if (isFc)
             {
-                Context.Logger.LogWarning($"PP Calculation for fc and the gotten pp from the api do not match: scoreId={score.Id} calculatedPpForFC={calculatedPP.IfFC.Pp} gottenPp:{score.Pp}");
+                Logger.LogWarning($"PP Calculation for fc and the gotten pp from the api do not match: scoreId={score.Id} calculatedPpForFC={calculatedPp.IfFC.Pp} gottenPp:{score.Pp}");
                 scorePpIfFc = scorePp;
                 accuracyIfFc = (double)score.Accuracy;
             }
@@ -184,7 +180,7 @@ public class OsuLastCommand : CommandBase<Message>
                 $"{score.Beatmapset?.Title.EncodeHtml()}",
                 $"{beatmap.Version.EncodeHtml()}",
                 $"{beatmap.Status}",
-                $"{ppCalculator.LastDifficultyAttributes.StarRating:N2}",
+                $"{ppCalculator.LastDifficultyAttributes!.StarRating:N2}",
                 $"{ScoreHelper.GetScoreStatisticsText(score.Statistics!, playmode)}",
                 $"{score.Statistics!.Miss + score.Statistics!.LargeTickMiss}",
                 $"{score.Accuracy * 100:N2}",

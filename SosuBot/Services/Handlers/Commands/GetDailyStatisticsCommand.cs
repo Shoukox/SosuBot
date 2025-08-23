@@ -1,6 +1,5 @@
 ﻿using SosuBot.Extensions;
 using SosuBot.Helpers.OutputText;
-using SosuBot.Helpers.Scoring;
 using SosuBot.Localization;
 using SosuBot.Localization.Languages;
 using SosuBot.Services.BackgroundServices;
@@ -68,7 +67,7 @@ public class GetDailyStatisticsCommand : CommandBase<Message>
                 );
 
             DateTime tashkentNow = TimeZoneInfo.ConvertTime(ranking.StatisticFrom, TimeZoneInfo.FindSystemTimeZoneById("West Asia Standard Time"));
-            sendText = $"Онлайн пользователи из <b>{countryCode.ToUpperInvariant()}</b>.\n" +
+            sendText = $"Онлайн пользователи (osu!lazer + osu! website) из <b>{countryCode.ToUpperInvariant()}</b>.\n" +
                        $"Последнее отслеживание: <b>{tashkentNow:dd.MM.yyyy HH:mm} (по тшк.)</b>\n" +
                        $"Количество: <b>{onlineUsers.Length}</b>\n\n" +
                        $"{onlineUsersText}";
