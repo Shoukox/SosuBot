@@ -98,11 +98,11 @@ public class OsuUserCommand(bool includeIdInSearch = false) : CommandBase<Messag
             return;
         }
         
-        UserHelper.UpdateOsuUsers(Context.Database, user, playmode);
-        
         double? currentPp = user.Statistics!.Pp;
         var ppDifferenceText =
             await UserHelper.GetPpDifferenceTextAsync(Context.Database, user, playmode, currentPp);
+        
+        UserHelper.UpdateOsuUsers(Context.Database, user, playmode);
         
         var textToSend = language.command_user.Fill([
             $"{playmode.ToGamemode()}",
