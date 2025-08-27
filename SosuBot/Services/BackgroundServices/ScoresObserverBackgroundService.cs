@@ -121,7 +121,7 @@ public sealed class ScoresObserverBackgroundService(
                     var sendText = await ScoreHelper.GetDailyStatisticsSendText(dailyStatistics, osuApi);
 
                     await botClient.SendMessage(_adminTelegramId, sendText,
-                        ParseMode.Html, linkPreviewOptions: true, cancellationToken: stoppingToken);
+                        ParseMode.Html, linkPreviewOptions: true);
 
                     dailyStatistics = new DailyStatistics(CountryCode.Uzbekistan, DateTime.UtcNow);
                     AllDailyStatistics.Add(dailyStatistics);
@@ -171,7 +171,7 @@ public sealed class ScoresObserverBackgroundService(
                         {
                             await botClient.SendMessage(_adminTelegramId,
                                 $"<b>{score.User?.Username}</b> set a <b>{score.Pp}pp</b> {ScoreHelper.GetScoreUrlWrappedInString(score.Id!.Value, "score!")}",
-                                ParseMode.Html, linkPreviewOptions: true, cancellationToken: stoppingToken!);
+                                ParseMode.Html, linkPreviewOptions: true);
                             await Task.Delay(1000, stoppingToken);
                         }
                     }
