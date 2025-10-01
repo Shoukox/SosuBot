@@ -27,7 +27,7 @@ public class OsuUserCommand(bool includeIdInSearch = false) : CommandBase<Messag
 
         var waitMessage = await Context.Update.ReplyAsync(Context.BotClient, language.waiting);
 
-        UserExtend user;
+        UserExtend? user;
         Playmode playmode;
 
         string searchPrefix = "@";
@@ -46,7 +46,7 @@ public class OsuUserCommand(bool includeIdInSearch = false) : CommandBase<Messag
 
             playmode = osuUserInDatabase.OsuMode;
             user = (await Context.OsuApiV2.Users.GetUser($"{searchPrefix}{osuUserInDatabase.OsuUsername}",
-                new GetUserQueryParameters(), playmode.ToRuleset()))!.UserExtend!;
+                new GetUserQueryParameters(), playmode.ToRuleset()))?.UserExtend;
         }
         else if (parameters.Length == 1)
         {
@@ -75,7 +75,7 @@ public class OsuUserCommand(bool includeIdInSearch = false) : CommandBase<Messag
                     return;
                 }
 
-                user = userResponse.UserExtend!;
+                user = userResponse.UserExtend;
             }
             else
             {
@@ -87,9 +87,7 @@ public class OsuUserCommand(bool includeIdInSearch = false) : CommandBase<Messag
                     return;
                 }
 
-                user = userResponse.UserExtend!;
-
-                playmode = user.Playmode!.ParseRulesetToPlaymode();
+                user = userResponse.UserExtend;
             }
         }
         else
@@ -97,13 +95,21 @@ public class OsuUserCommand(bool includeIdInSearch = false) : CommandBase<Messag
             await waitMessage.EditAsync(Context.BotClient, language.error_argsLength);
             return;
         }
+
+        if (user == null)
+        {
+            await waitMessage.EditAsync(Context.BotClient, language.error_userNotFound);
+            return;
+        }
         
+        playmode = user.Playmode!.ParseRulesetToPlaymode();
         double? currentPp = user.Statistics!.Pp;
         var ppDifferenceText =
             await UserHelper.GetPpDifferenceTextAsync(Context.Database, user, playmode, currentPp);
         
         UserHelper.UpdateOsuUsers(Context.Database, user, playmode);
         
+        DateTime.TryParse(user.JoinDate?.Value, out var registerDateTime);
         var textToSend = language.command_user.Fill([
             $"{playmode.ToGamemode()}",
             $"{UserHelper.GetUserProfileUrlWrappedInUsernameString(user.Id.Value, user.Username!)}",
@@ -115,6 +121,7 @@ public class OsuUserCommand(bool includeIdInSearch = false) : CommandBase<Messag
             $"{user.Statistics.HitAccuracy:N2}%",
             $"{user.Statistics.PlayCount:N0}",
             $"{user.Statistics.PlayTime / 3600}",
+            $"{registerDateTime:dd.MM.yyyy HH:mm:ss}",
             $"{user.UserAchievements?.Length ?? 0}",
             $"{OsuConstants.TotalAchievementsCount}",
             $"{user.Statistics.GradeCounts!.SSH}",

@@ -62,6 +62,7 @@ public struct Russian : ILocalization
         "🎯<b>accuracy</b>: <i>{}</i>\n" +
         "🔢<b>playcount</b>: <i>{}</i>\n" +
         "⏱️<b>playtime</b>: <i>{}h</i>\n" +
+        "📍<b>registered</b>: <i>{}</i>\n" +
         "🏆<b>achievements</b>: <i>{}/{}</i>\n\n" +
         "<i>{}</i> <b>SSH</b>⚪️ - <i>{}</i> <b>SH</b>⚪️\n" +
         "<i>{}</i> <b>SS</b>🟡 - <i>{}</i> <b>S</b>🟡 - <i>{}</i> <b>A</b>🟢";

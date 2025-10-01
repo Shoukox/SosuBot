@@ -68,6 +68,7 @@ public sealed class ScoresObserverBackgroundService(
         }
     }
 
+
     private async Task ObserveScoresGetScores(CancellationToken stoppingToken)
     {
         await LoadDailyStatistics();
@@ -94,6 +95,12 @@ public sealed class ScoresObserverBackgroundService(
                 var getStdScoresResponse =
                     await osuApi.Scores.GetScores(new ScoresQueryParameters
                         { CursorString = getStdScoresCursor, Ruleset = Ruleset.Osu });
+                var getTaikoScoresResponse =
+                    await osuApi.Scores.GetScores(new ScoresQueryParameters
+                        { CursorString = getManiaScoresCursor, Ruleset = Ruleset.Taiko });
+                var getFruitsScoresResponse =
+                    await osuApi.Scores.GetScores(new ScoresQueryParameters
+                        { CursorString = getManiaScoresCursor, Ruleset = Ruleset.Fruits });
                 var getManiaScoresResponse =
                     await osuApi.Scores.GetScores(new ScoresQueryParameters
                         { CursorString = getManiaScoresCursor, Ruleset = Ruleset.Mania });
@@ -109,8 +116,10 @@ public sealed class ScoresObserverBackgroundService(
                     continue;
                 }
 
-                /// std and mania osu scores from all players
-                var allOsuScores = getStdScoresResponse.Scores!.Concat(getManiaScoresResponse.Scores!);
+                var allOsuScores = getStdScoresResponse.Scores!
+                    .Concat(getTaikoScoresResponse?.Scores!)
+                    .Concat(getFruitsScoresResponse?.Scores!)
+                    .Concat(getManiaScoresResponse.Scores!);
 
                 // Scores only from UZ 
                 var uzScores = allOsuScores.Where(m => _userDatabase.ContainsUserStatistics(m.UserId!.Value))
@@ -141,7 +150,7 @@ public sealed class ScoresObserverBackgroundService(
                     var sendText = await ScoreHelper.GetDailyStatisticsSendText(dailyStatistics, osuApi);
 
                     await botClient.SendMessage(_adminTelegramId, sendText,
-                        ParseMode.Html, linkPreviewOptions: true);
+                        ParseMode.Html, linkPreviewOptions: true, cancellationToken: stoppingToken);
 
                     dailyStatistics = new DailyStatistics(CountryCode.Uzbekistan, DateTime.UtcNow);
                     AllDailyStatistics.Add(dailyStatistics);
