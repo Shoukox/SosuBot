@@ -3,12 +3,14 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using OsuApi.V2;
 using Polly;
 using Polly.Contrib.WaitAndRetry;
 using Polly.Extensions.Http;
 using SosuBot.Database;
+using SosuBot.Logging;
 using SosuBot.Services.BackgroundServices;
 using SosuBot.Services.Data;
 using SosuBot.Services.Handlers;
@@ -18,23 +20,69 @@ namespace SosuBot;
 
 internal class Program
 {
+    private static ILogger<Program>? _logger;
+
     private static void Main(string[] args)
+    {
+        Run(args);
+    }
+
+    private static void Run(string[] args)
     {
         var builder = Host.CreateApplicationBuilder(args);
 
         // Configuration
-        var fileName = "appsettings.json";
-        if (!File.Exists(fileName)) throw new FileNotFoundException($"{fileName} was not found!", fileName);
-        builder.Configuration.AddJsonFile(fileName, false);
+        var configurationFileName = "appsettings.json";
+        if (!File.Exists(configurationFileName))
+            throw new FileNotFoundException($"{configurationFileName} was not found!", configurationFileName);
+        builder.Configuration.AddJsonFile(configurationFileName, false);
 
         // Logging
-        // Logging is delegated to SosuBot.Logging
-        
+        var loggingFileName = $"logs/{{Date}}.log";
+        builder.Logging.ClearProviders();
+        builder.Logging.AddConsole();
+        builder.Logging.AddFile(loggingFileName);
+        builder.Logging.AddConfiguration(builder.Configuration.GetSection("Logging"));
+        builder.Logging.AddConsoleFormatter<CustomConsoleFormatter, CustomConsoleFormatterOptions>();
+
+        // Instantiate a logger for this class
+        _logger = builder.Services.BuildServiceProvider().GetRequiredService<ILogger<Program>>();
+
+        // Handling fatal errors 
+        AppDomain.CurrentDomain.UnhandledException += (_, eventArgs) =>
+        {
+            HandleFatalError(eventArgs.ExceptionObject as Exception);
+        };
+        TaskScheduler.UnobservedTaskException += (_, eventArgs) =>
+        {
+            HandleFatalError(eventArgs.Exception);
+            eventArgs.SetObserved();
+        };
+
         // Services
         builder.Services.Configure<BotConfiguration>(builder.Configuration.GetSection(nameof(BotConfiguration)));
         builder.Services.Configure<OsuApiV2Configuration>(
             builder.Configuration.GetSection(nameof(OsuApiV2Configuration)));
         builder.Services.AddHttpClient(nameof(TelegramBotClient))
+            .ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler
+            {
+                // Replace connections every 2 minutes to avoid stale/closed sockets
+                PooledConnectionLifetime = TimeSpan.FromMinutes(2),
+
+                // Drop idle connections after 1 minute
+                PooledConnectionIdleTimeout = TimeSpan.FromMinutes(1),
+
+                // How many concurrent connections to the Telegram API
+                MaxConnectionsPerServer = 10,
+
+                // Short connect timeout (fail fast if remote unreachable)
+                ConnectTimeout = TimeSpan.FromSeconds(10)
+            })
+            .ConfigureHttpClient(client =>
+            {
+                // Make request timeout slightly larger than your long polling timeout.
+                client.Timeout = TimeSpan.FromSeconds(60);
+            })
             .AddTypedClient<ITelegramBotClient>((httpClient, sp) =>
             {
                 var options = sp.GetRequiredService<IOptions<BotConfiguration>>();
@@ -49,6 +97,7 @@ internal class Program
         {
             var config = osuApiV2Configuration;
             var httpClient = provider.GetRequiredService<IHttpClientFactory>().CreateClient();
+            httpClient.DefaultRequestHeaders.ConnectionClose = true;
             return new ApiV2(config.ClientId, config.ClientSecret, httpClient);
         });
         builder.Services.AddSingleton<UpdateQueueService>();
@@ -71,18 +120,43 @@ internal class Program
 
     private static IAsyncPolicy<HttpResponseMessage> GetRetryPolicy()
     {
-        var transientRetryPolicy =
-            HttpPolicyExtensions
-                .HandleTransientHttpError()
-                .WaitAndRetryAsync(Backoff.DecorrelatedJitterBackoffV2(TimeSpan.FromSeconds(1), 5));
+        var transientRetryPolicy = HttpPolicyExtensions
+            .HandleTransientHttpError()
+            .WaitAndRetryAsync(
+                Backoff.DecorrelatedJitterBackoffV2(TimeSpan.FromSeconds(1), 5),
+                (delay, attempt, outcome, ctx) =>
+                {
+                    _logger!.LogWarning("Transient error (attempt {Attempt}). Waiting {Delay} before retry. Status: {Status}", attempt, delay, outcome);
+                });
 
         var retryAfterPolicy = Policy
             .HandleResult<HttpResponseMessage>(r =>
                 r.StatusCode == HttpStatusCode.TooManyRequests && r.Headers.RetryAfter != null)
-            .WaitAndRetryAsync(3,
-                (_, result, _) => result.Result.Headers.RetryAfter!.Delta!.Value,
-                (_, _, _, _) => Task.CompletedTask);
+            .WaitAndRetryAsync(
+                3,
+                (retryCount, response, ctx) =>
+                {
+                    var ra = response.Result.Headers.RetryAfter!;
+                    if (ra.Delta.HasValue) return ra.Delta.Value;
+                    if (ra.Date.HasValue)
+                    {
+                        var delta = ra.Date.Value - DateTimeOffset.UtcNow;
+                        return delta > TimeSpan.Zero ? delta : TimeSpan.FromSeconds(1);
+                    }
 
-        return Policy.WrapAsync(transientRetryPolicy, retryAfterPolicy);
+                    return TimeSpan.FromSeconds(1);
+                },
+                async (outcome, timespan, retryCount, context) =>
+                {
+                    _logger!.LogWarning("Received 429. Retrying after {Delay} (retry {Retry}).", timespan, retryCount);
+                    await Task.CompletedTask;
+                });
+
+        return Policy.WrapAsync(retryAfterPolicy, transientRetryPolicy);
+    }
+
+    private static void HandleFatalError(Exception? ex)
+    {
+        _logger!.LogCritical(ex, "Fatal error");
     }
 }

@@ -1,13 +1,7 @@
 ﻿using System.Text;
-using System.Text.Json;
-using OsuApi.V2.Clients.Users.HttpIO;
-using OsuApi.V2.Models;
 using SosuBot.Database.Extensions;
-using SosuBot.Database.Models;
 using SosuBot.Extensions;
 using SosuBot.Helpers.OutputText;
-using SosuBot.Helpers.Types;
-using SosuBot.Legacy;
 using SosuBot.Services.Handlers.Abstract;
 using Telegram.Bot.Types;
 
@@ -25,70 +19,7 @@ public class DbCommand : CommandBase<Message>
 
         var parameters = Context.Update.Text!.GetCommandParameters()!;
 
-        if (parameters[0] == "fromfiles")
-        {
-            var startCount = Context.Database.OsuUsers.Count();
-            var osuusers = "osuusers.txt";
-            var users = JsonSerializer.Deserialize<List<osuUser>>(await File.ReadAllTextAsync(osuusers));
-            if (users == null)
-            {
-                await Context.Update.ReplyAsync(Context.BotClient, "Incorrect json");
-                return;
-            }
-
-            foreach (var user in users)
-            {
-                var response =
-                    await Context.OsuApiV2.Users.GetUser($"@{user.osuName}", new GetUserQueryParameters(), Ruleset.Osu);
-                if (response is null) continue;
-                var osuUserFromApi = response.UserExtend!;
-                var osuUser = new OsuUser
-                {
-                    OsuMode = Playmode.Osu,
-                    OsuUserId = osuUserFromApi.Id.Value,
-                    OsuUsername = osuUserFromApi.Username!,
-                    TelegramId = user.telegramId
-                };
-                if (!Context.Database.OsuUsers.Any(m => m.TelegramId == osuUser.TelegramId))
-                    await Context.Database.OsuUsers.AddAsync(osuUser);
-            }
-
-            await Context.Database.SaveChangesAsync();
-            await Context.Update.ReplyAsync(Context.BotClient,
-                $"Added {Context.Database.OsuUsers.Count() - startCount} new users");
-        }
-        else if (parameters[0] == "fromtext")
-        {
-            var startCount = Context.Database.OsuUsers.Count();
-            var users = JsonSerializer.Deserialize<List<osuUser>>(string.Join(" ", parameters[2..]));
-            if (users == null)
-            {
-                await Context.Update.ReplyAsync(Context.BotClient, "Incorrect json");
-                return;
-            }
-
-            foreach (var user in users)
-            {
-                var response =
-                    await Context.OsuApiV2.Users.GetUser($"@{user.osuName}", new GetUserQueryParameters(), Ruleset.Osu);
-                if (response is null) continue;
-                var osuUserFromApi = response.UserExtend!;
-                var osuUser = new OsuUser
-                {
-                    OsuMode = Playmode.Osu,
-                    OsuUserId = osuUserFromApi.Id.Value,
-                    OsuUsername = osuUserFromApi.Username!,
-                    TelegramId = user.telegramId
-                };
-                if (!Context.Database.OsuUsers.Any(m => m.TelegramId == osuUser.TelegramId))
-                    await Context.Database.OsuUsers.AddAsync(osuUser);
-            }
-
-            await Context.Database.SaveChangesAsync();
-            await Context.Update.ReplyAsync(Context.BotClient,
-                $"Added {Context.Database.OsuUsers.Count() - startCount} new users");
-        }
-        else if (parameters[0] == "count")
+        if (parameters[0] == "count")
         {
             int count;
             if (parameters[1] == "users") count = Context.Database.OsuUsers.Count();

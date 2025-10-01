@@ -7,6 +7,7 @@ using SosuBot.Helpers.Types;
 using SosuBot.Localization;
 using SosuBot.Localization.Languages;
 using SosuBot.Services.Handlers.Abstract;
+using Telegram.Bot.Exceptions;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.ReplyMarkups;
 
@@ -62,7 +63,7 @@ public class OsuUserBestCallbackCommand : CommandBase<CallbackQuery>
         foreach (var score in scores)
         {
             var beatmap = beatmaps[index - page * 5];
-            
+
             // should be equal to the variant from OsuUserbestCommand
             textToSend += language.command_userbest.Fill([
                 $"{index + 1}",
@@ -87,6 +88,14 @@ public class OsuUserBestCallbackCommand : CommandBase<CallbackQuery>
                 { CallbackData = $"{chatId} userbest previous {page} {(int)playmode} {osuUserId} {osuUsername}" },
             new InlineKeyboardButton("Next")
                 { CallbackData = $"{chatId} userbest next {page} {(int)playmode} {osuUserId} {osuUsername}" });
-        await Context.Update.Message!.EditAsync(Context.BotClient, textToSend, replyMarkup: ik);
+
+        try
+        {
+            await Context.Update.Message!.EditAsync(Context.BotClient, textToSend, replyMarkup: ik);
+        }
+        catch (ApiRequestException e) when (e.ErrorCode == 400)
+        {
+            await Context.Update.AnswerAsync(Context.BotClient);
+        }
     }
 }

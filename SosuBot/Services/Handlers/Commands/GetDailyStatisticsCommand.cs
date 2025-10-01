@@ -72,6 +72,10 @@ public class GetDailyStatisticsCommand : CommandBase<Message>
                        $"Количество: <b>{onlineUsers.Length}</b>\n\n" +
                        $"{onlineUsersText}";
         }
+        else
+        {
+            sendText = language.error_argsLength;
+        }
 
         await waitMessage.EditAsync(Context.BotClient, sendText);
     }

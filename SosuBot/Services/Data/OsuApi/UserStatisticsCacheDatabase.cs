@@ -6,6 +6,11 @@ using SosuBot.Helpers.Types;
 
 namespace SosuBot.Services.Data.OsuApi;
 
+/// <summary>
+/// Database for UZ osu!players. // in the future is planned to expand this database for storing not only the UZ players
+/// </summary>
+/// <param name="api"></param>
+/// <param name="usersCachePath"></param>
 public class UserStatisticsCacheDatabase(ApiV2 api, string? usersCachePath = null)
 {
     public const int CachingDays = 31;
@@ -20,6 +25,11 @@ public class UserStatisticsCacheDatabase(ApiV2 api, string? usersCachePath = nul
         if (!Directory.Exists(UsersCachePath)) Directory.CreateDirectory(UsersCachePath);
     }
 
+    /// <summary>
+    /// If a specified userId was already cached (userId should be an UZ player)
+    /// </summary>
+    /// <param name="userId">user id</param>
+    /// <returns>true if cached</returns>
     public bool ContainsUserStatistics(int userId)
     {
         if (!File.Exists(GetCachedUserStatisticsPath(userId))) return false;

@@ -11,7 +11,6 @@ namespace SosuBot.Services.Handlers.Commands;
 
 public class MsgCommand : CommandBase<Message>
 {
-    private static readonly ILogger Logger = ApplicationLogging.CreateLogger(nameof(MsgCommand));
     public static string[] Commands = ["/msg"];
 
     public override async Task ExecuteAsync()
@@ -33,12 +32,12 @@ public class MsgCommand : CommandBase<Message>
                 }
                 catch (ApiRequestException reqEx)
                 {
-                    Logger.LogError(reqEx,
+                    Context.Logger.LogError(reqEx,
                         $"ApiRequestException in MsgCommand while sending message to group {chat.ChatId}");
                 }
                 catch (Exception ex)
                 {
-                    Logger.LogError(ex,
+                    Context.Logger.LogError(ex,
                         $"Exception in MsgCommand while sending message to group {chat.ChatId}");
                 }
         }
@@ -69,7 +68,7 @@ public class MsgCommand : CommandBase<Message>
                     }
                     catch (ApiRequestException reqEx)
                     {
-                        Logger.LogError(reqEx,
+                        Context.Logger.LogError(reqEx,
                             $"ApiRequestException in MsgCommand while sending message to group {chat.ChatId}");
                     }
                     catch (Exception ex)

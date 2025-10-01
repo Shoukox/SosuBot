@@ -11,6 +11,7 @@ using SosuBot.Services.Handlers.Callbacks;
 using SosuBot.Services.Handlers.Commands;
 using SosuBot.Services.Handlers.Text;
 using Telegram.Bot;
+using Telegram.Bot.Exceptions;
 using Telegram.Bot.Polling;
 using Telegram.Bot.Types;
 using DummyCommand = SosuBot.Services.Handlers.Callbacks.DummyCommand;
@@ -23,14 +24,18 @@ public class UpdateHandler(
     ApiV2 osuApi,
     RabbitMqService rabbitMqService,
     BotContext database,
-    IOptions<BotConfiguration> botConfig) : IUpdateHandler
+    IOptions<BotConfiguration> botConfig,
+    ILogger<UpdateHandler> logger,
+    ILoggerFactory loggerFactory) : IUpdateHandler
 {
-    private static readonly ILogger Logger = ApplicationLogging.CreateLogger(nameof(UpdateHandler));
     private Update? _currentUpdate;
 
     public async Task HandleErrorAsync(ITelegramBotClient botClient, Exception exception, HandleErrorSource source,
         CancellationToken cancellationToken)
     {
+        // log in console
+        logger.LogError("HandleError: {Exception}", exception);
+        
         // if a text-command message
         if (_currentUpdate!.Message is { Text: string } msg && msg.Text!.IsCommand())
         {
@@ -45,9 +50,6 @@ public class UpdateHandler(
         {
             await callbackQuery.AnswerAsync(botClient, "Произошла ошибка! Пожалуйста, сообщите о ней @Shoukkoo", true);
         }
-
-        // log in console
-        Logger.LogError("HandleError: {Exception}", exception);
     }
 
     public async Task HandleUpdateAsync(ITelegramBotClient botClient, Update update,
@@ -110,7 +112,8 @@ public class UpdateHandler(
                 executableCommand = new DummyCommand();
                 break;
         }
-
+        
+        var commandLogger = loggerFactory.CreateLogger<CallbackQuery>();
         executableCommand.SetContext(
             new CommandContext<CallbackQuery>(
                 botClient,
@@ -118,6 +121,7 @@ public class UpdateHandler(
                 database,
                 osuApi,
                 rabbitMqService,
+                commandLogger,
                 cancellationToken));
 
         await executableCommand.ExecuteAsync();
@@ -199,6 +203,7 @@ public class UpdateHandler(
                 break;
         }
 
+        var commandLogger = loggerFactory.CreateLogger<Message>();
         executableCommand.SetContext(
             new CommandContext<Message>(
                 botClient,
@@ -206,6 +211,7 @@ public class UpdateHandler(
                 database,
                 osuApi,
                 rabbitMqService,
+                commandLogger,
                 cancellationToken));
 
         await executableCommand.ExecuteAsync();
@@ -215,6 +221,7 @@ public class UpdateHandler(
     private async Task OnText(ITelegramBotClient botClient, Message msg, CancellationToken cancellationToken)
     {
         CommandBase<Message> textHandler = new TextHandler();
+        var commandLogger = loggerFactory.CreateLogger<Message>();
         textHandler.SetContext(
             new CommandContext<Message>(
                 botClient,
@@ -222,6 +229,7 @@ public class UpdateHandler(
                 database,
                 osuApi,
                 rabbitMqService,
+                commandLogger,
                 cancellationToken));
 
         await textHandler.ExecuteAsync();

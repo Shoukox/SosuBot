@@ -12,22 +12,30 @@ namespace SosuBot.Services.BackgroundServices;
 
 public sealed class UpdateHandlerBackgroundService(
     UpdateQueueService updateQueue,
-    IServiceProvider serviceProvider)
+    IServiceProvider serviceProvider,
+    ILogger<ScoresObserverBackgroundService> logger)
     : BackgroundService
 {
-    private static readonly ILogger Logger = ApplicationLogging.CreateLogger(nameof(UpdateHandlerBackgroundService));
-    public int WorkersCount = 100;
+    private readonly int _workersCount = 100;
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         if (EnableStressTestUsingConsole) _ = Task.Run(() => StressTestUsingConsole(stoppingToken));
 
-        Logger.LogInformation($"Starting {WorkersCount} workers to handle updates.");
-        var workers =
-            Enumerable.Range(0, WorkersCount)
-                .Select(_ => Task.Run(() => HandleUpdateWorker(stoppingToken)));
+        logger.LogInformation($"Starting {_workersCount} workers to handle updates.");
 
-        await Task.WhenAll(workers);
+        try
+        {
+            var workers =
+                Enumerable.Range(0, _workersCount)
+                    .Select(_ => Task.Run(() => HandleUpdateWorker(stoppingToken)));
+
+            await Task.WhenAll(workers);
+        }
+        catch (OperationCanceledException)
+        {
+            logger.LogWarning("Operation cancelled");
+        }
     }
 
     private async Task HandleUpdateWorker(CancellationToken stoppingToken)
@@ -46,7 +54,7 @@ public sealed class UpdateHandlerBackgroundService(
             }
             catch (OperationCanceledException)
             {
-                Logger.LogWarning("Operation cancelled");
+                logger.LogWarning("Operation cancelled");
                 return;
             }
             catch (Exception ex)
@@ -55,7 +63,7 @@ public sealed class UpdateHandlerBackgroundService(
             }
         }
 
-        Logger.LogWarning("Finished its work");
+        logger.LogWarning("Finished its work");
     }
 
     #region stresstest
@@ -73,7 +81,7 @@ public sealed class UpdateHandlerBackgroundService(
                 GC.Collect();
                 GC.WaitForPendingFinalizers();
                 GC.Collect();
-                Logger.LogInformation("gc worked!");
+                logger.LogInformation("gc worked!");
                 continue;
             }
 
@@ -88,7 +96,7 @@ public sealed class UpdateHandlerBackgroundService(
                             Text = DateTime.Now.ToString("dd/MM/yyyy HH:mm:ss.ffff")
                         }
                     }, stoppingToken);
-                Logger.LogInformation(messagesCount.ToString());
+                logger.LogInformation(messagesCount.ToString());
             }
             catch (OperationCanceledException)
             {

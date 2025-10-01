@@ -25,9 +25,9 @@ namespace SosuBot.Services.BackgroundServices;
 public sealed class ScoresObserverBackgroundService(
     ApiV2 osuApi,
     ITelegramBotClient botClient,
-    BotContext database) : BackgroundService
+    BotContext database,
+    ILogger<ScoresObserverBackgroundService> logger) : BackgroundService
 {
-    private static readonly ILogger Logger = ApplicationLogging.CreateLogger(nameof(ScoresObserverBackgroundService));
     public static readonly ConcurrentBag<long> ObservedUsers = new();
     public static List<DailyStatistics> AllDailyStatistics = new();
     public static List<CountryRanking> ActualCountryRankings = new();
@@ -47,19 +47,25 @@ public sealed class ScoresObserverBackgroundService(
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        Logger.LogInformation("Scores observer background service started");
+        logger.LogInformation("Scores observer background service started");
 
-        _adminTelegramId = (await database.OsuUsers.FirstAsync(m => m.IsAdmin, stoppingToken))
-            .TelegramId;
+        try
+        {
+            _adminTelegramId = (await database.OsuUsers.FirstAsync(m => m.IsAdmin, stoppingToken))
+                .TelegramId;
+            await AddPlayersToObserverList("uz");
+            await AddPlayersToObserverList();
 
-        await AddPlayersToObserverList("uz");
-        await AddPlayersToObserverList();
-
-        await Task.WhenAll(
-            ObserveScoresGetScores(stoppingToken),
-            ObserveScores(stoppingToken),
-            CheckOnlineForCountry(stoppingToken)
-        );
+            await Task.WhenAll(
+                ObserveScoresGetScores(stoppingToken),
+                ObserveScores(stoppingToken),
+                CheckOnlineForCountry(stoppingToken)
+            );
+        }
+        catch (OperationCanceledException)
+        {
+            logger.LogWarning("Operation cancelled");
+        }
     }
 
     private async Task ObserveScoresGetScores(CancellationToken stoppingToken)
@@ -78,29 +84,43 @@ public sealed class ScoresObserverBackgroundService(
             AllDailyStatistics.Add(dailyStatistics);
         }
 
-        string? cursor = null;
+        string? getStdScoresCursor = null;
+        string? getManiaScoresCursor = null;
         var counter = 0;
         while (!stoppingToken.IsCancellationRequested)
+        {
             try
             {
-                var response =
+                var getStdScoresResponse =
                     await osuApi.Scores.GetScores(new ScoresQueryParameters
-                        { CursorString = cursor, Ruleset = Ruleset.Osu });
-                if (response == null)
+                        { CursorString = getStdScoresCursor, Ruleset = Ruleset.Osu });
+                var getManiaScoresResponse =
+                    await osuApi.Scores.GetScores(new ScoresQueryParameters
+                        { CursorString = getManiaScoresCursor, Ruleset = Ruleset.Mania });
+                if (getStdScoresResponse == null)
                 {
-                    Logger.LogWarning("GetScores() returned null");
+                    logger.LogWarning("getStdScoresResponse returned null");
                     continue;
                 }
 
-                // For UZ daily statistics
-                var uzScores = response.Scores!.Where(m => _userDatabase.ContainsUserStatistics(m.UserId!.Value))
+                if (getManiaScoresResponse == null)
+                {
+                    logger.LogWarning("getManiaScoresResponse returned null");
+                    continue;
+                }
+
+                /// std and mania osu scores from all players
+                var allOsuScores = getStdScoresResponse.Scores!.Concat(getManiaScoresResponse.Scores!);
+
+                // Scores only from UZ 
+                var uzScores = allOsuScores.Where(m => _userDatabase.ContainsUserStatistics(m.UserId!.Value))
                     .ToArray();
                 foreach (var score in uzScores)
                 {
                     var userStatistics = await _userDatabase.GetUserStatistics(score.UserId!.Value);
                     if (userStatistics == null)
                     {
-                        Logger.LogError($"User statistics is null for userId = {score.UserId!.Value}");
+                        logger.LogError($"User statistics is null for userId = {score.UserId!.Value}");
                         continue;
                     }
 
@@ -131,24 +151,27 @@ public sealed class ScoresObserverBackgroundService(
                 if (counter % 100 == 0) await SaveDailyStatistics();
 
                 counter = (counter + 1) % int.MaxValue;
-                cursor = response.CursorString;
+                getStdScoresCursor = getStdScoresResponse.CursorString;
+                getManiaScoresCursor = getManiaScoresResponse.CursorString;
                 await Task.Delay(5000, stoppingToken);
             }
             catch (OperationCanceledException)
             {
-                Logger.LogWarning("Operation cancelled");
+                logger.LogWarning("Operation cancelled");
                 return;
             }
             catch (Exception e)
             {
-                Logger.LogError(e, "Unexpected exception");
+                logger.LogError(e, "Unexpected exception");
             }
+        }
     }
 
     private async Task ObserveScores(CancellationToken stoppingToken)
     {
         Dictionary<int, GetUserScoresResponse> scores = new();
         while (!stoppingToken.IsCancellationRequested)
+        {
             try
             {
                 foreach (int userId in ObservedUsers)
@@ -158,7 +181,7 @@ public sealed class ScoresObserverBackgroundService(
                             new GetUserScoreQueryParameters { Limit = 50 });
                     if (userBestScores == null)
                     {
-                        Logger.LogWarning($"{userId} has no scores!");
+                        logger.LogWarning($"{userId} has no scores!");
                         continue;
                     }
 
@@ -182,15 +205,16 @@ public sealed class ScoresObserverBackgroundService(
             }
             catch (OperationCanceledException)
             {
-                Logger.LogWarning("Operation cancelled");
+                logger.LogWarning("Operation cancelled");
                 return;
             }
             catch (Exception e)
             {
-                Logger.LogError(e, "Unexpected exception");
+                logger.LogError(e, "Unexpected exception");
             }
+        }
 
-        Logger.LogWarning("Finished its work");
+        logger.LogWarning("Finished its work");
     }
 
     private async Task CheckOnlineForCountry(CancellationToken stoppingToken, string countryCode = "uz")
@@ -215,11 +239,12 @@ public sealed class ScoresObserverBackgroundService(
             }
             catch (OperationCanceledException)
             {
-                Logger.LogInformation("Operation cancelled");
+                logger.LogInformation("Operation cancelled");
+                return;
             }
             catch (Exception e)
             {
-                Logger.LogError(e, "Unexpected exception");
+                logger.LogError(e, "Unexpected exception");
             }
         }
     }
@@ -236,7 +261,7 @@ public sealed class ScoresObserverBackgroundService(
             new GetRankingQueryParameters { Country = countryCode, Filter = Filter.All });
         if (rankings == null)
         {
-            Logger.LogError($"Ranking is null. {countryCode}");
+            logger.LogError($"Ranking is null. {countryCode}");
             throw new Exception("Ranking is null. See logs for details");
         }
 

@@ -1,5 +1,6 @@
 ﻿using OsuApi.V2;
 using OsuApi.V2.Models;
+using OsuApi.V2.Users.Models;
 using SosuBot.Extensions;
 using SosuBot.Helpers.Types;
 using SosuBot.Helpers.Types.Statistics;
@@ -59,8 +60,8 @@ public static class ScoreHelper
     /// <returns></returns>
     public static string GetScoreRankEmoji(string? scoreRank, bool passed = true)
     {
-        if(scoreRank == null) return string.Empty;
-        
+        if (scoreRank == null) return string.Empty;
+
         scoreRank = scoreRank.ToUpperInvariant();
 
         if (!passed)
@@ -83,6 +84,12 @@ public static class ScoreHelper
         };
     }
 
+    /// <summary>
+    /// Replaces X by SS
+    /// </summary>
+    /// <returns></returns>
+    public static string ParseScoreRank(string scoreRank) => scoreRank.Replace("X", "SS");
+
     public static string GetScoreUrl(long scoreId)
     {
         return $"{OsuConstants.BaseScoreUrl}{scoreId}";
@@ -100,10 +107,6 @@ public static class ScoreHelper
         var passedScores = dailyStatistics.Scores.Count;
         var beatmapsPlayed = dailyStatistics.BeatmapsPlayed.Count;
 
-        var mostPpScores = dailyStatistics.Scores.OrderByDescending(m => m.Pp)
-            .Select(score => (dailyStatistics.ActiveUsers.First(u => u.Id == score.UserId), score))
-            .ToArray();
-
         var usersAndTheirScores = dailyStatistics.ActiveUsers.Select(m =>
             {
                 return (m, dailyStatistics.Scores.Where(s => s.UserId == m.Id).ToArray());
@@ -117,18 +120,21 @@ public static class ScoreHelper
 
         var topPpScores = "";
         var count = 0;
-        foreach (var us in mostPpScores)
+        foreach (var us in usersAndTheirScores.OrderByDescending((pair) => pair.Item2.Max(m => m.Pp)))
         {
             if (count >= 5) break;
 
-            var scoreUrlInLink =
-                UserHelper.GetUserProfileUrlWrappedInUsernameString(us.Item1.Id.Value,
-                    us.Item1.Username!);
-            var ppText =
-                GetScoreUrlWrappedInString(us.score.Id!.Value, $"{GetFormattedPpTextConsideringNull(us.score.Pp)}pp💪");
-
+            var scoresOrderedByPp = us.Item2
+                .GroupBy((score) => score.BeatmapId)
+                .Select(m => m.MaxBy(s => s.Pp))
+                .Where(m => m!.Pp != null)
+                .OrderByDescending(m => m!.Pp)
+                .Select(m => GetScoreUrlWrappedInString(m!.Id!.Value, $"{m.Pp:N0}pp"))
+                .ToArray();
+            
+            string topPpScoresTextForCurrentUser = string.Join(", ", scoresOrderedByPp.Take(3));
             topPpScores +=
-                $"{count + 1}. <b>{scoreUrlInLink}</b> - {ppText}\n";
+                $"{count + 1}. <b>{UserHelper.GetUserProfileUrlWrappedInUsernameString(us.m.Id.Value, us.m.Username!)}</b> — <i>{topPpScoresTextForCurrentUser}💪</i>\n";
             count += 1;
         }
 
@@ -138,7 +144,7 @@ public static class ScoreHelper
         {
             if (count >= 5) break;
             topActivePlayers +=
-                $"{count + 1}. <b>{UserHelper.GetUserProfileUrlWrappedInUsernameString(us.m.Id.Value, us.m.Username!)}</b> — {us.Item2.Length} скоров, макс. <i>{us.Item2.Max(m => m.Pp):N2}pp💪</i>\n";
+                $"{count + 1}. <b>{UserHelper.GetUserProfileUrlWrappedInUsernameString(us.m.Id.Value, us.m.Username!)}</b> — {us.Item2.Length} скоров, макс. <i>{us.Item2.Max(m => m.Pp):N0}pp💪</i>\n";
             count += 1;
         }
 
@@ -166,7 +172,8 @@ public static class ScoreHelper
             count += 1;
         }
 
-        DateTime tashkentNow = TimeZoneInfo.ConvertTime(dailyStatistics.DayOfStatistic, TimeZoneInfo.FindSystemTimeZoneById("West Asia Standard Time"));
+        DateTime tashkentNow = TimeZoneInfo.ConvertTime(dailyStatistics.DayOfStatistic,
+            TimeZoneInfo.FindSystemTimeZoneById("West Asia Standard Time"));
         var sendText = language.send_dailyStatistic.Fill([
             $"{tashkentNow:dd.MM.yyyy HH:mm} (по тшк.)",
             $"{activePlayersCount}",

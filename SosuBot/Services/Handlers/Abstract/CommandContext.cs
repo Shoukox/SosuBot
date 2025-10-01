@@ -9,13 +9,14 @@ namespace SosuBot.Services.Handlers.Abstract;
 public class CommandContext<TUpdateType> : ICommandContext<TUpdateType> where TUpdateType : class
 {
     public CommandContext(ITelegramBotClient botClient, TUpdateType update, BotContext database, ApiV2 osuApiV2,
-        RabbitMqService rabbitMqService, CancellationToken cancellationToken)
+        RabbitMqService rabbitMqService, ILogger<TUpdateType> logger, CancellationToken cancellationToken)
     {
         BotClient = botClient;
         Update = update;
         Database = database;
         OsuApiV2 = osuApiV2;
         RabbitMqService = rabbitMqService;
+        Logger = logger;
         CancellationToken = cancellationToken;
     }
 
@@ -28,5 +29,7 @@ public class CommandContext<TUpdateType> : ICommandContext<TUpdateType> where TU
     public ApiV2 OsuApiV2 { get; }
 
     public RabbitMqService RabbitMqService { get; }
+    
+    public ILogger<TUpdateType> Logger { get; }
     public CancellationToken CancellationToken { get; }
 }

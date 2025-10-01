@@ -1,4 +1,7 @@
-﻿using OsuApi.V2.Clients.Users.HttpIO;
+﻿using System.Net.Mime;
+using Microsoft.Extensions.Logging;
+using osu.Game.Configuration;
+using OsuApi.V2.Clients.Users.HttpIO;
 using SosuBot.Extensions;
 using SosuBot.Helpers;
 using SosuBot.Helpers.OutputText;
@@ -6,6 +9,7 @@ using SosuBot.Helpers.Types;
 using SosuBot.Localization;
 using SosuBot.Localization.Languages;
 using SosuBot.Services.Handlers.Abstract;
+using Telegram.Bot.Exceptions;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.ReplyMarkups;
 
@@ -51,6 +55,7 @@ public class OsuUserCallbackCommand : CommandBase<CallbackQuery>
             $"{user.Statistics.GradeCounts!.S}",
             $"{user.Statistics.GradeCounts!.A}"
         ]);
+
         var ik = new InlineKeyboardMarkup(new InlineKeyboardButton[][]
         {
             [
@@ -63,6 +68,13 @@ public class OsuUserCallbackCommand : CommandBase<CallbackQuery>
             ]
         });
 
-        await Context.Update.Message!.EditAsync(Context.BotClient, textToSend, replyMarkup: ik);
+        try
+        {
+            await Context.Update.Message!.EditAsync(Context.BotClient, textToSend, replyMarkup: ik);
+        }
+        catch (ApiRequestException e) when (e.ErrorCode == 400)
+        {
+            await Context.Update.AnswerAsync(Context.BotClient);
+        }
     }
 }
