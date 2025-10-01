@@ -185,7 +185,7 @@ public class OsuScoreCommand : CommandBase<Message>
             var score = scores[i];
 
             textToSend += language.command_score.Fill([
-                $"{ScoreHelper.GetScoreRankEmoji(score.Rank)}{score.Rank}",
+                $"{ScoreHelper.GetScoreRankEmoji(score.Rank)}{ScoreHelper.ParseScoreRank(score.Rank!)}",
                 $"{beatmap.Url}",
                 $"{beatmapset.Title.EncodeHtml()}",
                 $"{beatmap.Version.EncodeHtml()}",

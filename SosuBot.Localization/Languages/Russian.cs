@@ -26,6 +26,8 @@ public struct Russian : ILocalization
         $"/userbest [nickname] [gamemode] - лучшие игры игрока.\n" +
         $"/compare [nickname1] [nickname2] [gamemode] - сравнить игроков.\n" +
         $"/chatstats [gamemode] - топ10 игроков в чате.\n" +
+        $"/ranking [RU/UZ/contry_code] - топ20 игроков для данной страны. Если страна не указана, берется глобал ранкинг.\n" +
+        $"/daily-stats - Эксклюзивно для Узбекистана. Ежедневная статистика по всем скорам от всех игроков в стране.\n" +
         $"\n" +
         $"Если отправить ссылку карты, бот отправит краткую информацию о ней\n\n" +
         $"По вопросам и предложениям писать создателю @Shoukkoo";
@@ -35,7 +37,7 @@ public struct Russian : ILocalization
         "{}/{}❌ - <b><i>{}</i></b>%🎯\n" +
         "<b>➕{}</b> <i>{}x/{}x</i> <b><u>{}pp💪</u></b>\n" +
         "(<b><u>{}pp</u></b> if <b>{}%</b> FC)\n" +
-        "({}) {}% пройдено\n\n";
+        "{} минут назад | {}% пройдено\n\n";
 
     public string command_set =>
         "Теперь ты <b>{}</b>, {}pp💪\n" +
@@ -55,7 +57,7 @@ public struct Russian : ILocalization
     public string command_user =>
         "<b>{}</b>\n" +
         "<i>{}</i>\n\n" +
-        "📶<b>rank</b>: <i>#{} (#{} {})</i>\n" +
+        "🌐<b>rank</b>: <i>#{} (#{} {})</i>\n" +
         "💪<b>pp</b>: <i>{} {}</i>\n" +
         "🎯<b>accuracy</b>: <i>{}</i>\n" +
         "🔢<b>playcount</b>: <i>{}</i>\n" +
@@ -68,8 +70,8 @@ public struct Russian : ILocalization
         "<pre>" +
         "{}\n\n" +
         "🐺{}  🐺{}\n" +
-        "📶{}  📶{}\n" + //rank
-        "📶{}  📶{}\n" +
+        "🌐{}   🌐{}\n" + //rank
+        "🌐{}   🌐{}\n" +
         "💪{}  💪{}\n" +
         "🎯{}  🎯{}\n" +
         "⏱️{}  ⏱️{}\n" +
@@ -111,7 +113,7 @@ public struct Russian : ILocalization
         "<b>Активных игроков:</b> {}\n" +
         "<b>Пасснутых скоров:</b> {}\n" +
         "<b>Сыгранных уникальных карт:</b> {}\n\n" +
-        "<b>💅 Топ-5 скоров по пп:</b>\n" +
+        "<b>💅 Топ-5 фармеров:</b>\n" +
         "{}\n" +
         "<b>🔥 Топ-5 активных игроков:</b>\n" +
         "{}\n" +

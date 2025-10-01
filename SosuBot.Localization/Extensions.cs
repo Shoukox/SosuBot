@@ -4,14 +4,14 @@ namespace SosuBot.Localization;
 
 public static class Extensions
 {
+    private static readonly Regex PlaceholderRegex = new(@"\{.*?\}", RegexOptions.Compiled);
+
     public static string Fill(this string text, IEnumerable<string> replace)
     {
-        foreach (var item in replace)
-        {
-            var ind = Regex.Match(text, @"{(.*)}").Index;
-            text = text.Remove(ind, 2).Insert(ind, item);
-        }
+        if (text is null) throw new ArgumentNullException(nameof(text));
+        if (replace is null) throw new ArgumentNullException(nameof(replace));
 
-        return text;
+        using var e = replace.GetEnumerator();
+        return PlaceholderRegex.Replace(text, m => e.MoveNext() ? e.Current ?? string.Empty : m.Value);
     }
 }

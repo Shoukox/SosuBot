@@ -8,19 +8,26 @@ namespace SosuBot.Services.BackgroundServices;
 
 public sealed class PollingBackgroundService(
     ITelegramBotClient botClient,
-    UpdateQueueService updateQueueService) : BackgroundService
+    UpdateQueueService updateQueueService,
+    ILogger<PollingBackgroundService> logger) : BackgroundService
 {
-    private static readonly ILogger Logger = ApplicationLogging.CreateLogger(nameof(PollingBackgroundService));
-    
     private int? _offset;
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        Logger.LogInformation("Starting polling background service");
+        logger.LogInformation("Starting polling background service");
 
-        // Skip pending updates
-        var pendingUpdates = await botClient.GetUpdates(cancellationToken: stoppingToken);
-        if (pendingUpdates.Length != 0) _offset = pendingUpdates.Last().Id + 1;
+        try
+        {
+            // Skip pending updates
+            var pendingUpdates = await botClient.GetUpdates(cancellationToken: stoppingToken);
+            if (pendingUpdates.Length != 0) _offset = pendingUpdates.Last().Id + 1;
+        }
+        catch (OperationCanceledException)
+        {
+            logger.LogWarning("Operation cancelled");
+            return;
+        }
 
         // Start polling
         await EnqueueAllUpdates(stoppingToken);
@@ -28,7 +35,7 @@ public sealed class PollingBackgroundService(
 
     private async Task EnqueueAllUpdates(CancellationToken stoppingToken)
     {
-        Logger.LogInformation("Bot is ready");
+        logger.LogInformation("Bot is ready");
         while (!stoppingToken.IsCancellationRequested)
             try
             {
@@ -40,14 +47,14 @@ public sealed class PollingBackgroundService(
             }
             catch (OperationCanceledException)
             {
-                Logger.LogWarning("Operation cancelled");
+                logger.LogWarning("Operation cancelled");
                 return;
             }
             catch (Exception e)
             {
-                Logger.LogError(e, "Exception");
+                logger.LogError(e, "Exception");
             }
 
-        Logger.LogWarning("Finished its work");
+        logger.LogWarning("Finished its work");
     }
 }
