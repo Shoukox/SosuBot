@@ -73,7 +73,7 @@ internal class Program
                 PooledConnectionIdleTimeout = TimeSpan.FromMinutes(1),
 
                 // How many concurrent connections to the Telegram API
-                MaxConnectionsPerServer = 10,
+                MaxConnectionsPerServer = 100,
 
                 // Short connect timeout (fail fast if remote unreachable)
                 ConnectTimeout = TimeSpan.FromSeconds(10)
@@ -106,7 +106,6 @@ internal class Program
         builder.Services.AddHostedService<PollingBackgroundService>();
         builder.Services.AddHostedService<UpdateHandlerBackgroundService>();
         builder.Services.AddHostedService<ScoresObserverBackgroundService>();
-
 
         // Database
         var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ??

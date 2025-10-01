@@ -150,6 +150,7 @@ public class OsuScoreCommand : CommandBase<Message>
                 language.error_userNotFound + "\n\n" + language.error_hintReplaceSpaces);
             return;
         }
+        osuUsernameForScore = userResponse.UserExtend!.Username;
 
         // if username was entered, then use as ruleset his (this username) standard ruleset.
         playmode ??= userResponse.UserExtend!.Playmode!.ParseRulesetToPlaymode();
