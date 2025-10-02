@@ -4,3 +4,4 @@ appsettings*
 bin/
 obj/
 *.db*
+Properties/launchSettings.json

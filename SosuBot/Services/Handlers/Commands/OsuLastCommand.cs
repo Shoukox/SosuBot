@@ -1,5 +1,7 @@
 using System.Text.RegularExpressions;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using OsuApi.V2;
 using OsuApi.V2.Clients.Beatmaps.HttpIO;
 using OsuApi.V2.Clients.Users.HttpIO;
 using OsuApi.V2.Models;
@@ -16,10 +18,19 @@ using Telegram.Bot.Types;
 
 namespace SosuBot.Services.Handlers.Commands;
 
-public class OsuLastCommand(bool onlyPassed = false) : CommandBase<Message>
+public class OsuLastCommand : CommandBase<Message>
 {
     public static readonly string[] Commands = ["/last", "/l"];
+    private ApiV2 _osuApiV2;
+    private ILogger<OsuLastCommand> _logger;
+    private bool _onlyPassed;
 
+    public OsuLastCommand(bool onlyPassed = false)
+    {
+        _onlyPassed = onlyPassed;
+        _osuApiV2 = Context.ServiceProvider.GetRequiredService<ApiV2>();
+        _logger = Context.ServiceProvider.GetRequiredService<ILogger<OsuLastCommand>>();
+    }
     public override async Task ExecuteAsync()
     {
         if (await Context.Update.IsUserSpamming(Context.BotClient))
@@ -92,7 +103,7 @@ public class OsuLastCommand(bool onlyPassed = false) : CommandBase<Message>
 
         // getting osu!player through username
         var userResponse =
-            await Context.OsuApiV2.Users.GetUser($"@{osuUsernameForLastScores}", new GetUserQueryParameters());
+            await _osuApiV2.Users.GetUser($"@{osuUsernameForLastScores}", new GetUserQueryParameters());
         if (userResponse is null)
         {
             await waitMessage.EditAsync(Context.BotClient,
@@ -105,10 +116,10 @@ public class OsuLastCommand(bool onlyPassed = false) : CommandBase<Message>
         // if username was entered, then use as ruleset his (this username) standard ruleset.
         ruleset ??= userResponse.UserExtend!.Playmode!;
 
-        var lastScoresResponse = await Context.OsuApiV2.Users.GetUserScores(userResponse.UserExtend!.Id.Value,
+        var lastScoresResponse = await _osuApiV2.Users.GetUserScores(userResponse.UserExtend!.Id.Value,
             ScoreType.Recent,
             new GetUserScoreQueryParameters
-                { IncludeFails = Convert.ToInt32(!onlyPassed), Limit = limit, Mode = ruleset });
+                { IncludeFails = Convert.ToInt32(!_onlyPassed), Limit = limit, Mode = ruleset });
         if (lastScoresResponse!.Scores.Length == 0)
         {
             await waitMessage.EditAsync(Context.BotClient,
@@ -118,7 +129,7 @@ public class OsuLastCommand(bool onlyPassed = false) : CommandBase<Message>
 
         Score[] lastScores = lastScoresResponse.Scores;
         GetBeatmapResponse[] beatmaps = lastScores
-            .Select(async score => await Context.OsuApiV2.Beatmaps.GetBeatmap((long)score.Beatmap!.Id))
+            .Select(async score => await _osuApiV2.Beatmaps.GetBeatmap((long)score.Beatmap!.Id))
             .Select(t => t.Result).ToArray()!;
         var ppCalculator = new PPCalculator();
 
@@ -176,7 +187,7 @@ public class OsuLastCommand(bool onlyPassed = false) : CommandBase<Message>
 
             if (isFc)
             {
-                Context.Logger.LogWarning(
+                _logger.LogWarning(
                     $"PP Calculation for fc and the gotten pp from the api do not match: scoreId={score.Id} calculatedPpForFC={calculatedPp.IfFC.Pp} gottenPp:{score.Pp}");
                 scorePpIfFc = scorePp;
                 accuracyIfFc = (double)score.Accuracy;

@@ -3,7 +3,7 @@ using Telegram.Bot.Types;
 
 namespace SosuBot.Services.Data;
 
-public class UpdateQueueService
+public sealed class UpdateQueueService
 {
     private readonly Channel<Update> _channel = Channel.CreateUnbounded<Update>();
 

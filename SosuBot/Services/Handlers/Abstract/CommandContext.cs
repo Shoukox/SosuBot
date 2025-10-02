@@ -6,30 +6,20 @@ using Telegram.Bot;
 
 namespace SosuBot.Services.Handlers.Abstract;
 
-public class CommandContext<TUpdateType> : ICommandContext<TUpdateType> where TUpdateType : class
+public class CommandContext<TUpdateType>(
+    ITelegramBotClient botClient,
+    TUpdateType update,
+    BotContext database,
+    IServiceProvider serviceProvider,
+    CancellationToken cancellationToken)    
+    : ICommandContext<TUpdateType>
+    where TUpdateType : class
 {
-    public CommandContext(ITelegramBotClient botClient, TUpdateType update, BotContext database, ApiV2 osuApiV2,
-        RabbitMqService rabbitMqService, ILogger<TUpdateType> logger, CancellationToken cancellationToken)
-    {
-        BotClient = botClient;
-        Update = update;
-        Database = database;
-        OsuApiV2 = osuApiV2;
-        RabbitMqService = rabbitMqService;
-        Logger = logger;
-        CancellationToken = cancellationToken;
-    }
+    public ITelegramBotClient BotClient { get; } = botClient;
+    public TUpdateType Update { get; } = update;
 
-    public ITelegramBotClient BotClient { get; }
+    public BotContext Database { get; } = database;
 
-    public TUpdateType Update { get; }
-
-    public BotContext Database { get; }
-
-    public ApiV2 OsuApiV2 { get; }
-
-    public RabbitMqService RabbitMqService { get; }
-    
-    public ILogger<TUpdateType> Logger { get; }
-    public CancellationToken CancellationToken { get; }
+    public IServiceProvider ServiceProvider { get; } = serviceProvider;
+    public CancellationToken CancellationToken { get; } = cancellationToken;
 }

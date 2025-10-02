@@ -6,7 +6,7 @@ using Telegram.Bot.Types;
 
 namespace SosuBot.Services.Handlers.Commands;
 
-public class OsuChatstatsExcludeCommand : CommandBase<Message>
+public sealed class OsuChatstatsExcludeCommand : CommandBase<Message>
 {
     public static string[] Commands = ["/exclude"];
 

@@ -6,7 +6,7 @@ using Telegram.Bot.Types;
 
 namespace SosuBot.Services.Handlers.Commands;
 
-public class OsuModeCommand : CommandBase<Message>
+public sealed class OsuModeCommand : CommandBase<Message>
 {
     public static string[] Commands = ["/mode"];
 

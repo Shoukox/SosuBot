@@ -1,4 +1,6 @@
-﻿using OsuApi.V2.Clients.Users.HttpIO;
+﻿using Microsoft.Extensions.DependencyInjection;
+using OsuApi.V2;
+using OsuApi.V2.Clients.Users.HttpIO;
 using OsuApi.V2.Users.Models;
 using SosuBot.Extensions;
 using SosuBot.Helpers;
@@ -12,10 +14,17 @@ using Telegram.Bot.Types.ReplyMarkups;
 
 namespace SosuBot.Services.Handlers.Commands;
 
-public class OsuUserCommand(bool includeIdInSearch = false) : CommandBase<Message>
+public class OsuUserCommand : CommandBase<Message>
 {
     public static string[] Commands = ["/user", "/u"];
+    private ApiV2 _osuApiV2;
+    private bool _includeIdInSearch;
 
+    public OsuUserCommand(bool includeIdInSearch = false)
+    {
+        _includeIdInSearch = includeIdInSearch;
+        _osuApiV2 = Context.ServiceProvider.GetRequiredService<ApiV2>();
+    }
     public override async Task ExecuteAsync()
     {
         if (await Context.Update.IsUserSpamming(Context.BotClient))
@@ -31,7 +40,7 @@ public class OsuUserCommand(bool includeIdInSearch = false) : CommandBase<Messag
         Playmode playmode;
 
         string searchPrefix = "@";
-        if (includeIdInSearch)
+        if (_includeIdInSearch)
         {
             searchPrefix = "";
         }
@@ -45,7 +54,7 @@ public class OsuUserCommand(bool includeIdInSearch = false) : CommandBase<Messag
             }
 
             playmode = osuUserInDatabase.OsuMode;
-            user = (await Context.OsuApiV2.Users.GetUser($"{searchPrefix}{osuUserInDatabase.OsuUsername}",
+            user = (await _osuApiV2.Users.GetUser($"{searchPrefix}{osuUserInDatabase.OsuUsername}",
                 new GetUserQueryParameters(), playmode.ToRuleset()))?.UserExtend;
         }
         else if (parameters.Length == 1)
@@ -67,7 +76,7 @@ public class OsuUserCommand(bool includeIdInSearch = false) : CommandBase<Messag
 
                 playmode = ruleset.ParseRulesetToPlaymode();
 
-                var userResponse = await Context.OsuApiV2.Users.GetUser($"{searchPrefix}{osuUserInDatabase.OsuUsername}",
+                var userResponse = await _osuApiV2.Users.GetUser($"{searchPrefix}{osuUserInDatabase.OsuUsername}",
                     new GetUserQueryParameters(), ruleset);
                 if (userResponse is null)
                 {
@@ -80,7 +89,7 @@ public class OsuUserCommand(bool includeIdInSearch = false) : CommandBase<Messag
             else
             {
                 var userResponse =
-                    await Context.OsuApiV2.Users.GetUser($"{searchPrefix}{parameters[0]}", new GetUserQueryParameters());
+                    await _osuApiV2.Users.GetUser($"{searchPrefix}{parameters[0]}", new GetUserQueryParameters());
                 if (userResponse is null)
                 {
                     await waitMessage.EditAsync(Context.BotClient, language.error_userNotFound);

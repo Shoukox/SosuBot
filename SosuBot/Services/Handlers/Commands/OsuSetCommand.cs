@@ -1,4 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using OsuApi.V2;
 using OsuApi.V2.Clients.Users.HttpIO;
 using SosuBot.Database.Models;
 using SosuBot.Extensions;
@@ -10,10 +12,15 @@ using Telegram.Bot.Types;
 
 namespace SosuBot.Services.Handlers.Commands;
 
-public class OsuSetCommand : CommandBase<Message>
+public sealed class OsuSetCommand : CommandBase<Message>
 {
     public static string[] Commands = ["/set"];
+    private ApiV2 _osuApiV2;
 
+    public OsuSetCommand()
+    {
+        _osuApiV2 = Context.ServiceProvider.GetRequiredService<ApiV2>();
+    }
     public override async Task ExecuteAsync()
     {
         ILocalization language = new Russian();
@@ -30,7 +37,7 @@ public class OsuSetCommand : CommandBase<Message>
 
         var osuUserInDatabase =
             await Context.Database.OsuUsers.FirstOrDefaultAsync(m => m.TelegramId == Context.Update.From!.Id);
-        var response = await Context.OsuApiV2.Users.GetUser($"@{osuUsername}", new GetUserQueryParameters());
+        var response = await _osuApiV2.Users.GetUser($"@{osuUsername}", new GetUserQueryParameters());
         if (response is null)
         {
             await Context.Update.ReplyAsync(Context.BotClient, language.error_userNotFound);

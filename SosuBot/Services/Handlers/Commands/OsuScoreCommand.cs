@@ -1,4 +1,6 @@
-﻿using OsuApi.V2.Clients.Beatmaps.HttpIO;
+﻿using Microsoft.Extensions.DependencyInjection;
+using OsuApi.V2;
+using OsuApi.V2.Clients.Beatmaps.HttpIO;
 using OsuApi.V2.Clients.Users.HttpIO;
 using OsuApi.V2.Models;
 using OsuApi.V2.Users.Models;
@@ -12,10 +14,15 @@ using Telegram.Bot.Types;
 
 namespace SosuBot.Services.Handlers.Commands;
 
-public class OsuScoreCommand : CommandBase<Message>
+public sealed class OsuScoreCommand : CommandBase<Message>
 {
     public static string[] Commands = ["/score", "/s"];
+    private ApiV2 _osuApiV2;
 
+    public OsuScoreCommand()
+    {
+        _osuApiV2 = Context.ServiceProvider.GetRequiredService<ApiV2>();
+    }
     public override async Task ExecuteAsync()
     {
         if (await Context.Update.IsUserSpamming(Context.BotClient))
@@ -41,7 +48,7 @@ public class OsuScoreCommand : CommandBase<Message>
             {
                 if (beatmapId is null && beatmapsetId is not null)
                 {
-                    beatmapset = await Context.OsuApiV2.Beatmapsets.GetBeatmapset(beatmapsetId.Value);
+                    beatmapset = await _osuApiV2.Beatmapsets.GetBeatmapset(beatmapsetId.Value);
                     beatmapId = beatmapset.Beatmaps![0].Id;
                 }
             }
@@ -71,7 +78,7 @@ public class OsuScoreCommand : CommandBase<Message>
             {
                 if (beatmapId is null && beatmapsetId is not null)
                 {
-                    beatmapset = await Context.OsuApiV2.Beatmapsets.GetBeatmapset(beatmapsetId.Value);
+                    beatmapset = await _osuApiV2.Beatmapsets.GetBeatmapset(beatmapsetId.Value);
                     beatmapId = beatmapset.Beatmaps![0].Id;
                 }
 
@@ -86,7 +93,7 @@ public class OsuScoreCommand : CommandBase<Message>
                 {
                     if (beatmapId is null && beatmapsetId is not null)
                     {
-                        beatmapset = await Context.OsuApiV2.Beatmapsets.GetBeatmapset(beatmapsetId.Value);
+                        beatmapset = await _osuApiV2.Beatmapsets.GetBeatmapset(beatmapsetId.Value);
                         beatmapId = beatmapset.Beatmaps![0].Id;
                     }
 
@@ -117,7 +124,7 @@ public class OsuScoreCommand : CommandBase<Message>
             {
                 if (beatmapId is null && beatmapsetId is not null)
                 {
-                    beatmapset = await Context.OsuApiV2.Beatmapsets.GetBeatmapset(beatmapsetId.Value);
+                    beatmapset = await _osuApiV2.Beatmapsets.GetBeatmapset(beatmapsetId.Value);
                     beatmapId = beatmapset.Beatmaps![0].Id;
                 }
 
@@ -143,7 +150,7 @@ public class OsuScoreCommand : CommandBase<Message>
 
         // getting osu!player through username
         var userResponse =
-            await Context.OsuApiV2.Users.GetUser($"@{osuUsernameForScore}", new GetUserQueryParameters());
+            await _osuApiV2.Users.GetUser($"@{osuUsernameForScore}", new GetUserQueryParameters());
         if (userResponse is null)
         {
             await waitMessage.EditAsync(Context.BotClient,
@@ -155,7 +162,7 @@ public class OsuScoreCommand : CommandBase<Message>
         // if username was entered, then use as ruleset his (this username) standard ruleset.
         playmode ??= userResponse.UserExtend!.Playmode!.ParseRulesetToPlaymode();
 
-        var scoresResponse = await Context.OsuApiV2.Beatmaps.GetUserBeatmapScores(beatmapId.Value,
+        var scoresResponse = await _osuApiV2.Beatmaps.GetUserBeatmapScores(beatmapId.Value,
             userResponse.UserExtend!.Id.Value,
             new GetUserBeatmapScoresQueryParameters { Ruleset = playmode.Value.ToRuleset() });
         if (scoresResponse is null)
@@ -173,10 +180,10 @@ public class OsuScoreCommand : CommandBase<Message>
             return;
         }
 
-        var beatmap = (await Context.OsuApiV2.Beatmaps.GetBeatmap(scores.First().BeatmapId!.Value))!.BeatmapExtended!;
+        var beatmap = (await _osuApiV2.Beatmaps.GetBeatmap(scores.First().BeatmapId!.Value))!.BeatmapExtended!;
         if (beatmapset is null)
         {
-            beatmapset = await Context.OsuApiV2.Beatmapsets.GetBeatmapset(beatmap!.BeatmapsetId.Value);
+            beatmapset = await _osuApiV2.Beatmapsets.GetBeatmapset(beatmap!.BeatmapsetId.Value);
         }
         chatInDatabase!.LastBeatmapId = beatmap.Id;
 

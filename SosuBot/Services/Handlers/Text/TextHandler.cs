@@ -1,4 +1,6 @@
+using Microsoft.Extensions.DependencyInjection;
 using osu.Game.Rulesets.Mods;
+using OsuApi.V2;
 using OsuApi.V2.Clients.Users.HttpIO;
 using OsuApi.V2.Users.Models;
 using SosuBot.Extensions;
@@ -13,8 +15,14 @@ using Telegram.Bot.Types.ReplyMarkups;
 
 namespace SosuBot.Services.Handlers.Text;
 
-public class TextHandler : CommandBase<Message>
+public sealed class TextHandler : CommandBase<Message>
 {
+    private ApiV2 _osuApiV2;
+
+    public TextHandler()
+    {
+        _osuApiV2 = Context.ServiceProvider.GetRequiredService<ApiV2>();
+    }
     public override async Task ExecuteAsync()
     {
         ILocalization language = new Russian();
@@ -25,12 +33,14 @@ public class TextHandler : CommandBase<Message>
 
     private async Task HandleUserProfileLink(ILocalization language)
     {
+        
+        
         var userProfileLink = OsuHelper.ParseOsuUserLink(Context.Update.GetAllLinks(), out var userId);
         if (userProfileLink == null) return;
         if (await Context.Update.IsUserSpamming(Context.BotClient))
             return;
 
-        var user = (await Context.OsuApiV2.Users.GetUser($"{userId}", new GetUserQueryParameters()))!.UserExtend!;
+        var user = (await _osuApiV2.Users.GetUser($"{userId}", new GetUserQueryParameters()))!.UserExtend!;
 
         var playmode = user.Playmode!.ParseRulesetToPlaymode();
         double? currentPp = user.Statistics!.Pp;
@@ -87,15 +97,15 @@ public class TextHandler : CommandBase<Message>
         BeatmapExtended? beatmap = null;
         if (beatmapId is null && beatmapsetId is not null)
         {
-            beatmapset = await Context.OsuApiV2.Beatmapsets.GetBeatmapset(beatmapsetId.Value);
+            beatmapset = await _osuApiV2.Beatmapsets.GetBeatmapset(beatmapsetId.Value);
             beatmapId = beatmapset.Beatmaps!.OrderByDescending(m => m.DifficultyRating).First().Id;
         }
 
-        beatmap ??= (await Context.OsuApiV2.Beatmaps.GetBeatmap(beatmapId!.Value))!.BeatmapExtended!;
+        beatmap ??= (await _osuApiV2.Beatmaps.GetBeatmap(beatmapId!.Value))!.BeatmapExtended!;
         var sum = beatmap.CountCircles + beatmap.CountSliders + beatmap.CountSpinners;
         if (sum is > 20_000) return;
 
-        beatmapset ??= await Context.OsuApiV2.Beatmapsets.GetBeatmapset(beatmap.BeatmapsetId.Value);
+        beatmapset ??= await _osuApiV2.Beatmapsets.GetBeatmapset(beatmap.BeatmapsetId.Value);
 
         var playmode = beatmap.Mode!.ParseRulesetToPlaymode();
         var classicMod = OsuHelper.GetClassicMode(playmode);

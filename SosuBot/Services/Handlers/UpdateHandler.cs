@@ -21,12 +21,10 @@ using DummyCommand = SosuBot.Services.Handlers.Callbacks.DummyCommand;
 namespace SosuBot.Services.Handlers;
 
 public class UpdateHandler(
-    ApiV2 osuApi,
-    RabbitMqService rabbitMqService,
     BotContext database,
     IOptions<BotConfiguration> botConfig,
     ILogger<UpdateHandler> logger,
-    ILoggerFactory loggerFactory) : IUpdateHandler
+    IServiceProvider serviceProvider) : IUpdateHandler
 {
     private Update? _currentUpdate;
 
@@ -113,15 +111,12 @@ public class UpdateHandler(
                 break;
         }
         
-        var commandLogger = loggerFactory.CreateLogger<CallbackQuery>();
         executableCommand.SetContext(
             new CommandContext<CallbackQuery>(
                 botClient,
                 callbackQuery,
                 database,
-                osuApi,
-                rabbitMqService,
-                commandLogger,
+                serviceProvider,
                 cancellationToken));
 
         await executableCommand.ExecuteAsync();
@@ -203,15 +198,12 @@ public class UpdateHandler(
                 break;
         }
 
-        var commandLogger = loggerFactory.CreateLogger<Message>();
         executableCommand.SetContext(
             new CommandContext<Message>(
                 botClient,
                 msg,
                 database,
-                osuApi,
-                rabbitMqService,
-                commandLogger,
+                serviceProvider,
                 cancellationToken));
 
         await executableCommand.ExecuteAsync();
@@ -221,15 +213,12 @@ public class UpdateHandler(
     private async Task OnText(ITelegramBotClient botClient, Message msg, CancellationToken cancellationToken)
     {
         CommandBase<Message> textHandler = new TextHandler();
-        var commandLogger = loggerFactory.CreateLogger<Message>();
         textHandler.SetContext(
             new CommandContext<Message>(
                 botClient,
                 msg,
                 database,
-                osuApi,
-                rabbitMqService,
-                commandLogger,
+                serviceProvider,
                 cancellationToken));
 
         await textHandler.ExecuteAsync();

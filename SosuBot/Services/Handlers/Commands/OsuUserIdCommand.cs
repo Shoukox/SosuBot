@@ -1,6 +1,6 @@
 ﻿namespace SosuBot.Services.Handlers.Commands;
 
-public class OsuUserIdCommand : OsuUserCommand
+public sealed class OsuUserIdCommand : OsuUserCommand
 {
     public new static readonly string[] Commands = ["/userid", "/ui"];
 

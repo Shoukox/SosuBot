@@ -5,7 +5,7 @@ using SosuBot.Logging;
 
 namespace SosuBot.Services.Data;
 
-public class RabbitMqService(ILogger<RabbitMqService> logger)
+public sealed class RabbitMqService(ILogger<RabbitMqService> logger)
 {
     private IChannel? _channel;
     

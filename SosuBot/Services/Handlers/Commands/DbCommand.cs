@@ -7,9 +7,14 @@ using Telegram.Bot.Types;
 
 namespace SosuBot.Services.Handlers.Commands;
 
-public class DbCommand : CommandBase<Message>
+public sealed class DbCommand : CommandBase<Message>
 {
     public static readonly string[] Commands = ["/db"];
+
+    public override Task BeforeExecuteAsync()
+    {
+        throw new NotImplementedException();
+    }
 
     public override async Task ExecuteAsync()
     {

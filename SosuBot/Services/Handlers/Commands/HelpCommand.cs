@@ -6,7 +6,7 @@ using Telegram.Bot.Types;
 
 namespace SosuBot.Services.Handlers.Commands;
 
-public class HelpCommand : CommandBase<Message>
+public sealed class HelpCommand : CommandBase<Message>
 {
     public static string[] Commands = ["/help"];
 
