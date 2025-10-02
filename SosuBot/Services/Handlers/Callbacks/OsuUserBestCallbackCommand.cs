@@ -1,4 +1,6 @@
-﻿using OsuApi.V2.Clients.Users.HttpIO;
+﻿using Microsoft.Extensions.DependencyInjection;
+using OsuApi.V2;
+using OsuApi.V2.Clients.Users.HttpIO;
 using OsuApi.V2.Models;
 using OsuApi.V2.Users.Models;
 using SosuBot.Extensions;
@@ -16,7 +18,12 @@ namespace SosuBot.Services.Handlers.Callbacks;
 public class OsuUserBestCallbackCommand : CommandBase<CallbackQuery>
 {
     public static string Command = "userbest";
+    private ApiV2 _osuApiV2;
 
+    public OsuUserBestCallbackCommand()
+    {
+        _osuApiV2 = Context.ServiceProvider.GetRequiredService<ApiV2>();
+    }
     public override async Task ExecuteAsync()
     {
         ILocalization language = new Russian();
@@ -49,13 +56,13 @@ public class OsuUserBestCallbackCommand : CommandBase<CallbackQuery>
             throw new NotImplementedException();
         }
 
-        userScoreResponse = (await Context.OsuApiV2.Users.GetUserScores(osuUserId, ScoreType.Best,
+        userScoreResponse = (await _osuApiV2.Users.GetUserScores(osuUserId, ScoreType.Best,
             new GetUserScoreQueryParameters { Mode = playmode.ToRuleset(), Limit = 5, Offset = offset }))!;
         scores = userScoreResponse.Scores;
         if (scores.Length == 0) return;
 
         BeatmapExtended[] beatmaps = scores
-            .Select(async score => await Context.OsuApiV2.Beatmaps.GetBeatmap((long)score.Beatmap!.Id))
+            .Select(async score => await _osuApiV2.Beatmaps.GetBeatmap((long)score.Beatmap!.Id))
             .Select(t => t.Result!.BeatmapExtended).ToArray()!;
 
         var textToSend = $"{osuUsername}({playmode.ToGamemode()})\n\n";

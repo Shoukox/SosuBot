@@ -6,7 +6,7 @@ using Telegram.Bot.Types;
 
 namespace SosuBot.Services.Handlers.Commands;
 
-public class OsuChatstatsIncludeCommand : CommandBase<Message>
+public sealed class OsuChatstatsIncludeCommand : CommandBase<Message>
 {
     public static string[] Commands = ["/include"];
 

@@ -1,0 +1,13 @@
+{
+  "profiles": {
+    "SosuBot": {
+      "commandName": "Project",
+      "environmentVariables": {
+        "OpenAIToken": "<Your_OpenAIToken_here>"
+      }
+    },
+    "Container (Dockerfile)": {
+      "commandName": "Docker"
+    }
+  }
+}

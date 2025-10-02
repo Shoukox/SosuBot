@@ -6,7 +6,7 @@ using Telegram.Bot.Types;
 
 namespace SosuBot.Services.Handlers.Commands;
 
-public class StartCommand : CommandBase<Message>
+public sealed class StartCommand : CommandBase<Message>
 {
     public static string[] Commands = ["/start"];
 

@@ -1,4 +1,7 @@
-﻿using OsuApi.V2.Clients.Users.HttpIO;
+﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using OsuApi.V2;
+using OsuApi.V2.Clients.Users.HttpIO;
 using OsuApi.V2.Models;
 using SosuBot.Extensions;
 using SosuBot.Helpers.OutputText;
@@ -9,10 +12,15 @@ using Telegram.Bot.Types;
 
 namespace SosuBot.Services.Handlers.Commands;
 
-public class OsuCompareCommand : CommandBase<Message>
+public sealed class OsuCompareCommand : CommandBase<Message>
 {
     public static string[] Commands = ["/compare", "/cmp"];
+    private ApiV2 _osuApiV2;
 
+    public OsuCompareCommand(bool onlyPassed = false)
+    {
+        _osuApiV2 = Context.ServiceProvider.GetRequiredService<ApiV2>();
+    }
     public override async Task ExecuteAsync()
     {
         ILocalization language = new Russian();
@@ -38,9 +46,9 @@ public class OsuCompareCommand : CommandBase<Message>
         }
 
         var getUser1Response =
-            await Context.OsuApiV2.Users.GetUser($"@{parameters[0]}", new GetUserQueryParameters(), ruleset);
+            await _osuApiV2.Users.GetUser($"@{parameters[0]}", new GetUserQueryParameters(), ruleset);
         var getUser2Response =
-            await Context.OsuApiV2.Users.GetUser($"@{parameters[1]}", new GetUserQueryParameters(), ruleset);
+            await _osuApiV2.Users.GetUser($"@{parameters[1]}", new GetUserQueryParameters(), ruleset);
 
         if (getUser1Response == null)
         {

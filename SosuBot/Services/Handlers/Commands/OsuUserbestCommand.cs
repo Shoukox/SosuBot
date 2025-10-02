@@ -1,4 +1,6 @@
-﻿using OsuApi.V2.Clients.Beatmaps.HttpIO;
+﻿using Microsoft.Extensions.DependencyInjection;
+using OsuApi.V2;
+using OsuApi.V2.Clients.Beatmaps.HttpIO;
 using OsuApi.V2.Clients.Users.HttpIO;
 using OsuApi.V2.Models;
 using OsuApi.V2.Users.Models;
@@ -12,10 +14,15 @@ using Telegram.Bot.Types.ReplyMarkups;
 
 namespace SosuBot.Services.Handlers.Commands;
 
-public class OsuUserbestCommand : CommandBase<Message>
+public sealed class OsuUserbestCommand : CommandBase<Message>
 {
     public static string[] Commands = ["/userbest", "/best"];
+    private ApiV2 _osuApiV2;
 
+    public OsuUserbestCommand()
+    {
+        _osuApiV2 = Context.ServiceProvider.GetRequiredService<ApiV2>();
+    }
     public override async Task ExecuteAsync()
     {
         if (await Context.Update.IsUserSpamming(Context.BotClient))
@@ -44,7 +51,7 @@ public class OsuUserbestCommand : CommandBase<Message>
             ruleset = osuUserInDatabase.OsuMode.ToRuleset();
             osuUsernameForUserbest = osuUserInDatabase.OsuUsername;
             osuUserIdForUserbest = osuUserInDatabase.OsuUserId;
-            bestScores = (await Context.OsuApiV2.Users.GetUserScores(osuUserInDatabase.OsuUserId, ScoreType.Best,
+            bestScores = (await _osuApiV2.Users.GetUserScores(osuUserInDatabase.OsuUserId, ScoreType.Best,
                 new GetUserScoreQueryParameters { Limit = 5, Mode = ruleset }))!.Scores;
         }
         else
@@ -56,7 +63,7 @@ public class OsuUserbestCommand : CommandBase<Message>
                 rulesetAlreadySet = true;
             }
 
-            var userResponse = await Context.OsuApiV2.Users.GetUser(parameters[0], new GetUserQueryParameters());
+            var userResponse = await _osuApiV2.Users.GetUser(parameters[0], new GetUserQueryParameters());
             if (userResponse is null)
             {
                 await waitMessage.EditAsync(Context.BotClient,
@@ -68,7 +75,7 @@ public class OsuUserbestCommand : CommandBase<Message>
             if (!rulesetAlreadySet) ruleset = userResponse.UserExtend!.Playmode!;
             osuUsernameForUserbest = userResponse.UserExtend!.Username!;
             osuUserIdForUserbest = userResponse.UserExtend!.Id.Value;
-            var userbestResponse = await Context.OsuApiV2.Users.GetUserScores(userResponse.UserExtend!.Id.Value,
+            var userbestResponse = await _osuApiV2.Users.GetUserScores(userResponse.UserExtend!.Id.Value,
                 ScoreType.Best, new GetUserScoreQueryParameters { Limit = 5, Mode = ruleset });
             bestScores = userbestResponse!.Scores;
         }
@@ -84,7 +91,7 @@ public class OsuUserbestCommand : CommandBase<Message>
         var textToSend = $"{osuUsernameForUserbest} (<b>{gamemode}</b>)\n\n";
 
         GetBeatmapResponse[] beatmaps = bestScores
-            .Select(async score => await Context.OsuApiV2.Beatmaps.GetBeatmap((long)score.Beatmap!.Id))
+            .Select(async score => await _osuApiV2.Beatmaps.GetBeatmap((long)score.Beatmap!.Id))
             .Select(t => t.Result).ToArray()!;
         for (var i = 0; i <= bestScores.Length - 1; i++)
         {

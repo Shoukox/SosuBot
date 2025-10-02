@@ -102,6 +102,7 @@ internal class Program
         });
         builder.Services.AddSingleton<UpdateQueueService>();
         builder.Services.AddSingleton<RabbitMqService>();
+        builder.Services.AddSingleton<OpenAIService>();
         builder.Services.AddScoped<UpdateHandler>();
         builder.Services.AddHostedService<PollingBackgroundService>();
         builder.Services.AddHostedService<UpdateHandlerBackgroundService>();

@@ -8,7 +8,7 @@ using Telegram.Bot.Types;
 
 namespace SosuBot.Services.Handlers.Commands;
 
-public class OsuChatstatsCommand : CommandBase<Message>
+public sealed class OsuChatstatsCommand : CommandBase<Message>
 {
     public static readonly string[] Commands = ["/chatstats", "/stats"];
 

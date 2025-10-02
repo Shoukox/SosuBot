@@ -1,16 +1,24 @@
-﻿using SosuBot.Extensions;
+﻿using Microsoft.Extensions.DependencyInjection;
+using SosuBot.Extensions;
 using SosuBot.Localization;
 using SosuBot.Localization.Languages;
+using SosuBot.Services.Data;
 using SosuBot.Services.Handlers.Abstract;
 using Telegram.Bot;
 using Telegram.Bot.Types;
 
 namespace SosuBot.Services.Handlers.Commands;
 
-public class ReplayRenderCommand : CommandBase<Message>
+public sealed class ReplayRenderCommand : CommandBase<Message>
 {
     public static string[] Commands = ["/render"];
+    private RabbitMqService _rabbitMqService;
 
+    public ReplayRenderCommand()
+    {
+        _rabbitMqService = Context.ServiceProvider.GetRequiredService<RabbitMqService>();
+    }
+    
     public override async Task ExecuteAsync()
     {
         if (await Context.Update.IsUserSpamming(Context.BotClient))
@@ -32,7 +40,7 @@ public class ReplayRenderCommand : CommandBase<Message>
         await Context.BotClient.DownloadFile(tgfile, sw.BaseStream);
         sw.Close();
 
-        await Context.RabbitMqService.QueueJob(tempFileName);
+        await _rabbitMqService.QueueJob(tempFileName);
 
         string mp4FileName = tempFileName[..^4] + ".mp4";
         string sendText = $"http://[2a03:4000:6:417a:1::105]/videos/{mp4FileName}";

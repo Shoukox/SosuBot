@@ -1,4 +1,6 @@
-﻿using SosuBot.Extensions;
+﻿using Microsoft.Extensions.DependencyInjection;
+using OsuApi.V2;
+using SosuBot.Extensions;
 using SosuBot.Helpers.OutputText;
 using SosuBot.Localization;
 using SosuBot.Localization.Languages;
@@ -8,10 +10,15 @@ using Telegram.Bot.Types;
 
 namespace SosuBot.Services.Handlers.Commands;
 
-public class GetDailyStatisticsCommand : CommandBase<Message>
+public sealed class GetDailyStatisticsCommand : CommandBase<Message>
 {
     public static string[] Commands = ["/get", "/daily_stats"];
+    private ApiV2 _osuApiV2;
 
+    public GetDailyStatisticsCommand()
+    {
+        _osuApiV2 = Context.ServiceProvider.GetRequiredService<ApiV2>();
+    }
     public override async Task ExecuteAsync()
     {
         if (await Context.Update.IsUserSpamming(Context.BotClient))
@@ -36,7 +43,7 @@ public class GetDailyStatisticsCommand : CommandBase<Message>
             }
 
             sendText = await ScoreHelper.GetDailyStatisticsSendText(
-                dailyStatistics, Context.OsuApiV2);
+                dailyStatistics, _osuApiV2);
         }
         else if (parameters[0] == "online")
         {

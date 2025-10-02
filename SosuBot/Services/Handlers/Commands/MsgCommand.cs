@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using SosuBot.Extensions;
 using SosuBot.Logging;
 using SosuBot.Services.Handlers.Abstract;
@@ -9,10 +10,15 @@ using Telegram.Bot.Types.Enums;
 
 namespace SosuBot.Services.Handlers.Commands;
 
-public class MsgCommand : CommandBase<Message>
+public sealed class MsgCommand : CommandBase<Message>
 {
     public static string[] Commands = ["/msg"];
+    private ILogger<MsgCommand> _logger;
 
+    public MsgCommand()
+    {
+        _logger = Context.ServiceProvider.GetRequiredService<ILogger<MsgCommand>>();
+    }
     public override async Task ExecuteAsync()
     {
         var osuUserInDatabase = await Context.Database.OsuUsers.FindAsync(Context.Update.From!.Id);
@@ -32,12 +38,12 @@ public class MsgCommand : CommandBase<Message>
                 }
                 catch (ApiRequestException reqEx)
                 {
-                    Context.Logger.LogError(reqEx,
+                    _logger.LogError(reqEx,
                         $"ApiRequestException in MsgCommand while sending message to group {chat.ChatId}");
                 }
                 catch (Exception ex)
                 {
-                    Context.Logger.LogError(ex,
+                    _logger.LogError(ex,
                         $"Exception in MsgCommand while sending message to group {chat.ChatId}");
                 }
         }
@@ -68,7 +74,7 @@ public class MsgCommand : CommandBase<Message>
                     }
                     catch (ApiRequestException reqEx)
                     {
-                        Context.Logger.LogError(reqEx,
+                        _logger.LogError(reqEx,
                             $"ApiRequestException in MsgCommand while sending message to group {chat.ChatId}");
                     }
                     catch (Exception ex)

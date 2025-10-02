@@ -1,17 +1,28 @@
-﻿using Newtonsoft.Json;
+﻿using Microsoft.Extensions.DependencyInjection;
+using Newtonsoft.Json;
 using SosuBot.Extensions;
 using SosuBot.Helpers.OutputText;
+using SosuBot.Localization;
+using SosuBot.Localization.Languages;
+using SosuBot.Services.Data;
 using SosuBot.Services.Handlers.Abstract;
 using Telegram.Bot.Types;
 
 namespace SosuBot.Services.Handlers.Commands;
 
-public class CustomCommand : CommandBase<Message>
+public sealed class CustomCommand : CommandBase<Message>
 {
     public static string[] Commands = ["/c"];
+    private OpenAIService _openaiService = null!;
 
+    public override Task BeforeExecuteAsync()
+    {
+        _openaiService = Context.ServiceProvider.GetRequiredService<OpenAIService>();
+        return Task.CompletedTask;
+    }
     public override async Task ExecuteAsync()
     {
+        await base.ExecuteAsync();
         var osuUserInDatabase = await Context.Database.OsuUsers.FindAsync(Context.Update.From!.Id);
 
         if (osuUserInDatabase is null || !osuUserInDatabase.IsAdmin)
@@ -53,6 +64,15 @@ public class CustomCommand : CommandBase<Message>
         else if (parameters[0] == "countryflag")
         {
             await Context.Update.ReplyAsync(Context.BotClient, UserHelper.CountryCodeToFlag(parameters[1]));
+        }
+        else if (parameters[0] == "ai")
+        {
+            ILocalization language = new Russian();
+            var waitMessage = await Context.Update.ReplyAsync(Context.BotClient, language.waiting);
+            
+            string userInput = string.Join(" ", parameters[1..]);
+            string output = await _openaiService.GetResponseAsync(userInput);
+            await waitMessage.EditAsync(Context.BotClient, output);
         }
     }
 }

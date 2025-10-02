@@ -4,7 +4,7 @@ using Telegram.Bot.Types;
 
 namespace SosuBot.Services.Handlers.Commands;
 
-public class DeleteCommand : CommandBase<Message>
+public sealed class DeleteCommand : CommandBase<Message>
 {
     public static string[] Commands = ["/del"];
 
