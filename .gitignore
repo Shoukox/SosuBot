@@ -4,4 +4,4 @@ appsettings*
 bin/
 obj/
 *.db*
-Properties/launchSettings.json
+SosuBot/Properties/launchSettings.json
