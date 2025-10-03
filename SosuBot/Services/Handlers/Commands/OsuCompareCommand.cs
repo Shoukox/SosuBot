@@ -1,10 +1,8 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 using OsuApi.V2;
 using OsuApi.V2.Clients.Users.HttpIO;
 using OsuApi.V2.Models;
 using SosuBot.Extensions;
-using SosuBot.Helpers.OutputText;
 using SosuBot.Localization;
 using SosuBot.Localization.Languages;
 using SosuBot.Services.Handlers.Abstract;
@@ -15,12 +13,13 @@ namespace SosuBot.Services.Handlers.Commands;
 public sealed class OsuCompareCommand : CommandBase<Message>
 {
     public static string[] Commands = ["/compare", "/cmp"];
-    private ApiV2 _osuApiV2;
+    private readonly ApiV2 _osuApiV2;
 
     public OsuCompareCommand(bool onlyPassed = false)
     {
         _osuApiV2 = Context.ServiceProvider.GetRequiredService<ApiV2>();
     }
+
     public override async Task ExecuteAsync()
     {
         ILocalization language = new Russian();
@@ -70,7 +69,7 @@ public sealed class OsuCompareCommand : CommandBase<Message>
 
         var max = new[]
         {
-            (user1.Statistics.CountryRank + $"# UZ").Length,
+            (user1.Statistics.CountryRank + "# UZ").Length,
             (user1.Statistics.GlobalRank + "#").Length,
             (user1.Statistics.Pp!.Value.ToString("N2") + "pp").Length,
             acc1.Length, $"{user1.Statistics.PlayTime}h".Length,
@@ -95,7 +94,7 @@ public sealed class OsuCompareCommand : CommandBase<Message>
             acc1.PadRight(max),
             acc2,
 
-            $"{((user1.Statistics.PlayTime!.Value / 3600) + "h").PadRight(max)}",
+            $"{(user1.Statistics.PlayTime!.Value / 3600 + "h").PadRight(max)}",
             $"{user2.Statistics.PlayTime!.Value / 3600}h"
         ]);
         await waitMessage.EditAsync(Context.BotClient, textToSend);

@@ -1,17 +1,13 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using OsuApi.V2;
 using SosuBot.Database;
 using SosuBot.Extensions;
-using SosuBot.Logging;
-using SosuBot.Services.Data;
 using SosuBot.Services.Handlers.Abstract;
 using SosuBot.Services.Handlers.Callbacks;
 using SosuBot.Services.Handlers.Commands;
 using SosuBot.Services.Handlers.Text;
 using Telegram.Bot;
-using Telegram.Bot.Exceptions;
 using Telegram.Bot.Polling;
 using Telegram.Bot.Types;
 using DummyCommand = SosuBot.Services.Handlers.Callbacks.DummyCommand;
@@ -33,11 +29,11 @@ public class UpdateHandler(
     {
         // log in console
         logger.LogError("HandleError: {Exception}", exception);
-        
+
         // if a text-command message
         if (_currentUpdate!.Message is { Text: string } msg && msg.Text!.IsCommand())
         {
-            var userId = (await database.OsuUsers.FirstAsync(u => u.IsAdmin, cancellationToken: cancellationToken)).TelegramId;
+            var userId = (await database.OsuUsers.FirstAsync(u => u.IsAdmin, cancellationToken)).TelegramId;
             var errorText =
                 $"Произошла ошибка.\n" +
                 $"Пожалуйста, сообщите о ней <a href=\"tg://user?id={userId}\">создателю</a> (@Shoukkoo)";
@@ -110,7 +106,7 @@ public class UpdateHandler(
                 executableCommand = new DummyCommand();
                 break;
         }
-        
+
         executableCommand.SetContext(
             new CommandContext<CallbackQuery>(
                 botClient,

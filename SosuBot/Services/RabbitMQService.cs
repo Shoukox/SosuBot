@@ -1,15 +1,13 @@
 using System.Text;
 using Microsoft.Extensions.Logging;
 using RabbitMQ.Client;
-using SosuBot.Logging;
 
 namespace SosuBot.Services.Data;
 
 public sealed class RabbitMqService(ILogger<RabbitMqService> logger)
 {
-    private IChannel? _channel;
-    
     private static readonly object Locker = new();
+    private IChannel? _channel;
 
     public async Task Initialize()
     {
@@ -17,20 +15,21 @@ public sealed class RabbitMqService(ILogger<RabbitMqService> logger)
         var connection = await factory.CreateConnectionAsync();
         _channel = await connection.CreateChannelAsync();
 
-        await _channel.QueueDeclareAsync(queue: "task_queue", durable: true, exclusive: false,
-            autoDelete: false, arguments: null);
+        await _channel.QueueDeclareAsync("task_queue", true, false,
+            false, null);
     }
 
     /// <summary>
-    /// Queues a render job
+    ///     Queues a render job
     /// </summary>
     /// <param name="replayName">Only filename.extension</param>
     public async Task QueueJob(string replayName)
     {
         lock (Locker)
         {
-            if(_channel == null) Initialize().GetAwaiter().GetResult();
+            if (_channel == null) Initialize().GetAwaiter().GetResult();
         }
+
         var message = replayName;
         var body = Encoding.UTF8.GetBytes(message);
 
@@ -39,12 +38,9 @@ public sealed class RabbitMqService(ILogger<RabbitMqService> logger)
             Persistent = true
         };
 
-        if (_channel == null)
-        {
-            throw new Exception("Channel not initialized");
-        }
-        await _channel.BasicPublishAsync(exchange: string.Empty, routingKey: "render-job-queue", mandatory: true,
-            basicProperties: properties, body: body);
+        if (_channel == null) throw new Exception("Channel not initialized");
+        await _channel.BasicPublishAsync(string.Empty, "render-job-queue", true,
+            properties, body);
         logger.LogInformation("Job queued");
     }
 }

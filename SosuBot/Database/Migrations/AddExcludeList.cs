@@ -1,28 +1,27 @@
-﻿using Microsoft.EntityFrameworkCore.Migrations;
+﻿#nullable disable
 
-#nullable disable
+using Microsoft.EntityFrameworkCore.Migrations;
 
-namespace SosuBot.Migrations
+namespace SosuBot.Migrations;
+
+/// <inheritdoc />
+public partial class AddExcludeList : Migration
 {
     /// <inheritdoc />
-    public partial class AddExcludeList : Migration
+    protected override void Up(MigrationBuilder migrationBuilder)
     {
-        /// <inheritdoc />
-        protected override void Up(MigrationBuilder migrationBuilder)
-        {
-            migrationBuilder.AddColumn<string>(
-                name: "ExcludeFromChatstats",
-                table: "TelegramChats",
-                type: "TEXT",
-                nullable: true);
-        }
+        migrationBuilder.AddColumn<string>(
+            "ExcludeFromChatstats",
+            "TelegramChats",
+            "TEXT",
+            nullable: true);
+    }
 
-        /// <inheritdoc />
-        protected override void Down(MigrationBuilder migrationBuilder)
-        {
-            migrationBuilder.DropColumn(
-                name: "ExcludeFromChatstats",
-                table: "TelegramChats");
-        }
+    /// <inheritdoc />
+    protected override void Down(MigrationBuilder migrationBuilder)
+    {
+        migrationBuilder.DropColumn(
+            "ExcludeFromChatstats",
+            "TelegramChats");
     }
 }

@@ -1,6 +1,5 @@
 ﻿using OsuApi.V2;
 using OsuApi.V2.Models;
-using OsuApi.V2.Users.Models;
 using SosuBot.Extensions;
 using SosuBot.Helpers.Types;
 using SosuBot.Helpers.Types.Statistics;
@@ -54,7 +53,7 @@ public static class ScoreHelper
     }
 
     /// <summary>
-    /// Get an emoji for the score rank (X, XH, S)
+    ///     Get an emoji for the score rank (X, XH, S)
     /// </summary>
     /// <param name="scoreRank">Score rank from API</param>
     /// <returns></returns>
@@ -64,10 +63,7 @@ public static class ScoreHelper
 
         scoreRank = scoreRank.ToUpperInvariant();
 
-        if (!passed)
-        {
-            scoreRank = "F";
-        }
+        if (!passed) scoreRank = "F";
 
         return scoreRank switch
         {
@@ -85,10 +81,13 @@ public static class ScoreHelper
     }
 
     /// <summary>
-    /// Replaces X by SS
+    ///     Replaces X by SS
     /// </summary>
     /// <returns></returns>
-    public static string ParseScoreRank(string scoreRank) => scoreRank.Replace("X", "SS");
+    public static string ParseScoreRank(string scoreRank)
+    {
+        return scoreRank.Replace("X", "SS");
+    }
 
     public static string GetScoreUrl(long scoreId)
     {
@@ -120,19 +119,19 @@ public static class ScoreHelper
 
         var topPpScores = "";
         var count = 0;
-        foreach (var us in usersAndTheirScores.OrderByDescending((pair) => pair.Item2.Max(m => m.Pp)))
+        foreach (var us in usersAndTheirScores.OrderByDescending(pair => pair.Item2.Max(m => m.Pp)))
         {
             if (count >= 5) break;
 
             var scoresOrderedByPp = us.Item2
-                .GroupBy((score) => score.BeatmapId)
+                .GroupBy(score => score.BeatmapId)
                 .Select(m => m.MaxBy(s => s.Pp))
                 .Where(m => m!.Pp != null)
                 .OrderByDescending(m => m!.Pp)
                 .Select(m => GetScoreUrlWrappedInString(m!.Id!.Value, $"{m.Pp:N0}pp"))
                 .ToArray();
-            
-            string topPpScoresTextForCurrentUser = string.Join(", ", scoresOrderedByPp.Take(3));
+
+            var topPpScoresTextForCurrentUser = string.Join(", ", scoresOrderedByPp.Take(3));
             topPpScores +=
                 $"{count + 1}. <b>{UserHelper.GetUserProfileUrlWrappedInUsernameString(us.m.Id.Value, us.m.Username!)}</b> — <i>{topPpScoresTextForCurrentUser}💪</i>\n";
             count += 1;
@@ -172,7 +171,7 @@ public static class ScoreHelper
             count += 1;
         }
 
-        DateTime tashkentNow = TimeZoneInfo.ConvertTime(dailyStatistics.DayOfStatistic,
+        var tashkentNow = TimeZoneInfo.ConvertTime(dailyStatistics.DayOfStatistic,
             TimeZoneInfo.FindSystemTimeZoneById("West Asia Standard Time"));
         var sendText = language.send_dailyStatistic.Fill([
             $"{tashkentNow:dd.MM.yyyy HH:mm} (по тшк.)",

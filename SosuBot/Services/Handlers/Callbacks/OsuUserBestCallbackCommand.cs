@@ -18,12 +18,13 @@ namespace SosuBot.Services.Handlers.Callbacks;
 public class OsuUserBestCallbackCommand : CommandBase<CallbackQuery>
 {
     public static string Command = "userbest";
-    private ApiV2 _osuApiV2;
+    private readonly ApiV2 _osuApiV2;
 
     public OsuUserBestCallbackCommand()
     {
         _osuApiV2 = Context.ServiceProvider.GetRequiredService<ApiV2>();
     }
+
     public override async Task ExecuteAsync()
     {
         ILocalization language = new Russian();

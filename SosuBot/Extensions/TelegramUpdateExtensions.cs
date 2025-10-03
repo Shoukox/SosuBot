@@ -14,13 +14,12 @@ public static class TelegramUpdateExtensions
         InlineKeyboardMarkup? replyMarkup = null, string? splitValue = null)
     {
         if (splitValue == null)
-        {
             return TelegramHelper.SendMessageConsideringTelegramLength(message.Id, message.Chat.Id, botClient, text,
-                parseMode, replyMarkup, edit: false);
-        }
+                parseMode, replyMarkup, false);
 
-        return TelegramHelper.SendMessageConsideringTelegramLengthAndSplitValue(message.Id, message.Chat.Id, botClient, text,
-            parseMode, replyMarkup, edit: false, splitValue: splitValue);
+        return TelegramHelper.SendMessageConsideringTelegramLengthAndSplitValue(message.Id, message.Chat.Id, botClient,
+            text,
+            parseMode, replyMarkup, false, splitValue);
     }
 
     public static Task<Message> ReplyPhotoAsync(this Message message, ITelegramBotClient botClient, InputFile photo,
@@ -45,13 +44,12 @@ public static class TelegramUpdateExtensions
         ParseMode parseMode = ParseMode.Html, InlineKeyboardMarkup? replyMarkup = null, string? splitValue = null)
     {
         if (splitValue == null)
-        {
             return TelegramHelper.SendMessageConsideringTelegramLength(message.Id, message.Chat.Id, botClient, text,
-                parseMode, replyMarkup, edit: true);
-        }
+                parseMode, replyMarkup, true);
 
-        return TelegramHelper.SendMessageConsideringTelegramLengthAndSplitValue(message.Id, message.Chat.Id, botClient, text,
-            parseMode, replyMarkup, edit: true, splitValue: splitValue);
+        return TelegramHelper.SendMessageConsideringTelegramLengthAndSplitValue(message.Id, message.Chat.Id, botClient,
+            text,
+            parseMode, replyMarkup, true, splitValue);
     }
 
     public static Task AnswerAsync(this CallbackQuery callbackQuery, ITelegramBotClient botClient,

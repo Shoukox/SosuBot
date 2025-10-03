@@ -6,6 +6,5 @@ public sealed class OsuLastPassedCommand : OsuLastCommand
 
     public OsuLastPassedCommand() : base(true)
     {
-        
     }
 }

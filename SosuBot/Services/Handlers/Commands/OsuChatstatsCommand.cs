@@ -13,9 +13,9 @@ public sealed class OsuChatstatsCommand : CommandBase<Message>
     public static readonly string[] Commands = ["/chatstats", "/stats"];
 
     private static readonly IEqualityComparer<OsuUser> OsuUserComparer =
-        EqualityComparer<OsuUser>.Create((u1, u2) => u1?.OsuUserId == u2?.OsuUserId, (u) => u?.GetHashCode() ?? 0);
-    
-    
+        EqualityComparer<OsuUser>.Create((u1, u2) => u1?.OsuUserId == u2?.OsuUserId, u => u?.GetHashCode() ?? 0);
+
+
     public override async Task ExecuteAsync()
     {
         ILocalization language = new Russian();
@@ -47,7 +47,8 @@ public sealed class OsuChatstatsCommand : CommandBase<Message>
                 foundChatMembers.Add(foundMember);
         }
 
-        foundChatMembers = foundChatMembers.Distinct(OsuUserComparer).OrderByDescending(m => m.GetPP(playmode)).Take(10).ToList();
+        foundChatMembers = foundChatMembers.Distinct(OsuUserComparer).OrderByDescending(m => m.GetPP(playmode)).Take(10)
+            .ToList();
 
         var sendText = language.command_chatstats_title.Fill([playmode.ToGamemode()]);
 

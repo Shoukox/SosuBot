@@ -11,6 +11,7 @@ using Polly.Contrib.WaitAndRetry;
 using Polly.Extensions.Http;
 using SosuBot.Database;
 using SosuBot.Logging;
+using SosuBot.Services;
 using SosuBot.Services.BackgroundServices;
 using SosuBot.Services.Data;
 using SosuBot.Services.Handlers;
@@ -38,7 +39,7 @@ internal class Program
         builder.Configuration.AddJsonFile(configurationFileName, false);
 
         // Logging
-        var loggingFileName = $"logs/{{Date}}.log";
+        var loggingFileName = "logs/{Date}.log";
         builder.Logging.ClearProviders();
         builder.Logging.AddConsole();
         builder.Logging.AddFile(loggingFileName);
@@ -102,7 +103,7 @@ internal class Program
         });
         builder.Services.AddSingleton<UpdateQueueService>();
         builder.Services.AddSingleton<RabbitMqService>();
-        builder.Services.AddSingleton<OpenAIService>();
+        builder.Services.AddSingleton<OpenAiService>();
         builder.Services.AddScoped<UpdateHandler>();
         builder.Services.AddHostedService<PollingBackgroundService>();
         builder.Services.AddHostedService<UpdateHandlerBackgroundService>();
@@ -126,7 +127,9 @@ internal class Program
                 Backoff.DecorrelatedJitterBackoffV2(TimeSpan.FromSeconds(1), 5),
                 (delay, attempt, outcome, ctx) =>
                 {
-                    _logger!.LogWarning("Transient error (attempt {Attempt}). Waiting {Delay} before retry. Status: {Status}", attempt, delay, outcome);
+                    _logger!.LogWarning(
+                        "Transient error (attempt {Attempt}). Waiting {Delay} before retry. Status: {Status}", attempt,
+                        delay, outcome);
                 });
 
         var retryAfterPolicy = Policy

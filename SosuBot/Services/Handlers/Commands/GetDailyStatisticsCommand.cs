@@ -13,12 +13,13 @@ namespace SosuBot.Services.Handlers.Commands;
 public sealed class GetDailyStatisticsCommand : CommandBase<Message>
 {
     public static string[] Commands = ["/get", "/daily_stats"];
-    private ApiV2 _osuApiV2;
+    private readonly ApiV2 _osuApiV2;
 
     public GetDailyStatisticsCommand()
     {
         _osuApiV2 = Context.ServiceProvider.GetRequiredService<ApiV2>();
     }
+
     public override async Task ExecuteAsync()
     {
         if (await Context.Update.IsUserSpamming(Context.BotClient))
@@ -35,8 +36,8 @@ public sealed class GetDailyStatisticsCommand : CommandBase<Message>
         if (parameters.Length == 0)
         {
             if (ScoresObserverBackgroundService.AllDailyStatistics.Count == 0 ||
-                ScoresObserverBackgroundService.AllDailyStatistics.Last() is var dailyStatistics &&
-                (dailyStatistics.Scores.Count == 0 || dailyStatistics.ActiveUsers.Count == 0))
+                (ScoresObserverBackgroundService.AllDailyStatistics.Last() is var dailyStatistics &&
+                 (dailyStatistics.Scores.Count == 0 || dailyStatistics.ActiveUsers.Count == 0)))
             {
                 await waitMessage.EditAsync(Context.BotClient, language.error_noRecords);
                 return;
@@ -73,7 +74,8 @@ public sealed class GetDailyStatisticsCommand : CommandBase<Message>
                             UserHelper.GetUserProfileUrlWrappedInUsernameString(m.User!.Id!.Value, m.User.Username!))
                 );
 
-            DateTime tashkentNow = TimeZoneInfo.ConvertTime(ranking.StatisticFrom, TimeZoneInfo.FindSystemTimeZoneById("West Asia Standard Time"));
+            var tashkentNow = TimeZoneInfo.ConvertTime(ranking.StatisticFrom,
+                TimeZoneInfo.FindSystemTimeZoneById("West Asia Standard Time"));
             sendText = $"Онлайн пользователи (osu!lazer + osu! website) из <b>{countryCode.ToUpperInvariant()}</b>.\n" +
                        $"Последнее отслеживание: <b>{tashkentNow:dd.MM.yyyy HH:mm} (по тшк.)</b>\n" +
                        $"Количество: <b>{onlineUsers.Length}</b>\n\n" +

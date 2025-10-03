@@ -1,7 +1,4 @@
-using Microsoft.Extensions.Logging;
-using OsuApi.V2;
 using SosuBot.Database;
-using SosuBot.Services.Data;
 using Telegram.Bot;
 
 namespace SosuBot.Services.Handlers.Abstract;

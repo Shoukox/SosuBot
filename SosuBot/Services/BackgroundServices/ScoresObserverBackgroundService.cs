@@ -15,7 +15,6 @@ using SosuBot.Helpers.Comparers;
 using SosuBot.Helpers.OutputText;
 using SosuBot.Helpers.Types;
 using SosuBot.Helpers.Types.Statistics;
-using SosuBot.Logging;
 using SosuBot.Services.Data.OsuApi;
 using Telegram.Bot;
 using Telegram.Bot.Types.Enums;
@@ -89,7 +88,6 @@ public sealed class ScoresObserverBackgroundService(
         string? getManiaScoresCursor = null;
         var counter = 0;
         while (!stoppingToken.IsCancellationRequested)
-        {
             try
             {
                 var getStdScoresResponse =
@@ -173,14 +171,12 @@ public sealed class ScoresObserverBackgroundService(
             {
                 logger.LogError(e, "Unexpected exception");
             }
-        }
     }
 
     private async Task ObserveScores(CancellationToken stoppingToken)
     {
         Dictionary<int, GetUserScoresResponse> scores = new();
         while (!stoppingToken.IsCancellationRequested)
-        {
             try
             {
                 foreach (int userId in ObservedUsers)
@@ -221,7 +217,6 @@ public sealed class ScoresObserverBackgroundService(
             {
                 logger.LogError(e, "Unexpected exception");
             }
-        }
 
         logger.LogWarning("Finished its work");
     }
@@ -229,7 +224,6 @@ public sealed class ScoresObserverBackgroundService(
     private async Task CheckOnlineForCountry(CancellationToken stoppingToken, string countryCode = "uz")
     {
         while (!stoppingToken.IsCancellationRequested)
-        {
             try
             {
                 var users = await OsuApiHelper.GetUsersFromRanking(osuApi, countryCode, token: stoppingToken);
@@ -255,7 +249,6 @@ public sealed class ScoresObserverBackgroundService(
             {
                 logger.LogError(e, "Unexpected exception");
             }
-        }
     }
 
     /// <summary>
