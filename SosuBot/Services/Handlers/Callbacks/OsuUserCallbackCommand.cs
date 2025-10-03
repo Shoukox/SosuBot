@@ -16,16 +16,19 @@ namespace SosuBot.Services.Handlers.Callbacks;
 
 public class OsuUserCallbackCommand : CommandBase<CallbackQuery>
 {
-    public static string Command = "user";
-    private readonly ApiV2 _osuApiV2;
+    public static readonly string Command = "user";
+    private ApiV2 _osuApiV2 = null!;
 
-    public OsuUserCallbackCommand()
+    public override Task BeforeExecuteAsync()
     {
         _osuApiV2 = Context.ServiceProvider.GetRequiredService<ApiV2>();
+        return Task.CompletedTask;
     }
 
     public override async Task ExecuteAsync()
     {
+        await BeforeExecuteAsync();
+        
         ILocalization language = new Russian();
 
         var parameters = Context.Update.Data!.Split(' ');

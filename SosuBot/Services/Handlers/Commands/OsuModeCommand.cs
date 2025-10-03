@@ -8,7 +8,7 @@ namespace SosuBot.Services.Handlers.Commands;
 
 public sealed class OsuModeCommand : CommandBase<Message>
 {
-    public static string[] Commands = ["/mode"];
+    public static readonly string[] Commands = ["/mode"];
 
     public override async Task ExecuteAsync()
     {

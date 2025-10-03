@@ -107,17 +107,26 @@ public sealed class ScoresObserverBackgroundService(
                     logger.LogWarning("getStdScoresResponse returned null");
                     continue;
                 }
-
+                if (getTaikoScoresResponse == null)
+                {
+                    logger.LogWarning("getTaikoScoresResponse returned null");
+                    continue;
+                }
+                if (getFruitsScoresResponse == null)
+                {
+                    logger.LogWarning("getFruitsScoresResponse returned null");
+                    continue;
+                }
                 if (getManiaScoresResponse == null)
                 {
                     logger.LogWarning("getManiaScoresResponse returned null");
                     continue;
                 }
 
-                var allOsuScores = getStdScoresResponse.Scores!
-                    .Concat(getTaikoScoresResponse?.Scores!)
-                    .Concat(getFruitsScoresResponse?.Scores!)
-                    .Concat(getManiaScoresResponse.Scores!);
+                var allOsuScores = getStdScoresResponse.Scores!.Select(m => m with {Mode = Ruleset.Osu, ModeInt = (int)Playmode.Osu})
+                    .Concat(getTaikoScoresResponse.Scores!.Select(m => m with {Mode = Ruleset.Taiko, ModeInt = (int)Playmode.Taiko}))
+                    .Concat(getFruitsScoresResponse.Scores!.Select(m => m with {Mode = Ruleset.Fruits, ModeInt = (int)Playmode.Catch}))
+                    .Concat(getManiaScoresResponse.Scores!.Select(m => m with {Mode = Ruleset.Mania, ModeInt = (int)Playmode.Mania}));
 
                 // Scores only from UZ 
                 var uzScores = allOsuScores.Where(m => _userDatabase.ContainsUserStatistics(m.UserId!.Value))
@@ -145,10 +154,21 @@ public sealed class ScoresObserverBackgroundService(
                 // New day => send statistics
                 if (DateTime.UtcNow.Day != dailyStatistics.DayOfStatistic.Day)
                 {
-                    var sendText = await ScoreHelper.GetDailyStatisticsSendText(dailyStatistics, osuApi);
-
-                    await botClient.SendMessage(_adminTelegramId, sendText,
-                        ParseMode.Html, linkPreviewOptions: true, cancellationToken: stoppingToken);
+                    try
+                    {
+                        for (int i = 0; i <= 3; i++)
+                        {
+                            var sendText =
+                                await ScoreHelper.GetDailyStatisticsSendText((Playmode)i, dailyStatistics, osuApi);
+                            await botClient.SendMessage(_adminTelegramId, sendText,
+                                ParseMode.Html, linkPreviewOptions: true, cancellationToken: stoppingToken);
+                            await Task.Delay(1000);
+                        }
+                    }
+                    catch (Exception e)
+                    {
+                        logger.LogError(e, "Error while sending final daily statistics");
+                    }
 
                     dailyStatistics = new DailyStatistics(CountryCode.Uzbekistan, DateTime.UtcNow);
                     AllDailyStatistics.Add(dailyStatistics);

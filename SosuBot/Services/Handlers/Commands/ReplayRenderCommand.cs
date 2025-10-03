@@ -11,16 +11,19 @@ namespace SosuBot.Services.Handlers.Commands;
 
 public sealed class ReplayRenderCommand : CommandBase<Message>
 {
-    public static string[] Commands = ["/render"];
-    private readonly RabbitMqService _rabbitMqService;
+    public static readonly string[] Commands = ["/render"];
+    private RabbitMqService _rabbitMqService = null!;
 
-    public ReplayRenderCommand()
+    public override Task BeforeExecuteAsync()
     {
         _rabbitMqService = Context.ServiceProvider.GetRequiredService<RabbitMqService>();
+        return Task.CompletedTask;
     }
 
     public override async Task ExecuteAsync()
     {
+        await BeforeExecuteAsync();
+        
         if (await Context.Update.IsUserSpamming(Context.BotClient))
             return;
 

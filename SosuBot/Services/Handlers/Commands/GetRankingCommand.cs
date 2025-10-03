@@ -12,16 +12,19 @@ namespace SosuBot.Services.Handlers.Commands;
 
 public sealed class GetRankingCommand : CommandBase<Message>
 {
-    public static string[] Commands = ["/ranking"];
-    private readonly ApiV2 _osuApiV2;
+    public static readonly string[] Commands = ["/ranking"];
+    private ApiV2 _osuApiV2 = null!;
 
-    public GetRankingCommand()
+    public override Task BeforeExecuteAsync()
     {
         _osuApiV2 = Context.ServiceProvider.GetRequiredService<ApiV2>();
+        return Task.CompletedTask;
     }
 
     public override async Task ExecuteAsync()
     {
+        await BeforeExecuteAsync();
+        
         if (await Context.Update.IsUserSpamming(Context.BotClient))
             return;
 

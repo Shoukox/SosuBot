@@ -11,16 +11,19 @@ namespace SosuBot.Services.Handlers.Commands;
 
 public sealed class MsgCommand : CommandBase<Message>
 {
-    public static string[] Commands = ["/msg"];
-    private readonly ILogger<MsgCommand> _logger;
+    public static readonly string[] Commands = ["/msg"];
+    private ILogger<MsgCommand> _logger = null!;
 
-    public MsgCommand()
+    public override Task BeforeExecuteAsync()
     {
         _logger = Context.ServiceProvider.GetRequiredService<ILogger<MsgCommand>>();
+        return Task.CompletedTask;
     }
 
     public override async Task ExecuteAsync()
     {
+        await BeforeExecuteAsync();
+        
         var osuUserInDatabase = await Context.Database.OsuUsers.FindAsync(Context.Update.From!.Id);
 
         if (osuUserInDatabase is null || !osuUserInDatabase.IsAdmin) return;

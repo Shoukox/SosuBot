@@ -56,6 +56,7 @@ public static class ScoreHelper
     ///     Get an emoji for the score rank (X, XH, S)
     /// </summary>
     /// <param name="scoreRank">Score rank from API</param>
+    /// <param name="passed">Whether the score was passed</param>
     /// <returns></returns>
     public static string GetScoreRankEmoji(string? scoreRank, bool passed = true)
     {
@@ -99,20 +100,22 @@ public static class ScoreHelper
         return $"<a href=\"{GetScoreUrl(scoreId)}\">{text}</a>";
     }
 
-    public static async Task<string> GetDailyStatisticsSendText(DailyStatistics dailyStatistics, ApiV2 osuApi)
+    public static async Task<string> GetDailyStatisticsSendText(Playmode playmode, DailyStatistics dailyStatistics, ApiV2 osuApi)
     {
         ILocalization language = new Russian();
-        var activePlayersCount = dailyStatistics.ActiveUsers.Count;
-        var passedScores = dailyStatistics.Scores.Count;
-        var beatmapsPlayed = dailyStatistics.BeatmapsPlayed.Count;
 
-        var usersAndTheirScores = dailyStatistics.ActiveUsers.Select(m =>
+        var activePlayers = dailyStatistics.ActiveUsers;
+        var passedScores = dailyStatistics.Scores.Where(m => m.ModeInt == (int)playmode).ToList();
+
+        var usersAndTheirScores = activePlayers.Select(m =>
             {
-                return (m, dailyStatistics.Scores.Where(s => s.UserId == m.Id).ToArray());
-            }).OrderByDescending(m => m.Item2.Length)
+                return (m, passedScores.Where(s => s.UserId == m.Id).ToArray());
+            })
+            .Where(m => m.Item2.Length != 0)
+            .OrderByDescending(m => m.Item2.Length)
             .ToArray();
 
-        var mostPlayedBeatmaps = dailyStatistics.Scores
+        var mostPlayedBeatmaps = passedScores
             .GroupBy(m => m.BeatmapId!.Value)
             .OrderByDescending(m => m.Count())
             .ToArray();
@@ -123,18 +126,30 @@ public static class ScoreHelper
         {
             if (count >= 5) break;
 
+            string modeSmile = playmode switch
+            {
+                Playmode.Osu => "🔵",
+                Playmode.Taiko => "🥁",
+                Playmode.Catch => "🎹",
+                Playmode.Mania => "🍎",
+                _ => throw new NotImplementedException()
+            };
             var scoresOrderedByPp = us.Item2
                 .GroupBy(score => score.BeatmapId)
                 .Select(m => m.MaxBy(s => s.Pp))
                 .Where(m => m!.Pp != null)
                 .OrderByDescending(m => m!.Pp)
-                .Select(m => GetScoreUrlWrappedInString(m!.Id!.Value, $"{m.Pp:N0}pp"))
+                .Select(m => GetScoreUrlWrappedInString(m!.Id!.Value, $"{m.Pp:N0}pp{modeSmile}"))
                 .ToArray();
 
             var topPpScoresTextForCurrentUser = string.Join(", ", scoresOrderedByPp.Take(3));
             topPpScores +=
-                $"{count + 1}. <b>{UserHelper.GetUserProfileUrlWrappedInUsernameString(us.m.Id.Value, us.m.Username!)}</b> — <i>{topPpScoresTextForCurrentUser}💪</i>\n";
+                $"{count + 1}. <b>{UserHelper.GetUserProfileUrlWrappedInUsernameString(us.m.Id.Value, us.m.Username!)}</b> — <i>{topPpScoresTextForCurrentUser}</i>\n";
             count += 1;
+        }
+        if (string.IsNullOrEmpty(topPpScores))
+        {
+            topPpScores = ":(";
         }
 
         var topActivePlayers = "";
@@ -146,7 +161,11 @@ public static class ScoreHelper
                 $"{count + 1}. <b>{UserHelper.GetUserProfileUrlWrappedInUsernameString(us.m.Id.Value, us.m.Username!)}</b> — {us.Item2.Length} скоров, макс. <i>{us.Item2.Max(m => m.Pp):N0}pp💪</i>\n";
             count += 1;
         }
-
+        if (string.IsNullOrEmpty(topActivePlayers))
+        {
+            topActivePlayers = ":(";
+        }
+        
         var topMostPlayedBeatmaps = "";
         count = 0;
         foreach (var us in mostPlayedBeatmaps)
@@ -170,13 +189,21 @@ public static class ScoreHelper
                 $"{count + 1}. (<b>{beatmap!.DifficultyRating}⭐️</b>) <a href=\"https://osu.ppy.sh/beatmaps/{beatmap.Id}\">{beatmapsetExtended.Title.EncodeHtml()} [{beatmap.Version.EncodeHtml()}]</a> — <b>{us.Count()} скоров</b>\n";
             count += 1;
         }
+        if (string.IsNullOrEmpty(topMostPlayedBeatmaps))
+        {
+            topMostPlayedBeatmaps = ":(";
+        }
 
+        var activePlayersCount = usersAndTheirScores.Length;
+        var passedScoresCount = passedScores.Count;
+        var beatmapsPlayed = usersAndTheirScores.SelectMany(m => m.Item2).DistinctBy((m) => m.BeatmapId).Count();
+        
         var tashkentNow = TimeZoneInfo.ConvertTime(dailyStatistics.DayOfStatistic,
             TimeZoneInfo.FindSystemTimeZoneById("West Asia Standard Time"));
         var sendText = language.send_dailyStatistic.Fill([
             $"{tashkentNow:dd.MM.yyyy HH:mm} (по тшк.)",
             $"{activePlayersCount}",
-            $"{passedScores}",
+            $"{passedScoresCount}",
             $"{beatmapsPlayed}",
             $"{topPpScores}\n",
             $"{topActivePlayers}\n",

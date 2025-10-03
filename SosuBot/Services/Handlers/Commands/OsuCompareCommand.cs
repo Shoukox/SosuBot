@@ -12,16 +12,19 @@ namespace SosuBot.Services.Handlers.Commands;
 
 public sealed class OsuCompareCommand : CommandBase<Message>
 {
-    public static string[] Commands = ["/compare", "/cmp"];
-    private readonly ApiV2 _osuApiV2;
+    public static readonly string[] Commands = ["/compare", "/cmp"];
+    private ApiV2 _osuApiV2 = null!;
 
-    public OsuCompareCommand(bool onlyPassed = false)
+    public override Task BeforeExecuteAsync()
     {
         _osuApiV2 = Context.ServiceProvider.GetRequiredService<ApiV2>();
+        return Task.CompletedTask;
     }
 
     public override async Task ExecuteAsync()
     {
+        await BeforeExecuteAsync();
+        
         ILocalization language = new Russian();
 
         var waitMessage = await Context.Update.ReplyAsync(Context.BotClient, language.waiting);

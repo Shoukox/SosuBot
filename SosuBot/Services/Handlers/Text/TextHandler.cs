@@ -16,15 +16,18 @@ namespace SosuBot.Services.Handlers.Text;
 
 public sealed class TextHandler : CommandBase<Message>
 {
-    private readonly ApiV2 _osuApiV2;
+    private ApiV2 _osuApiV2 = null!;
 
-    public TextHandler()
+    public override Task BeforeExecuteAsync()
     {
         _osuApiV2 = Context.ServiceProvider.GetRequiredService<ApiV2>();
+        return Task.CompletedTask;
     }
 
     public override async Task ExecuteAsync()
     {
+        await base.BeforeExecuteAsync();
+        
         ILocalization language = new Russian();
 
         await HandleBeatmapLink(language);

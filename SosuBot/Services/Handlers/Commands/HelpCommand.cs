@@ -8,7 +8,7 @@ namespace SosuBot.Services.Handlers.Commands;
 
 public sealed class HelpCommand : CommandBase<Message>
 {
-    public static string[] Commands = ["/help"];
+    public static readonly string[] Commands = ["/help"];
 
     public override async Task ExecuteAsync()
     {

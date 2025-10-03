@@ -8,7 +8,7 @@ namespace SosuBot.Services.Handlers.Callbacks;
 
 public class OsuSongPreviewCallbackCommand : CommandBase<CallbackQuery>
 {
-    public static string Command = "songpreview";
+    public static readonly string Command = "songpreview";
 
     public override async Task ExecuteAsync()
     {

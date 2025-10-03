@@ -14,7 +14,7 @@ namespace SosuBot.Services.Handlers.Commands;
 
 public sealed class CustomCommand : CommandBase<Message>
 {
-    public static string[] Commands = ["/c"];
+    public static readonly string[] Commands = ["/c"];
     private OpenAiService _openaiService = null!;
 
     public override Task BeforeExecuteAsync()
@@ -25,7 +25,8 @@ public sealed class CustomCommand : CommandBase<Message>
 
     public override async Task ExecuteAsync()
     {
-        await base.ExecuteAsync();
+        await BeforeExecuteAsync();
+        
         var osuUserInDatabase = await Context.Database.OsuUsers.FindAsync(Context.Update.From!.Id);
         if (osuUserInDatabase is null || !osuUserInDatabase.IsAdmin)
         {

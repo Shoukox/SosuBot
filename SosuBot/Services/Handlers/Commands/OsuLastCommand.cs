@@ -16,22 +16,25 @@ using Telegram.Bot.Types;
 
 namespace SosuBot.Services.Handlers.Commands;
 
-public class OsuLastCommand : CommandBase<Message>
+public class OsuLastCommand(bool onlyPassed = false) : CommandBase<Message>
 {
     public static readonly string[] Commands = ["/last", "/l"];
-    private readonly ILogger<OsuLastCommand> _logger;
-    private readonly bool _onlyPassed;
-    private readonly ApiV2 _osuApiV2;
+    private ILogger<OsuLastCommand> _logger = null!;
+    private bool _onlyPassed;
+    private ApiV2 _osuApiV2 = null!;
 
-    public OsuLastCommand(bool onlyPassed = false)
+    public override Task BeforeExecuteAsync()
     {
         _onlyPassed = onlyPassed;
         _osuApiV2 = Context.ServiceProvider.GetRequiredService<ApiV2>();
         _logger = Context.ServiceProvider.GetRequiredService<ILogger<OsuLastCommand>>();
+        return Task.CompletedTask;
     }
 
     public override async Task ExecuteAsync()
     {
+        await BeforeExecuteAsync();
+        
         if (await Context.Update.IsUserSpamming(Context.BotClient))
             return;
 
