@@ -14,16 +14,19 @@ namespace SosuBot.Services.Handlers.Commands;
 
 public sealed class OsuSetCommand : CommandBase<Message>
 {
-    public static string[] Commands = ["/set"];
-    private readonly ApiV2 _osuApiV2;
+    public static readonly string[] Commands = ["/set"];
+    private ApiV2 _osuApiV2 = null!;
 
-    public OsuSetCommand()
+    public override Task BeforeExecuteAsync()
     {
         _osuApiV2 = Context.ServiceProvider.GetRequiredService<ApiV2>();
+        return Task.CompletedTask;
     }
 
     public override async Task ExecuteAsync()
     {
+        await BeforeExecuteAsync();
+        
         ILocalization language = new Russian();
 
         var msgText = Context.Update.Text!;

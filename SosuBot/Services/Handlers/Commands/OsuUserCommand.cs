@@ -14,20 +14,21 @@ using Telegram.Bot.Types.ReplyMarkups;
 
 namespace SosuBot.Services.Handlers.Commands;
 
-public class OsuUserCommand : CommandBase<Message>
+public class OsuUserCommand(bool includeIdInSearch = false) : CommandBase<Message>
 {
-    public static string[] Commands = ["/user", "/u"];
-    private readonly bool _includeIdInSearch;
-    private readonly ApiV2 _osuApiV2;
+    public static readonly string[] Commands = ["/user", "/u"];
+    private ApiV2 _osuApiV2 = null!;
 
-    public OsuUserCommand(bool includeIdInSearch = false)
+    public override Task BeforeExecuteAsync()
     {
-        _includeIdInSearch = includeIdInSearch;
         _osuApiV2 = Context.ServiceProvider.GetRequiredService<ApiV2>();
+        return Task.CompletedTask;
     }
 
     public override async Task ExecuteAsync()
     {
+        await BeforeExecuteAsync();
+        
         if (await Context.Update.IsUserSpamming(Context.BotClient))
             return;
 
@@ -41,7 +42,7 @@ public class OsuUserCommand : CommandBase<Message>
         Playmode playmode;
 
         var searchPrefix = "@";
-        if (_includeIdInSearch) searchPrefix = "";
+        if (includeIdInSearch) searchPrefix = "";
 
         if (parameters.Length == 0)
         {

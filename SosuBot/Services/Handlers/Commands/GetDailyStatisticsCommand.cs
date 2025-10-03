@@ -1,7 +1,9 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using OsuApi.V2;
+using OsuApi.V2.Models;
 using SosuBot.Extensions;
 using SosuBot.Helpers.OutputText;
+using SosuBot.Helpers.Types;
 using SosuBot.Localization;
 using SosuBot.Localization.Languages;
 using SosuBot.Services.BackgroundServices;
@@ -12,16 +14,19 @@ namespace SosuBot.Services.Handlers.Commands;
 
 public sealed class GetDailyStatisticsCommand : CommandBase<Message>
 {
-    public static string[] Commands = ["/get", "/daily_stats"];
-    private readonly ApiV2 _osuApiV2;
+    public static readonly string[] Commands = ["/get", "/daily_stats"];
+    private ApiV2 _osuApiV2 = null!;
 
-    public GetDailyStatisticsCommand()
+    public override Task BeforeExecuteAsync()
     {
         _osuApiV2 = Context.ServiceProvider.GetRequiredService<ApiV2>();
+        return Task.CompletedTask;
     }
 
     public override async Task ExecuteAsync()
     {
+        await BeforeExecuteAsync();
+        
         if (await Context.Update.IsUserSpamming(Context.BotClient))
             return;
 
@@ -33,20 +38,7 @@ public sealed class GetDailyStatisticsCommand : CommandBase<Message>
 
         var parameters = Context.Update.Text!.GetCommandParameters()!;
         var sendText = "";
-        if (parameters.Length == 0)
-        {
-            if (ScoresObserverBackgroundService.AllDailyStatistics.Count == 0 ||
-                (ScoresObserverBackgroundService.AllDailyStatistics.Last() is var dailyStatistics &&
-                 (dailyStatistics.Scores.Count == 0 || dailyStatistics.ActiveUsers.Count == 0)))
-            {
-                await waitMessage.EditAsync(Context.BotClient, language.error_noRecords);
-                return;
-            }
-
-            sendText = await ScoreHelper.GetDailyStatisticsSendText(
-                dailyStatistics, _osuApiV2);
-        }
-        else if (parameters[0] == "online")
+        if (parameters.Length == 1 && parameters[0] == "online")
         {
             var countryCode = "uz";
             if (parameters.Length > 1 && parameters[1].Length == 2)
@@ -83,7 +75,29 @@ public sealed class GetDailyStatisticsCommand : CommandBase<Message>
         }
         else
         {
-            sendText = language.error_argsLength;
+            if (parameters.Length == 0)
+            {
+                sendText = language.error_argsLength + "\n/daily_stats osu/catch/taiko/mania";
+                await waitMessage.EditAsync(Context.BotClient, sendText);
+                return;
+            }
+            
+            string? ruleset = parameters[0].ParseToRuleset();
+            if (string.IsNullOrEmpty(ruleset))
+            {
+                ruleset = Ruleset.Osu;
+            }
+            
+            if (ScoresObserverBackgroundService.AllDailyStatistics.Count == 0 ||
+                (ScoresObserverBackgroundService.AllDailyStatistics.Last() is var dailyStatistics &&
+                 (dailyStatistics.Scores.Count == 0 || dailyStatistics.ActiveUsers.Count == 0)))
+            {
+                await waitMessage.EditAsync(Context.BotClient, language.error_noRecords);
+                return;
+            }
+            
+            Playmode playmode = ruleset.ParseRulesetToPlaymode();
+            sendText = await ScoreHelper.GetDailyStatisticsSendText(playmode, dailyStatistics, _osuApiV2);
         }
 
         await waitMessage.EditAsync(Context.BotClient, sendText);

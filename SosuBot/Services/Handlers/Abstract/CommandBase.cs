@@ -12,13 +12,7 @@ public abstract class CommandBase<TUpdateType> : ICommandBase<TUpdateType> where
         Context = context;
     }
 
-    public virtual Task ExecuteAsync()
-    {
-        return BeforeExecuteAsync();
-    }
+    public abstract Task ExecuteAsync();
 
-    public virtual Task BeforeExecuteAsync()
-    {
-        return Task.CompletedTask;
-    }
+    public virtual Task BeforeExecuteAsync() => Task.CompletedTask;
 }

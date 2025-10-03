@@ -6,7 +6,7 @@ namespace SosuBot.Services.Handlers.Commands;
 
 public sealed class DeleteCommand : CommandBase<Message>
 {
-    public static string[] Commands = ["/del"];
+    public static readonly string[] Commands = ["/del"];
 
     public override async Task ExecuteAsync()
     {

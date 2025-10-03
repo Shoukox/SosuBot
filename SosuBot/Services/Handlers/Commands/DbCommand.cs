@@ -11,11 +11,6 @@ public sealed class DbCommand : CommandBase<Message>
 {
     public static readonly string[] Commands = ["/db"];
 
-    public override Task BeforeExecuteAsync()
-    {
-        throw new NotImplementedException();
-    }
-
     public override async Task ExecuteAsync()
     {
         var osuUserInDatabase = await Context.Database.OsuUsers.FindAsync(Context.Update.From!.Id);

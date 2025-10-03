@@ -8,7 +8,7 @@ namespace SosuBot.Services.Handlers.Commands;
 
 public sealed class OsuChatstatsExcludeCommand : CommandBase<Message>
 {
-    public static string[] Commands = ["/exclude"];
+    public static readonly string[] Commands = ["/exclude"];
 
     public override async Task ExecuteAsync()
     {

@@ -8,7 +8,7 @@ namespace SosuBot.Services.Handlers.Commands;
 
 public sealed class OsuChatstatsIncludeCommand : CommandBase<Message>
 {
-    public static string[] Commands = ["/include"];
+    public static readonly string[] Commands = ["/include"];
 
     public override async Task ExecuteAsync()
     {
