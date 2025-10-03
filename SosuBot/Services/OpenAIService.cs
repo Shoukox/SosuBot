@@ -1,6 +1,7 @@
 ﻿using System.Collections.Concurrent;
 using System.Text.Json;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using OpenAI.Responses;
 using osu.Game.Online.API.Requests;
@@ -141,15 +142,21 @@ public sealed class OpenAiService
     );
         
     private readonly string _model = "gpt-5-nano";
-    private readonly string _openaiToken = Environment.GetEnvironmentVariable("OpenAIToken")!;
+    // private readonly string _openaiToken = Environment.GetEnvironmentVariable("OpenAIToken")!;
+    private readonly string? _openaiToken = Environment.GetEnvironmentVariable("OpenAIToken")!;
     private readonly ApiV2 _osuApiV2;
     private readonly OpenAIResponseClient _responseClient;
     private readonly ILogger<OpenAiService> _logger;
 
-    public OpenAiService(ApiV2 osuApiV2, ILogger<OpenAiService> logger)
+    public OpenAiService(ApiV2 osuApiV2, ILogger<OpenAiService> logger, IOptions<OpenAiConfiguration> openAiConfig)
     {
         _logger = logger;
         _osuApiV2 = osuApiV2;
+
+        if (_openaiToken == null)
+        {
+            _openaiToken = openAiConfig.Value.Token;
+        }
         _responseClient = new OpenAIResponseClient(_model, _openaiToken);
     }
 

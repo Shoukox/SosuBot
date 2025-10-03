@@ -42,7 +42,7 @@ internal class Program
         var loggingFileName = "logs/{Date}.log";
         builder.Logging.ClearProviders();
         builder.Logging.AddConsole();
-        builder.Logging.AddFile(loggingFileName);
+        builder.Logging.AddFile(loggingFileName, LogLevel.Error);
         builder.Logging.AddConfiguration(builder.Configuration.GetSection("Logging"));
         builder.Logging.AddConsoleFormatter<CustomConsoleFormatter, CustomConsoleFormatterOptions>();
 
@@ -64,6 +64,8 @@ internal class Program
         builder.Services.Configure<BotConfiguration>(builder.Configuration.GetSection(nameof(BotConfiguration)));
         builder.Services.Configure<OsuApiV2Configuration>(
             builder.Configuration.GetSection(nameof(OsuApiV2Configuration)));
+        builder.Services.Configure<OpenAiConfiguration>(
+            builder.Configuration.GetSection(nameof(OpenAiConfiguration)));
         builder.Services.AddHttpClient(nameof(TelegramBotClient))
             .ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler
             {
