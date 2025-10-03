@@ -1,6 +1,5 @@
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using SosuBot.Logging;
 using SosuBot.Services.Data;
 using Telegram.Bot;
 

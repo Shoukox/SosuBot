@@ -1,7 +1,6 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using SosuBot.Extensions;
-using SosuBot.Logging;
 using SosuBot.Services.Handlers.Abstract;
 using Telegram.Bot;
 using Telegram.Bot.Exceptions;
@@ -13,12 +12,13 @@ namespace SosuBot.Services.Handlers.Commands;
 public sealed class MsgCommand : CommandBase<Message>
 {
     public static string[] Commands = ["/msg"];
-    private ILogger<MsgCommand> _logger;
+    private readonly ILogger<MsgCommand> _logger;
 
     public MsgCommand()
     {
         _logger = Context.ServiceProvider.GetRequiredService<ILogger<MsgCommand>>();
     }
+
     public override async Task ExecuteAsync()
     {
         var osuUserInDatabase = await Context.Database.OsuUsers.FindAsync(Context.Update.From!.Id);
@@ -54,10 +54,10 @@ public sealed class MsgCommand : CommandBase<Message>
         }
         else if (parameters[0] == "to")
         {
-            long chatId = long.Parse(parameters[1]);
+            var chatId = long.Parse(parameters[1]);
             int? messageId = parameters[2] == "null" ? null : int.Parse(parameters[2]);
             var msg = string.Join(" ", parameters[3..]);
-            
+
             await Context.BotClient.SendMessage(chatId, msg, ParseMode.Html, messageId, linkPreviewOptions: false);
         }
         else if (parameters[0] == "check")

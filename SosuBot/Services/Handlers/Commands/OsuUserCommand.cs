@@ -17,14 +17,15 @@ namespace SosuBot.Services.Handlers.Commands;
 public class OsuUserCommand : CommandBase<Message>
 {
     public static string[] Commands = ["/user", "/u"];
-    private ApiV2 _osuApiV2;
-    private bool _includeIdInSearch;
+    private readonly bool _includeIdInSearch;
+    private readonly ApiV2 _osuApiV2;
 
     public OsuUserCommand(bool includeIdInSearch = false)
     {
         _includeIdInSearch = includeIdInSearch;
         _osuApiV2 = Context.ServiceProvider.GetRequiredService<ApiV2>();
     }
+
     public override async Task ExecuteAsync()
     {
         if (await Context.Update.IsUserSpamming(Context.BotClient))
@@ -39,12 +40,9 @@ public class OsuUserCommand : CommandBase<Message>
         UserExtend? user;
         Playmode playmode;
 
-        string searchPrefix = "@";
-        if (_includeIdInSearch)
-        {
-            searchPrefix = "";
-        }
-        
+        var searchPrefix = "@";
+        if (_includeIdInSearch) searchPrefix = "";
+
         if (parameters.Length == 0)
         {
             if (osuUserInDatabase is null)
@@ -110,14 +108,14 @@ public class OsuUserCommand : CommandBase<Message>
             await waitMessage.EditAsync(Context.BotClient, language.error_userNotFound);
             return;
         }
-        
+
         playmode = user.Playmode!.ParseRulesetToPlaymode();
         double? currentPp = user.Statistics!.Pp;
         var ppDifferenceText =
             await UserHelper.GetPpDifferenceTextAsync(Context.Database, user, playmode, currentPp);
-        
+
         UserHelper.UpdateOsuUsers(Context.Database, user, playmode);
-        
+
         DateTime.TryParse(user.JoinDate?.Value, out var registerDateTime);
         var textToSend = language.command_user.Fill([
             $"{playmode.ToGamemode()}",

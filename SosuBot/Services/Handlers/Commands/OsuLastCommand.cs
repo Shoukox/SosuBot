@@ -4,14 +4,12 @@ using Microsoft.Extensions.Logging;
 using OsuApi.V2;
 using OsuApi.V2.Clients.Beatmaps.HttpIO;
 using OsuApi.V2.Clients.Users.HttpIO;
-using OsuApi.V2.Models;
 using OsuApi.V2.Users.Models;
 using SosuBot.Extensions;
 using SosuBot.Helpers.OutputText;
 using SosuBot.Helpers.Types;
 using SosuBot.Localization;
 using SosuBot.Localization.Languages;
-using SosuBot.Logging;
 using SosuBot.PerformanceCalculator;
 using SosuBot.Services.Handlers.Abstract;
 using Telegram.Bot.Types;
@@ -21,9 +19,9 @@ namespace SosuBot.Services.Handlers.Commands;
 public class OsuLastCommand : CommandBase<Message>
 {
     public static readonly string[] Commands = ["/last", "/l"];
-    private ApiV2 _osuApiV2;
-    private ILogger<OsuLastCommand> _logger;
-    private bool _onlyPassed;
+    private readonly ILogger<OsuLastCommand> _logger;
+    private readonly bool _onlyPassed;
+    private readonly ApiV2 _osuApiV2;
 
     public OsuLastCommand(bool onlyPassed = false)
     {
@@ -31,6 +29,7 @@ public class OsuLastCommand : CommandBase<Message>
         _osuApiV2 = Context.ServiceProvider.GetRequiredService<ApiV2>();
         _logger = Context.ServiceProvider.GetRequiredService<ILogger<OsuLastCommand>>();
     }
+
     public override async Task ExecuteAsync()
     {
         if (await Context.Update.IsUserSpamming(Context.BotClient))
@@ -127,7 +126,7 @@ public class OsuLastCommand : CommandBase<Message>
             return;
         }
 
-        Score[] lastScores = lastScoresResponse.Scores;
+        var lastScores = lastScoresResponse.Scores;
         GetBeatmapResponse[] beatmaps = lastScores
             .Select(async score => await _osuApiV2.Beatmaps.GetBeatmap((long)score.Beatmap!.Id))
             .Select(t => t.Result).ToArray()!;
@@ -135,9 +134,9 @@ public class OsuLastCommand : CommandBase<Message>
 
         var textToSend =
             $"<b>{UserHelper.GetUserProfileUrlWrappedInUsernameString(userResponse.UserExtend!.Id.Value, osuUsernameForLastScores)}</b> (<i>{ruleset.ParseRulesetToGamemode()}</i>)\n\n";
-        
+
         var playmode = (Playmode)lastScores[0].RulesetId!;
-        
+
         for (var i = 0; i <= lastScores.Length - 1; i++)
         {
             var score = lastScores[i];
@@ -154,7 +153,7 @@ public class OsuLastCommand : CommandBase<Message>
 
             if (i == 0) chatInDatabase!.LastBeatmapId = beatmap.Id;
 
-            bool passed = score.Passed!.Value;
+            var passed = score.Passed!.Value;
             var scoreStatistics = score.Statistics!.ToStatistics();
 
             var calculatedPp = new PPResult
@@ -174,16 +173,16 @@ public class OsuLastCommand : CommandBase<Message>
                     scoreMods: mods.ToOsuMods(playmode),
                     scoreStatistics: null,
                     rulesetId: (int)playmode,
-                    cancellationToken: Context.CancellationToken),
+                    cancellationToken: Context.CancellationToken)
             };
 
             var scoreRank = ScoreHelper.GetScoreRankEmoji(score.Rank!, score.Passed!.Value) +
                             ScoreHelper.ParseScoreRank(score.Passed!.Value ? score.Rank! : "F");
             var textBeforeBeatmapLink = lastScores.Length == 1 ? "" : $"{i + 1}. ";
-            double scorePp = calculatedPp.Current?.Pp ?? score.Pp!.Value;
-            double scorePpIfFc = calculatedPp.IfFC.Pp;
-            double accuracyIfFc = calculatedPp.IfFC.CalculatedAccuracy;
-            bool isFc = score.MaxCombo == beatmap.MaxCombo;
+            var scorePp = calculatedPp.Current?.Pp ?? score.Pp!.Value;
+            var scorePpIfFc = calculatedPp.IfFC.Pp;
+            var accuracyIfFc = calculatedPp.IfFC.CalculatedAccuracy;
+            var isFc = score.MaxCombo == beatmap.MaxCombo;
 
             if (isFc)
             {
@@ -194,7 +193,7 @@ public class OsuLastCommand : CommandBase<Message>
             }
 
             var scoreEndedMinutesAgo = (int)(DateTime.UtcNow - score.EndedAt!.Value.ToUniversalTime()).TotalMinutes;
-                
+
             textToSend += language.command_last.Fill([
                 $"{textBeforeBeatmapLink}",
                 $"{scoreRank}",
@@ -216,12 +215,9 @@ public class OsuLastCommand : CommandBase<Message>
                 $"{score.CalculateCompletion(beatmap.CalculateObjectsAmount()):N1}"
             ]);
         }
-        
-        if (playmode != Playmode.Osu)
-        {
-            textToSend += "Для не std-скоров расчет пп может быть не верным.";
-        }
-        
+
+        if (playmode != Playmode.Osu) textToSend += "Для не std-скоров расчет пп может быть не верным.";
+
         await waitMessage.EditAsync(Context.BotClient, textToSend);
     }
 }

@@ -42,7 +42,7 @@ public static class TelegramHelper
         var messagesToBeSent = text.Length / TelegramConstants.MaximumMessageLength +
                                Math.Sign(text.Length % TelegramConstants.MaximumMessageLength);
         Message returnMessage = null!;
-        bool sentOrEdited = false;
+        var sentOrEdited = false;
         for (var i = 0; i < messagesToBeSent; i++)
         {
             var skipLength = i * TelegramConstants.MaximumMessageLength;
@@ -50,8 +50,9 @@ public static class TelegramHelper
             var textPart = text.Substring(skipLength,
                 Math.Min(text.Length - skipLength, TelegramConstants.MaximumMessageLength));
 
-            returnMessage = await SendOrEditMessage(messageId, chatId, botClient, textPart, !sentOrEdited, edit, parseMode,
-                replyMarkup: replyMarkup);
+            returnMessage = await SendOrEditMessage(messageId, chatId, botClient, textPart, !sentOrEdited, edit,
+                parseMode,
+                replyMarkup);
             sentOrEdited = true;
         }
 
@@ -63,15 +64,16 @@ public static class TelegramHelper
         ParseMode parseMode = ParseMode.Html, InlineKeyboardMarkup? replyMarkup = null, bool edit = false,
         string splitValue = "\n\n")
     {
-        string[] splittedText = text.Split(splitValue);
-        string currentText = "";
-        bool sentOrEdited = false;
-        for (int i = 0; i < splittedText.Length; i++)
+        var splittedText = text.Split(splitValue);
+        var currentText = "";
+        var sentOrEdited = false;
+        for (var i = 0; i < splittedText.Length; i++)
         {
-            if (i != splittedText.Length - 1 && currentText + splittedText[i] is { Length: > TelegramConstants.MaximumMessageLength })
+            if (i != splittedText.Length - 1 && currentText + splittedText[i] is
+                    { Length: > TelegramConstants.MaximumMessageLength })
             {
                 await SendOrEditMessage(messageId, chatId, botClient, currentText, !sentOrEdited, edit, parseMode,
-                    replyMarkup: replyMarkup);
+                    replyMarkup);
                 currentText = "";
                 sentOrEdited = true;
             }
@@ -80,6 +82,6 @@ public static class TelegramHelper
         }
 
         return await SendOrEditMessage(messageId, chatId, botClient, currentText, !sentOrEdited, edit, parseMode,
-            replyMarkup: replyMarkup);
+            replyMarkup);
     }
 }

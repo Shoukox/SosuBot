@@ -1,7 +1,4 @@
-using Microsoft.Extensions.Logging;
-using OsuApi.V2;
 using SosuBot.Database;
-using SosuBot.Services.Data;
 using Telegram.Bot;
 
 namespace SosuBot.Services.Handlers.Abstract;
@@ -11,7 +8,7 @@ public class CommandContext<TUpdateType>(
     TUpdateType update,
     BotContext database,
     IServiceProvider serviceProvider,
-    CancellationToken cancellationToken)    
+    CancellationToken cancellationToken)
     : ICommandContext<TUpdateType>
     where TUpdateType : class
 {

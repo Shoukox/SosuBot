@@ -14,7 +14,7 @@ public static class UserHelper
         var ppDifferenceText = string.Empty;
         if (await database.OsuUsers.FirstOrDefaultAsync(u => u.OsuUsername == user.Username) is { } userInDatabase)
         {
-            double savedPpInDatabase = userInDatabase.GetPP(playmode);
+            var savedPpInDatabase = userInDatabase.GetPP(playmode);
 
             var difference = currentPp!.Value - savedPpInDatabase;
             ppDifferenceText = difference.ToString("(+0.00);(-#.##)");
@@ -22,7 +22,7 @@ public static class UserHelper
 
         return ppDifferenceText;
     }
-    
+
     public static string CountryCodeToFlag(string countryCode)
     {
         // Ensure uppercase
@@ -41,9 +41,7 @@ public static class UserHelper
     public static void UpdateOsuUsers(BotContext database, UserExtend user, Playmode playmode)
     {
         foreach (var osuUser in database.OsuUsers.Where(u => u.OsuUsername == user.Username))
-        {
             osuUser.Update(user, playmode);
-        } 
     }
 
     public static string GetUserRankText(int? rank)

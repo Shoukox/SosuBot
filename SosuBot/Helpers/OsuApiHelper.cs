@@ -1,4 +1,3 @@
-using Microsoft.Extensions.Logging;
 using OsuApi.V2;
 using OsuApi.V2.Clients.Rankings.HttpIO;
 using OsuApi.V2.Models;
@@ -27,10 +26,7 @@ public static class OsuApiHelper
             var ranking = await api.Rankings.GetRanking(Ruleset.Osu, RankingType.Performance,
                 new GetRankingQueryParameters { Country = countryCode, CursorPage = page });
 
-            if (ranking == null)
-            {
-                return null;
-            }
+            if (ranking == null) return null;
 
             foreach (var userStatistics in ranking.Ranking!) users.Add(userStatistics);
 

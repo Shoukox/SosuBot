@@ -1,5 +1,4 @@
 using Microsoft.Extensions.DependencyInjection;
-using osu.Game.Rulesets.Mods;
 using OsuApi.V2;
 using OsuApi.V2.Clients.Users.HttpIO;
 using OsuApi.V2.Users.Models;
@@ -17,12 +16,13 @@ namespace SosuBot.Services.Handlers.Text;
 
 public sealed class TextHandler : CommandBase<Message>
 {
-    private ApiV2 _osuApiV2;
+    private readonly ApiV2 _osuApiV2;
 
     public TextHandler()
     {
         _osuApiV2 = Context.ServiceProvider.GetRequiredService<ApiV2>();
     }
+
     public override async Task ExecuteAsync()
     {
         ILocalization language = new Russian();
@@ -33,8 +33,6 @@ public sealed class TextHandler : CommandBase<Message>
 
     private async Task HandleUserProfileLink(ILocalization language)
     {
-        
-        
         var userProfileLink = OsuHelper.ParseOsuUserLink(Context.Update.GetAllLinks(), out var userId);
         if (userProfileLink == null) return;
         if (await Context.Update.IsUserSpamming(Context.BotClient))
@@ -109,8 +107,8 @@ public sealed class TextHandler : CommandBase<Message>
 
         var playmode = beatmap.Mode!.ParseRulesetToPlaymode();
         var classicMod = OsuHelper.GetClassicMode(playmode);
-        Mod[] modsFromMessage = beatmapLink.Contains('+') 
-            ? beatmapLink.Split('+')[1].ToMods(playmode).Except([classicMod]).ToArray() 
+        var modsFromMessage = beatmapLink.Contains('+')
+            ? beatmapLink.Split('+')[1].ToMods(playmode).Except([classicMod]).ToArray()
             : [];
 
         var classicModsToApply = modsFromMessage.Concat([classicMod]).Distinct().ToArray();
@@ -177,7 +175,7 @@ public sealed class TextHandler : CommandBase<Message>
         var duration = $"{beatmap.TotalLength / 60}:{beatmap.TotalLength % 60:00}";
 
 
-        int padLength = 9;
+        var padLength = 9;
         var textToSend = language.send_mapInfo.Fill([
             $"{playmode.ToGamemode()}",
             $"{beatmap.Version.EncodeHtml()}",
@@ -193,22 +191,22 @@ public sealed class TextHandler : CommandBase<Message>
             $"{lazerModsToApply.ModsToString(playmode)}",
 
             $"{ppCalculator.LastDifficultyAttributes!.StarRating:N2}",
-            $"{calculatedPp.ClassicSS.CalculatedAccuracy*100:N2}%".PadRight(padLength),
+            $"{calculatedPp.ClassicSS.CalculatedAccuracy * 100:N2}%".PadRight(padLength),
             $"{calculatedPp.ClassicSS.Pp:N2}",
 
-            $"{calculatedPp.Classic99.CalculatedAccuracy*100:N2}%".PadRight(padLength),
+            $"{calculatedPp.Classic99.CalculatedAccuracy * 100:N2}%".PadRight(padLength),
             $"{calculatedPp.Classic99.Pp:N2}",
 
-            $"{calculatedPp.Classic98.CalculatedAccuracy*100:N2}%".PadRight(padLength),
+            $"{calculatedPp.Classic98.CalculatedAccuracy * 100:N2}%".PadRight(padLength),
             $"{calculatedPp.Classic98.Pp:N2}",
 
-            $"{calculatedPp.LazerSS.CalculatedAccuracy*100:N2}%".PadRight(padLength),
+            $"{calculatedPp.LazerSS.CalculatedAccuracy * 100:N2}%".PadRight(padLength),
             $"{calculatedPp.LazerSS.Pp:N2}",
 
-            $"{calculatedPp.Lazer99.CalculatedAccuracy*100:N2}%".PadRight(padLength),
+            $"{calculatedPp.Lazer99.CalculatedAccuracy * 100:N2}%".PadRight(padLength),
             $"{calculatedPp.Lazer99.Pp:N2}",
 
-            $"{calculatedPp.Lazer98.CalculatedAccuracy*100:N2}%".PadRight(padLength),
+            $"{calculatedPp.Lazer98.CalculatedAccuracy * 100:N2}%".PadRight(padLength),
             $"{calculatedPp.Lazer98.Pp:N2}"
         ]);
 

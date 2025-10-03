@@ -6,6 +6,5 @@ public sealed class OsuUserIdCommand : OsuUserCommand
 
     public OsuUserIdCommand() : base(true)
     {
-        
     }
 }

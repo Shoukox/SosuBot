@@ -2,7 +2,6 @@
 using OsuApi.V2;
 using OsuApi.V2.Clients.Beatmaps.HttpIO;
 using OsuApi.V2.Clients.Users.HttpIO;
-using OsuApi.V2.Models;
 using OsuApi.V2.Users.Models;
 using SosuBot.Extensions;
 using SosuBot.Helpers.OutputText;
@@ -17,12 +16,13 @@ namespace SosuBot.Services.Handlers.Commands;
 public sealed class OsuScoreCommand : CommandBase<Message>
 {
     public static string[] Commands = ["/score", "/s"];
-    private ApiV2 _osuApiV2;
+    private readonly ApiV2 _osuApiV2;
 
     public OsuScoreCommand()
     {
         _osuApiV2 = Context.ServiceProvider.GetRequiredService<ApiV2>();
     }
+
     public override async Task ExecuteAsync()
     {
         if (await Context.Update.IsUserSpamming(Context.BotClient))
@@ -157,6 +157,7 @@ public sealed class OsuScoreCommand : CommandBase<Message>
                 language.error_userNotFound + "\n\n" + language.error_hintReplaceSpaces);
             return;
         }
+
         osuUsernameForScore = userResponse.UserExtend!.Username;
 
         // if username was entered, then use as ruleset his (this username) standard ruleset.
@@ -181,10 +182,7 @@ public sealed class OsuScoreCommand : CommandBase<Message>
         }
 
         var beatmap = (await _osuApiV2.Beatmaps.GetBeatmap(scores.First().BeatmapId!.Value))!.BeatmapExtended!;
-        if (beatmapset is null)
-        {
-            beatmapset = await _osuApiV2.Beatmapsets.GetBeatmapset(beatmap!.BeatmapsetId.Value);
-        }
+        if (beatmapset is null) beatmapset = await _osuApiV2.Beatmapsets.GetBeatmapset(beatmap!.BeatmapsetId.Value);
         chatInDatabase!.LastBeatmapId = beatmap.Id;
 
         var textToSend = $"<b>{osuUsernameForScore}</b>\n\n";

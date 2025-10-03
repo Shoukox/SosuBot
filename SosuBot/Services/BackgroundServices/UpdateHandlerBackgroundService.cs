@@ -1,7 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using SosuBot.Logging;
 using SosuBot.Services.Data;
 using SosuBot.Services.Handlers;
 using Telegram.Bot;

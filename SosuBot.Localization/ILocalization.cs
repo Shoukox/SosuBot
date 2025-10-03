@@ -1,4 +1,5 @@
 ﻿// ReSharper disable InconsistentNaming
+
 namespace SosuBot.Localization;
 
 public interface ILocalization

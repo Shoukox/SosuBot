@@ -7,7 +7,8 @@ using SosuBot.Helpers.Types;
 namespace SosuBot.Services.Data.OsuApi;
 
 /// <summary>
-/// Database for UZ osu!players. // in the future is planned to expand this database for storing not only the UZ players
+///     Database for UZ osu!players. // in the future is planned to expand this database for storing not only the UZ
+///     players
 /// </summary>
 /// <param name="api"></param>
 /// <param name="usersCachePath"></param>
@@ -18,7 +19,9 @@ public class UserStatisticsCacheDatabase(ApiV2 api, string? usersCachePath = nul
     private readonly SemaphoreSlim _semaphoreSlim = new(1, 1);
 
     public ApiV2 Api { get; } = api;
-    private string UsersCachePath { get; } = usersCachePath ?? Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "cache", "users");
+
+    private string UsersCachePath { get; } =
+        usersCachePath ?? Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "cache", "users");
 
     public void CreateCacheDirectoryIfNeeded()
     {
@@ -26,7 +29,7 @@ public class UserStatisticsCacheDatabase(ApiV2 api, string? usersCachePath = nul
     }
 
     /// <summary>
-    /// If a specified userId was already cached (userId should be an UZ player)
+    ///     If a specified userId was already cached (userId should be an UZ player)
     /// </summary>
     /// <param name="userId">user id</param>
     /// <returns>true if cached</returns>
@@ -72,11 +75,8 @@ public class UserStatisticsCacheDatabase(ApiV2 api, string? usersCachePath = nul
         CreateCacheDirectoryIfNeeded();
 
         var users = await OsuApiHelper.GetUsersFromRanking(Api, country);
-        if (users == null)
-        {
-            throw new Exception("Could not get users from ranking");
-        }
-        
+        if (users == null) throw new Exception("Could not get users from ranking");
+
         foreach (var user in users)
             await File.WriteAllTextAsync(GetCachedUserStatisticsPath(user.User!.Id.Value),
                 JsonSerializer.Serialize(user, new JsonSerializerOptions { WriteIndented = false }));

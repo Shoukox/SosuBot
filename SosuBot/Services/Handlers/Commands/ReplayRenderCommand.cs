@@ -12,13 +12,13 @@ namespace SosuBot.Services.Handlers.Commands;
 public sealed class ReplayRenderCommand : CommandBase<Message>
 {
     public static string[] Commands = ["/render"];
-    private RabbitMqService _rabbitMqService;
+    private readonly RabbitMqService _rabbitMqService;
 
     public ReplayRenderCommand()
     {
         _rabbitMqService = Context.ServiceProvider.GetRequiredService<RabbitMqService>();
     }
-    
+
     public override async Task ExecuteAsync()
     {
         if (await Context.Update.IsUserSpamming(Context.BotClient))
@@ -35,15 +35,16 @@ public sealed class ReplayRenderCommand : CommandBase<Message>
         var tempFileName = Path.GetFileName(tempFilePath);
         var tgfile = await Context.BotClient.GetFile(Context.Update.ReplyToMessage.Document.FileId);
 
-        var replayPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "danser", "replays", tempFileName);
+        var replayPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "danser",
+            "replays", tempFileName);
         var sw = new StreamWriter(replayPath);
         await Context.BotClient.DownloadFile(tgfile, sw.BaseStream);
         sw.Close();
 
         await _rabbitMqService.QueueJob(tempFileName);
 
-        string mp4FileName = tempFileName[..^4] + ".mp4";
-        string sendText = $"http://[2a03:4000:6:417a:1::105]/videos/{mp4FileName}";
+        var mp4FileName = tempFileName[..^4] + ".mp4";
+        var sendText = $"http://[2a03:4000:6:417a:1::105]/videos/{mp4FileName}";
         await waitMessage.EditAsync(Context.BotClient, sendText);
     }
 }

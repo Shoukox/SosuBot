@@ -1,32 +1,31 @@
-﻿using Microsoft.EntityFrameworkCore.Migrations;
+﻿#nullable disable
 
-#nullable disable
+using Microsoft.EntityFrameworkCore.Migrations;
 
-namespace SosuBot.Migrations
+namespace SosuBot.Migrations;
+
+/// <inheritdoc />
+public partial class Test1 : Migration
 {
     /// <inheritdoc />
-    public partial class Test1 : Migration
+    protected override void Up(MigrationBuilder migrationBuilder)
     {
-        /// <inheritdoc />
-        protected override void Up(MigrationBuilder migrationBuilder)
-        {
-            migrationBuilder.UpdateData(
-                table: "OsuUsers",
-                keyColumn: "TelegramId",
-                keyValue: 0L,
-                column: "IsAdmin",
-                value: true);
-        }
+        migrationBuilder.UpdateData(
+            "OsuUsers",
+            "TelegramId",
+            0L,
+            "IsAdmin",
+            true);
+    }
 
-        /// <inheritdoc />
-        protected override void Down(MigrationBuilder migrationBuilder)
-        {
-            migrationBuilder.UpdateData(
-                table: "OsuUsers",
-                keyColumn: "TelegramId",
-                keyValue: 0L,
-                column: "IsAdmin",
-                value: false);
-        }
+    /// <inheritdoc />
+    protected override void Down(MigrationBuilder migrationBuilder)
+    {
+        migrationBuilder.UpdateData(
+            "OsuUsers",
+            "TelegramId",
+            0L,
+            "IsAdmin",
+            false);
     }
 }

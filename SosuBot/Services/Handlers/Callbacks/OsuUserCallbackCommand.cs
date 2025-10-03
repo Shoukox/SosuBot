@@ -1,7 +1,4 @@
-﻿using System.Net.Mime;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
-using osu.Game.Configuration;
+﻿using Microsoft.Extensions.DependencyInjection;
 using OsuApi.V2;
 using OsuApi.V2.Clients.Users.HttpIO;
 using SosuBot.Extensions;
@@ -20,12 +17,13 @@ namespace SosuBot.Services.Handlers.Callbacks;
 public class OsuUserCallbackCommand : CommandBase<CallbackQuery>
 {
     public static string Command = "user";
-    private ApiV2 _osuApiV2;
+    private readonly ApiV2 _osuApiV2;
 
     public OsuUserCallbackCommand()
     {
         _osuApiV2 = Context.ServiceProvider.GetRequiredService<ApiV2>();
     }
+
     public override async Task ExecuteAsync()
     {
         ILocalization language = new Russian();
