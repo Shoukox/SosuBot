@@ -3,6 +3,7 @@ using OsuApi.V2;
 using SosuBot.Extensions;
 using SosuBot.Helpers;
 using SosuBot.Helpers.OutputText;
+using SosuBot.Helpers.Types;
 using SosuBot.Localization;
 using SosuBot.Localization.Languages;
 using SosuBot.Services.Handlers.Abstract;
@@ -34,7 +35,7 @@ public sealed class GetRankingCommand : CommandBase<Message>
         var parameters = Context.Update.Text!.GetCommandParameters()!;
 
         var countryCode = parameters.Length > 0 ? parameters[0] : null;
-        var users = await OsuApiHelper.GetUsersFromRanking(_osuApiV2, countryCode, 20,
+        var users = await OsuApiHelper.GetUsersFromRanking(_osuApiV2, Playmode.Osu, countryCode, 20,
             Context.CancellationToken);
 
         if (users == null)

@@ -111,9 +111,9 @@ public sealed class CustomCommand : CommandBase<Message>
             int countPlayersFromRanking = 100;
             int countBestScoresPerPlayer = 200;
             
-            var uzUsers = await OsuApiHelper.GetUsersFromRanking(_osuApiV2, count: countPlayersFromRanking);
+            var uzOsuStdUsers = await OsuApiHelper.GetUsersFromRanking(_osuApiV2, count: countPlayersFromRanking);
            
-            var getBestScoresTask = uzUsers!.Select(m =>
+            var getBestScoresTask = uzOsuStdUsers!.Select(m =>
                 _osuApiV2.Users.GetUserScores(m.User!.Id!.Value, ScoreType.Best,
                     new() { Limit = countBestScoresPerPlayer })).ToArray();
             await Task.WhenAll(getBestScoresTask);

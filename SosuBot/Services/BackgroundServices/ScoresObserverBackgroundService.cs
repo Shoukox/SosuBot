@@ -58,8 +58,7 @@ public sealed class ScoresObserverBackgroundService(
 
             await Task.WhenAll(
                 ObserveScoresGetScores(stoppingToken),
-                ObserveScores(stoppingToken),
-                CheckOnlineForCountry(stoppingToken)
+                ObserveScores(stoppingToken)
             );
         }
         catch (OperationCanceledException)
@@ -239,36 +238,6 @@ public sealed class ScoresObserverBackgroundService(
             }
 
         logger.LogWarning("Finished its work");
-    }
-
-    private async Task CheckOnlineForCountry(CancellationToken stoppingToken, string countryCode = "uz")
-    {
-        while (!stoppingToken.IsCancellationRequested)
-            try
-            {
-                var users = await OsuApiHelper.GetUsersFromRanking(osuApi, countryCode, token: stoppingToken);
-
-                var countryRanking = ActualCountryRankings.FirstOrDefault(m => m.CountryCode == countryCode);
-                if (countryRanking == null)
-                {
-                    countryRanking = new CountryRanking(countryCode);
-                    ActualCountryRankings.Add(countryRanking);
-                }
-
-                countryRanking.StatisticFrom = DateTime.UtcNow.ChangeTimezone(Country.Uzbekistan);
-                countryRanking.Ranking = users!;
-
-                await Task.Delay(TimeSpan.FromMinutes(2), stoppingToken);
-            }
-            catch (OperationCanceledException)
-            {
-                logger.LogInformation("Operation cancelled");
-                return;
-            }
-            catch (Exception e)
-            {
-                logger.LogError(e, "Unexpected exception");
-            }
     }
 
     /// <summary>

@@ -74,11 +74,26 @@ public class UserStatisticsCacheDatabase(ApiV2 api, string? usersCachePath = nul
     {
         CreateCacheDirectoryIfNeeded();
 
-        var users = await OsuApiHelper.GetUsersFromRanking(Api, country);
-        if (users == null) throw new Exception("Could not get users from ranking");
+        var usersStd = await OsuApiHelper.GetUsersFromRanking(Api, Playmode.Osu, country);
+        var usersTaiko = await OsuApiHelper.GetUsersFromRanking(Api, Playmode.Taiko, country);
+        var usersCatch = await OsuApiHelper.GetUsersFromRanking(Api, Playmode.Catch, country);
+        var usersMania = await OsuApiHelper.GetUsersFromRanking(Api, Playmode.Mania, country);
+
+        if (usersStd == null || usersTaiko == null || usersCatch == null || usersMania == null)
+        {
+            throw new Exception("Could not get users from ranking");
+        }
+
+        List<UserStatistics?> users = [];
+        users.AddRange(usersStd);
+        users.AddRange(usersTaiko);
+        users.AddRange(usersCatch);
+        users.AddRange(usersMania);
+
+        users = users.DistinctBy(m => m!.User!.Id).ToList();
 
         foreach (var user in users)
-            await File.WriteAllTextAsync(GetCachedUserStatisticsPath(user.User!.Id.Value),
+            await File.WriteAllTextAsync(GetCachedUserStatisticsPath(user!.User!.Id.Value),
                 JsonSerializer.Serialize(user, new JsonSerializerOptions { WriteIndented = false }));
     }
 
