@@ -138,14 +138,18 @@ public sealed class OpenAiService
                         "country_code":{
                             "type": "string",
                             "description": "Two-letter country code to retrieve the ranking from"
+                        },
+                        "mode": {
+                            "type": "integer",
+                            "description": "From which osu! gamemode (std, taiko, catch, mania) should scores be returned. Use 0=std, 1=taiko, 2=catch, 3=mania"
                         }
                   },
                   "additionalProperties": false,
-                  "required": [ "count", "country_code"],
+                  "required": [ "count", "country_code", "mode"],
                   "examples": [
-                           { "count": 50, "country_code": "uz" },
-                           { "count": 75, "country_code": "ru"},
-                           { "count": 100, "country_code": "uz" }
+                           { "count": 50, "country_code": "uz", "mode": 0 },
+                           { "count": 75, "country_code": "ru", "mode": 1 },
+                           { "count": 100, "country_code": "uz", "mode": 2 }
                   ]
                 }
                 """u8.ToArray()),
@@ -261,9 +265,10 @@ public sealed class OpenAiService
                                 .ToObjectFromJson<OpenAiFunctionCallParameters>()!;
                             int count = parameters.Count!.Value;
                             string countryCode = parameters.CountryCode!;
+                            int mode = parameters.Mode!.Value;
 
                             List<UserStatistics>? getUserBestResponse =
-                                await OsuApiHelper.GetUsersFromRanking(_osuApiV2, countryCode, count);
+                                await OsuApiHelper.GetUsersFromRanking(_osuApiV2, (Playmode)mode, countryCode, count);
                             string functionOutput = JsonConvert.SerializeObject(getUserBestResponse, Formatting.None, _jsonSerializerSettings);
                             inputItems.Add(new FunctionCallOutputResponseItem(functionCall.CallId, functionOutput));
                             break;
