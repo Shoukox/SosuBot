@@ -148,7 +148,6 @@ public static class ScoreHelper
             var scoresOrderedByPp = us.Item2
                 .GroupBy(score => score.BeatmapId)
                 .Select(m => m.MaxBy(s => s.Pp))
-                .Where(m => m!.Pp != null)
                 .OrderByDescending(m => m!.Pp)
                 .Select(m => GetScoreUrlWrappedInString(m!.Id!.Value, $"{GetFormattedPpTextConsideringNull(m.Pp, format: "N0")}pp{modeEmoji}"))
                 .ToArray();
