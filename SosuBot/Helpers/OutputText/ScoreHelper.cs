@@ -53,6 +53,24 @@ public static class ScoreHelper
     }
 
     /// <summary>
+    /// Gets a suitable emoji for this mode
+    /// </summary>
+    /// <param name="playmode"></param>
+    /// <returns></returns>
+    /// <exception cref="NotImplementedException"></exception>
+    public static string GetPlaymodeEmoji(Playmode playmode)
+    {
+        return playmode switch
+        {
+            Playmode.Osu => "🔵",
+            Playmode.Taiko => "🥁",
+            Playmode.Catch => "🍎",
+            Playmode.Mania => "🎹",
+            _ => throw new NotImplementedException()
+        };
+    }
+
+    /// <summary>
     ///     Get an emoji for the score rank (X, XH, S)
     /// </summary>
     /// <param name="scoreRank">Score rank from API</param>
@@ -126,20 +144,13 @@ public static class ScoreHelper
         {
             if (count >= 5) break;
 
-            string modeSmile = playmode switch
-            {
-                Playmode.Osu => "🔵",
-                Playmode.Taiko => "🥁",
-                Playmode.Catch => "🎹",
-                Playmode.Mania => "🍎",
-                _ => throw new NotImplementedException()
-            };
+            string modeEmoji = GetPlaymodeEmoji(playmode);
             var scoresOrderedByPp = us.Item2
                 .GroupBy(score => score.BeatmapId)
                 .Select(m => m.MaxBy(s => s.Pp))
                 .Where(m => m!.Pp != null)
                 .OrderByDescending(m => m!.Pp)
-                .Select(m => GetScoreUrlWrappedInString(m!.Id!.Value, $"{m.Pp:N0}pp{modeSmile}"))
+                .Select(m => GetScoreUrlWrappedInString(m!.Id!.Value, $"{m.Pp:N0}pp{modeEmoji}"))
                 .ToArray();
 
             var topPpScoresTextForCurrentUser = string.Join(", ", scoresOrderedByPp.Take(3));
@@ -197,9 +208,8 @@ public static class ScoreHelper
         var activePlayersCount = usersAndTheirScores.Length;
         var passedScoresCount = passedScores.Count;
         var beatmapsPlayed = usersAndTheirScores.SelectMany(m => m.Item2).DistinctBy((m) => m.BeatmapId).Count();
-        
-        var tashkentNow = TimeZoneInfo.ConvertTime(dailyStatistics.DayOfStatistic,
-            TimeZoneInfo.FindSystemTimeZoneById("West Asia Standard Time"));
+
+        var tashkentNow = dailyStatistics.DayOfStatistic.ChangeTimezone(Country.Uzbekistan);
         var sendText = language.send_dailyStatistic.Fill([
             $"{tashkentNow:dd.MM.yyyy HH:mm} (по тшк.)",
             $"{activePlayersCount}",
