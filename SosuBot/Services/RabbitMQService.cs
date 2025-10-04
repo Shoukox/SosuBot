@@ -2,7 +2,7 @@ using System.Text;
 using Microsoft.Extensions.Logging;
 using RabbitMQ.Client;
 
-namespace SosuBot.Services.Data;
+namespace SosuBot.Services;
 
 public sealed class RabbitMqService(ILogger<RabbitMqService> logger)
 {
