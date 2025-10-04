@@ -42,6 +42,7 @@
 
     <ItemGroup>
         <Folder Include="Logging\"/>
+        <Folder Include="Services\OsuApi\" />
     </ItemGroup>
 
 </Project>

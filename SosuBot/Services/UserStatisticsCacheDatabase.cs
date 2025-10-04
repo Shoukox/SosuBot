@@ -4,7 +4,7 @@ using OsuApi.V2.Users.Models;
 using SosuBot.Helpers;
 using SosuBot.Helpers.Types;
 
-namespace SosuBot.Services.Data.OsuApi;
+namespace SosuBot.Services;
 
 /// <summary>
 ///     Database for UZ osu!players. // in the future is planned to expand this database for storing not only the UZ
@@ -14,7 +14,7 @@ namespace SosuBot.Services.Data.OsuApi;
 /// <param name="usersCachePath"></param>
 public class UserStatisticsCacheDatabase(ApiV2 api, string? usersCachePath = null)
 {
-    public const int CachingDays = 31;
+    public const int CachingDays = 1;
 
     private readonly SemaphoreSlim _semaphoreSlim = new(1, 1);
 

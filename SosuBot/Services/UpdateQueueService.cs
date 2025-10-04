@@ -1,7 +1,7 @@
 using System.Threading.Channels;
 using Telegram.Bot.Types;
 
-namespace SosuBot.Services.Data;
+namespace SosuBot.Services;
 
 public sealed class UpdateQueueService
 {

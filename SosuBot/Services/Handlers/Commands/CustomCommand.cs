@@ -11,7 +11,7 @@ using SosuBot.Helpers.OutputText;
 using SosuBot.Helpers.Types;
 using SosuBot.Localization;
 using SosuBot.Localization.Languages;
-using SosuBot.Services.Data;
+using SosuBot.Services;
 using SosuBot.Services.Handlers.Abstract;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;

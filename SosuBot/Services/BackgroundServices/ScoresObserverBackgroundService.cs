@@ -16,7 +16,6 @@ using SosuBot.Helpers.Comparers;
 using SosuBot.Helpers.OutputText;
 using SosuBot.Helpers.Types;
 using SosuBot.Helpers.Types.Statistics;
-using SosuBot.Services.Data.OsuApi;
 using Telegram.Bot;
 using Telegram.Bot.Types.Enums;
 using Country = SosuBot.Helpers.Country;
