@@ -10,6 +10,7 @@ using OsuApi.V2.Clients.Users.HttpIO;
 using OsuApi.V2.Models;
 using OsuApi.V2.Users.Models;
 using SosuBot.Database;
+using SosuBot.Extensions;
 using SosuBot.Helpers;
 using SosuBot.Helpers.Comparers;
 using SosuBot.Helpers.OutputText;
@@ -18,6 +19,7 @@ using SosuBot.Helpers.Types.Statistics;
 using SosuBot.Services.Data.OsuApi;
 using Telegram.Bot;
 using Telegram.Bot.Types.Enums;
+using Country = SosuBot.Helpers.Country;
 
 namespace SosuBot.Services.BackgroundServices;
 
@@ -67,20 +69,19 @@ public sealed class ScoresObserverBackgroundService(
         }
     }
 
-
     private async Task ObserveScoresGetScores(CancellationToken stoppingToken)
     {
         await LoadDailyStatistics();
         await _userDatabase.CacheIfNeeded();
 
         DailyStatistics dailyStatistics;
-        if (AllDailyStatistics.Count > 0 && AllDailyStatistics.Last().DayOfStatistic.Day == DateTime.UtcNow.Day)
+        if (AllDailyStatistics.Count > 0 && AllDailyStatistics.Last().DayOfStatistic.ChangeTimezone(Country.Uzbekistan).Day == DateTime.UtcNow.ChangeTimezone(Country.Uzbekistan).Day)
         {
             dailyStatistics = AllDailyStatistics.Last();
         }
         else
         {
-            dailyStatistics = new DailyStatistics(CountryCode.Uzbekistan, DateTime.UtcNow);
+            dailyStatistics = new DailyStatistics(CountryCode.Uzbekistan, DateTime.UtcNow.ChangeTimezone(Country.Uzbekistan));
             AllDailyStatistics.Add(dailyStatistics);
         }
 
@@ -152,7 +153,7 @@ public sealed class ScoresObserverBackgroundService(
                 }
 
                 // New day => send statistics
-                if (DateTime.UtcNow.Day != dailyStatistics.DayOfStatistic.Day)
+                if (DateTime.UtcNow.ChangeTimezone(Country.Uzbekistan).Day != dailyStatistics.DayOfStatistic.ChangeTimezone(Country.Uzbekistan).Day)
                 {
                     try
                     {
@@ -170,7 +171,7 @@ public sealed class ScoresObserverBackgroundService(
                         logger.LogError(e, "Error while sending final daily statistics");
                     }
 
-                    dailyStatistics = new DailyStatistics(CountryCode.Uzbekistan, DateTime.UtcNow);
+                    dailyStatistics = new DailyStatistics(CountryCode.Uzbekistan, DateTime.UtcNow.ChangeTimezone(Country.Uzbekistan));
                     AllDailyStatistics.Add(dailyStatistics);
                 }
 
@@ -255,7 +256,7 @@ public sealed class ScoresObserverBackgroundService(
                     ActualCountryRankings.Add(countryRanking);
                 }
 
-                countryRanking.StatisticFrom = DateTime.UtcNow;
+                countryRanking.StatisticFrom = DateTime.UtcNow.ChangeTimezone(Country.Uzbekistan);
                 countryRanking.Ranking = users!;
 
                 await Task.Delay(TimeSpan.FromMinutes(2), stoppingToken);

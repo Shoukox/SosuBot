@@ -78,7 +78,7 @@ public static class TelegramHelper
                 sentOrEdited = true;
             }
 
-            currentText += splittedText[i] + "\n\n";
+            currentText += splittedText[i] + splitValue;
         }
 
         return await SendOrEditMessage(messageId, chatId, botClient, currentText, !sentOrEdited, edit, parseMode,

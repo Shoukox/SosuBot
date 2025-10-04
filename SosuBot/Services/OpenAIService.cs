@@ -40,8 +40,19 @@ public sealed class OpenAiService
     private readonly ConcurrentDictionary<long, bool> _syncDictionary = new();
 
     private readonly string _developerPrompt =
-        "name=ShkX;role=osu!assistant;domain=osu!;lang=ru;tone=cynical,short;terms=keep_english_osu;rules=no_questions,not_repetitive;offtopic=mark;format=telegram_markdown;osuprofiles_compare_priority=top_scores_pp>total_pp>playtime>register_timestamp>count_top>recency;analyze_osubeatmaps=stream_vs_aim;" +
-        "Не давай полную сводку. Всегда используй markdown стили (bold/italic) в своем ответе.";
+        "your_name=ShkX;created_by=Shoukko;role=osu!critic;lang=ru;" +
+        "behavior=brief|informal|cynical|critic|occasional_insults;" +
+        "output=no_full_summaries;no_intros_outros" +
+        "osu_terms=english;no_parentheses=true;" +
+        "compare_players=use_profile|top_scores|playtime|pp|analyze_top_maps(stream_vs_aim_when_possible);" +
+        "use_terms=аим, стримы, пп, драг, ховер, фармила, фармер, джампы, берст, стар, аккураси, техно мапы;" +
+        "use_username_origin_language=true;" +
+        "do_not_mention_id=true";
+    
+    private readonly JsonSerializerSettings _jsonSerializerSettings = new JsonSerializerSettings()
+    {
+        NullValueHandling = NullValueHandling.Ignore
+    };
 
     private readonly FunctionTool _getOsuUserTool = ResponseTool.CreateFunctionTool(
         FunctionNames.GetOsuUser,
@@ -142,7 +153,6 @@ public sealed class OpenAiService
     );
         
     private readonly string _model = "gpt-5-nano";
-    // private readonly string _openaiToken = Environment.GetEnvironmentVariable("OpenAIToken")!;
     private readonly string? _openaiToken = Environment.GetEnvironmentVariable("OpenAIToken")!;
     private readonly ApiV2 _osuApiV2;
     private readonly OpenAIResponseClient _responseClient;
@@ -190,7 +200,8 @@ public sealed class OpenAiService
 
         ResponseCreationOptions options = new()
         {
-            Tools = { _getOsuUserTool, _getUserBestTool, _getCountryRankingTool }
+            Tools = { _getOsuUserTool, _getUserBestTool, _getCountryRankingTool },
+            ReasoningOptions = new ResponseReasoningOptions() {ReasoningEffortLevel = ResponseReasoningEffortLevel.Low}
         };
 
         var output = "";
@@ -214,7 +225,17 @@ public sealed class OpenAiService
                                     "user_id"];
                             GetUserResponse? getUserResponse =
                                 await _osuApiV2.Users.GetUser(userId, new GetUserQueryParameters());
-                            string functionOutput = JsonConvert.SerializeObject(getUserResponse?.UserExtend);
+                            getUserResponse!.UserExtend!.Cover = null;
+                            getUserResponse.UserExtend.CoverUrl = null;
+                            getUserResponse.UserExtend.DefaultGroup = null;
+                            getUserResponse.UserExtend.Groups = null;
+                            getUserResponse.UserExtend.MaxBlocks = null;
+                            getUserResponse.UserExtend.MaxFriends = null;
+                            getUserResponse.UserExtend.ProfileOrder = null;
+                            getUserResponse.UserExtend.UserAchievements = null;
+                            getUserResponse.UserExtend.ReplaysWatchedCounts = null;
+                            
+                            string functionOutput = JsonConvert.SerializeObject(getUserResponse?.UserExtend, Formatting.None, _jsonSerializerSettings);
                             inputItems.Add(new FunctionCallOutputResponseItem(functionCall.CallId, functionOutput));
                             break;
                         }
@@ -243,7 +264,7 @@ public sealed class OpenAiService
 
                             List<UserStatistics>? getUserBestResponse =
                                 await OsuApiHelper.GetUsersFromRanking(_osuApiV2, countryCode, count);
-                            string functionOutput = JsonConvert.SerializeObject(getUserBestResponse);
+                            string functionOutput = JsonConvert.SerializeObject(getUserBestResponse, Formatting.None, _jsonSerializerSettings);
                             inputItems.Add(new FunctionCallOutputResponseItem(functionCall.CallId, functionOutput));
                             break;
                         }

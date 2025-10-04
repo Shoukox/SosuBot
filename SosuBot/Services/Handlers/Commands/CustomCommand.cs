@@ -1,6 +1,12 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
+using osu.Game.Overlays.Settings.Sections.Gameplay;
+using osu.Game.Rulesets.Osu.Mods;
+using OsuApi.V2;
+using OsuApi.V2.Models;
+using OsuApi.V2.Users.Models;
 using SosuBot.Extensions;
+using SosuBot.Helpers;
 using SosuBot.Helpers.OutputText;
 using SosuBot.Helpers.Types;
 using SosuBot.Localization;
@@ -16,10 +22,12 @@ public sealed class CustomCommand : CommandBase<Message>
 {
     public static readonly string[] Commands = ["/c"];
     private OpenAiService _openaiService = null!;
+    private ApiV2 _osuApiV2 = null!;
 
     public override Task BeforeExecuteAsync()
     {
         _openaiService = Context.ServiceProvider.GetRequiredService<OpenAiService>();
+        _osuApiV2 = Context.ServiceProvider.GetRequiredService<ApiV2>();
         return Task.CompletedTask;
     }
 
@@ -71,7 +79,7 @@ public sealed class CustomCommand : CommandBase<Message>
 
             string userInput = string.Join(" ", parameters[1..]);
             Result<string> output = await _openaiService.GetResponseAsync(userInput, Context.Update.From.Id);
-            if (!output.IsSuccess)
+            if (!output.IsSuccess || string.IsNullOrEmpty(output.Data))
             {
                 switch (output.Exception?.Code)
                 {
@@ -84,8 +92,48 @@ public sealed class CustomCommand : CommandBase<Message>
                 await waitMessage.EditAsync(Context.BotClient, language.error_baseMessage);
                 return;
             }
+
+            try
+            {
+                await waitMessage.EditAsync(Context.BotClient, output.Data!, ParseMode.None);
+            }
+            catch (Exception e)
+            {
+                e.HelpLink = null;
+            }
+        }
+        else if (parameters[0] == "slavik")
+        {
             
-            await waitMessage.EditAsync(Context.BotClient, output.Data!, ParseMode.Markdown);
+            ILocalization language = new Russian();
+            var waitMessage = await Context.Update.ReplyAsync(Context.BotClient, language.waiting);
+
+            int countPlayersFromRanking = 100;
+            int countBestScoresPerPlayer = 200;
+            
+            var uzUsers = await OsuApiHelper.GetUsersFromRanking(_osuApiV2, count: countPlayersFromRanking);
+           
+            var getBestScoresTask = uzUsers!.Select(m =>
+                _osuApiV2.Users.GetUserScores(m.User!.Id!.Value, ScoreType.Best,
+                    new() { Limit = countBestScoresPerPlayer })).ToArray();
+            await Task.WhenAll(getBestScoresTask);
+            
+            Score[] uzBestScores = getBestScoresTask.SelectMany(m => m.Result!.Scores).ToArray();
+            
+            var bestScoresByMods = uzBestScores.GroupBy(m => string.Join("", ScoreHelper.GetModsText(m.Mods!.Where(mod => !mod.Acronym!.Equals("CL", StringComparison.InvariantCultureIgnoreCase)).ToArray()))).Select(m => (m.Key, m.MaxBy(s => s.Pp)!)).OrderByDescending(m => m.Item2.Pp).ToArray();
+
+            string sendText = "";
+            foreach (var pair in bestScoresByMods)
+            {
+                string lazer =
+                    pair.Item2.Mods!.Any(m => m.Acronym!.Equals("CL", StringComparison.InvariantCultureIgnoreCase))
+                        ? ""
+                        : "lazer";
+                sendText +=
+                    $"{pair.Key} - max. {ScoreHelper.GetScoreUrlWrappedInString(pair.Item2.Id!.Value, $"{pair.Item2.Pp:N2}pp")}{lazer} by {UserHelper.GetUserProfileUrlWrappedInUsernameString(pair.Item2.UserId!.Value, pair.Item2.User!.Username!)}\n";
+            }
+
+            await waitMessage.EditAsync(Context.BotClient, sendText, splitValue: "\n");
         }
     }
 }
