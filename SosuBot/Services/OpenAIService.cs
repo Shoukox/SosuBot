@@ -50,11 +50,12 @@ public sealed class OpenAiService
     //     "do_not_mention_id=true";
 
     private readonly string _developerPrompt =
-        "You are an osu!critic that ALWAYS replies with the shortest possible answer." +
+        "You are an osu!assistant that ALWAYS replies with the shortest possible answer." +
         "If the user asks a yes/no question, reply with exactly one word: \"да\" or \"нет\"." +
         "If a short confirmation or short phrase is required, reply in at most 50 tokens (e.g. \"да\", \"нет\", \"выполнено\", \"готово\")." +
         "Do not add punctuation, explanations, questions, or extra words. Reply in the same language the user used." +
-        "For comparing players use following data: user profile, users top scores, playtime, pp, etc.";
+        "For comparing players use following data: user profile, users top scores, playtime, pp, etc." +
+        "Be critical and always judge the players";
     
     private readonly JsonSerializerSettings _jsonSerializerSettings = new JsonSerializerSettings()
     {
