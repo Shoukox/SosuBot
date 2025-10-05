@@ -36,6 +36,11 @@ internal class Program
         if (!File.Exists(configurationFileName))
             throw new FileNotFoundException($"{configurationFileName} was not found!", configurationFileName);
         builder.Configuration.AddJsonFile(configurationFileName, false);
+        
+        var openaiConfigurationFileName = "openai-settings.json";
+        if (!File.Exists(openaiConfigurationFileName))
+            throw new FileNotFoundException($"{openaiConfigurationFileName} was not found!", configurationFileName);
+        builder.Configuration.AddJsonFile(openaiConfigurationFileName, false);
 
         // Logging
         var loggingFileName = "logs/{Date}.log";
@@ -61,10 +66,8 @@ internal class Program
 
         // Services
         builder.Services.Configure<BotConfiguration>(builder.Configuration.GetSection(nameof(BotConfiguration)));
-        builder.Services.Configure<OsuApiV2Configuration>(
-            builder.Configuration.GetSection(nameof(OsuApiV2Configuration)));
-        builder.Services.Configure<OpenAiConfiguration>(
-            builder.Configuration.GetSection(nameof(OpenAiConfiguration)));
+        builder.Services.Configure<OsuApiV2Configuration>(builder.Configuration.GetSection(nameof(OsuApiV2Configuration)));
+        builder.Services.Configure<OpenAiConfiguration>(builder.Configuration.GetSection(nameof(OpenAiConfiguration)));
         builder.Services.AddHttpClient(nameof(TelegramBotClient))
             .ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler
             {

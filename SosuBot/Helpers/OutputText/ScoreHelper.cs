@@ -208,7 +208,8 @@ public static class ScoreHelper
         var passedScoresCount = passedScores.Count;
         var beatmapsPlayed = usersAndTheirScores.SelectMany(m => m.Item2).DistinctBy((m) => m.BeatmapId).Count();
 
-        var tashkentNow = dailyStatistics.DayOfStatistic.ChangeTimezone(Country.Uzbekistan);
+        var tashkentNow = dailyStatistics.DayOfStatistic;
+        var s = $"{dailyStatistics.DayOfStatistic:HH:m:s zzz}";
         var sendText = language.send_dailyStatistic.Fill([
             $"{tashkentNow:dd.MM.yyyy HH:mm} (по тшк.)",
             $"{activePlayersCount}",

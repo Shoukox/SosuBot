@@ -4,6 +4,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using OpenAI.Responses;
+using osu.Framework.Extensions.IEnumerableExtensions;
 using osu.Game.Online.API.Requests;
 using OsuApi.V2;
 using OsuApi.V2.Clients.Users.HttpIO;
@@ -39,23 +40,7 @@ public sealed class OpenAiService
     /// </summary>
     private readonly ConcurrentDictionary<long, bool> _syncDictionary = new();
 
-    // private readonly string _developerPrompt =
-    //     "your_name=ShkX;created_by=Shoukko;role=osu!critic;lang=ru;" +
-    //     "behavior=brief|informal|cynical|critic|occasional_insults;" +
-    //     "output=no_full_summaries;no_intros_outros" +
-    //     "osu_terms=english;no_parentheses=true;" +
-    //     "compare_players=use_profile|top_scores|playtime|pp|analyze_top_maps(stream_vs_aim_when_possible);" +
-    //     "use_terms=аим, стримы, пп, драг, ховер, фармила, фармер, джампы, берст, стар, аккураси, техно мапы;" +
-    //     "use_username_origin_language=true;" +
-    //     "do_not_mention_id=true";
-
-    private readonly string _developerPrompt =
-        "You are an osu!assistant that ALWAYS replies with the shortest possible answer." +
-        "If the user asks a yes/no question, reply with exactly one word: \"да\" or \"нет\"." +
-        "If a short confirmation or short phrase is required, reply in at most 50 tokens (e.g. \"да\", \"нет\", \"выполнено\", \"готово\")." +
-        "Do not add punctuation, explanations, questions, or extra words. Reply in the same language the user used." +
-        "For comparing players use following data: user profile, users top scores, playtime, pp, etc." +
-        "Be critical and always judge the players";
+    private string DeveloperPrompt { get; }
     
     private readonly JsonSerializerSettings _jsonSerializerSettings = new JsonSerializerSettings()
     {
@@ -100,7 +85,7 @@ public sealed class OpenAiService
                   "properties": {
                         "user_id": {
                             "type": "integer",
-                            "description": "Numeric user id of an osu! player. If you have only username, you can gain the id via GetOsuUser"
+                            "description": "Numeric user id of an osu! player. If you have only username, you can gain the id via function call GetOsuUser"
                         },
                         "score_type":{
                             "type": "string",
@@ -116,7 +101,7 @@ public sealed class OpenAiService
                         },
                         "limit": {
                             "type": "integer",
-                            "description": "Indicates, how many scores will be returned. Interval=[1; 200]"
+                            "description": "Indicates, how many scores will be returned. Interval=[1; 5]"
                         }
                   },
                   "additionalProperties": false,
@@ -163,12 +148,11 @@ public sealed class OpenAiService
                 """u8.ToArray()),
         strictModeEnabled: false
     );
-        
-    private readonly string _model = "gpt-5-nano";
+
     private readonly string? _openaiToken = Environment.GetEnvironmentVariable("OpenAIToken")!;
     private readonly ApiV2 _osuApiV2;
-    private readonly OpenAIResponseClient _responseClient;
     private readonly ILogger<OpenAiService> _logger;
+    private OpenAIResponseClient _responseClient;
 
     public OpenAiService(ApiV2 osuApiV2, ILogger<OpenAiService> logger, IOptions<OpenAiConfiguration> openAiConfig)
     {
@@ -179,7 +163,18 @@ public sealed class OpenAiService
         {
             _openaiToken = openAiConfig.Value.Token;
         }
-        _responseClient = new OpenAIResponseClient(_model, _openaiToken);
+
+        DeveloperPrompt = openAiConfig.Value.DeveloperPrompt;
+        _responseClient = new OpenAIResponseClient(openAiConfig.Value.Model, _openaiToken);
+    }
+
+    /// <summary>
+    /// Changes the model for this gpt instance
+    /// </summary>
+    /// <param name="model"><see cref="Model"/></param>
+    public void ChangeModel(string model)
+    {
+        _responseClient = new OpenAIResponseClient(model, _openaiToken);
     }
 
     public async Task<Result<string>> GetResponseAsync(string userInput, long userTelegramId)
@@ -192,7 +187,7 @@ public sealed class OpenAiService
         _syncDictionary[userTelegramId] = true;
 
         List<ResponseItem> inputItems;
-        MessageResponseItem developerMessageItem = ResponseItem.CreateDeveloperMessageItem(_developerPrompt);
+        MessageResponseItem developerMessageItem = ResponseItem.CreateDeveloperMessageItem(DeveloperPrompt);
         MessageResponseItem userResponseItem = ResponseItem.CreateUserMessageItem(userInput);
         if (_chatDictionary.ContainsKey(userTelegramId))
         {
@@ -213,7 +208,7 @@ public sealed class OpenAiService
         ResponseCreationOptions options = new()
         {
             Tools = { _getOsuUserTool, _getUserBestTool, _getCountryRankingTool },
-            ReasoningOptions = new ResponseReasoningOptions() {ReasoningEffortLevel = ResponseReasoningEffortLevel.Low}
+            Temperature = 0.7f
         };
 
         var output = "";
@@ -263,7 +258,63 @@ public sealed class OpenAiService
                             var getUserBestResponse =
                                 await _osuApiV2.Users.GetUserScores(userId, scoreType,
                                     new() { Mode = mode, Limit = limit });
-                            string functionOutput = JsonConvert.SerializeObject(getUserBestResponse?.Scores);
+                            var scores = getUserBestResponse!.Scores;
+                            Array.ForEach(scores, m =>
+                            {
+                                m.Beatmap!.Checksum = null;
+                                m.Beatmap.Failtimes = null;
+                                m.Beatmap.Mode = null;
+                                m.Beatmap.Owners = null;
+                                
+                                m.Beatmapset!.User = null;
+                                m.Beatmapset.UserId = null;
+                                m.Beatmapset.ArtistUnicode = null;
+                                m.Beatmapset.Availability = null;
+                                m.Beatmapset.Beatmaps = null;
+                                m.Beatmapset.Converts = null;
+                                m.Beatmapset.UserId = null;
+                                m.Beatmapset.CurrentNominations = null;
+                                m.Beatmapset.Description = null;
+                                m.Beatmapset.Covers = null;
+                                m.Beatmapset.Genre = null;
+                                m.Beatmapset.Spotlight = null;
+                                m.Beatmapset.Hype = null;
+                                m.Beatmapset.FavouriteCount = null;
+                                m.Beatmapset.NominationsSummary = null;
+                                m.Beatmapset.PackTags = null;
+                                m.Beatmapset.PreviewUrl = null;
+                                m.Beatmapset.Source = null;
+                                m.Beatmapset.Title = null;
+                                m.Beatmapset.Video = null;
+                                m.Beatmapset.PlayCount = null;
+                                m.Beatmapset.Nsfw = null;
+                                m.Statistics = null;
+                                m.Preserve = null;
+                                m.BestId = null;
+                                m.BuildId = null;
+                                m.ClassicTotalScore = null;
+                                m.EndedAt = null;
+                                m.IsPerfectCombo = null;
+                                m.LegacyPerfect = null;
+                                m.LegacyScoreId = null;
+                                m.LegacyTotalScore = null;
+                                m.MaximumStatistics = null;
+                                m.Mode = null;
+                                m.ModeInt = null;
+                                m.Passed = null;
+                                m.PlaylistItemId = null;
+                                m.StartedAt = null;
+                                m.TotalScore = null;
+                                m.TotalScoreWithoutMods = null;
+                                m.Weight = null;
+                                m.Type = null;
+                                m.UserId = null;
+                                m.User = null;
+                                m.Processed = null;
+                                m.Ranked = null;
+                            });
+                            
+                            string functionOutput = JsonConvert.SerializeObject(scores, _jsonSerializerSettings);
                             inputItems.Add(new FunctionCallOutputResponseItem(functionCall.CallId, functionOutput));
                             break;
                         }
@@ -316,10 +367,17 @@ public sealed class OpenAiService
         items.RemoveRange(1, items.Count - keepLast);
     }
 
-    public static class FunctionNames
+    private static class FunctionNames
     {
         public const string GetOsuUser = "GetOsuUser";
         public const string GetUserScores = "GetUserScores";
         public const string GetCountryRanking = "GetCountryRanking";
+    }
+    
+    public static class Model
+    {
+        public const string Gpt5 = "gpt-5";
+        public const string Gpt5Mini = "gpt-5-mini";
+        public const string Gpt5Nano = "gpt-5-nano";
     }
 }
