@@ -5,11 +5,13 @@ namespace SosuBot.Extensions;
 public static class DateTimeExtensions
 {
     /// <summary>
-    /// Converts a datetime object from local/utc time to the time in the specified country
+    ///     Converts a datetime object from local/utc time to the time in the specified country
     /// </summary>
-    /// <param name="dateTime">A <see cref="DateTime"/>instance</param>
+    /// <param name="dateTime">A <see cref="DateTime" />instance</param>
     /// <param name="country">A country</param>
-    /// <returns><see cref="DateTime"/></returns>
+    /// <returns>
+    ///     <see cref="DateTime" />
+    /// </returns>
     /// <exception cref="NotImplementedException">Occurs if the specified country is unknown</exception>
     public static DateTime ChangeTimezone(this DateTime dateTime, Country country)
     {
@@ -17,7 +19,8 @@ public static class DateTimeExtensions
         {
             case Country.Uzbekistan:
             {
-                return TimeZoneInfo.ConvertTime(dateTime, TimeZoneInfo.FindSystemTimeZoneById("West Asia Standard Time"));
+                return TimeZoneInfo.ConvertTime(dateTime,
+                    TimeZoneInfo.FindSystemTimeZoneById("West Asia Standard Time"));
             }
             default:
             {

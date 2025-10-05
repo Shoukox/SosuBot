@@ -5,11 +5,11 @@ using SixLabors.ImageSharp.Drawing.Processing;
 using SixLabors.ImageSharp.PixelFormats;
 using SixLabors.ImageSharp.Processing;
 
-namespace SosuBot.Graphics.ProfileCard;
+namespace SosuBot.OsuCard.ProfileCard;
 
 public class OsuProfileCard
 {
-    private static readonly HttpClient httpClient = new();
+    private static readonly HttpClient HttpClient = new();
     private readonly int _avatarBorderRadius = 20; //px
     private readonly Point _avatarSize = new(65, 65);
 
@@ -25,8 +25,8 @@ public class OsuProfileCard
         _profileInfo = osuProfileCardInfo;
 
         // Initialize fonts
-        var _fonts = new FontCollection();
-        _fontFamilyInter = _fonts.Add("fonts/Inter-Medium.ttf");
+        var fonts = new FontCollection();
+        _fontFamilyInter = fonts.Add("fonts/Inter-Medium.ttf");
     }
 
     public void CreateCard()
@@ -72,22 +72,22 @@ public class OsuProfileCard
         //rgb(70, 57, 63)
         context.Fill(Color.FromRgb(70, 57, 63), new RectangularPolygon(0, 0, _cardSize.X, 85));
 
-        var avatarStream = httpClient.GetStreamAsync(_profileInfo.AvatarUrl).Result;
+        var avatarStream = HttpClient.GetStreamAsync(_profileInfo.AvatarUrl).Result;
         var avatar = Image.Load(avatarStream);
-        avatar.Mutate(context =>
+        avatar.Mutate(processingContext =>
         {
-            context.Resize(new ResizeOptions
+            processingContext.Resize(new ResizeOptions
             {
                 Size = new Size(_avatarSize.X, _avatarSize.Y),
                 Mode = ResizeMode.Crop
             });
             IPathCollection corners = BuildCornersForRoundedImage(_avatarSize.X, _avatarSize.Y, _avatarBorderRadius);
-            context.SetGraphicsOptions(new GraphicsOptions
+            processingContext.SetGraphicsOptions(new GraphicsOptions
             {
                 AlphaCompositionMode = PixelAlphaCompositionMode.DestOut
             });
 
-            foreach (var path in corners) context = context.Fill(_bgColor, path);
+            foreach (var path in corners) processingContext = processingContext.Fill(_bgColor, path);
         });
 
         var roundedAvatarLocation = new Point(50, 10);

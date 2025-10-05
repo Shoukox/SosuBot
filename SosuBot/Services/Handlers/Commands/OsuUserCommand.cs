@@ -28,7 +28,7 @@ public class OsuUserCommand(bool includeIdInSearch = false) : CommandBase<Messag
     public override async Task ExecuteAsync()
     {
         await BeforeExecuteAsync();
-        
+
         if (await Context.Update.IsUserSpamming(Context.BotClient))
             return;
 
@@ -72,8 +72,6 @@ public class OsuUserCommand(bool includeIdInSearch = false) : CommandBase<Messag
                     await waitMessage.EditAsync(Context.BotClient, language.error_modeIncorrect);
                     return;
                 }
-
-                playmode = ruleset.ParseRulesetToPlaymode();
 
                 var userResponse = await _osuApiV2.Users.GetUser($"{searchPrefix}{osuUserInDatabase.OsuUsername}",
                     new GetUserQueryParameters(), ruleset);

@@ -18,7 +18,8 @@ public static class OsuApiHelper
     /// <param name="count">How much players to return. If null, return the whole ranking</param>
     /// <param name="token">Cancellation token</param>
     /// <returns></returns>
-    public static async Task<List<UserStatistics>?> GetUsersFromRanking(ApiV2 api, Playmode playmode = Playmode.Osu, string? countryCode = "uz",
+    public static async Task<List<UserStatistics>?> GetUsersFromRanking(ApiV2 api, Playmode playmode = Playmode.Osu,
+        string? countryCode = "uz",
         int? count = null, CancellationToken token = default)
     {
         var users = new List<UserStatistics>();

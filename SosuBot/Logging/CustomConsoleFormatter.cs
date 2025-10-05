@@ -33,10 +33,9 @@ internal class CustomConsoleFormatter : ConsoleFormatter, IDisposable
         TextWriter textWriter)
     {
         var message =
-            logEntry.Formatter?.Invoke(
+            logEntry.Formatter.Invoke(
                 logEntry.State, logEntry.Exception);
 
-        if (message is null) return;
         WriteLogLevel(textWriter, logEntry.LogLevel);
         WriteTimestamp(textWriter);
         WriteObjectName(textWriter, logEntry.Category);
@@ -125,20 +124,19 @@ internal class CustomConsoleFormatter : ConsoleFormatter, IDisposable
             _ => ""
         };
     }
-
-    private static string GetBackgroundColorEscapeCode(ConsoleColor color)
-    {
-        return color switch
-        {
-            ConsoleColor.Black => "\x1B[40m",
-            ConsoleColor.DarkRed => "\x1B[41m",
-            ConsoleColor.DarkGreen => "\x1B[42m",
-            ConsoleColor.DarkYellow => "\x1B[43m",
-            ConsoleColor.DarkBlue => "\x1B[44m",
-            ConsoleColor.DarkMagenta => "\x1B[45m",
-            ConsoleColor.DarkCyan => "\x1B[46m",
-            ConsoleColor.Gray => "\x1B[47m",
-            _ => ""
-        };
-    }
+    // private static string GetBackgroundColorEscapeCode(ConsoleColor color)
+    // {
+    //     return color switch
+    //     {
+    //         ConsoleColor.Black => "\x1B[40m",
+    //         ConsoleColor.DarkRed => "\x1B[41m",
+    //         ConsoleColor.DarkGreen => "\x1B[42m",
+    //         ConsoleColor.DarkYellow => "\x1B[43m",
+    //         ConsoleColor.DarkBlue => "\x1B[44m",
+    //         ConsoleColor.DarkMagenta => "\x1B[45m",
+    //         ConsoleColor.DarkCyan => "\x1B[46m",
+    //         ConsoleColor.Gray => "\x1B[47m",
+    //         _ => ""
+    //     };
+    // }
 }

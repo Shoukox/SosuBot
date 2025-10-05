@@ -1,5 +1,5 @@
 ﻿using SosuBot.Helpers.OutputText;
-using SosuBot.Synchonization.MessageSpamResistance;
+using SosuBot.Synchronization.MessageSpamResistance;
 using Telegram.Bot;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
@@ -15,7 +15,7 @@ public static class TelegramUpdateExtensions
     {
         if (splitValue == null)
             return TelegramHelper.SendMessageConsideringTelegramLength(message.Id, message.Chat.Id, botClient, text,
-                parseMode, replyMarkup, false);
+                parseMode, replyMarkup);
 
         return TelegramHelper.SendMessageConsideringTelegramLengthAndSplitValue(message.Id, message.Chat.Id, botClient,
             text,

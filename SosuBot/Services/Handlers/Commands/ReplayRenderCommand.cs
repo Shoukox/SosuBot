@@ -2,7 +2,6 @@
 using SosuBot.Extensions;
 using SosuBot.Localization;
 using SosuBot.Localization.Languages;
-using SosuBot.Services;
 using SosuBot.Services.Handlers.Abstract;
 using Telegram.Bot;
 using Telegram.Bot.Types;
@@ -23,7 +22,7 @@ public sealed class ReplayRenderCommand : CommandBase<Message>
     public override async Task ExecuteAsync()
     {
         await BeforeExecuteAsync();
-        
+
         if (await Context.Update.IsUserSpamming(Context.BotClient))
             return;
 

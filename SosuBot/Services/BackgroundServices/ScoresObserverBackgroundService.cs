@@ -11,7 +11,6 @@ using OsuApi.V2.Models;
 using OsuApi.V2.Users.Models;
 using SosuBot.Database;
 using SosuBot.Extensions;
-using SosuBot.Helpers;
 using SosuBot.Helpers.Comparers;
 using SosuBot.Helpers.OutputText;
 using SosuBot.Helpers.Types;
@@ -72,13 +71,15 @@ public sealed class ScoresObserverBackgroundService(
         await _userDatabase.CacheIfNeeded();
 
         DailyStatistics dailyStatistics;
-        if (AllDailyStatistics.Count > 0 && AllDailyStatistics.Last().DayOfStatistic.Day == DateTime.UtcNow.ChangeTimezone(Country.Uzbekistan).Day)
+        if (AllDailyStatistics.Count > 0 && AllDailyStatistics.Last().DayOfStatistic.Day ==
+            DateTime.UtcNow.ChangeTimezone(Country.Uzbekistan).Day)
         {
             dailyStatistics = AllDailyStatistics.Last();
         }
         else
         {
-            dailyStatistics = new DailyStatistics(CountryCode.Uzbekistan, DateTime.UtcNow.ChangeTimezone(Country.Uzbekistan));
+            dailyStatistics =
+                new DailyStatistics(CountryCode.Uzbekistan, DateTime.UtcNow.ChangeTimezone(Country.Uzbekistan));
             AllDailyStatistics.Add(dailyStatistics);
         }
 
@@ -91,13 +92,13 @@ public sealed class ScoresObserverBackgroundService(
             try
             {
                 var getStdScoresResponseTask = osuApi.Scores.GetScores(new ScoresQueryParameters
-                        { CursorString = getStdScoresCursor, Ruleset = Ruleset.Osu });
+                    { CursorString = getStdScoresCursor, Ruleset = Ruleset.Osu });
                 var getTaikoScoresResponseTask = osuApi.Scores.GetScores(new ScoresQueryParameters
-                        { CursorString = getTaikoScoresCursor, Ruleset = Ruleset.Taiko });
+                    { CursorString = getTaikoScoresCursor, Ruleset = Ruleset.Taiko });
                 var getFruitsScoresResponseTask = osuApi.Scores.GetScores(new ScoresQueryParameters
-                        { CursorString = getFruitsScoresCursor, Ruleset = Ruleset.Fruits });
+                    { CursorString = getFruitsScoresCursor, Ruleset = Ruleset.Fruits });
                 var getManiaScoresResponseTask = osuApi.Scores.GetScores(new ScoresQueryParameters
-                        { CursorString = getManiaScoresCursor, Ruleset = Ruleset.Mania });
+                    { CursorString = getManiaScoresCursor, Ruleset = Ruleset.Mania });
 
                 await Task.WhenAll(getStdScoresResponseTask, getTaikoScoresResponseTask, getFruitsScoresResponseTask,
                     getManiaScoresResponseTask);
@@ -106,32 +107,39 @@ public sealed class ScoresObserverBackgroundService(
                 var getTaikoScoresResponse = getTaikoScoresResponseTask.Result;
                 var getFruitsScoresResponse = getFruitsScoresResponseTask.Result;
                 var getManiaScoresResponse = getManiaScoresResponseTask.Result;
-                
+
                 if (getStdScoresResponse == null)
                 {
                     logger.LogWarning("getStdScoresResponse returned null");
                     continue;
                 }
+
                 if (getTaikoScoresResponse == null)
                 {
                     logger.LogWarning("getTaikoScoresResponse returned null");
                     continue;
                 }
+
                 if (getFruitsScoresResponse == null)
                 {
                     logger.LogWarning("getFruitsScoresResponse returned null");
                     continue;
                 }
+
                 if (getManiaScoresResponse == null)
                 {
                     logger.LogWarning("getManiaScoresResponse returned null");
                     continue;
                 }
 
-                var allOsuScores = getStdScoresResponse.Scores!.Select(m => m with {Mode = Ruleset.Osu, ModeInt = (int)Playmode.Osu})
-                    .Concat(getTaikoScoresResponse.Scores!.Select(m => m with {Mode = Ruleset.Taiko, ModeInt = (int)Playmode.Taiko}))
-                    .Concat(getFruitsScoresResponse.Scores!.Select(m => m with {Mode = Ruleset.Fruits, ModeInt = (int)Playmode.Catch}))
-                    .Concat(getManiaScoresResponse.Scores!.Select(m => m with {Mode = Ruleset.Mania, ModeInt = (int)Playmode.Mania}));
+                var allOsuScores = getStdScoresResponse.Scores!
+                    .Select(m => m with { Mode = Ruleset.Osu, ModeInt = (int)Playmode.Osu })
+                    .Concat(getTaikoScoresResponse.Scores!.Select(m =>
+                        m with { Mode = Ruleset.Taiko, ModeInt = (int)Playmode.Taiko }))
+                    .Concat(getFruitsScoresResponse.Scores!.Select(m =>
+                        m with { Mode = Ruleset.Fruits, ModeInt = (int)Playmode.Catch }))
+                    .Concat(getManiaScoresResponse.Scores!.Select(m =>
+                        m with { Mode = Ruleset.Mania, ModeInt = (int)Playmode.Mania }));
 
                 // Scores only from UZ 
                 var uzScores = allOsuScores.Where(m => _userDatabase.ContainsUserStatistics(m.UserId!.Value))
@@ -161,7 +169,7 @@ public sealed class ScoresObserverBackgroundService(
                 {
                     try
                     {
-                        for (int i = 0; i <= 3; i++)
+                        for (var i = 0; i <= 3; i++)
                         {
                             var sendText =
                                 await ScoreHelper.GetDailyStatisticsSendText((Playmode)i, dailyStatistics, osuApi);
@@ -175,7 +183,8 @@ public sealed class ScoresObserverBackgroundService(
                         logger.LogError(e, "Error while sending final daily statistics");
                     }
 
-                    dailyStatistics = new DailyStatistics(CountryCode.Uzbekistan, DateTime.UtcNow.ChangeTimezone(Country.Uzbekistan));
+                    dailyStatistics = new DailyStatistics(CountryCode.Uzbekistan,
+                        DateTime.UtcNow.ChangeTimezone(Country.Uzbekistan));
                     AllDailyStatistics.Add(dailyStatistics);
                 }
 
@@ -183,7 +192,7 @@ public sealed class ScoresObserverBackgroundService(
                 if (counter % 100 == 0) await SaveDailyStatistics();
 
                 counter = (counter + 1) % int.MaxValue;
-                
+
                 getStdScoresCursor = getStdScoresResponse.CursorString;
                 getTaikoScoresCursor = getTaikoScoresResponse.CursorString;
                 getFruitsScoresCursor = getFruitsScoresResponse.CursorString;

@@ -1,8 +1,9 @@
 ﻿#nullable disable
 
 using Microsoft.EntityFrameworkCore.Migrations;
+// ReSharper disable InconsistentNaming
 
-namespace SosuBot.Migrations;
+namespace SosuBot.Database.Migrations;
 
 /// <inheritdoc />
 public partial class MakePPValuesNotNullable : Migration

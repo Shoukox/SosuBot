@@ -1,4 +1,4 @@
-﻿namespace SosuBot.Graphics.ProfileCard;
+﻿namespace SosuBot.OsuCard.ProfileCard;
 
 /// <summary>
 ///     Font sizes in pt

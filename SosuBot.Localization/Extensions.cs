@@ -12,6 +12,6 @@ public static class Extensions
         if (replace is null) throw new ArgumentNullException(nameof(replace));
 
         using var e = replace.GetEnumerator();
-        return PlaceholderRegex.Replace(text, m => e.MoveNext() ? e.Current ?? string.Empty : m.Value);
+        return PlaceholderRegex.Replace(text, m => e.MoveNext() ? e.Current : m.Value);
     }
 }

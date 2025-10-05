@@ -1,6 +1,7 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using SosuBot.Helpers.Types;
+// ReSharper disable InconsistentNaming
 
 namespace SosuBot.Database.Models;
 
@@ -11,6 +12,8 @@ public class OsuUser
     public long TelegramId { get; set; }
 
     public required long OsuUserId { get; set; }
+    
+    [StringLength(15)]
     public required string OsuUsername { get; set; }
     public required Playmode OsuMode { get; set; }
 

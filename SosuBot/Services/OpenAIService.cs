@@ -1,15 +1,10 @@
 ﻿using System.Collections.Concurrent;
-using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using OpenAI.Responses;
-using osu.Framework.Extensions.IEnumerableExtensions;
-using osu.Game.Online.API.Requests;
 using OsuApi.V2;
 using OsuApi.V2.Clients.Users.HttpIO;
-using OsuApi.V2.Users.Models;
-using Polly;
 using SosuBot.Extensions;
 using SosuBot.Helpers;
 using SosuBot.Helpers.Types;
@@ -20,32 +15,52 @@ using SosuBot.Helpers.Types.Statistics;
 namespace SosuBot.Services;
 
 /// <summary>
-/// Service for managing OpenAI chat interactions with osu! integration capabilities.
-/// Provides conversation management, function calling for osu! user data retrieval,
-/// and thread-safe access control for concurrent user interactions.
+///     Service for managing OpenAI chat interactions with osu! integration capabilities.
+///     Provides conversation management, function calling for osu! user data retrieval,
+///     and thread-safe access control for concurrent user interactions.
 /// </summary>
 public sealed class OpenAiService
 {
     /// <summary>
-    /// Thread-safe dictionary that stores chat conversation history for each user.
-    /// Key: Telegram user ID (long)
-    /// Value: List of ResponseItem objects representing the conversation messages
+    ///     Thread-safe dictionary that stores chat conversation history for each user.
+    ///     Key: Telegram user ID (long)
+    ///     Value: List of ResponseItem objects representing the conversation messages
     /// </summary>
     private readonly ConcurrentDictionary<long, List<ResponseItem>> _chatDictionary = new();
 
-    /// <summary>
-    /// Thread-safe dictionary that tracks the processing state for each user to prevent concurrent requests.
-    /// Key: Telegram user ID (long)
-    /// Value: Boolean indicating if the user currently has an active request being processed
-    /// </summary>
-    private readonly ConcurrentDictionary<long, bool> _syncDictionary = new();
-
-    private string DeveloperPrompt { get; }
-    
-    private readonly JsonSerializerSettings _jsonSerializerSettings = new JsonSerializerSettings()
-    {
-        NullValueHandling = NullValueHandling.Ignore
-    };
+    private readonly FunctionTool _getCountryRankingTool = ResponseTool.CreateFunctionTool(
+        FunctionNames.GetCountryRanking,
+        functionDescription:
+        "Gets players from the country leaderboard. You can use it to gain players from a given country",
+        functionParameters: BinaryData.FromBytes(
+            """
+                {
+                  "type": "object",
+                  "properties": {
+                        "count": {
+                            "type": "integer",
+                            "description": "How many players going to be retrieved from the ranking"
+                        },
+                        "country_code":{
+                            "type": "string",
+                            "description": "Two-letter country code to retrieve the ranking from"
+                        },
+                        "mode": {
+                            "type": "integer",
+                            "description": "From which osu! gamemode (std, taiko, catch, mania) should scores be returned. Use 0=std, 1=taiko, 2=catch, 3=mania"
+                        }
+                  },
+                  "additionalProperties": false,
+                  "required": [ "count", "country_code", "mode"],
+                  "examples": [
+                           { "count": 50, "country_code": "uz", "mode": 0 },
+                           { "count": 75, "country_code": "ru", "mode": 1 },
+                           { "count": 100, "country_code": "uz", "mode": 2 }
+                  ]
+                }
+                """u8.ToArray()),
+        strictModeEnabled: false
+    );
 
     private readonly FunctionTool _getOsuUserTool = ResponseTool.CreateFunctionTool(
         FunctionNames.GetOsuUser,
@@ -116,42 +131,23 @@ public sealed class OpenAiService
         strictModeEnabled: false
     );
 
-    private readonly FunctionTool _getCountryRankingTool = ResponseTool.CreateFunctionTool(
-        FunctionNames.GetCountryRanking,
-        functionDescription: "Gets players from the country leaderboard. You can use it to gain players from a given country",
-        functionParameters: BinaryData.FromBytes(
-            """
-                {
-                  "type": "object",
-                  "properties": {
-                        "count": {
-                            "type": "integer",
-                            "description": "How many players going to be retrieved from the ranking"
-                        },
-                        "country_code":{
-                            "type": "string",
-                            "description": "Two-letter country code to retrieve the ranking from"
-                        },
-                        "mode": {
-                            "type": "integer",
-                            "description": "From which osu! gamemode (std, taiko, catch, mania) should scores be returned. Use 0=std, 1=taiko, 2=catch, 3=mania"
-                        }
-                  },
-                  "additionalProperties": false,
-                  "required": [ "count", "country_code", "mode"],
-                  "examples": [
-                           { "count": 50, "country_code": "uz", "mode": 0 },
-                           { "count": 75, "country_code": "ru", "mode": 1 },
-                           { "count": 100, "country_code": "uz", "mode": 2 }
-                  ]
-                }
-                """u8.ToArray()),
-        strictModeEnabled: false
-    );
+    private readonly JsonSerializerSettings _jsonSerializerSettings = new()
+    {
+        NullValueHandling = NullValueHandling.Ignore
+    };
+
+    private readonly ILogger<OpenAiService> _logger;
 
     private readonly string? _openaiToken = Environment.GetEnvironmentVariable("OpenAIToken")!;
     private readonly ApiV2 _osuApiV2;
-    private readonly ILogger<OpenAiService> _logger;
+
+    /// <summary>
+    ///     Thread-safe dictionary that tracks the processing state for each user to prevent concurrent requests.
+    ///     Key: Telegram user ID (long)
+    ///     Value: Boolean indicating if the user currently has an active request being processed
+    /// </summary>
+    private readonly ConcurrentDictionary<long, bool> _syncDictionary = new();
+
     private OpenAIResponseClient _responseClient;
 
     public OpenAiService(ApiV2 osuApiV2, ILogger<OpenAiService> logger, IOptions<OpenAiConfiguration> openAiConfig)
@@ -159,19 +155,20 @@ public sealed class OpenAiService
         _logger = logger;
         _osuApiV2 = osuApiV2;
 
-        if (_openaiToken == null)
-        {
-            _openaiToken = openAiConfig.Value.Token;
-        }
+        if (_openaiToken == null) _openaiToken = openAiConfig.Value.Token;
 
         DeveloperPrompt = openAiConfig.Value.DeveloperPrompt;
         _responseClient = new OpenAIResponseClient(openAiConfig.Value.Model, _openaiToken);
     }
 
+    private string DeveloperPrompt { get; }
+
     /// <summary>
-    /// Changes the model for this gpt instance
+    ///     Changes the model for this gpt instance
     /// </summary>
-    /// <param name="model"><see cref="Model"/></param>
+    /// <param name="model">
+    ///     <see cref="Model" />
+    /// </param>
     public void ChangeModel(string model)
     {
         _responseClient = new OpenAIResponseClient(model, _openaiToken);
@@ -180,15 +177,13 @@ public sealed class OpenAiService
     public async Task<Result<string>> GetResponseAsync(string userInput, long userTelegramId)
     {
         if (_syncDictionary.TryGetValue(userTelegramId, out var locked) && locked)
-        {
             return new Result<string>(null, new Error(ErrorCode.Locked), false);
-        }
 
         _syncDictionary[userTelegramId] = true;
 
         List<ResponseItem> inputItems;
-        MessageResponseItem developerMessageItem = ResponseItem.CreateDeveloperMessageItem(DeveloperPrompt);
-        MessageResponseItem userResponseItem = ResponseItem.CreateUserMessageItem(userInput);
+        var developerMessageItem = ResponseItem.CreateDeveloperMessageItem(DeveloperPrompt);
+        var userResponseItem = ResponseItem.CreateUserMessageItem(userInput);
         if (_chatDictionary.ContainsKey(userTelegramId))
         {
             _chatDictionary[userTelegramId].Add(userResponseItem);
@@ -230,7 +225,7 @@ public sealed class OpenAiService
                             var userId =
                                 functionCall.FunctionArguments.ToObjectFromJson<Dictionary<string, string>>()![
                                     "user_id"];
-                            GetUserResponse? getUserResponse =
+                            var getUserResponse =
                                 await _osuApiV2.Users.GetUser(userId, new GetUserQueryParameters());
                             getUserResponse!.UserExtend!.Cover = null;
                             getUserResponse.UserExtend.CoverUrl = null;
@@ -241,23 +236,24 @@ public sealed class OpenAiService
                             getUserResponse.UserExtend.ProfileOrder = null;
                             getUserResponse.UserExtend.UserAchievements = null;
                             getUserResponse.UserExtend.ReplaysWatchedCounts = null;
-                            
-                            string functionOutput = JsonConvert.SerializeObject(getUserResponse?.UserExtend, Formatting.None, _jsonSerializerSettings);
+
+                            var functionOutput = JsonConvert.SerializeObject(getUserResponse.UserExtend,
+                                Formatting.None, _jsonSerializerSettings);
                             inputItems.Add(new FunctionCallOutputResponseItem(functionCall.CallId, functionOutput));
                             break;
                         }
                         case FunctionNames.GetUserScores:
                         {
-                            OpenAiFunctionCallParameters parameters = functionCall.FunctionArguments
+                            var parameters = functionCall.FunctionArguments
                                 .ToObjectFromJson<OpenAiFunctionCallParameters>()!;
-                            long userId = parameters.UserId!.Value;
-                            string scoreType = parameters.ScoreType!;
-                            string mode = ((Playmode)parameters.Mode!).ToRuleset();
-                            int limit = parameters.Limit!.Value;
+                            var userId = parameters.UserId!.Value;
+                            var scoreType = parameters.ScoreType!;
+                            var mode = ((Playmode)parameters.Mode!).ToRuleset();
+                            var limit = parameters.Limit!.Value;
 
                             var getUserBestResponse =
                                 await _osuApiV2.Users.GetUserScores(userId, scoreType,
-                                    new() { Mode = mode, Limit = limit });
+                                    new GetUserScoreQueryParameters { Mode = mode, Limit = limit });
                             var scores = getUserBestResponse!.Scores;
                             Array.ForEach(scores, m =>
                             {
@@ -265,7 +261,7 @@ public sealed class OpenAiService
                                 m.Beatmap.Failtimes = null;
                                 m.Beatmap.Mode = null;
                                 m.Beatmap.Owners = null;
-                                
+
                                 m.Beatmapset!.User = null;
                                 m.Beatmapset.UserId = null;
                                 m.Beatmapset.ArtistUnicode = null;
@@ -313,22 +309,23 @@ public sealed class OpenAiService
                                 m.Processed = null;
                                 m.Ranked = null;
                             });
-                            
-                            string functionOutput = JsonConvert.SerializeObject(scores, _jsonSerializerSettings);
+
+                            var functionOutput = JsonConvert.SerializeObject(scores, _jsonSerializerSettings);
                             inputItems.Add(new FunctionCallOutputResponseItem(functionCall.CallId, functionOutput));
                             break;
                         }
                         case FunctionNames.GetCountryRanking:
                         {
-                            OpenAiFunctionCallParameters parameters = functionCall.FunctionArguments
+                            var parameters = functionCall.FunctionArguments
                                 .ToObjectFromJson<OpenAiFunctionCallParameters>()!;
-                            int count = parameters.Count!.Value;
-                            string countryCode = parameters.CountryCode!;
-                            int mode = parameters.Mode!.Value;
+                            var count = parameters.Count!.Value;
+                            var countryCode = parameters.CountryCode!;
+                            var mode = parameters.Mode!.Value;
 
-                            List<UserStatistics>? getUserBestResponse =
+                            var getUserBestResponse =
                                 await OsuApiHelper.GetUsersFromRanking(_osuApiV2, (Playmode)mode, countryCode, count);
-                            string functionOutput = JsonConvert.SerializeObject(getUserBestResponse, Formatting.None, _jsonSerializerSettings);
+                            var functionOutput = JsonConvert.SerializeObject(getUserBestResponse, Formatting.None,
+                                _jsonSerializerSettings);
                             inputItems.Add(new FunctionCallOutputResponseItem(functionCall.CallId, functionOutput));
                             break;
                         }
@@ -344,7 +341,7 @@ public sealed class OpenAiService
                 var messageResponseItems = response.OutputItems.OfType<MessageResponseItem>();
                 foreach (var messageResponseItem in messageResponseItems)
                 {
-                    string currentOutputText = messageResponseItem.Content[0].Text;
+                    var currentOutputText = messageResponseItem.Content[0].Text;
                     output += currentOutputText;
                     _chatDictionary[userTelegramId].Add(ResponseItem.CreateAssistantMessageItem(currentOutputText));
                 }
@@ -361,7 +358,7 @@ public sealed class OpenAiService
         return new Result<string>(output, null, true);
     }
 
-    void TrimMessageHistory(List<ResponseItem> items, int keepLast = 7)
+    private void TrimMessageHistory(List<ResponseItem> items, int keepLast = 7)
     {
         if (items.Count <= keepLast) return;
         items.RemoveRange(1, items.Count - keepLast);
@@ -373,7 +370,7 @@ public sealed class OpenAiService
         public const string GetUserScores = "GetUserScores";
         public const string GetCountryRanking = "GetCountryRanking";
     }
-    
+
     public static class Model
     {
         public const string Gpt5 = "gpt-5";

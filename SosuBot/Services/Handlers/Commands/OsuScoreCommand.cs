@@ -27,7 +27,7 @@ public sealed class OsuScoreCommand : CommandBase<Message>
     public override async Task ExecuteAsync()
     {
         await BeforeExecuteAsync();
-        
+
         if (await Context.Update.IsUserSpamming(Context.BotClient))
             return;
 
@@ -185,7 +185,7 @@ public sealed class OsuScoreCommand : CommandBase<Message>
         }
 
         var beatmap = (await _osuApiV2.Beatmaps.GetBeatmap(scores.First().BeatmapId!.Value))!.BeatmapExtended!;
-        if (beatmapset is null) beatmapset = await _osuApiV2.Beatmapsets.GetBeatmapset(beatmap!.BeatmapsetId.Value);
+        if (beatmapset is null) beatmapset = await _osuApiV2.Beatmapsets.GetBeatmapset(beatmap.BeatmapsetId.Value);
         chatInDatabase!.LastBeatmapId = beatmap.Id;
 
         var textToSend = $"<b>{osuUsernameForScore}</b>\n\n";

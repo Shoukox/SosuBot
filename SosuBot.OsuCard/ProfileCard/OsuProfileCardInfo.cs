@@ -1,4 +1,5 @@
-﻿namespace SosuBot.Graphics.ProfileCard;
+﻿// ReSharper disable InconsistentNaming
+namespace SosuBot.OsuCard.ProfileCard;
 
 public record OsuProfileCardInfo(
     string Username,

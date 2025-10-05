@@ -1,10 +1,7 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
-using osu.Game.Overlays.Settings.Sections.Gameplay;
-using osu.Game.Rulesets.Osu.Mods;
 using OsuApi.V2;
 using OsuApi.V2.Clients.Users.HttpIO;
-using OsuApi.V2.Models;
 using OsuApi.V2.Users.Models;
 using SosuBot.Extensions;
 using SosuBot.Helpers;
@@ -12,12 +9,10 @@ using SosuBot.Helpers.OutputText;
 using SosuBot.Helpers.Types;
 using SosuBot.Localization;
 using SosuBot.Localization.Languages;
-using SosuBot.Services;
 using SosuBot.Services.BackgroundServices;
 using SosuBot.Services.Handlers.Abstract;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
-using Country = SosuBot.Helpers.Country;
 
 namespace SosuBot.Services.Handlers.Commands;
 
@@ -80,8 +75,8 @@ public sealed class CustomCommand : CommandBase<Message>
             ILocalization language = new Russian();
             var waitMessage = await Context.Update.ReplyAsync(Context.BotClient, language.waiting);
 
-            string userInput = string.Join(" ", parameters[1..]);
-            Result<string> output = await _openaiService.GetResponseAsync(userInput, Context.Update.From.Id);
+            var userInput = string.Join(" ", parameters[1..]);
+            var output = await _openaiService.GetResponseAsync(userInput, Context.Update.From.Id);
             if (!output.IsSuccess || string.IsNullOrEmpty(output.Data))
             {
                 switch (output.Exception?.Code)
@@ -111,17 +106,17 @@ public sealed class CustomCommand : CommandBase<Message>
             ILocalization language = new Russian();
             var waitMessage = await Context.Update.ReplyAsync(Context.BotClient, language.waiting);
 
-            int countPlayersFromRanking = 100;
-            int countBestScoresPerPlayer = 200;
+            var countPlayersFromRanking = 100;
+            var countBestScoresPerPlayer = 200;
 
             var uzOsuStdUsers = await OsuApiHelper.GetUsersFromRanking(_osuApiV2, count: countPlayersFromRanking);
 
             var getBestScoresTask = uzOsuStdUsers!.Select(m =>
-                _osuApiV2.Users.GetUserScores(m.User!.Id!.Value, ScoreType.Best,
-                    new() { Limit = countBestScoresPerPlayer })).ToArray();
+                _osuApiV2.Users.GetUserScores(m.User!.Id.Value, ScoreType.Best,
+                    new GetUserScoreQueryParameters { Limit = countBestScoresPerPlayer })).ToArray();
             await Task.WhenAll(getBestScoresTask);
 
-            Score[] uzBestScores = getBestScoresTask.SelectMany(m => m.Result!.Scores).ToArray();
+            var uzBestScores = getBestScoresTask.SelectMany(m => m.Result!.Scores).ToArray();
 
             var bestScoresByMods = uzBestScores
                 .GroupBy(m => string.Join("",
@@ -129,10 +124,10 @@ public sealed class CustomCommand : CommandBase<Message>
                         !mod.Acronym!.Equals("CL", StringComparison.InvariantCultureIgnoreCase)).ToArray())))
                 .Select(m => (m.Key, m.MaxBy(s => s.Pp)!)).OrderByDescending(m => m.Item2.Pp).ToArray();
 
-            string sendText = "";
+            var sendText = "";
             foreach (var pair in bestScoresByMods)
             {
-                string lazer =
+                var lazer =
                     pair.Item2.Mods!.Any(m => m.Acronym!.Equals("CL", StringComparison.InvariantCultureIgnoreCase))
                         ? ""
                         : "lazer";
@@ -162,9 +157,9 @@ public sealed class CustomCommand : CommandBase<Message>
 
             await waitMessage.ReplyAsync(Context.BotClient,
                 $"osu!std newUsers: {resultTasks[0].Result.newUsers} | newScores:{resultTasks[0].Result.newScores} | newBeatmaps:{resultTasks[0].Result.newBeatmaps}\n" +
-                    $"osu!taiko newUsers: {resultTasks[1].Result.newUsers} | newScores:{resultTasks[1].Result.newScores} | newBeatmaps:{resultTasks[1].Result.newBeatmaps}\n" +
-                    $"osu!catch newUsers: {resultTasks[2].Result.newUsers} | newScores:{resultTasks[2].Result.newScores} | newBeatmaps:{resultTasks[2].Result.newBeatmaps}\n" +
-                    $"osu!mania newUsers: {resultTasks[3].Result.newUsers} | newScores:{resultTasks[3].Result.newScores} | newBeatmaps:{resultTasks[3].Result.newBeatmaps}");
+                $"osu!taiko newUsers: {resultTasks[1].Result.newUsers} | newScores:{resultTasks[1].Result.newScores} | newBeatmaps:{resultTasks[1].Result.newBeatmaps}\n" +
+                $"osu!catch newUsers: {resultTasks[2].Result.newUsers} | newScores:{resultTasks[2].Result.newScores} | newBeatmaps:{resultTasks[2].Result.newBeatmaps}\n" +
+                $"osu!mania newUsers: {resultTasks[3].Result.newUsers} | newScores:{resultTasks[3].Result.newScores} | newBeatmaps:{resultTasks[3].Result.newBeatmaps}");
         }
         else if (parameters[0] == "fix_daily_stats")
         {

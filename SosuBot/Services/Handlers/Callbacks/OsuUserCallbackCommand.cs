@@ -28,7 +28,7 @@ public class OsuUserCallbackCommand : CommandBase<CallbackQuery>
     public override async Task ExecuteAsync()
     {
         await BeforeExecuteAsync();
-        
+
         ILocalization language = new Russian();
 
         var parameters = Context.Update.Data!.Split(' ');

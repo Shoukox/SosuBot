@@ -25,7 +25,7 @@ public sealed class GetRankingCommand : CommandBase<Message>
     public override async Task ExecuteAsync()
     {
         await BeforeExecuteAsync();
-        
+
         if (await Context.Update.IsUserSpamming(Context.BotClient))
             return;
 
@@ -47,7 +47,7 @@ public sealed class GetRankingCommand : CommandBase<Message>
         var rankingText = "";
         for (var i = 0; i < users.Count; i++)
             rankingText +=
-                $"{i + 1}. {UserHelper.GetUserProfileUrlWrappedInUsernameString(users[i].User!.Id!.Value, users[i].User!.Username!)} - <b>{users[i].Pp:N2}pp💪</b>\n";
+                $"{i + 1}. {UserHelper.GetUserProfileUrlWrappedInUsernameString(users[i].User!.Id.Value, users[i].User!.Username!)} - <b>{users[i].Pp:N2}pp💪</b>\n";
 
         var sendText = $"Топ игроков в <b>{countryCode?.ToUpperInvariant() ?? "global"}</b>:\n\n" +
                        rankingText;

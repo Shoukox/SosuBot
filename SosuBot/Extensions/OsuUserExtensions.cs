@@ -14,6 +14,7 @@ public static class OsuUserExtensions
         userInDatabase.OsuMode = user.Playmode!.ParseRulesetToPlaymode();
     }
 
+    // ReSharper disable once InconsistentNaming
     public static double GetPP(this OsuUser userInDatabase, Playmode playmode)
     {
         switch (playmode)
@@ -30,6 +31,7 @@ public static class OsuUserExtensions
         }
     }
 
+    // ReSharper disable once InconsistentNaming
     public static void SetPP(this OsuUser userInDatabase, double pp, Playmode playmode)
     {
         switch (playmode)
