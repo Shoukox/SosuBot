@@ -5,7 +5,7 @@ using SosuBot.Helpers.Types;
 namespace SosuBot.Database;
 
 /// <summary>
-/// bot.db
+///     bot.db
 /// </summary>
 public class BotContext : DbContext
 {

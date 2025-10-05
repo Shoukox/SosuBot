@@ -1,4 +1,6 @@
-﻿using SosuBot.PerformanceCalculator;
+﻿using SosuBot.PerformanceCalculator.Models;
+
+// ReSharper disable InconsistentNaming
 
 namespace SosuBot.Helpers.Types;
 

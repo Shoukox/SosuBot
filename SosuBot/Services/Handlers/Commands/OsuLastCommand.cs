@@ -34,7 +34,7 @@ public class OsuLastCommand(bool onlyPassed = false) : CommandBase<Message>
     public override async Task ExecuteAsync()
     {
         await BeforeExecuteAsync();
-        
+
         if (await Context.Update.IsUserSpamming(Context.BotClient))
             return;
 

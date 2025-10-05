@@ -18,28 +18,28 @@ public static class OsuTypesExtensions
         .Where(t => typeof(Mod).IsAssignableFrom(t))
         .Where(t => t.Name.StartsWith("OsuMod"))
         .Select(t => (Mod)Activator.CreateInstance(t)!)
-        .ToArray()!;
+        .ToArray();
 
     public static readonly Mod[] AllManiaMods = typeof(ManiaModNoFail).Assembly.GetTypes()
         .Where(t => t.IsClass && !t.IsAbstract && t.IsPublic)
         .Where(t => typeof(Mod).IsAssignableFrom(t))
         .Where(t => t.Name.StartsWith("ManiaMod"))
         .Select(t => (Mod)Activator.CreateInstance(t)!)
-        .ToArray()!;
+        .ToArray();
 
     public static readonly Mod[] AllTaikoMods = typeof(TaikoModNoFail).Assembly.GetTypes()
         .Where(t => t.IsClass && !t.IsAbstract && t.IsPublic)
         .Where(t => typeof(Mod).IsAssignableFrom(t))
         .Where(t => t.Name.StartsWith("TaikoMod"))
         .Select(t => (Mod)Activator.CreateInstance(t)!)
-        .ToArray()!;
+        .ToArray();
 
     public static readonly Mod[] AllCatchMods = typeof(CatchModNoFail).Assembly.GetTypes()
         .Where(t => t.IsClass && !t.IsAbstract && t.IsPublic)
         .Where(t => typeof(Mod).IsAssignableFrom(t))
         .Where(t => t.Name.StartsWith("CatchMod"))
         .Select(t => (Mod)Activator.CreateInstance(t)!)
-        .ToArray()!;
+        .ToArray();
 
     public static Mod[] ToOsuMods(this OsuApi.V2.Models.Mod[] mods, Playmode playmode)
     {
@@ -79,9 +79,9 @@ public static class OsuTypesExtensions
     public static string ModsToString(this Mod[] mods, Playmode playmode,
         bool acronymsToUpper = true)
     {
-        if (mods == null || mods.Length == 0) return "NM";
+        if (mods.Length == 0) return "NM";
         return string.Join("",
-            mods.Select(m => acronymsToUpper ? m.Acronym!.ToUpperInvariant() : m.Acronym!.ToLowerInvariant()));
+            mods.Select(m => acronymsToUpper ? m.Acronym.ToUpperInvariant() : m.Acronym.ToLowerInvariant()));
     }
 
     public static string ToGamemode(this Playmode playmode)

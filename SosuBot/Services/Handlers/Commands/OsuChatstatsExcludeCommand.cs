@@ -39,7 +39,7 @@ public sealed class OsuChatstatsExcludeCommand : CommandBase<Message>
             return;
         }
 
-        chatInDatabase.ExcludeFromChatstats.Add(osuUserToExclude!.OsuUserId);
+        chatInDatabase.ExcludeFromChatstats.Add(osuUserToExclude.OsuUserId);
         var sendText = language.command_excluded.Fill([osuUsernameToExclude]);
         await waitMessage.EditAsync(Context.BotClient, sendText);
     }

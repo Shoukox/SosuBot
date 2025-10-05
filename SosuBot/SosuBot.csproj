@@ -39,13 +39,13 @@
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </None>
         <None Update="openai-settings.json">
-          <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </None>
     </ItemGroup>
 
     <ItemGroup>
         <Folder Include="Logging\"/>
-        <Folder Include="Services\OsuApi\" />
+        <Folder Include="Services\OsuApi\"/>
     </ItemGroup>
 
 </Project>

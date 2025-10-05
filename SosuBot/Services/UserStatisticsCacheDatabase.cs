@@ -72,7 +72,8 @@ public class UserStatisticsCacheDatabase(ApiV2 api, string? usersCachePath = nul
     {
         CreateCacheDirectoryIfNeeded();
 
-        Task<List<UserStatistics>?>[] getRankingTasks = {
+        Task<List<UserStatistics>?>[] getRankingTasks =
+        {
             OsuApiHelper.GetUsersFromRanking(Api, Playmode.Osu, country),
             OsuApiHelper.GetUsersFromRanking(Api, Playmode.Taiko, country),
             OsuApiHelper.GetUsersFromRanking(Api, Playmode.Catch, country),
@@ -86,9 +87,7 @@ public class UserStatisticsCacheDatabase(ApiV2 api, string? usersCachePath = nul
         var usersMania = getRankingTasks[3].Result;
 
         if (usersStd == null || usersTaiko == null || usersCatch == null || usersMania == null)
-        {
             throw new Exception("Could not get users from ranking");
-        }
 
         List<UserStatistics?> users = [];
         users.AddRange(usersStd);

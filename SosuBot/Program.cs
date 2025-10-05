@@ -36,7 +36,7 @@ internal class Program
         if (!File.Exists(configurationFileName))
             throw new FileNotFoundException($"{configurationFileName} was not found!", configurationFileName);
         builder.Configuration.AddJsonFile(configurationFileName, false);
-        
+
         var openaiConfigurationFileName = "openai-settings.json";
         if (!File.Exists(openaiConfigurationFileName))
             throw new FileNotFoundException($"{openaiConfigurationFileName} was not found!", configurationFileName);
@@ -66,7 +66,8 @@ internal class Program
 
         // Services
         builder.Services.Configure<BotConfiguration>(builder.Configuration.GetSection(nameof(BotConfiguration)));
-        builder.Services.Configure<OsuApiV2Configuration>(builder.Configuration.GetSection(nameof(OsuApiV2Configuration)));
+        builder.Services.Configure<OsuApiV2Configuration>(
+            builder.Configuration.GetSection(nameof(OsuApiV2Configuration)));
         builder.Services.Configure<OpenAiConfiguration>(builder.Configuration.GetSection(nameof(OpenAiConfiguration)));
         builder.Services.AddHttpClient(nameof(TelegramBotClient))
             .ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler
@@ -129,7 +130,7 @@ internal class Program
             .HandleTransientHttpError()
             .WaitAndRetryAsync(
                 Backoff.DecorrelatedJitterBackoffV2(TimeSpan.FromSeconds(1), 5),
-                (delay, attempt, outcome, ctx) =>
+                (delay, attempt, outcome, _) =>
                 {
                     _logger!.LogWarning(
                         "Transient error (attempt {Attempt}). Waiting {Delay} before retry. Status: {Status}", attempt,
@@ -141,7 +142,7 @@ internal class Program
                 r.StatusCode == HttpStatusCode.TooManyRequests && r.Headers.RetryAfter != null)
             .WaitAndRetryAsync(
                 3,
-                (retryCount, response, ctx) =>
+                (_, response, _) =>
                 {
                     var ra = response.Result.Headers.RetryAfter!;
                     if (ra.Delta.HasValue) return ra.Delta.Value;
@@ -153,7 +154,7 @@ internal class Program
 
                     return TimeSpan.FromSeconds(1);
                 },
-                async (outcome, timespan, retryCount, context) =>
+                async (_, timespan, retryCount, _) =>
                 {
                     _logger!.LogWarning("Received 429. Retrying after {Delay} (retry {Retry}).", timespan, retryCount);
                     await Task.CompletedTask;

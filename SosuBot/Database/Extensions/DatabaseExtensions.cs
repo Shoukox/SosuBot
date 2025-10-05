@@ -19,7 +19,7 @@ public static class DatabaseExtensions
 
         // index at every row
         var indexPadding = users.Length.ToString().Length;
-        rows = rows.Select((row, index) => $"{index + 1}".PadRight(indexPadding) + intervalString).ToArray();
+        rows = rows.Select((_, index) => $"{index + 1}".PadRight(indexPadding) + intervalString).ToArray();
 
         // ### heading into the heading row
         rows[0] = new string('#', indexPadding) + intervalString;
@@ -59,7 +59,7 @@ public static class DatabaseExtensions
 
         // index at every row
         var indexPadding = users.Length.ToString().Length;
-        rows = rows.Select((row, index) => $"{index + 1}".PadRight(indexPadding) + intervalString).ToArray();
+        rows = rows.Select((_, index) => $"{index + 1}".PadRight(indexPadding) + intervalString).ToArray();
 
         // ### heading into the heading row
         rows[0] = new string('#', indexPadding) + intervalString;

@@ -25,11 +25,11 @@ public class OsuUserBestCallbackCommand : CommandBase<CallbackQuery>
         _osuApiV2 = Context.ServiceProvider.GetRequiredService<ApiV2>();
         return Task.CompletedTask;
     }
-    
+
     public override async Task ExecuteAsync()
     {
         await BeforeExecuteAsync();
-        
+
         ILocalization language = new Russian();
 
         var parameters = Context.Update.Data!.Split(' ');
@@ -42,7 +42,7 @@ public class OsuUserBestCallbackCommand : CommandBase<CallbackQuery>
 
         Score[] scores;
         GetUserScoresResponse userScoreResponse;
-        var offset = -1;
+        int offset;
 
         if (directionOfPaging == "next")
         {

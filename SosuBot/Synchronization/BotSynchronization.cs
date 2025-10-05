@@ -4,7 +4,7 @@ namespace SosuBot.Synchronization;
 
 public class BotSynchronization
 {
-    private static readonly Lazy<BotSynchronization> instanceHolder = new(() => new BotSynchronization());
+    public static readonly Lazy<BotSynchronization> InstanceHolder = new(() => new BotSynchronization());
 
     private readonly ConcurrentDictionary<long, SemaphoreSlim> _syncDict;
 
@@ -13,7 +13,7 @@ public class BotSynchronization
         _syncDict = new ConcurrentDictionary<long, SemaphoreSlim>();
     }
 
-    public static BotSynchronization Instance => instanceHolder.Value;
+    public static BotSynchronization Instance => InstanceHolder.Value;
 
     public bool AddNewServerIfNeeded(long chatId)
     {

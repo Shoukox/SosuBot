@@ -3,7 +3,7 @@
 public abstract class CommandBase<TUpdateType> : ICommandBase<TUpdateType> where TUpdateType : class
 {
     /// <summary>
-    ///     Use <see cref="SetContext(TContext)" /> before calling <see cref="ExecuteAsync()" />!
+    ///     Use <see cref="SetContext(ICommandContext{TUpdateType})" /> before calling <see cref="ExecuteAsync()" />!
     /// </summary>
     protected ICommandContext<TUpdateType> Context { get; set; } = null!;
 
@@ -14,5 +14,8 @@ public abstract class CommandBase<TUpdateType> : ICommandBase<TUpdateType> where
 
     public abstract Task ExecuteAsync();
 
-    public virtual Task BeforeExecuteAsync() => Task.CompletedTask;
+    public virtual Task BeforeExecuteAsync()
+    {
+        return Task.CompletedTask;
+    }
 }

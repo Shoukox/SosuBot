@@ -1,6 +1,6 @@
 ﻿using System.Collections.Concurrent;
 
-namespace SosuBot.Synchonization.MessageSpamResistance;
+namespace SosuBot.Synchronization.MessageSpamResistance;
 
 public record MessagingUser
 {

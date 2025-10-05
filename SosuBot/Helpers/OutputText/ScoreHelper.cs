@@ -55,7 +55,7 @@ public static class ScoreHelper
     }
 
     /// <summary>
-    /// Gets a suitable emoji for this mode
+    ///     Gets a suitable emoji for this mode
     /// </summary>
     /// <param name="playmode"></param>
     /// <returns></returns>
@@ -147,13 +147,13 @@ public static class ScoreHelper
         {
             if (count >= 5) break;
 
-            string modeEmoji = GetPlaymodeEmoji(playmode);
+            var modeEmoji = GetPlaymodeEmoji(playmode);
             var scoresOrderedByPp = us.Item2
                 .GroupBy(score => score.BeatmapId)
                 .Select(m => m.MaxBy(s => s.Pp))
                 .OrderByDescending(m => m!.Pp)
                 .Select(m => GetScoreUrlWrappedInString(m!.Id!.Value,
-                    $"{GetFormattedPpTextConsideringNull(m.Pp, format: "N0")}pp{modeEmoji}"))
+                    $"{GetFormattedPpTextConsideringNull(m.Pp, "N0")}pp{modeEmoji}"))
                 .ToArray();
 
             var topPpScoresTextForCurrentUser = string.Join(", ", scoresOrderedByPp.Take(3));
@@ -162,10 +162,7 @@ public static class ScoreHelper
             count += 1;
         }
 
-        if (string.IsNullOrEmpty(topPpScores))
-        {
-            topPpScores = ":(";
-        }
+        if (string.IsNullOrEmpty(topPpScores)) topPpScores = ":(";
 
         var topActivePlayers = "";
         count = 0;
@@ -173,14 +170,11 @@ public static class ScoreHelper
         {
             if (count >= 5) break;
             topActivePlayers +=
-                $"{count + 1}. <b>{UserHelper.GetUserProfileUrlWrappedInUsernameString(us.m.Id.Value, us.m.Username!)}</b> — {us.Item2.Length} скоров, макс. <i>{GetFormattedPpTextConsideringNull(us.Item2.Max(m => m.Pp), format: "N0")}pp💪</i>\n";
+                $"{count + 1}. <b>{UserHelper.GetUserProfileUrlWrappedInUsernameString(us.m.Id.Value, us.m.Username!)}</b> — {us.Item2.Length} скоров, макс. <i>{GetFormattedPpTextConsideringNull(us.Item2.Max(m => m.Pp), "N0")}pp💪</i>\n";
             count += 1;
         }
 
-        if (string.IsNullOrEmpty(topActivePlayers))
-        {
-            topActivePlayers = ":(";
-        }
+        if (string.IsNullOrEmpty(topActivePlayers)) topActivePlayers = ":(";
 
         var topMostPlayedBeatmaps = "";
         count = 0;
@@ -206,17 +200,13 @@ public static class ScoreHelper
             count += 1;
         }
 
-        if (string.IsNullOrEmpty(topMostPlayedBeatmaps))
-        {
-            topMostPlayedBeatmaps = ":(";
-        }
+        if (string.IsNullOrEmpty(topMostPlayedBeatmaps)) topMostPlayedBeatmaps = ":(";
 
         var activePlayersCount = usersAndTheirScores.Length;
         var passedScoresCount = passedScores.Count;
-        var beatmapsPlayed = usersAndTheirScores.SelectMany(m => m.Item2).DistinctBy((m) => m.BeatmapId).Count();
+        var beatmapsPlayed = usersAndTheirScores.SelectMany(m => m.Item2).DistinctBy(m => m.BeatmapId).Count();
 
         var tashkentNow = dailyStatistics.DayOfStatistic;
-        var s = $"{dailyStatistics.DayOfStatistic:HH:m:s zzz}";
         var sendText = language.send_dailyStatistic.Fill([
             $"{tashkentNow:dd.MM.yyyy HH:mm} (по тшк.)",
             $"{activePlayersCount}",
@@ -230,20 +220,21 @@ public static class ScoreHelper
         return sendText;
     }
 
-    public static async Task<(int newUsers, int newScores, int newBeatmaps)> UpdateDailyStatisticsFromLast(ApiV2 osuApiV2, Playmode playmode,
+    public static async Task<(int newUsers, int newScores, int newBeatmaps)> UpdateDailyStatisticsFromLast(
+        ApiV2 osuApiV2, Playmode playmode,
         DailyStatistics dailyStatistics)
     {
         var uzOsuStdUsers = await OsuApiHelper.GetUsersFromRanking(osuApiV2, count: null, playmode: playmode);
 
-        int newUsers = 0;
-        int newScores = 0;
-        int newBeatmaps = 0;
+        var newUsers = 0;
+        var newScores = 0;
+        var newBeatmaps = 0;
 
         List<Task<GetUserScoresResponse?>> lastScoresOfUzUsers = new();
         foreach (var uzUser in uzOsuStdUsers!)
         {
-            lastScoresOfUzUsers.Add(osuApiV2.Users.GetUserScores(uzUser.User!.Id!.Value, ScoreType.Recent,
-                new() { Limit = 200, Mode = playmode.ToRuleset(), IncludeFails = 0}));
+            lastScoresOfUzUsers.Add(osuApiV2.Users.GetUserScores(uzUser.User!.Id.Value, ScoreType.Recent,
+                new GetUserScoreQueryParameters { Limit = 200, Mode = playmode.ToRuleset(), IncludeFails = 0 }));
             if (lastScoresOfUzUsers.Count % 100 == 0)
             {
                 await Task.WhenAll(lastScoresOfUzUsers);

@@ -13,7 +13,7 @@ public sealed class OsuChatstatsCommand : CommandBase<Message>
     public static readonly string[] Commands = ["/chatstats", "/stats"];
 
     private static readonly IEqualityComparer<OsuUser> OsuUserComparer =
-        EqualityComparer<OsuUser>.Create((u1, u2) => u1?.OsuUserId == u2?.OsuUserId, u => u?.GetHashCode() ?? 0);
+        EqualityComparer<OsuUser>.Create((u1, u2) => u1?.OsuUserId == u2?.OsuUserId, u => u.GetHashCode());
 
 
     public override async Task ExecuteAsync()

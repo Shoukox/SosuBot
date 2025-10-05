@@ -16,7 +16,7 @@ public sealed class RabbitMqService(ILogger<RabbitMqService> logger)
         _channel = await connection.CreateChannelAsync();
 
         await _channel.QueueDeclareAsync("task_queue", true, false,
-            false, null);
+            false);
     }
 
     /// <summary>

@@ -2,7 +2,7 @@
 
 using Microsoft.EntityFrameworkCore.Migrations;
 
-namespace SosuBot.Migrations;
+namespace SosuBot.Database.Migrations;
 
 /// <inheritdoc />
 public partial class Test2 : Migration

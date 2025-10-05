@@ -6,7 +6,6 @@ public struct Russian : ILocalization
     public string settings_language_changedSuccessfully => "Язык успешно изменен на русский.";
     public string settings_language_ru => "Русский";
     public string settings_language_en => "English";
-    public string settings_language_de => "Deutsch";
 
     public string command_start =>
         $"Бот-помощник для игрока osu!\n" +

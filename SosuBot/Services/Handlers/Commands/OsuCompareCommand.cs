@@ -24,7 +24,7 @@ public sealed class OsuCompareCommand : CommandBase<Message>
     public override async Task ExecuteAsync()
     {
         await BeforeExecuteAsync();
-        
+
         ILocalization language = new Russian();
 
         var waitMessage = await Context.Update.ReplyAsync(Context.BotClient, language.waiting);

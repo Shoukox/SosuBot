@@ -26,7 +26,7 @@ public sealed class OsuSetCommand : CommandBase<Message>
     public override async Task ExecuteAsync()
     {
         await BeforeExecuteAsync();
-        
+
         ILocalization language = new Russian();
 
         var msgText = Context.Update.Text!;
@@ -72,7 +72,7 @@ public sealed class OsuSetCommand : CommandBase<Message>
 
         var sendText = language.command_set.Fill([
             $"{UserHelper.GetUserProfileUrlWrappedInUsernameString(user.Id.Value, user.Username!)}",
-            $"{osuUserInDatabase.GetPP(playmode):N2}", osuUserInDatabase.OsuMode.ToGamemode()!
+            $"{osuUserInDatabase.GetPP(playmode):N2}", osuUserInDatabase.OsuMode.ToGamemode()
         ]);
         await Context.Update.ReplyAsync(Context.BotClient, sendText);
     }

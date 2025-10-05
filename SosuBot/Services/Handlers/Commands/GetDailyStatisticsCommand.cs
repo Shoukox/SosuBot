@@ -3,7 +3,6 @@ using OsuApi.V2;
 using OsuApi.V2.Models;
 using SosuBot.Extensions;
 using SosuBot.Helpers.OutputText;
-using SosuBot.Helpers.Types;
 using SosuBot.Localization;
 using SosuBot.Localization.Languages;
 using SosuBot.Services.BackgroundServices;
@@ -37,8 +36,8 @@ public sealed class GetDailyStatisticsCommand : CommandBase<Message>
         await Task.Delay(500);
 
         var parameters = Context.Update.Text!.GetCommandParameters()!;
-        
-        var sendText = "";
+
+        string sendText;
         if (parameters.Length == 0)
         {
             sendText = language.error_argsLength + "\n/daily_stats osu/catch/taiko/mania";
@@ -46,11 +45,8 @@ public sealed class GetDailyStatisticsCommand : CommandBase<Message>
             return;
         }
 
-        string? ruleset = parameters[0].ParseToRuleset();
-        if (string.IsNullOrEmpty(ruleset))
-        {
-            ruleset = Ruleset.Osu;
-        }
+        var ruleset = parameters[0].ParseToRuleset();
+        if (string.IsNullOrEmpty(ruleset)) ruleset = Ruleset.Osu;
 
         if (ScoresObserverBackgroundService.AllDailyStatistics.Count == 0 ||
             (ScoresObserverBackgroundService.AllDailyStatistics.Last() is var dailyStatistics &&
@@ -60,7 +56,7 @@ public sealed class GetDailyStatisticsCommand : CommandBase<Message>
             return;
         }
 
-        Playmode playmode = ruleset.ParseRulesetToPlaymode();
+        var playmode = ruleset.ParseRulesetToPlaymode();
         sendText = await ScoreHelper.GetDailyStatisticsSendText(playmode, dailyStatistics, _osuApiV2);
 
         await waitMessage.EditAsync(Context.BotClient, sendText);

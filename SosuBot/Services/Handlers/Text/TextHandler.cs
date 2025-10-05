@@ -27,7 +27,7 @@ public sealed class TextHandler : CommandBase<Message>
     public override async Task ExecuteAsync()
     {
         await BeforeExecuteAsync();
-        
+
         ILocalization language = new Russian();
 
         await HandleBeatmapLink(language);

@@ -1,11 +1,10 @@
 ﻿using System.Collections.Concurrent;
-using SosuBot.Synchronization;
 
-namespace SosuBot.Synchonization.MessageSpamResistance;
+namespace SosuBot.Synchronization.MessageSpamResistance;
 
 public class SpamResistance
 {
-    private static readonly Lazy<SpamResistance> instanceHolder = new(() => new SpamResistance());
+    public static readonly Lazy<SpamResistance> InstanceHolder = new(() => new SpamResistance());
 
     public static readonly TimeSpan Interval = TimeSpan.FromSeconds(5);
     public static readonly TimeSpan BlockInterval = TimeSpan.FromSeconds(15);
@@ -18,7 +17,7 @@ public class SpamResistance
         _usersDict = new ConcurrentDictionary<long, MessagingUser>();
     }
 
-    public static SpamResistance Instance => instanceHolder.Value;
+    public static SpamResistance Instance => InstanceHolder.Value;
 
     public async Task<(bool canSend, bool sendWarning)> CanSendMessage(long userId, DateTime newMessageSent)
     {
@@ -37,12 +36,13 @@ public class SpamResistance
         var dateTimeNow = DateTime.UtcNow;
 
         // Ban if necessary
-        var canSend = true;
-        if (messagingUser.MessagesQueue.Take(_maxMessagesPerInterval) is IEnumerable<DateTime> dateTimes &&
-            dateTimes.Count() == _maxMessagesPerInterval && dateTimes.All(m => dateTimeNow - m < Interval))
+        bool canSend;
+        if (messagingUser.MessagesQueue.Take(_maxMessagesPerInterval) is { } dateTimesEnumerable
+            && dateTimesEnumerable.ToArray() is { } dateTimes
+            && dateTimes.Length == _maxMessagesPerInterval && dateTimes.All(m => dateTimeNow - m < Interval))
         {
             messagingUser.BlockedUntil = dateTimeNow.Add(BlockInterval);
-            messagingUser.WarningMessageSent = messagingUser.WarningMessageSent ? false : true;
+            messagingUser.WarningMessageSent = !messagingUser.WarningMessageSent;
             canSend = false;
         }
         else
@@ -52,9 +52,8 @@ public class SpamResistance
         }
 
         // Update our user
-        _usersDict.AddOrUpdate(userId,
-            AddNew(userId),
-            (userId, messagingUser) => UpdateValue(userId, messagingUser, newMessageSent));
+        _usersDict.AddOrUpdate(userId, AddNew(userId),
+            (uId, mUser) => UpdateValue(uId, mUser, newMessageSent));
 
         // Release semaphore and return result
         semaphoreSlim.Release();

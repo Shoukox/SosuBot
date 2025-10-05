@@ -28,7 +28,7 @@ public sealed class OsuUserbestCommand : CommandBase<Message>
     public override async Task ExecuteAsync()
     {
         await BeforeExecuteAsync();
-        
+
         if (await Context.Update.IsUserSpamming(Context.BotClient))
             return;
 
@@ -39,8 +39,8 @@ public sealed class OsuUserbestCommand : CommandBase<Message>
         var waitMessage = await Context.Update.ReplyAsync(Context.BotClient, language.waiting);
 
         Score[] bestScores;
-        var osuUsernameForUserbest = string.Empty;
-        long osuUserIdForUserbest = -1;
+        string osuUsernameForUserbest;
+        long osuUserIdForUserbest;
         var ruleset = Ruleset.Osu;
 
         var parameters = Context.Update.Text!.GetCommandParameters()!;

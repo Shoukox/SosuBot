@@ -23,7 +23,7 @@ public sealed class MsgCommand : CommandBase<Message>
     public override async Task ExecuteAsync()
     {
         await BeforeExecuteAsync();
-        
+
         var osuUserInDatabase = await Context.Database.OsuUsers.FindAsync(Context.Update.From!.Id);
 
         if (osuUserInDatabase is null || !osuUserInDatabase.IsAdmin) return;
