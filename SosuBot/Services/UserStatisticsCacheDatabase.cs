@@ -35,9 +35,7 @@ public class UserStatisticsCacheDatabase(ApiV2 api, string? usersCachePath = nul
     /// <returns>true if cached</returns>
     public bool ContainsUserStatistics(int userId)
     {
-        if (!File.Exists(GetCachedUserStatisticsPath(userId))) return false;
-
-        return true;
+        return File.Exists(GetCachedUserStatisticsPath(userId));
     }
 
     public async Task CacheIfNeeded()
@@ -74,10 +72,18 @@ public class UserStatisticsCacheDatabase(ApiV2 api, string? usersCachePath = nul
     {
         CreateCacheDirectoryIfNeeded();
 
-        var usersStd = await OsuApiHelper.GetUsersFromRanking(Api, Playmode.Osu, country);
-        var usersTaiko = await OsuApiHelper.GetUsersFromRanking(Api, Playmode.Taiko, country);
-        var usersCatch = await OsuApiHelper.GetUsersFromRanking(Api, Playmode.Catch, country);
-        var usersMania = await OsuApiHelper.GetUsersFromRanking(Api, Playmode.Mania, country);
+        Task<List<UserStatistics>?>[] getRankingTasks = {
+            OsuApiHelper.GetUsersFromRanking(Api, Playmode.Osu, country),
+            OsuApiHelper.GetUsersFromRanking(Api, Playmode.Taiko, country),
+            OsuApiHelper.GetUsersFromRanking(Api, Playmode.Catch, country),
+            OsuApiHelper.GetUsersFromRanking(Api, Playmode.Mania, country)
+        };
+        await Task.WhenAll(getRankingTasks);
+
+        var usersStd = getRankingTasks[0].Result;
+        var usersTaiko = getRankingTasks[1].Result;
+        var usersCatch = getRankingTasks[2].Result;
+        var usersMania = getRankingTasks[3].Result;
 
         if (usersStd == null || usersTaiko == null || usersCatch == null || usersMania == null)
         {
