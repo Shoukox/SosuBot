@@ -30,7 +30,6 @@ public sealed class ScoresObserverBackgroundService(
 {
     public static readonly ConcurrentBag<long> ObservedUsers = new();
     public static List<DailyStatistics> AllDailyStatistics = new();
-    public static List<CountryRanking> ActualCountryRankings = new();
 
     private static readonly ScoreEqualityComparer ScoreComparer = new();
 
@@ -73,7 +72,7 @@ public sealed class ScoresObserverBackgroundService(
         await _userDatabase.CacheIfNeeded();
 
         DailyStatistics dailyStatistics;
-        if (AllDailyStatistics.Count > 0 && AllDailyStatistics.Last().DayOfStatistic.ChangeTimezone(Country.Uzbekistan).Day == DateTime.UtcNow.ChangeTimezone(Country.Uzbekistan).Day)
+        if (AllDailyStatistics.Count > 0 && AllDailyStatistics.Last().DayOfStatistic.Day == DateTime.UtcNow.ChangeTimezone(Country.Uzbekistan).Day)
         {
             dailyStatistics = AllDailyStatistics.Last();
         }
@@ -151,7 +150,7 @@ public sealed class ScoresObserverBackgroundService(
                 }
 
                 // New day => send statistics
-                if (DateTime.UtcNow.ChangeTimezone(Country.Uzbekistan).Day != dailyStatistics.DayOfStatistic.ChangeTimezone(Country.Uzbekistan).Day)
+                if (DateTime.UtcNow.ChangeTimezone(Country.Uzbekistan).Day != dailyStatistics.DayOfStatistic.Day)
                 {
                     try
                     {
@@ -179,7 +178,7 @@ public sealed class ScoresObserverBackgroundService(
                 counter = (counter + 1) % int.MaxValue;
                 getStdScoresCursor = getStdScoresResponse.CursorString;
                 getManiaScoresCursor = getManiaScoresResponse.CursorString;
-                await Task.Delay(5000, stoppingToken);
+                await Task.Delay(3000, stoppingToken);
             }
             catch (OperationCanceledException)
             {

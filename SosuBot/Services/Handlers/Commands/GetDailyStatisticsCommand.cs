@@ -26,7 +26,7 @@ public sealed class GetDailyStatisticsCommand : CommandBase<Message>
     public override async Task ExecuteAsync()
     {
         await BeforeExecuteAsync();
-        
+
         if (await Context.Update.IsUserSpamming(Context.BotClient))
             return;
 
@@ -37,68 +37,31 @@ public sealed class GetDailyStatisticsCommand : CommandBase<Message>
         await Task.Delay(500);
 
         var parameters = Context.Update.Text!.GetCommandParameters()!;
+        
         var sendText = "";
-        if (parameters.Length == 1 && parameters[0] == "online")
+        if (parameters.Length == 0)
         {
-            var countryCode = "uz";
-            if (parameters.Length > 1 && parameters[1].Length == 2)
-            {
-                await waitMessage.EditAsync(Context.BotClient,
-                    $"Бот не отлеживает страну с кодом <b>{parameters[1]}</b>");
-                return;
-            }
-
-            var ranking =
-                ScoresObserverBackgroundService.ActualCountryRankings.FirstOrDefault(m =>
-                    m.CountryCode == countryCode);
-            if (ranking == null)
-            {
-                await waitMessage.EditAsync(Context.BotClient,
-                    "Подожди некоторое время... отслеживание в процессе.\n\nЕсли ты ждешь больше 10 минут, то скорее всего случилась ошибка.");
-                return;
-            }
-
-            var onlineUsers = ranking.Ranking.Where(m => m.User!.IsOnline!.Value).ToArray();
-            var onlineUsersText =
-                string.Join(" ",
-                    onlineUsers
-                        .Select(m =>
-                            UserHelper.GetUserProfileUrlWrappedInUsernameString(m.User!.Id!.Value, m.User.Username!))
-                );
-
-            var tashkentNow = TimeZoneInfo.ConvertTime(ranking.StatisticFrom,
-                TimeZoneInfo.FindSystemTimeZoneById("West Asia Standard Time"));
-            sendText = $"Онлайн пользователи (osu!lazer + osu! website) из <b>{countryCode.ToUpperInvariant()}</b>.\n" +
-                       $"Последнее отслеживание: <b>{tashkentNow:dd.MM.yyyy HH:mm} (по тшк.)</b>\n" +
-                       $"Количество: <b>{onlineUsers.Length}</b>\n\n" +
-                       $"{onlineUsersText}";
+            sendText = language.error_argsLength + "\n/daily_stats osu/catch/taiko/mania";
+            await waitMessage.EditAsync(Context.BotClient, sendText);
+            return;
         }
-        else
+
+        string? ruleset = parameters[0].ParseToRuleset();
+        if (string.IsNullOrEmpty(ruleset))
         {
-            if (parameters.Length == 0)
-            {
-                sendText = language.error_argsLength + "\n/daily_stats osu/catch/taiko/mania";
-                await waitMessage.EditAsync(Context.BotClient, sendText);
-                return;
-            }
-            
-            string? ruleset = parameters[0].ParseToRuleset();
-            if (string.IsNullOrEmpty(ruleset))
-            {
-                ruleset = Ruleset.Osu;
-            }
-            
-            if (ScoresObserverBackgroundService.AllDailyStatistics.Count == 0 ||
-                (ScoresObserverBackgroundService.AllDailyStatistics.Last() is var dailyStatistics &&
-                 (dailyStatistics.Scores.Count == 0 || dailyStatistics.ActiveUsers.Count == 0)))
-            {
-                await waitMessage.EditAsync(Context.BotClient, language.error_noRecords);
-                return;
-            }
-            
-            Playmode playmode = ruleset.ParseRulesetToPlaymode();
-            sendText = await ScoreHelper.GetDailyStatisticsSendText(playmode, dailyStatistics, _osuApiV2);
+            ruleset = Ruleset.Osu;
         }
+
+        if (ScoresObserverBackgroundService.AllDailyStatistics.Count == 0 ||
+            (ScoresObserverBackgroundService.AllDailyStatistics.Last() is var dailyStatistics &&
+             (dailyStatistics.Scores.Count == 0 || dailyStatistics.ActiveUsers.Count == 0)))
+        {
+            await waitMessage.EditAsync(Context.BotClient, language.error_noRecords);
+            return;
+        }
+
+        Playmode playmode = ruleset.ParseRulesetToPlaymode();
+        sendText = await ScoreHelper.GetDailyStatisticsSendText(playmode, dailyStatistics, _osuApiV2);
 
         await waitMessage.EditAsync(Context.BotClient, sendText);
     }

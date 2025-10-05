@@ -3,6 +3,7 @@ using Newtonsoft.Json;
 using osu.Game.Overlays.Settings.Sections.Gameplay;
 using osu.Game.Rulesets.Osu.Mods;
 using OsuApi.V2;
+using OsuApi.V2.Clients.Users.HttpIO;
 using OsuApi.V2.Models;
 using OsuApi.V2.Users.Models;
 using SosuBot.Extensions;
@@ -12,9 +13,11 @@ using SosuBot.Helpers.Types;
 using SosuBot.Localization;
 using SosuBot.Localization.Languages;
 using SosuBot.Services;
+using SosuBot.Services.BackgroundServices;
 using SosuBot.Services.Handlers.Abstract;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
+using Country = SosuBot.Helpers.Country;
 
 namespace SosuBot.Services.Handlers.Commands;
 
@@ -34,7 +37,7 @@ public sealed class CustomCommand : CommandBase<Message>
     public override async Task ExecuteAsync()
     {
         await BeforeExecuteAsync();
-        
+
         var osuUserInDatabase = await Context.Database.OsuUsers.FindAsync(Context.Update.From!.Id);
         if (osuUserInDatabase is null || !osuUserInDatabase.IsAdmin)
         {
@@ -89,6 +92,7 @@ public sealed class CustomCommand : CommandBase<Message>
                         return;
                     }
                 }
+
                 await waitMessage.EditAsync(Context.BotClient, language.error_baseMessage);
                 return;
             }
@@ -104,23 +108,26 @@ public sealed class CustomCommand : CommandBase<Message>
         }
         else if (parameters[0] == "slavik")
         {
-            
             ILocalization language = new Russian();
             var waitMessage = await Context.Update.ReplyAsync(Context.BotClient, language.waiting);
 
             int countPlayersFromRanking = 100;
             int countBestScoresPerPlayer = 200;
-            
+
             var uzOsuStdUsers = await OsuApiHelper.GetUsersFromRanking(_osuApiV2, count: countPlayersFromRanking);
-           
+
             var getBestScoresTask = uzOsuStdUsers!.Select(m =>
                 _osuApiV2.Users.GetUserScores(m.User!.Id!.Value, ScoreType.Best,
                     new() { Limit = countBestScoresPerPlayer })).ToArray();
             await Task.WhenAll(getBestScoresTask);
-            
+
             Score[] uzBestScores = getBestScoresTask.SelectMany(m => m.Result!.Scores).ToArray();
-            
-            var bestScoresByMods = uzBestScores.GroupBy(m => string.Join("", ScoreHelper.GetModsText(m.Mods!.Where(mod => !mod.Acronym!.Equals("CL", StringComparison.InvariantCultureIgnoreCase)).ToArray()))).Select(m => (m.Key, m.MaxBy(s => s.Pp)!)).OrderByDescending(m => m.Item2.Pp).ToArray();
+
+            var bestScoresByMods = uzBestScores
+                .GroupBy(m => string.Join("",
+                    ScoreHelper.GetModsText(m.Mods!.Where(mod =>
+                        !mod.Acronym!.Equals("CL", StringComparison.InvariantCultureIgnoreCase)).ToArray())))
+                .Select(m => (m.Key, m.MaxBy(s => s.Pp)!)).OrderByDescending(m => m.Item2.Pp).ToArray();
 
             string sendText = "";
             foreach (var pair in bestScoresByMods)
@@ -134,6 +141,35 @@ public sealed class CustomCommand : CommandBase<Message>
             }
 
             await waitMessage.EditAsync(Context.BotClient, sendText, splitValue: "\n");
+        }
+        else if (parameters[0] == "add-daily-stats-from-last")
+        {
+            ILocalization language = new Russian();
+            var waitMessage = await Context.Update.ReplyAsync(Context.BotClient, language.waiting);
+
+            (int newUsers, int newScores, int newBeatmaps) resultMania =
+                await ScoreHelper.UpdateDailyStatisticsFromLast(_osuApiV2, Playmode.Mania,
+                    ScoresObserverBackgroundService.AllDailyStatistics.Last());
+            
+            (int newUsers, int newScores, int newBeatmaps) resultStd =
+                await ScoreHelper.UpdateDailyStatisticsFromLast(_osuApiV2, Playmode.Osu,
+                    ScoresObserverBackgroundService.AllDailyStatistics.Last());
+            
+            (int newUsers, int newScores, int newBeatmaps) resultTaiko =
+                await ScoreHelper.UpdateDailyStatisticsFromLast(_osuApiV2, Playmode.Taiko,
+                    ScoresObserverBackgroundService.AllDailyStatistics.Last());
+            
+            (int newUsers, int newScores, int newBeatmaps) resultCatch =
+                await ScoreHelper.UpdateDailyStatisticsFromLast(_osuApiV2, Playmode.Catch,
+                    ScoresObserverBackgroundService.AllDailyStatistics.Last());
+            
+
+
+            await waitMessage.ReplyAsync(Context.BotClient,
+                $"osu!std newUsers: {resultStd.newUsers} | newScores:{resultStd.newScores} | newBeatmaps:{resultStd.newBeatmaps}\n" +
+                    $"osu!taiko newUsers: {resultTaiko.newUsers} | newScores:{resultTaiko.newScores} | newBeatmaps:{resultTaiko.newBeatmaps}\n" +
+                    $"osu!catch newUsers: {resultCatch.newUsers} | newScores:{resultCatch.newScores} | newBeatmaps:{resultCatch.newBeatmaps}\n" +
+                    $"osu!mania newUsers: {resultMania.newUsers} | newScores:{resultMania.newScores} | newBeatmaps:{resultMania.newBeatmaps}");
         }
     }
 }

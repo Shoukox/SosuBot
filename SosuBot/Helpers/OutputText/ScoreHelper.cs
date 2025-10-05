@@ -1,5 +1,7 @@
 ﻿using OsuApi.V2;
+using OsuApi.V2.Clients.Users.HttpIO;
 using OsuApi.V2.Models;
+using OsuApi.V2.Users.Models;
 using SosuBot.Extensions;
 using SosuBot.Helpers.Types;
 using SosuBot.Helpers.Types.Statistics;
@@ -118,7 +120,8 @@ public static class ScoreHelper
         return $"<a href=\"{GetScoreUrl(scoreId)}\">{text}</a>";
     }
 
-    public static async Task<string> GetDailyStatisticsSendText(Playmode playmode, DailyStatistics dailyStatistics, ApiV2 osuApi)
+    public static async Task<string> GetDailyStatisticsSendText(Playmode playmode, DailyStatistics dailyStatistics,
+        ApiV2 osuApi)
     {
         ILocalization language = new Russian();
 
@@ -149,7 +152,8 @@ public static class ScoreHelper
                 .GroupBy(score => score.BeatmapId)
                 .Select(m => m.MaxBy(s => s.Pp))
                 .OrderByDescending(m => m!.Pp)
-                .Select(m => GetScoreUrlWrappedInString(m!.Id!.Value, $"{GetFormattedPpTextConsideringNull(m.Pp, format: "N0")}pp{modeEmoji}"))
+                .Select(m => GetScoreUrlWrappedInString(m!.Id!.Value,
+                    $"{GetFormattedPpTextConsideringNull(m.Pp, format: "N0")}pp{modeEmoji}"))
                 .ToArray();
 
             var topPpScoresTextForCurrentUser = string.Join(", ", scoresOrderedByPp.Take(3));
@@ -157,6 +161,7 @@ public static class ScoreHelper
                 $"{count + 1}. <b>{UserHelper.GetUserProfileUrlWrappedInUsernameString(us.m.Id.Value, us.m.Username!)}</b> — <i>{topPpScoresTextForCurrentUser}</i>\n";
             count += 1;
         }
+
         if (string.IsNullOrEmpty(topPpScores))
         {
             topPpScores = ":(";
@@ -171,11 +176,12 @@ public static class ScoreHelper
                 $"{count + 1}. <b>{UserHelper.GetUserProfileUrlWrappedInUsernameString(us.m.Id.Value, us.m.Username!)}</b> — {us.Item2.Length} скоров, макс. <i>{GetFormattedPpTextConsideringNull(us.Item2.Max(m => m.Pp), format: "N0")}pp💪</i>\n";
             count += 1;
         }
+
         if (string.IsNullOrEmpty(topActivePlayers))
         {
             topActivePlayers = ":(";
         }
-        
+
         var topMostPlayedBeatmaps = "";
         count = 0;
         foreach (var us in mostPlayedBeatmaps)
@@ -199,6 +205,7 @@ public static class ScoreHelper
                 $"{count + 1}. (<b>{beatmap!.DifficultyRating}⭐️</b>) <a href=\"https://osu.ppy.sh/beatmaps/{beatmap.Id}\">{beatmapsetExtended.Title.EncodeHtml()} [{beatmap.Version.EncodeHtml()}]</a> — <b>{us.Count()} скоров</b>\n";
             count += 1;
         }
+
         if (string.IsNullOrEmpty(topMostPlayedBeatmaps))
         {
             topMostPlayedBeatmaps = ":(";
@@ -221,5 +228,61 @@ public static class ScoreHelper
         ]);
 
         return sendText;
+    }
+
+    public static async Task<(int newUsers, int newScores, int newBeatmaps)> UpdateDailyStatisticsFromLast(ApiV2 osuApiV2, Playmode playmode,
+        DailyStatistics dailyStatistics)
+    {
+        var uzOsuStdUsers = await OsuApiHelper.GetUsersFromRanking(osuApiV2, count: null, playmode: playmode);
+
+        int newUsers = 0;
+        int newScores = 0;
+        int newBeatmaps = 0;
+
+        List<Task<GetUserScoresResponse?>> lastScoresOfUzUsers = new();
+        foreach (var uzUser in uzOsuStdUsers!)
+        {
+            lastScoresOfUzUsers.Add(osuApiV2.Users.GetUserScores(uzUser.User!.Id!.Value, ScoreType.Recent,
+                new() { Limit = 200 }));
+            if (lastScoresOfUzUsers.Count % 100 == 0)
+            {
+                await Task.WhenAll(lastScoresOfUzUsers);
+                await Task.Delay(10_000);
+            }
+        }
+
+        var tashkentToday = DateTime.Today.ChangeTimezone(Country.Uzbekistan);
+        foreach (var getUserScoresResponse in lastScoresOfUzUsers)
+        {
+            if (getUserScoresResponse.Result == null) continue;
+
+            Array.ForEach(getUserScoresResponse.Result.Scores, s =>
+            {
+                if (s.Rank!.ToUpper() == "F" || !s.Passed!.Value) return;
+                if (s.EndedAt!.Value.ChangeTimezone(Country.Uzbekistan) < tashkentToday) return;
+
+                s.ModeInt = (int)playmode;
+                if (dailyStatistics.ActiveUsers.All(m => m.Id != s.UserId))
+                {
+                    var user = uzOsuStdUsers.Find(u => u.User!.Id == s.UserId)!.User!;
+                    dailyStatistics.ActiveUsers.Add(user);
+                    newUsers += 1;
+                }
+
+                if (dailyStatistics.Scores.All(m => m.Id != s.Id))
+                {
+                    dailyStatistics.Scores.Add(s);
+                    newScores += 1;
+                }
+
+                if (dailyStatistics.BeatmapsPlayed.All(b => b != s.BeatmapId))
+                {
+                    dailyStatistics.BeatmapsPlayed.Add(s.BeatmapId!.Value);
+                    newBeatmaps += 1;
+                }
+            });
+        }
+
+        return (newUsers, newScores, newBeatmaps);
     }
 }
