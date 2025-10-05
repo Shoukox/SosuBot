@@ -4,6 +4,9 @@ using SosuBot.Helpers.Types;
 
 namespace SosuBot.Database;
 
+/// <summary>
+/// bot.db
+/// </summary>
 public class BotContext : DbContext
 {
     public BotContext(DbContextOptions<BotContext> options) : base(options)
