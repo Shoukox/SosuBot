@@ -6,3 +6,4 @@ obj/
 *.db*
 SosuBot/Properties/launchSettings.json
 logs/
+openai-settings.json

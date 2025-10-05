@@ -95,11 +95,11 @@ public sealed class CustomCommand : CommandBase<Message>
 
             try
             {
-                await waitMessage.EditAsync(Context.BotClient, output.Data!, ParseMode.None);
+                await waitMessage.EditAsync(Context.BotClient, output.Data!, ParseMode.Markdown);
             }
-            catch (Exception e)
+            catch
             {
-                e.HelpLink = null;
+                await waitMessage.EditAsync(Context.BotClient, output.Data!, ParseMode.None);
             }
         }
         else if (parameters[0] == "slavik")

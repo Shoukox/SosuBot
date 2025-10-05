@@ -206,7 +206,7 @@ public sealed class OsuScoreCommand : CommandBase<Message>
                 $"{score.MaxCombo}",
                 $"{beatmap.MaxCombo}",
                 $"{ScoreHelper.GetFormattedPpTextConsideringNull(score.Pp)}",
-                $"{score.EndedAt!.Value:dd.MM.yyyy HH:mm zzz}"
+                $"{score.EndedAt!.Value:dd.MM.yyyy HH:mm}"
             ]);
         }
 
