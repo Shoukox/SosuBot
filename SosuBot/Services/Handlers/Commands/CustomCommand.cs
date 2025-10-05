@@ -1,5 +1,7 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
+using NUnit.Framework.Internal;
 using OsuApi.V2;
 using OsuApi.V2.Clients.Users.HttpIO;
 using OsuApi.V2.Users.Models;
@@ -22,11 +24,13 @@ public sealed class CustomCommand : CommandBase<Message>
     public static readonly string[] Commands = ["/c"];
     private OpenAiService _openaiService = null!;
     private ApiV2 _osuApiV2 = null!;
+    private ILogger<CustomCommand> _logger = null!;
 
     public override Task BeforeExecuteAsync()
     {
         _openaiService = Context.ServiceProvider.GetRequiredService<OpenAiService>();
         _osuApiV2 = Context.ServiceProvider.GetRequiredService<ApiV2>();
+        _logger = Context.ServiceProvider.GetRequiredService<ILogger<CustomCommand>>();
         return Task.CompletedTask;
     }
 
@@ -163,18 +167,27 @@ public sealed class CustomCommand : CommandBase<Message>
         }
         else if (parameters[0] == "fix_daily_stats")
         {
-            ILocalization language = new Russian();
-            var waitMessage = await Context.Update.ReplyAsync(Context.BotClient, language.waiting);
-            var dailyStatistics = ScoresObserverBackgroundService.AllDailyStatistics.Last();
-            var passedStdScores = dailyStatistics.Scores.Where(m => m.ModeInt == (int)Playmode.Osu).ToList();
-            int removed = dailyStatistics.Scores.RemoveAll(m =>
+            _logger.LogInformation("start /c fix_daily_stats");
+            try
             {
-                return passedStdScores.Any(std => std.Id == m.Id && std.ModeInt != m.ModeInt && m.ModeInt != 0);
-            });
-            
-            var tashkentToday = DateTime.Today.ChangeTimezone(Country.Uzbekistan);
-            removed += dailyStatistics.Scores.RemoveAll(m => m.EndedAt!.Value.ChangeTimezone(Country.Uzbekistan) < tashkentToday);
-            await waitMessage.EditAsync(Context.BotClient, $"Scores removed: {removed}");
+                ILocalization language = new Russian();
+                var waitMessage = await Context.Update.ReplyAsync(Context.BotClient, language.waiting);
+                var dailyStatistics = ScoresObserverBackgroundService.AllDailyStatistics.Last();
+                var passedStdScores = dailyStatistics.Scores.Where(m => m.ModeInt == (int)Playmode.Osu).ToList();
+                int removed = dailyStatistics.Scores.RemoveAll(m =>
+                {
+                    return passedStdScores.Any(std => std.Id == m.Id && std.ModeInt != m.ModeInt && m.ModeInt != 0);
+                });
+
+                var tashkentToday = DateTime.Today.ChangeTimezone(Country.Uzbekistan);
+                removed += dailyStatistics.Scores.RemoveAll(m =>
+                    m.EndedAt!.Value.ChangeTimezone(Country.Uzbekistan) < tashkentToday);
+                await waitMessage.EditAsync(Context.BotClient, $"Scores removed: {removed}");
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e, "Exception occured in /c fix_daily_stats");
+            }
         }
     }
 }
