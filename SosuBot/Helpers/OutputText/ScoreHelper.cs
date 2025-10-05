@@ -243,7 +243,7 @@ public static class ScoreHelper
         foreach (var uzUser in uzOsuStdUsers!)
         {
             lastScoresOfUzUsers.Add(osuApiV2.Users.GetUserScores(uzUser.User!.Id!.Value, ScoreType.Recent,
-                new() { Limit = 200, Mode = playmode.ToRuleset()}));
+                new() { Limit = 200, Mode = playmode.ToRuleset(), IncludeFails = 0}));
             if (lastScoresOfUzUsers.Count % 100 == 0)
             {
                 await Task.WhenAll(lastScoresOfUzUsers);

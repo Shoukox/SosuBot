@@ -171,5 +171,15 @@ public sealed class CustomCommand : CommandBase<Message>
                     $"osu!catch newUsers: {resultCatch.newUsers} | newScores:{resultCatch.newScores} | newBeatmaps:{resultCatch.newBeatmaps}\n" +
                     $"osu!mania newUsers: {resultMania.newUsers} | newScores:{resultMania.newScores} | newBeatmaps:{resultMania.newBeatmaps}");
         }
+        else if (parameters[0] == "fix_daily_stats")
+        {
+            var dailyStatistics = ScoresObserverBackgroundService.AllDailyStatistics.Last();
+            var passedStdScores = dailyStatistics.Scores.Where(m => m.ModeInt == (int)Playmode.Osu).ToList();
+
+            dailyStatistics.Scores.RemoveAll(m =>
+            {
+                return passedStdScores.Any(std => std.Id == m.Id && std.ModeInt != m.ModeInt && m.ModeInt != 0);
+            });
+        }
     }
 }
