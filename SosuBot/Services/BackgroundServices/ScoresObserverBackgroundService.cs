@@ -141,9 +141,14 @@ public sealed class ScoresObserverBackgroundService(
                     .Concat(getManiaScoresResponse.Scores!.Select(m =>
                         m with { Mode = Ruleset.Mania, ModeInt = (int)Playmode.Mania }));
 
-                // Scores only from UZ 
-                var uzScores = allOsuScores.Where(m => _userDatabase.ContainsUserStatistics(m.UserId!.Value))
-                    .ToArray();
+                // Scores only from UZ and only from today
+                var tashkentToday = DateTime.Today.ChangeTimezone(Country.Uzbekistan);
+                var uzScores = allOsuScores.Where(m =>
+                {
+                    bool scoreDateIsOk = m.EndedAt!.Value.ChangeTimezone(Country.Uzbekistan) >= tashkentToday;
+                    bool isUzPlayer = _userDatabase.ContainsUserStatistics(m.UserId!.Value);
+                    return scoreDateIsOk && isUzPlayer;
+                }) .ToArray();
                 foreach (var score in uzScores)
                 {
                     var userStatistics = await _userDatabase.GetUserStatistics(score.UserId!.Value);

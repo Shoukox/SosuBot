@@ -13,6 +13,7 @@ using SosuBot.Services.BackgroundServices;
 using SosuBot.Services.Handlers.Abstract;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
+using Country = SosuBot.Helpers.Country;
 
 namespace SosuBot.Services.Handlers.Commands;
 
@@ -142,7 +143,6 @@ public sealed class CustomCommand : CommandBase<Message>
             ILocalization language = new Russian();
             var waitMessage = await Context.Update.ReplyAsync(Context.BotClient, language.waiting);
 
-
             Task<(int newUsers, int newScores, int newBeatmaps)>[] resultTasks =
             [
                 ScoreHelper.UpdateDailyStatisticsFromLast(_osuApiV2, Playmode.Osu,
@@ -155,7 +155,7 @@ public sealed class CustomCommand : CommandBase<Message>
                     ScoresObserverBackgroundService.AllDailyStatistics.Last())
             ];
 
-            await waitMessage.ReplyAsync(Context.BotClient,
+            await waitMessage.EditAsync(Context.BotClient,
                 $"osu!std newUsers: {resultTasks[0].Result.newUsers} | newScores:{resultTasks[0].Result.newScores} | newBeatmaps:{resultTasks[0].Result.newBeatmaps}\n" +
                 $"osu!taiko newUsers: {resultTasks[1].Result.newUsers} | newScores:{resultTasks[1].Result.newScores} | newBeatmaps:{resultTasks[1].Result.newBeatmaps}\n" +
                 $"osu!catch newUsers: {resultTasks[2].Result.newUsers} | newScores:{resultTasks[2].Result.newScores} | newBeatmaps:{resultTasks[2].Result.newBeatmaps}\n" +
@@ -163,13 +163,18 @@ public sealed class CustomCommand : CommandBase<Message>
         }
         else if (parameters[0] == "fix_daily_stats")
         {
+            ILocalization language = new Russian();
+            var waitMessage = await Context.Update.ReplyAsync(Context.BotClient, language.waiting);
             var dailyStatistics = ScoresObserverBackgroundService.AllDailyStatistics.Last();
             var passedStdScores = dailyStatistics.Scores.Where(m => m.ModeInt == (int)Playmode.Osu).ToList();
-
-            dailyStatistics.Scores.RemoveAll(m =>
+            int removed = dailyStatistics.Scores.RemoveAll(m =>
             {
                 return passedStdScores.Any(std => std.Id == m.Id && std.ModeInt != m.ModeInt && m.ModeInt != 0);
             });
+            
+            var tashkentToday = DateTime.Today.ChangeTimezone(Country.Uzbekistan);
+            removed += dailyStatistics.Scores.RemoveAll(m => m.EndedAt!.Value.ChangeTimezone(Country.Uzbekistan) < tashkentToday);
+            await waitMessage.EditAsync(Context.BotClient, $"Scores removed: {removed}");
         }
     }
 }
