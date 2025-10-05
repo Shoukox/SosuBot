@@ -195,7 +195,7 @@ public class OsuLastCommand(bool onlyPassed = false) : CommandBase<Message>
                 accuracyIfFc = (double)score.Accuracy;
             }
 
-            var scoreEndedMinutesAgo = (int)(DateTime.UtcNow - score.EndedAt!.Value.ToUniversalTime()).TotalMinutes;
+            var scoreEndedMinutesAgo = (int)(DateTime.UtcNow - score.EndedAt!.Value).TotalMinutes;
 
             textToSend += language.command_last.Fill([
                 $"{textBeforeBeatmapLink}",
