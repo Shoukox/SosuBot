@@ -83,23 +83,30 @@ public sealed class ScoresObserverBackgroundService(
         }
 
         string? getStdScoresCursor = null;
+        string? getTaikoScoresCursor = null;
+        string? getFruitsScoresCursor = null;
         string? getManiaScoresCursor = null;
         var counter = 0;
         while (!stoppingToken.IsCancellationRequested)
             try
             {
-                var getStdScoresResponse =
-                    await osuApi.Scores.GetScores(new ScoresQueryParameters
+                var getStdScoresResponseTask = osuApi.Scores.GetScores(new ScoresQueryParameters
                         { CursorString = getStdScoresCursor, Ruleset = Ruleset.Osu });
-                var getTaikoScoresResponse =
-                    await osuApi.Scores.GetScores(new ScoresQueryParameters
-                        { CursorString = getManiaScoresCursor, Ruleset = Ruleset.Taiko });
-                var getFruitsScoresResponse =
-                    await osuApi.Scores.GetScores(new ScoresQueryParameters
-                        { CursorString = getManiaScoresCursor, Ruleset = Ruleset.Fruits });
-                var getManiaScoresResponse =
-                    await osuApi.Scores.GetScores(new ScoresQueryParameters
+                var getTaikoScoresResponseTask = osuApi.Scores.GetScores(new ScoresQueryParameters
+                        { CursorString = getTaikoScoresCursor, Ruleset = Ruleset.Taiko });
+                var getFruitsScoresResponseTask = osuApi.Scores.GetScores(new ScoresQueryParameters
+                        { CursorString = getFruitsScoresCursor, Ruleset = Ruleset.Fruits });
+                var getManiaScoresResponseTask = osuApi.Scores.GetScores(new ScoresQueryParameters
                         { CursorString = getManiaScoresCursor, Ruleset = Ruleset.Mania });
+
+                await Task.WhenAll(getStdScoresResponseTask, getTaikoScoresResponseTask, getFruitsScoresResponseTask,
+                    getManiaScoresResponseTask);
+
+                var getStdScoresResponse = getStdScoresResponseTask.Result;
+                var getTaikoScoresResponse = getTaikoScoresResponseTask.Result;
+                var getFruitsScoresResponse = getFruitsScoresResponseTask.Result;
+                var getManiaScoresResponse = getManiaScoresResponseTask.Result;
+                
                 if (getStdScoresResponse == null)
                 {
                     logger.LogWarning("getStdScoresResponse returned null");
@@ -176,7 +183,10 @@ public sealed class ScoresObserverBackgroundService(
                 if (counter % 100 == 0) await SaveDailyStatistics();
 
                 counter = (counter + 1) % int.MaxValue;
+                
                 getStdScoresCursor = getStdScoresResponse.CursorString;
+                getTaikoScoresCursor = getTaikoScoresResponse.CursorString;
+                getFruitsScoresCursor = getFruitsScoresResponse.CursorString;
                 getManiaScoresCursor = getManiaScoresResponse.CursorString;
                 await Task.Delay(3000, stoppingToken);
             }

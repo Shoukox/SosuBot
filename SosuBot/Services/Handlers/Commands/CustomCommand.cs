@@ -147,29 +147,24 @@ public sealed class CustomCommand : CommandBase<Message>
             ILocalization language = new Russian();
             var waitMessage = await Context.Update.ReplyAsync(Context.BotClient, language.waiting);
 
-            (int newUsers, int newScores, int newBeatmaps) resultMania =
-                await ScoreHelper.UpdateDailyStatisticsFromLast(_osuApiV2, Playmode.Mania,
-                    ScoresObserverBackgroundService.AllDailyStatistics.Last());
-            
-            (int newUsers, int newScores, int newBeatmaps) resultStd =
-                await ScoreHelper.UpdateDailyStatisticsFromLast(_osuApiV2, Playmode.Osu,
-                    ScoresObserverBackgroundService.AllDailyStatistics.Last());
-            
-            (int newUsers, int newScores, int newBeatmaps) resultTaiko =
-                await ScoreHelper.UpdateDailyStatisticsFromLast(_osuApiV2, Playmode.Taiko,
-                    ScoresObserverBackgroundService.AllDailyStatistics.Last());
-            
-            (int newUsers, int newScores, int newBeatmaps) resultCatch =
-                await ScoreHelper.UpdateDailyStatisticsFromLast(_osuApiV2, Playmode.Catch,
-                    ScoresObserverBackgroundService.AllDailyStatistics.Last());
-            
 
+            Task<(int newUsers, int newScores, int newBeatmaps)>[] resultTasks =
+            [
+                ScoreHelper.UpdateDailyStatisticsFromLast(_osuApiV2, Playmode.Osu,
+                    ScoresObserverBackgroundService.AllDailyStatistics.Last()),
+                ScoreHelper.UpdateDailyStatisticsFromLast(_osuApiV2, Playmode.Taiko,
+                    ScoresObserverBackgroundService.AllDailyStatistics.Last()),
+                ScoreHelper.UpdateDailyStatisticsFromLast(_osuApiV2, Playmode.Catch,
+                    ScoresObserverBackgroundService.AllDailyStatistics.Last()),
+                ScoreHelper.UpdateDailyStatisticsFromLast(_osuApiV2, Playmode.Mania,
+                    ScoresObserverBackgroundService.AllDailyStatistics.Last())
+            ];
 
             await waitMessage.ReplyAsync(Context.BotClient,
-                $"osu!std newUsers: {resultStd.newUsers} | newScores:{resultStd.newScores} | newBeatmaps:{resultStd.newBeatmaps}\n" +
-                    $"osu!taiko newUsers: {resultTaiko.newUsers} | newScores:{resultTaiko.newScores} | newBeatmaps:{resultTaiko.newBeatmaps}\n" +
-                    $"osu!catch newUsers: {resultCatch.newUsers} | newScores:{resultCatch.newScores} | newBeatmaps:{resultCatch.newBeatmaps}\n" +
-                    $"osu!mania newUsers: {resultMania.newUsers} | newScores:{resultMania.newScores} | newBeatmaps:{resultMania.newBeatmaps}");
+                $"osu!std newUsers: {resultTasks[0].Result.newUsers} | newScores:{resultTasks[0].Result.newScores} | newBeatmaps:{resultTasks[0].Result.newBeatmaps}\n" +
+                    $"osu!taiko newUsers: {resultTasks[1].Result.newUsers} | newScores:{resultTasks[1].Result.newScores} | newBeatmaps:{resultTasks[1].Result.newBeatmaps}\n" +
+                    $"osu!catch newUsers: {resultTasks[2].Result.newUsers} | newScores:{resultTasks[2].Result.newScores} | newBeatmaps:{resultTasks[2].Result.newBeatmaps}\n" +
+                    $"osu!mania newUsers: {resultTasks[3].Result.newUsers} | newScores:{resultTasks[3].Result.newScores} | newBeatmaps:{resultTasks[3].Result.newBeatmaps}");
         }
         else if (parameters[0] == "fix_daily_stats")
         {
