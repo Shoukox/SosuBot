@@ -4,6 +4,7 @@ using Newtonsoft.Json;
 using NUnit.Framework.Internal;
 using OsuApi.V2;
 using OsuApi.V2.Clients.Users.HttpIO;
+using OsuApi.V2.Models;
 using OsuApi.V2.Users.Models;
 using SosuBot.Extensions;
 using SosuBot.Helpers;
@@ -118,7 +119,7 @@ public sealed class CustomCommand : CommandBase<Message>
 
             var getBestScoresTask = uzOsuStdUsers!.Select(m =>
                 _osuApiV2.Users.GetUserScores(m.User!.Id.Value, ScoreType.Best,
-                    new GetUserScoreQueryParameters { Limit = countBestScoresPerPlayer })).ToArray();
+                    new GetUserScoreQueryParameters { Limit = countBestScoresPerPlayer, Mode = Ruleset.Osu})).ToArray();
             await Task.WhenAll(getBestScoresTask);
 
             var uzBestScores = getBestScoresTask.SelectMany(m => m.Result!.Scores).ToArray();
@@ -167,7 +168,7 @@ public sealed class CustomCommand : CommandBase<Message>
         }
         else if (parameters[0] == "fix_daily_stats")
         {
-            _logger.LogInformation("start /c fix_daily_stats");
+            _logger.LogError("start /c fix_daily_stats");
             try
             {
                 ILocalization language = new Russian();
@@ -189,6 +190,6 @@ public sealed class CustomCommand : CommandBase<Message>
                 _logger.LogError(e, "Exception occured in /c fix_daily_stats");
             }
         }
-        _logger.LogInformation("end /c");
+        _logger.LogError("end /c");
     }
 }
