@@ -165,7 +165,7 @@ public sealed class CustomCommand : CommandBase<Message>
                 $"osu!catch newUsers: {resultTasks[2].Result.newUsers} | newScores:{resultTasks[2].Result.newScores} | newBeatmaps:{resultTasks[2].Result.newBeatmaps}\n" +
                 $"osu!mania newUsers: {resultTasks[3].Result.newUsers} | newScores:{resultTasks[3].Result.newScores} | newBeatmaps:{resultTasks[3].Result.newBeatmaps}");
         }
-        else if (parameters[0] == "fix_daily_stats")
+        else if (parameters[0] == "fix")
         {
             _logger.LogInformation("start /c fix_daily_stats");
             try
