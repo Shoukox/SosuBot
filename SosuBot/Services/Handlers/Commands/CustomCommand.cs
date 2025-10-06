@@ -119,7 +119,8 @@ public sealed class CustomCommand : CommandBase<Message>
 
             var getBestScoresTask = uzOsuStdUsers!.Select(m =>
                 _osuApiV2.Users.GetUserScores(m.User!.Id.Value, ScoreType.Best,
-                    new GetUserScoreQueryParameters { Limit = countBestScoresPerPlayer, Mode = Ruleset.Osu})).ToArray();
+                    new GetUserScoreQueryParameters
+                        { Limit = countBestScoresPerPlayer, Mode = Ruleset.Osu })).ToArray();
             await Task.WhenAll(getBestScoresTask);
 
             var uzBestScores = getBestScoresTask.SelectMany(m => m.Result!.Scores).ToArray();
@@ -168,28 +169,19 @@ public sealed class CustomCommand : CommandBase<Message>
         }
         else if (parameters[0] == "fix_daily_stats")
         {
-            _logger.LogError("start /c fix_daily_stats");
-            try
+            ILocalization language = new Russian();
+            var waitMessage = await Context.Update.ReplyAsync(Context.BotClient, language.waiting);
+            var dailyStatistics = ScoresObserverBackgroundService.AllDailyStatistics.Last();
+            var passedStdScores = dailyStatistics.Scores.Where(m => m.ModeInt == (int)Playmode.Osu).ToList();
+            int removed = dailyStatistics.Scores.RemoveAll(m =>
             {
-                ILocalization language = new Russian();
-                var waitMessage = await Context.Update.ReplyAsync(Context.BotClient, language.waiting);
-                var dailyStatistics = ScoresObserverBackgroundService.AllDailyStatistics.Last();
-                var passedStdScores = dailyStatistics.Scores.Where(m => m.ModeInt == (int)Playmode.Osu).ToList();
-                int removed = dailyStatistics.Scores.RemoveAll(m =>
-                {
-                    return passedStdScores.Any(std => std.Id == m.Id && std.ModeInt != m.ModeInt && m.ModeInt != 0);
-                });
+                return passedStdScores.Any(std => std.Id == m.Id && std.ModeInt != m.ModeInt && m.ModeInt != 0);
+            });
 
-                var tashkentToday = DateTime.Today.ChangeTimezone(Country.Uzbekistan);
-                removed += dailyStatistics.Scores.RemoveAll(m =>
-                    m.EndedAt!.Value.ChangeTimezone(Country.Uzbekistan) < tashkentToday);
-                await waitMessage.EditAsync(Context.BotClient, $"Scores removed: {removed}");
-            }
-            catch (Exception e)
-            {
-                _logger.LogError(e, "Exception occured in /c fix_daily_stats");
-            }
+            var tashkentToday = DateTime.Today.ChangeTimezone(Country.Uzbekistan);
+            removed += dailyStatistics.Scores.RemoveAll(m =>
+                m.EndedAt!.Value.ChangeTimezone(Country.Uzbekistan) < tashkentToday);
+            await waitMessage.EditAsync(Context.BotClient, $"Scores removed: {removed}");
         }
-        _logger.LogError("end /c");
     }
 }
