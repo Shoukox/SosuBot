@@ -168,13 +168,13 @@ public sealed class OsuScoreCommand : CommandBase<Message>
 
         var scoresResponse = await _osuApiV2.Beatmaps.GetUserBeatmapScores(beatmapId.Value,
             userResponse.UserExtend!.Id.Value,
-            new()); // Ruleset defaults to beatmaps ruleset
+            new() {Ruleset = playmode.Value.ToRuleset()}); 
 
         if (scoresResponse?.Scores?.Length == 0)
         {
             scoresResponse = await _osuApiV2.Beatmaps.GetUserBeatmapScores(beatmapId.Value,
                 userResponse.UserExtend!.Id.Value,
-                new () {Ruleset = playmode.Value.ToRuleset()});
+                new () ); // Ruleset defaults to beatmaps ruleset
         }
         
         if (scoresResponse is null)
@@ -196,7 +196,7 @@ public sealed class OsuScoreCommand : CommandBase<Message>
         if (beatmapset is null) beatmapset = await _osuApiV2.Beatmapsets.GetBeatmapset(beatmap.BeatmapsetId.Value);
         chatInDatabase!.LastBeatmapId = beatmap.Id;
 
-        var textToSend = $"<b>{osuUsernameForScore}</b>\n\n";
+        var textToSend = $"{UserHelper.GetUserProfileUrlWrappedInUsernameString(userResponse.UserExtend!.Id.Value, $"<b>{osuUsernameForScore}</b>")}\n\n";
         for (var i = 0; i <= scores.Length - 1; i++)
         {
             var score = scores[i];
@@ -214,7 +214,7 @@ public sealed class OsuScoreCommand : CommandBase<Message>
                 $"{score.MaxCombo}",
                 $"{beatmap.MaxCombo}",
                 $"{ScoreHelper.GetFormattedPpTextConsideringNull(score.Pp)}",
-                $"{score.EndedAt!.Value:dd.MM.yyyy HH:mm}"
+                $"({score.EndedAt!.Value:dd.MM.yyyy HH:mm}) {ScoreHelper.GetScoreUrlWrappedInString(score.Id!.Value, "link")}"
             ]);
         }
 
