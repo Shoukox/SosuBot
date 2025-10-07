@@ -5,6 +5,7 @@ using OsuApi.V2.Users.Models;
 using SosuBot.Extensions;
 using SosuBot.Helpers;
 using SosuBot.Helpers.OutputText;
+using SosuBot.Helpers.Types;
 using SosuBot.Localization;
 using SosuBot.Localization.Languages;
 using SosuBot.PerformanceCalculator;
@@ -220,6 +221,8 @@ public sealed class TextHandler : CommandBase<Message>
         var ik = new InlineKeyboardMarkup(new InlineKeyboardButton("Song preview")
             { CallbackData = $"{Context.Update.Chat.Id} songpreview {beatmapset.Id}" });
 
+        if (playmode != Playmode.Osu) textToSend += "Для не std-скоров расчет пп может быть не верным.";
+        
         try
         {
             await Context.Update.ReplyPhotoAsync(Context.BotClient, photo, textToSend,
