@@ -47,7 +47,8 @@ public sealed class TextHandler : CommandBase<Message>
         double? currentPp = user.Statistics!.Pp;
         var ppDifferenceText =
             await UserHelper.GetPpDifferenceTextAsync(Context.Database, user, playmode, currentPp);
-
+        
+        DateTime.TryParse(user.JoinDate?.Value, out var registerDateTime);
         var textToSend = language.command_user.Fill([
             $"{playmode.ToGamemode()}",
             $"{UserHelper.GetUserProfileUrlWrappedInUsernameString(user.Id.Value, user.Username!)}",
@@ -59,6 +60,7 @@ public sealed class TextHandler : CommandBase<Message>
             $"{user.Statistics.HitAccuracy:N2}%",
             $"{user.Statistics.PlayCount:N0}",
             $"{user.Statistics.PlayTime / 3600}",
+            $"{registerDateTime:dd.MM.yyyy HH:mm:ss}",
             $"{user.UserAchievements?.Length ?? 0}",
             $"{OsuConstants.TotalAchievementsCount}",
             $"{user.Statistics.GradeCounts!.SSH}",
