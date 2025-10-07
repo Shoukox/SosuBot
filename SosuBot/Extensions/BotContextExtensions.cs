@@ -12,26 +12,32 @@ public static class BotContextExtensions
         var semaphoreSlim = BotSynchronization.Instance.GetSemaphoreSlim(message.Chat.Id);
         await semaphoreSlim.WaitAsync();
 
-        if (await database.TelegramChats.FindAsync(message.Chat.Id) is { } chat)
+        try
         {
-            chat.ChatMembers = chat.ChatMembers ?? new List<long>();
-
-            // check whether someone left
-            if (message.LeftChatMember is { } user)
-                chat.ChatMembers.Remove(user.Id);
-            else if (!chat.ChatMembers!.Contains(message.From!.Id)) chat.ChatMembers.Add(message.From!.Id);
-        }
-        else
-        {
-            var newChat = new TelegramChat
+            if (await database.TelegramChats.FindAsync(message.Chat.Id) is { } chat)
             {
-                ChatId = message.Chat.Id,
-                ChatMembers = new List<long>(),
-                LastBeatmapId = null
-            };
-            await database.AddAsync(newChat);
+                chat.ChatMembers = chat.ChatMembers ?? new List<long>();
+
+                // check whether someone left
+                if (message.LeftChatMember is { } user)
+                    chat.ChatMembers.Remove(user.Id);
+                else if (!chat.ChatMembers!.Contains(message.From!.Id)) chat.ChatMembers.Add(message.From!.Id);
+            }
+            else
+            {
+                var newChat = new TelegramChat
+                {
+                    ChatId = message.Chat.Id,
+                    ChatMembers = new List<long>(),
+                    LastBeatmapId = null
+                };
+                await database.AddAsync(newChat);
+            }
+        }
+        finally
+        { 
+            semaphoreSlim.Release();
         }
 
-        semaphoreSlim.Release();
     }
 }
