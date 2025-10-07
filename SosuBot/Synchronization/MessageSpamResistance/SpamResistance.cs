@@ -25,39 +25,44 @@ public class SpamResistance
         var semaphoreSlim = BotSynchronization.Instance.GetSemaphoreSlim(userId);
         await semaphoreSlim.WaitAsync();
 
-        // If already blocked, then return instantly
-        var messagingUser = _usersDict.GetOrAdd(userId, _ => AddNew(userId));
-        if (IsBlocked(messagingUser))
+        try
+        {
+            // If already blocked, then return instantly
+            var messagingUser = _usersDict.GetOrAdd(userId, _ => AddNew(userId));
+            if (IsBlocked(messagingUser))
+            {
+                semaphoreSlim.Release();
+                return (false, false);
+            }
+
+            var dateTimeNow = DateTime.UtcNow;
+
+            // Ban if necessary
+            bool canSend;
+            if (messagingUser.MessagesQueue.Take(_maxMessagesPerInterval) is { } dateTimesEnumerable
+                && dateTimesEnumerable.ToArray() is { } dateTimes
+                && dateTimes.Length == _maxMessagesPerInterval && dateTimes.All(m => dateTimeNow - m < Interval))
+            {
+                messagingUser.BlockedUntil = dateTimeNow.Add(BlockInterval);
+                messagingUser.WarningMessageSent = !messagingUser.WarningMessageSent;
+                canSend = false;
+            }
+            else
+            {
+                messagingUser.WarningMessageSent = false;
+                canSend = true;
+            }
+
+            // Update our user
+            _usersDict.AddOrUpdate(userId, AddNew(userId),
+                (uId, mUser) => UpdateValue(uId, mUser, newMessageSent));
+
+            return (canSend, messagingUser.WarningMessageSent);
+        }
+        finally
         {
             semaphoreSlim.Release();
-            return (false, false);
         }
-
-        var dateTimeNow = DateTime.UtcNow;
-
-        // Ban if necessary
-        bool canSend;
-        if (messagingUser.MessagesQueue.Take(_maxMessagesPerInterval) is { } dateTimesEnumerable
-            && dateTimesEnumerable.ToArray() is { } dateTimes
-            && dateTimes.Length == _maxMessagesPerInterval && dateTimes.All(m => dateTimeNow - m < Interval))
-        {
-            messagingUser.BlockedUntil = dateTimeNow.Add(BlockInterval);
-            messagingUser.WarningMessageSent = !messagingUser.WarningMessageSent;
-            canSend = false;
-        }
-        else
-        {
-            messagingUser.WarningMessageSent = false;
-            canSend = true;
-        }
-
-        // Update our user
-        _usersDict.AddOrUpdate(userId, AddNew(userId),
-            (uId, mUser) => UpdateValue(uId, mUser, newMessageSent));
-
-        // Release semaphore and return result
-        semaphoreSlim.Release();
-        return (canSend, messagingUser.WarningMessageSent);
     }
 
     private bool IsBlocked(MessagingUser messagingUser)

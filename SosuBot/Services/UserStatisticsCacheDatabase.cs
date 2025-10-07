@@ -41,12 +41,18 @@ public class UserStatisticsCacheDatabase(ApiV2 api, string? usersCachePath = nul
     public async Task CacheIfNeeded()
     {
         await _semaphoreSlim.WaitAsync();
-        if (!Directory.Exists(UsersCachePath) ||
-            (Directory.GetFiles(UsersCachePath) is { } files && files.Length == 0) ||
-            (Directory.GetFiles(UsersCachePath) is { } foundFiles &&
-             IsUserStatisticsCacheExpired(int.Parse(Path.GetFileName(foundFiles[0]).Split('.')[0]))))
-            await CacheUsersFromGivenCountry(CountryCode.Uzbekistan);
-        _semaphoreSlim.Release();
+        try
+        {
+            if (!Directory.Exists(UsersCachePath) ||
+                (Directory.GetFiles(UsersCachePath) is { } files && files.Length == 0) ||
+                (Directory.GetFiles(UsersCachePath) is { } foundFiles &&
+                 IsUserStatisticsCacheExpired(int.Parse(Path.GetFileName(foundFiles[0]).Split('.')[0]))))
+                await CacheUsersFromGivenCountry(CountryCode.Uzbekistan);
+        }
+        finally
+        {
+            _semaphoreSlim.Release();
+        }
     }
 
     /// <summary>
