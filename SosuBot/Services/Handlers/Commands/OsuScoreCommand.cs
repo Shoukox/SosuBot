@@ -153,7 +153,7 @@ public sealed class OsuScoreCommand : CommandBase<Message>
 
         // getting osu!player through username
         var userResponse =
-            await _osuApiV2.Users.GetUser($"@{osuUsernameForScore}", new GetUserQueryParameters());
+            await _osuApiV2.Users.GetUser($"@{osuUsernameForScore}", new ());
         if (userResponse is null)
         {
             await waitMessage.EditAsync(Context.BotClient,
@@ -168,7 +168,15 @@ public sealed class OsuScoreCommand : CommandBase<Message>
 
         var scoresResponse = await _osuApiV2.Beatmaps.GetUserBeatmapScores(beatmapId.Value,
             userResponse.UserExtend!.Id.Value,
-            new GetUserBeatmapScoresQueryParameters { Ruleset = playmode.Value.ToRuleset() });
+            new()); // Ruleset defaults to beatmaps ruleset
+
+        if (scoresResponse?.Scores?.Length == 0)
+        {
+            scoresResponse = await _osuApiV2.Beatmaps.GetUserBeatmapScores(beatmapId.Value,
+                userResponse.UserExtend!.Id.Value,
+                new () {Ruleset = playmode.Value.ToRuleset()});
+        }
+        
         if (scoresResponse is null)
         {
             await waitMessage.EditAsync(Context.BotClient, language.error_noRecords);
