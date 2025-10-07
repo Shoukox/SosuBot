@@ -51,7 +51,7 @@ public struct Russian : ILocalization
         "🎵<b>({})</b> <a href=\"{}\">{} [{}]</a> <b>({})</b>\n" +
         "{} / {}❌ - <b><i>{}</i></b>%🎯\n" +
         "<b>➕{}</b> <i>{}x/{}x</i> <b><u>{}pp💪</u></b>\n" +
-        "({})\n\n";
+        "{}\n\n";
 
     public string command_user =>
         "<b>{}</b>\n" +
