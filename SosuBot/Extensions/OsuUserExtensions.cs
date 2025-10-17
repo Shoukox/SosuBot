@@ -11,7 +11,7 @@ public static class OsuUserExtensions
         userInDatabase.SetPP(user.Statistics!.Pp!.Value, playmode);
         userInDatabase.OsuUsername = user.Username!;
         userInDatabase.OsuUserId = user.Id.Value;
-        userInDatabase.OsuMode = user.Playmode!.ParseRulesetToPlaymode();
+        userInDatabase.OsuMode = playmode;
     }
 
     // ReSharper disable once InconsistentNaming
