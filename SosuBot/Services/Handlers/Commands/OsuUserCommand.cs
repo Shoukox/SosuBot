@@ -95,6 +95,7 @@ public class OsuUserCommand(bool includeIdInSearch = false) : CommandBase<Messag
 
                 user = userResponse.UserExtend;
             }
+            playmode = user!.Playmode!.ParseRulesetToPlaymode();
         }
         else
         {
@@ -108,7 +109,6 @@ public class OsuUserCommand(bool includeIdInSearch = false) : CommandBase<Messag
             return;
         }
 
-        playmode = user.Playmode!.ParseRulesetToPlaymode();
         double? currentPp = user.Statistics!.Pp;
         var ppDifferenceText =
             await UserHelper.GetPpDifferenceTextAsync(Context.Database, user, playmode, currentPp);

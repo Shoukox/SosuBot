@@ -218,7 +218,7 @@ public class OsuLastCommand(bool onlyPassed = false) : CommandBase<Message>
                 $"{score.CalculateCompletion(beatmap.CalculateObjectsAmount()):N1}"
             ]);
         }
-
+        
         if (playmode != Playmode.Osu) textToSend += "Для не std-скоров расчет пп может быть не верным.";
 
         await waitMessage.EditAsync(Context.BotClient, textToSend);
