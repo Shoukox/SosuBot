@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using NUnit.Framework.Internal;
+using osu.Game.Rulesets.Osu.Mods;
 using OsuApi.V2;
 using OsuApi.V2.Clients.Users.HttpIO;
 using OsuApi.V2.Models;
@@ -12,6 +13,7 @@ using SosuBot.Helpers.OutputText;
 using SosuBot.Helpers.Types;
 using SosuBot.Localization;
 using SosuBot.Localization.Languages;
+using SosuBot.PerformanceCalculator;
 using SosuBot.Services.BackgroundServices;
 using SosuBot.Services.Handlers.Abstract;
 using Telegram.Bot.Types;
@@ -182,6 +184,21 @@ public sealed class CustomCommand : CommandBase<Message>
             removed += dailyStatistics.Scores.RemoveAll(m =>
                 m.EndedAt!.Value.ChangeTimezone(Country.Uzbekistan) < tashkentToday);
             await waitMessage.EditAsync(Context.BotClient, $"Scores removed: {removed}");
+        }
+        else if (parameters[0] == "test1")
+        {
+            var ppCalculator = new PPCalculator();
+            for (int i = 1; i <= 1000; i++)
+            {
+                var calculatedPp = await ppCalculator.CalculatePpAsync(970048, 0.9889,
+                    scoreMaxCombo: 1466,
+                    passed: true,
+                    scoreMods: [new OsuModClassic()],
+                    scoreStatistics: null,
+                    rulesetId: (int)Playmode.Osu,
+                    cancellationToken: Context.CancellationToken);
+                await Task.Delay(1000);
+            }
         }
     }
 }
