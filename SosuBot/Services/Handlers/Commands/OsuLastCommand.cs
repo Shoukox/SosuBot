@@ -1,11 +1,14 @@
 using System.Text.RegularExpressions;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using osu.Game.Rulesets.Mods;
+using osu.Game.Rulesets.Scoring;
 using OsuApi.V2;
 using OsuApi.V2.Clients.Beatmaps.HttpIO;
 using OsuApi.V2.Clients.Users.HttpIO;
 using OsuApi.V2.Users.Models;
 using SosuBot.Extensions;
+using SosuBot.Helpers;
 using SosuBot.Helpers.OutputText;
 using SosuBot.Helpers.Types;
 using SosuBot.Localization;
@@ -156,9 +159,10 @@ public class OsuLastCommand(bool onlyPassed = false) : CommandBase<Message>
 
             if (i == 0) chatInDatabase!.LastBeatmapId = beatmap.Id;
 
-            var passed = score.Passed!.Value;
-            var scoreStatistics = score.Statistics!.ToStatistics();
+            bool passed = score.Passed!.Value;
+            Dictionary<HitResult, int> scoreStatistics = score.Statistics!.ToStatistics();
 
+            Mod[] scoreMods = mods.ToOsuMods(playmode);
             var calculatedPp = new PPResult
             {
                 Current = score.Pp != null
@@ -166,36 +170,42 @@ public class OsuLastCommand(bool onlyPassed = false) : CommandBase<Message>
                     : await ppCalculator.CalculatePpAsync(beatmap.Id.Value, (double)score.Accuracy!,
                         scoreMaxCombo: score.MaxCombo!.Value,
                         passed: passed,
-                        scoreMods: mods.ToOsuMods(playmode),
+                        scoreMods: scoreMods,
                         scoreStatistics: scoreStatistics,
                         rulesetId: (int)playmode,
                         cancellationToken: Context.CancellationToken),
 
                 IfFC = await ppCalculator.CalculatePpAsync(beatmap.Id.Value, (double)score.Accuracy!,
                     scoreMaxCombo: beatmap.MaxCombo!.Value,
-                    scoreMods: mods.ToOsuMods(playmode),
+                    scoreMods: scoreMods,
                     scoreStatistics: null,
                     rulesetId: (int)playmode,
                     cancellationToken: Context.CancellationToken)
             };
 
-            var scoreRank = ScoreHelper.GetScoreRankEmoji(score.Rank!, score.Passed!.Value) +
+            string scoreRank = ScoreHelper.GetScoreRankEmoji(score.Rank!, score.Passed!.Value) +
                             ScoreHelper.ParseScoreRank(score.Passed!.Value ? score.Rank! : "F");
-            var textBeforeBeatmapLink = lastScores.Length == 1 ? "" : $"{i + 1}. ";
-            var scorePp = calculatedPp.Current?.Pp ?? score.Pp!.Value;
-            var scorePpIfFc = calculatedPp.IfFC.Pp;
-            var accuracyIfFc = calculatedPp.IfFC.CalculatedAccuracy;
-            var isFc = score.MaxCombo == beatmap.MaxCombo;
+            string textBeforeBeatmapLink = lastScores.Length == 1 ? "" : $"{i + 1}. ";
+            double scorePp = calculatedPp.Current?.Pp ?? score.Pp!.Value;
+            double scorePpIfFc = calculatedPp.IfFC.Pp;
+            double accuracyIfFc = calculatedPp.IfFC.CalculatedAccuracy;
+            bool isFc = score.MaxCombo == beatmap.MaxCombo;
+            bool scoreModsContainsModIdk = scoreMods.Any(m => m is ModIdk);
 
             if (isFc)
             {
-                _logger.LogWarning(
-                    $"PP Calculation for fc and the gotten pp from the api do not match: scoreId={score.Id} calculatedPpForFC={calculatedPp.IfFC.Pp} gottenPp:{score.Pp}");
                 scorePpIfFc = scorePp;
                 accuracyIfFc = (double)score.Accuracy;
             }
 
-            var scoreEndedMinutesAgo = (int)(DateTime.UtcNow - score.EndedAt!.Value).TotalMinutes;
+            string scorePpText = scoreModsContainsModIdk && (calculatedPp.Current != null)
+                ? ScoreHelper.GetFormattedPpTextConsideringNull(null)
+                : $"{scorePp:N2}";
+            string scoreIfFcPpText = scoreModsContainsModIdk
+                ? ScoreHelper.GetFormattedPpTextConsideringNull(null)
+                : $"{scorePpIfFc:N2}";
+
+            int scoreEndedMinutesAgo = (int)(DateTime.UtcNow - score.EndedAt!.Value).TotalMinutes;
 
             textToSend += language.command_last.Fill([
                 $"{textBeforeBeatmapLink}",
@@ -211,14 +221,20 @@ public class OsuLastCommand(bool onlyPassed = false) : CommandBase<Message>
                 $"{ScoreHelper.GetModsText(mods)}",
                 $"{score.MaxCombo}",
                 $"{beatmap.MaxCombo}",
-                $"{scorePp:N2}",
-                $"{scorePpIfFc:N2}",
+                $"{scorePpText}",
+                $"{scoreIfFcPpText}",
                 $"{accuracyIfFc * 100:N2}",
                 $"{scoreEndedMinutesAgo}",
                 $"{score.CalculateCompletion(beatmap.CalculateObjectsAmount()):N1}"
             ]);
+            if (scoreModsContainsModIdk)
+            {
+                textToSend += "\nВ скоре присутствуют неизвестные боту моды, расчет пп невозможен.";
+            }
+
+            textToSend += "\n\n";
         }
-        
+
         if (playmode != Playmode.Osu) textToSend += "Для не std-скоров расчет пп может быть не верным.";
 
         await waitMessage.EditAsync(Context.BotClient, textToSend);

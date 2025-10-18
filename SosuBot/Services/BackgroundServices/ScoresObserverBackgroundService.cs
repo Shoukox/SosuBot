@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.Net;
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Hosting;
@@ -41,7 +42,6 @@ public sealed class ScoresObserverBackgroundService(
     private readonly UserStatisticsCacheDatabase _userDatabase = new(osuApi);
 
     private long _adminTelegramId;
-
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
@@ -148,7 +148,7 @@ public sealed class ScoresObserverBackgroundService(
                     bool scoreDateIsOk = m.EndedAt!.Value.ChangeTimezone(Country.Uzbekistan) >= tashkentToday;
                     bool isUzPlayer = _userDatabase.ContainsUserStatistics(m.UserId!.Value);
                     return scoreDateIsOk && isUzPlayer;
-                }) .ToArray();
+                }).ToArray();
                 foreach (var score in uzScores)
                 {
                     var userStatistics = await _userDatabase.GetUserStatistics(score.UserId!.Value);
@@ -202,12 +202,26 @@ public sealed class ScoresObserverBackgroundService(
                 getTaikoScoresCursor = getTaikoScoresResponse.CursorString;
                 getFruitsScoresCursor = getFruitsScoresResponse.CursorString;
                 getManiaScoresCursor = getManiaScoresResponse.CursorString;
-                await Task.Delay(3000, stoppingToken);
+                await Task.Delay(7_000, stoppingToken);
             }
             catch (OperationCanceledException)
             {
                 logger.LogWarning("Operation cancelled");
                 return;
+            }
+            catch (HttpRequestException httpRequestException)
+            {
+                if (httpRequestException.StatusCode != null && (int)httpRequestException.StatusCode >= 500)
+                {
+                    int waitMs = 10_000;
+                    logger.LogWarning($"OsuApi: status code {httpRequestException.StatusCode}. Waiting {waitMs}ms...");
+
+                    if (httpRequestException.StatusCode == HttpStatusCode.BadGateway)
+                    {
+                    }
+
+                    await Task.Delay(waitMs, stoppingToken);
+                }
             }
             catch (Exception e)
             {
