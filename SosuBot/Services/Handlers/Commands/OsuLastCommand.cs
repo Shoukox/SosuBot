@@ -182,12 +182,17 @@ public class OsuLastCommand(bool onlyPassed = false) : CommandBase<Message>
                     rulesetId: (int)playmode,
                     cancellationToken: Context.CancellationToken)
             };
-
+            
             string scoreRank = ScoreHelper.GetScoreRankEmoji(score.Rank!, score.Passed!.Value) +
                             ScoreHelper.ParseScoreRank(score.Passed!.Value ? score.Rank! : "F");
             string textBeforeBeatmapLink = lastScores.Length == 1 ? "" : $"{i + 1}. ";
-            double scorePp = calculatedPp.Current?.Pp ?? score.Pp!.Value;
-            double scorePpIfFc = calculatedPp.IfFC.Pp;
+            double? scorePp = calculatedPp.Current?.Pp ?? score.Pp!.Value;
+            if (scorePp is Double.NaN)
+            {
+                scorePp = null;
+            }
+            
+            double? scorePpIfFc = calculatedPp.IfFC.Pp;
             double accuracyIfFc = calculatedPp.IfFC.CalculatedAccuracy;
             bool isFc = score.MaxCombo == beatmap.MaxCombo;
             bool scoreModsContainsModIdk = scoreMods.Any(m => m is ModIdk);
@@ -198,12 +203,9 @@ public class OsuLastCommand(bool onlyPassed = false) : CommandBase<Message>
                 accuracyIfFc = (double)score.Accuracy;
             }
 
-            string scorePpText = scoreModsContainsModIdk && (calculatedPp.Current != null)
-                ? ScoreHelper.GetFormattedPpTextConsideringNull(null)
-                : $"{scorePp:N2}";
-            string scoreIfFcPpText = scoreModsContainsModIdk
-                ? ScoreHelper.GetFormattedPpTextConsideringNull(null)
-                : $"{scorePpIfFc:N2}";
+            string scorePpText = ScoreHelper.GetFormattedPpTextConsideringNull(scoreModsContainsModIdk && calculatedPp.Current != null ? null : scorePp);
+            string scoreIfFcPpText =
+                ScoreHelper.GetFormattedPpTextConsideringNull(scoreModsContainsModIdk ? null : scorePpIfFc);
 
             int scoreEndedMinutesAgo = (int)(DateTime.UtcNow - score.EndedAt!.Value).TotalMinutes;
 
