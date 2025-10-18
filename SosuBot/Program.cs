@@ -69,7 +69,7 @@ internal class Program
         builder.Services.Configure<OsuApiV2Configuration>(
             builder.Configuration.GetSection(nameof(OsuApiV2Configuration)));
         builder.Services.Configure<OpenAiConfiguration>(builder.Configuration.GetSection(nameof(OpenAiConfiguration)));
-        builder.Services.AddHttpClient(nameof(TelegramBotClient))
+        builder.Services.AddHttpClient(nameof(ITelegramBotClient))
             .ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler
             {
                 // Replace connections every 2 minutes to avoid stale/closed sockets
@@ -87,7 +87,7 @@ internal class Program
             .ConfigureHttpClient(client =>
             {
                 // Make request timeout slightly larger than your long polling timeout.
-                client.Timeout = TimeSpan.FromSeconds(60);
+                client.Timeout = TimeSpan.FromSeconds(62);
             })
             .AddTypedClient<ITelegramBotClient>((httpClient, sp) =>
             {
@@ -102,7 +102,7 @@ internal class Program
         builder.Services.AddSingleton<ApiV2>(provider =>
         {
             var config = osuApiV2Configuration;
-            var httpClient = provider.GetRequiredService<IHttpClientFactory>().CreateClient();
+            var httpClient = provider.GetRequiredService<IHttpClientFactory>().CreateClient(nameof(ITelegramBotClient));
             httpClient.DefaultRequestHeaders.ConnectionClose = true;
             return new ApiV2(config.ClientId, config.ClientSecret, httpClient);
         });
@@ -129,7 +129,7 @@ internal class Program
         var transientRetryPolicy = HttpPolicyExtensions
             .HandleTransientHttpError()
             .WaitAndRetryAsync(
-                Backoff.DecorrelatedJitterBackoffV2(TimeSpan.FromSeconds(1), 5),
+                Backoff.DecorrelatedJitterBackoffV2(TimeSpan.FromSeconds(1), 3),
                 (delay, attempt, outcome, _) =>
                 {
                     _logger!.LogWarning(

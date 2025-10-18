@@ -1,4 +1,5 @@
-﻿using osu.Game.Rulesets.Catch.Mods;
+﻿using osu.Framework.Localisation;
+using osu.Game.Rulesets.Catch.Mods;
 using osu.Game.Rulesets.Mania.Mods;
 using osu.Game.Rulesets.Mods;
 using osu.Game.Rulesets.Osu.Mods;
@@ -6,6 +7,7 @@ using osu.Game.Rulesets.Scoring;
 using osu.Game.Rulesets.Taiko.Mods;
 using OsuApi.V2.Models;
 using OsuApi.V2.Users.Models;
+using SosuBot.Helpers;
 using SosuBot.Helpers.Types;
 using Mod = osu.Game.Rulesets.Mods.Mod;
 
@@ -54,9 +56,16 @@ public static class OsuTypesExtensions
                 Playmode.Catch => AllCatchMods,
                 _ => throw new NotImplementedException()
             };
-            var modType =
+            var foundMod =
                 rulesetMods.FirstOrDefault(m =>
-                    m.Acronym.Equals(mod.Acronym, StringComparison.InvariantCultureIgnoreCase))!.GetType();
+                    m.Acronym.Equals(mod.Acronym, StringComparison.InvariantCultureIgnoreCase));
+
+            if (foundMod == null)
+            {
+                osuMods.Add(new ModIdk());
+                continue;
+            }
+            var modType = foundMod.GetType();
             var osuMod = Activator.CreateInstance(modType) as Mod;
 
             if (osuMod is ModDoubleTime dtMode && mod.Settings?.SpeedChange != null)
@@ -70,7 +79,7 @@ public static class OsuTypesExtensions
                 osuMod = rdMode;
             }
 
-            if (osuMod is not null) osuMods.Add(osuMod);
+            osuMods.Add(osuMod!);
         }
 
         return osuMods.ToArray();
