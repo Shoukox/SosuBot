@@ -2,14 +2,12 @@
 
 **A Telegram bot for osu! players** — built with .NET 8 and designed to make interacting with osu! data fun and seamless.
 
----
 
 ## 🧩 Overview
 
 SosuBot is a **Telegram bot** that connects to the **osu! API v2**, providing player statistics, recent plays, and other osu!-related data directly through Telegram chats.
 It also uses **OpenAI API** for smart features such as message analysis, playful responses, or extended contextual queries.
 
----
 
 ## ⚙️ Requirements
 
@@ -17,8 +15,7 @@ Before running the bot, make sure you have the following installed:
 
 * **.NET SDK 8.0 or higher**
   [Download .NET SDK 8.0](https://dotnet.microsoft.com/en-us/download/dotnet/8.0)
-
----
+  
 
 ## 📁 Setup
 
@@ -106,7 +103,6 @@ When launched, SosuBot will:
 * Start responding to Telegram commands and messages
 
 Use the /help command to get a summary about bots functionality.
----
 
 ## 🧠 Features (in brief)
 
@@ -117,14 +113,12 @@ Use the /help command to get a summary about bots functionality.
 * Custom logging system (console + file)
 * SQLite database for local data storage
 
----
 
 ## 🪲 Logging
 
 Logs are written to console and to daily files in the `logs/` folder (e.g., `logs/2025-10-19.log`).
 The logging configuration can be customized through `appsettings.json`.
 
----
 
 ## 🧰 Technologies Used (brief)
 
@@ -137,14 +131,12 @@ The logging configuration can be customized through `appsettings.json`.
 * **Microsoft.Extensions.Logging**
 * ...
 
----
 
 ## 🤝 Contributing
 
 Contributions, pull requests, and suggestions are welcome!
 Please open an issue if you encounter bugs or have feature ideas.
 
----
 
 ## 📜 License
 
