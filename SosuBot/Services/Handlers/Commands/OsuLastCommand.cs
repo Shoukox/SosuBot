@@ -22,15 +22,17 @@ namespace SosuBot.Services.Handlers.Commands;
 public class OsuLastCommand(bool onlyPassed = false) : CommandBase<Message>
 {
     public static readonly string[] Commands = ["/last", "/l"];
-    private ILogger<OsuLastCommand> _logger = null!;
     private bool _onlyPassed;
     private ApiV2 _osuApiV2 = null!;
+    private ILogger<OsuLastCommand> _logger = null!;
+    private ILogger<PPCalculator> _loggerPpCalculator = null!;
 
     public override Task BeforeExecuteAsync()
     {
         _onlyPassed = onlyPassed;
         _osuApiV2 = Context.ServiceProvider.GetRequiredService<ApiV2>();
         _logger = Context.ServiceProvider.GetRequiredService<ILogger<OsuLastCommand>>();
+        _loggerPpCalculator = Context.ServiceProvider.GetRequiredService<ILogger<PPCalculator>>();
         return Task.CompletedTask;
     }
 
@@ -136,7 +138,7 @@ public class OsuLastCommand(bool onlyPassed = false) : CommandBase<Message>
         GetBeatmapResponse[] beatmaps = lastScores
             .Select(async score => await _osuApiV2.Beatmaps.GetBeatmap((long)score.Beatmap!.Id))
             .Select(t => t.Result).ToArray()!;
-        var ppCalculator = new PPCalculator();
+        var ppCalculator = new PPCalculator(_loggerPpCalculator);
 
         var textToSend =
             $"<b>{UserHelper.GetUserProfileUrlWrappedInUsernameString(userResponse.UserExtend!.Id.Value, osuUsernameForLastScores)}</b> (<i>{ruleset.ParseRulesetToGamemode()}</i>)\n\n";
