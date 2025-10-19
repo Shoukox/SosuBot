@@ -1,0 +1,91 @@
+﻿using System.Net;
+using Microsoft.Extensions.Logging;
+using Polly;
+using Polly.Contrib.WaitAndRetry;
+using Polly.Extensions.Http;
+using Polly.RateLimit;
+using ILogger = Microsoft.Extensions.Logging.ILogger;
+
+namespace SosuBot;
+
+public static class PollyPolicies
+{
+    private static Random _jitterer = new Random();
+    public static IAsyncPolicy<HttpResponseMessage> GetTransientRetryPolicy(ILogger logger)
+    {
+        return HttpPolicyExtensions
+            .HandleTransientHttpError()
+            .WaitAndRetryAsync(
+                Backoff.DecorrelatedJitterBackoffV2(TimeSpan.FromSeconds(1), 3),
+                (delay, attempt, outcome, _) =>
+                {
+                    logger.LogWarning(
+                        "Transient error (attempt {Attempt}). Waiting {Delay} before retry. Status: {Status}", attempt,
+                        delay, outcome);
+                });
+    }
+
+    public static IAsyncPolicy<HttpResponseMessage> GetRetryAfterPolicy(ILogger logger)
+    {
+        return Policy
+            .HandleResult<HttpResponseMessage>(r =>
+                r.StatusCode == HttpStatusCode.TooManyRequests)
+            .WaitAndRetryAsync(
+                3,
+                (_, response, _) =>
+                {
+                    var ra = response.Result.Headers.RetryAfter;
+
+                    if (ra == null)
+                    {
+                        return TimeSpan.FromSeconds(5);
+                    }
+                    
+                    if (ra.Delta.HasValue) return ra.Delta.Value;
+                    if (ra.Date.HasValue)
+                    {
+                        var delta = ra.Date.Value - DateTimeOffset.UtcNow;
+                        return delta > TimeSpan.Zero ? delta : TimeSpan.FromSeconds(1);
+                    }
+
+                    return TimeSpan.FromSeconds(10);
+                },
+                async (_, timespan, retryCount, _) =>
+                {
+                    logger.LogWarning("Received 429. Retrying after {Delay} (retry {Retry}).", timespan, retryCount);
+                    await Task.CompletedTask;
+                });
+    }
+    
+    public static IAsyncPolicy<HttpResponseMessage> GetRateLimiterPolicy(ILogger logger, int executionsPerOneSecond, int executionsPerOneMinute)
+    {
+        var rateLimitPolicyPerSecond = Policy.RateLimitAsync<HttpResponseMessage>(executionsPerOneSecond, TimeSpan.FromSeconds(1), executionsPerOneSecond);
+        var rateLimitPolicyPerMinute = Policy.RateLimitAsync<HttpResponseMessage>(executionsPerOneMinute, TimeSpan.FromMinutes(1), executionsPerOneMinute);
+        var combinedRateLimit = Policy.WrapAsync(rateLimitPolicyPerSecond, rateLimitPolicyPerMinute);
+        
+        var rateLimitExceptiondHandlerPolicy = Policy.Handle<RateLimitRejectedException>()
+            .WaitAndRetryForeverAsync(
+                sleepDurationProvider: (retryAttempt, ex, _) =>
+                {
+                    if (ex is RateLimitRejectedException rlr)
+                        return rlr.RetryAfter;
+
+                    return TimeSpan.FromSeconds(Math.Pow(2, retryAttempt));
+                },
+                onRetryAsync: (ex, retry, ts, ct) =>
+                {
+                    logger.LogInformation($"Retrying {retry} times. Should wait {ts}");
+                    return Task.CompletedTask;
+                }).AsAsyncPolicy<HttpResponseMessage>();
+        return Policy.WrapAsync(rateLimitExceptiondHandlerPolicy, combinedRateLimit);
+    }
+    
+    public static IAsyncPolicy<HttpResponseMessage> GetCombinedPolicy(ILogger logger, int executionsPerOneSecond, int executionsPerOneMinute)
+    {
+        var transientRetryPolicy = GetTransientRetryPolicy(logger);
+        var retryAfterPolicy = GetRetryAfterPolicy(logger);
+        var rateLimitPolicy = GetRateLimiterPolicy(logger, executionsPerOneSecond, executionsPerOneMinute);
+        
+        return Policy.WrapAsync(rateLimitPolicy, transientRetryPolicy, retryAfterPolicy);
+    }
+}
