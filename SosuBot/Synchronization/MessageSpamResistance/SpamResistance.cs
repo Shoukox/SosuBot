@@ -31,7 +31,6 @@ public class SpamResistance
             var messagingUser = _usersDict.GetOrAdd(userId, _ => AddNew(userId));
             if (IsBlocked(messagingUser))
             {
-                semaphoreSlim.Release();
                 return (false, false);
             }
 
@@ -86,8 +85,7 @@ public class SpamResistance
         var dateTimeNow = DateTime.UtcNow;
         var queue = messagingUser.MessagesQueue;
 
-        DateTime peekQueueDateTime;
-        queue.TryPeek(out peekQueueDateTime);
+        queue.TryPeek(out var peekQueueDateTime);
 
         while (queue.Count > 0 && dateTimeNow - peekQueueDateTime > Interval) queue.TryDequeue(out _);
         queue.Enqueue(messageSent.ToUniversalTime());
