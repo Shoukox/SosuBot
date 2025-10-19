@@ -1,4 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using OsuApi.V2;
 using OsuApi.V2.Clients.Users.HttpIO;
 using OsuApi.V2.Users.Models;
@@ -18,10 +19,14 @@ namespace SosuBot.Services.Handlers.Text;
 public sealed class TextHandler : CommandBase<Message>
 {
     private ApiV2 _osuApiV2 = null!;
+    private ILogger<TextHandler> _logger = null!;
+    private ILogger<PPCalculator> _loggerPpCalculator = null!;
 
     public override Task BeforeExecuteAsync()
     {
         _osuApiV2 = Context.ServiceProvider.GetRequiredService<ApiV2>();
+        _logger = Context.ServiceProvider.GetRequiredService<ILogger<TextHandler>>();
+        _loggerPpCalculator = Context.ServiceProvider.GetRequiredService<ILogger<PPCalculator>>();
         return Task.CompletedTask;
     }
 
@@ -120,7 +125,7 @@ public sealed class TextHandler : CommandBase<Message>
         var classicModsToApply = modsFromMessage.Concat([classicMod]).Distinct().ToArray();
         var lazerModsToApply = modsFromMessage.Distinct().ToArray();
 
-        var ppCalculator = new PPCalculator();
+        var ppCalculator = new PPCalculator(_loggerPpCalculator);
         var calculatedPp = new
         {
             ClassicSS = await ppCalculator.CalculatePpAsync(

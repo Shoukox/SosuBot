@@ -28,12 +28,14 @@ public sealed class CustomCommand : CommandBase<Message>
     private OpenAiService _openaiService = null!;
     private ApiV2 _osuApiV2 = null!;
     private ILogger<CustomCommand> _logger = null!;
+    private ILogger<PPCalculator> _loggerPpCalculator = null!;
 
     public override Task BeforeExecuteAsync()
     {
         _openaiService = Context.ServiceProvider.GetRequiredService<OpenAiService>();
         _osuApiV2 = Context.ServiceProvider.GetRequiredService<ApiV2>();
         _logger = Context.ServiceProvider.GetRequiredService<ILogger<CustomCommand>>();
+        _loggerPpCalculator = Context.ServiceProvider.GetRequiredService<ILogger<PPCalculator>>();
         return Task.CompletedTask;
     }
 
@@ -187,7 +189,7 @@ public sealed class CustomCommand : CommandBase<Message>
         }
         else if (parameters[0] == "test1")
         {
-            var ppCalculator = new PPCalculator();
+            var ppCalculator = new PPCalculator(_loggerPpCalculator);
             for (int i = 1; i <= 1000; i++)
             {
                 var calculatedPp = await ppCalculator.CalculatePpAsync(970048, 0.9889,

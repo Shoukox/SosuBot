@@ -103,8 +103,9 @@ internal class Program
         {
             var config = osuApiV2Configuration;
             var httpClient = provider.GetRequiredService<IHttpClientFactory>().CreateClient(nameof(ITelegramBotClient));
+            var logger = provider.GetRequiredService<ILogger<ApiV2>>();
             httpClient.DefaultRequestHeaders.ConnectionClose = true;
-            return new ApiV2(config.ClientId, config.ClientSecret, httpClient);
+            return new ApiV2(config.ClientId, config.ClientSecret, httpClient, logger);
         });
         builder.Services.AddSingleton<UpdateQueueService>();
         builder.Services.AddSingleton<RabbitMqService>();
