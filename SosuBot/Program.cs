@@ -36,7 +36,8 @@ internal class Program
         if (!File.Exists(configurationFileName))
             throw new FileNotFoundException($"{configurationFileName} was not found!", configurationFileName);
         builder.Configuration.AddJsonFile(configurationFileName, false);
-
+        
+        // OpenAI configuration
         var openaiConfigurationFileName = "openai-settings.json";
         if (!File.Exists(openaiConfigurationFileName))
             throw new FileNotFoundException($"{openaiConfigurationFileName} was not found!", configurationFileName);
@@ -46,10 +47,10 @@ internal class Program
         var loggingFileName = "logs/{Date}.log";
         builder.Logging.ClearProviders();
         builder.Logging.AddConsole();
-        builder.Logging.AddFile(loggingFileName, LogLevel.Error);
+        builder.Logging.AddFile(loggingFileName, LogLevel.Trace);
         builder.Logging.AddConfiguration(builder.Configuration.GetSection("Logging"));
         builder.Logging.AddConsoleFormatter<CustomConsoleFormatter, CustomConsoleFormatterOptions>();
-
+        
         // Instantiate a logger for this class
         _logger = builder.Services.BuildServiceProvider().GetRequiredService<ILogger<Program>>();
 
@@ -140,12 +141,18 @@ internal class Program
 
         var retryAfterPolicy = Policy
             .HandleResult<HttpResponseMessage>(r =>
-                r.StatusCode == HttpStatusCode.TooManyRequests && r.Headers.RetryAfter != null)
+                r.StatusCode == HttpStatusCode.TooManyRequests)
             .WaitAndRetryAsync(
                 3,
                 (_, response, _) =>
                 {
-                    var ra = response.Result.Headers.RetryAfter!;
+                    var ra = response.Result.Headers.RetryAfter;
+
+                    if (ra == null)
+                    {
+                        return TimeSpan.FromSeconds(5);
+                    }
+                    
                     if (ra.Delta.HasValue) return ra.Delta.Value;
                     if (ra.Date.HasValue)
                     {
@@ -153,7 +160,7 @@ internal class Program
                         return delta > TimeSpan.Zero ? delta : TimeSpan.FromSeconds(1);
                     }
 
-                    return TimeSpan.FromSeconds(1);
+                    return TimeSpan.FromSeconds(10);
                 },
                 async (_, timespan, retryCount, _) =>
                 {
