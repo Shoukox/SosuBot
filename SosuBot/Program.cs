@@ -47,7 +47,7 @@ internal class Program
         var loggingFileName = "logs/{Date}.log";
         builder.Logging.ClearProviders();
         builder.Logging.AddConsole();
-        builder.Logging.AddFile(loggingFileName, LogLevel.Trace);
+        builder.Logging.AddFile(loggingFileName, LogLevel.Information);
         builder.Logging.AddConfiguration(builder.Configuration.GetSection("Logging"));
         builder.Logging.AddConsoleFormatter<CustomConsoleFormatter, CustomConsoleFormatterOptions>();
         
