@@ -27,7 +27,7 @@ public static class ServiceCollectionExtensions
             .ConfigureHttpClient(client =>
             {
                 // Make request timeout slightly larger than your long polling timeout.
-                client.Timeout = TimeSpan.FromSeconds(62);
+                client.Timeout = Timeout.InfiniteTimeSpan;
             });
     }
 }

@@ -79,11 +79,11 @@ internal class Program
                 var options = sp.GetRequiredService<IOptions<BotConfiguration>>();
                 return new TelegramBotClient(options.Value.Token, httpClient);
             })
-            .AddPolicyHandler(PollyPolicies.GetCombinedPolicy(_logger, Int16.MaxValue, Int16.MaxValue * 60));
+            .AddPolicyHandler(PollyPolicies.GetCombinedPolicy(_logger, Int16.MaxValue));
         
         builder.Services
             .AddCustomHttpClient(nameof(ApiV2))
-            .AddPolicyHandler(PollyPolicies.GetCombinedPolicy(_logger, Int16.MaxValue, 1200));;
+            .AddPolicyHandler(PollyPolicies.GetCombinedPolicy(_logger, 1000));;
 
         var osuApiV2Configuration = builder.Services.BuildServiceProvider()
             .GetRequiredService<IOptions<OsuApiV2Configuration>>().Value;
