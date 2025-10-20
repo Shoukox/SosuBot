@@ -72,8 +72,18 @@ internal class Program
         builder.Services.Configure<OsuApiV2Configuration>(
             builder.Configuration.GetSection(nameof(OsuApiV2Configuration)));
         builder.Services.Configure<OpenAiConfiguration>(builder.Configuration.GetSection(nameof(OpenAiConfiguration)));
-        builder.Services.AddCustomHttpClient(nameof(ITelegramBotClient), _logger, Int16.MaxValue, Int16.MaxValue * 60);
-        builder.Services.AddCustomHttpClient(nameof(ApiV2), _logger, Int16.MaxValue, 1200);
+        builder.Services
+            .AddCustomHttpClient(nameof(ITelegramBotClient))
+            .AddTypedClient<ITelegramBotClient>((httpClient, sp) =>
+            {
+                var options = sp.GetRequiredService<IOptions<BotConfiguration>>();
+                return new TelegramBotClient(options.Value.Token, httpClient);
+            })
+            .AddPolicyHandler(PollyPolicies.GetCombinedPolicy(_logger, Int16.MaxValue, Int16.MaxValue * 60));
+        
+        builder.Services
+            .AddCustomHttpClient(nameof(ApiV2))
+            .AddPolicyHandler(PollyPolicies.GetCombinedPolicy(_logger, Int16.MaxValue, 1200));;
 
         var osuApiV2Configuration = builder.Services.BuildServiceProvider()
             .GetRequiredService<IOptions<OsuApiV2Configuration>>().Value;
