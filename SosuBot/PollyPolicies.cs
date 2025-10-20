@@ -57,12 +57,9 @@ public static class PollyPolicies
                 });
     }
     
-    public static IAsyncPolicy<HttpResponseMessage> GetRateLimiterPolicy(ILogger logger, int executionsPerOneSecond, int executionsPerOneMinute)
+    public static IAsyncPolicy<HttpResponseMessage> GetRateLimiterPolicy(ILogger logger, int executionsPerOneMinute)
     {
-        var rateLimitPolicyPerSecond = Policy.RateLimitAsync<HttpResponseMessage>(executionsPerOneSecond, TimeSpan.FromSeconds(1), executionsPerOneSecond);
         var rateLimitPolicyPerMinute = Policy.RateLimitAsync<HttpResponseMessage>(executionsPerOneMinute, TimeSpan.FromMinutes(1), executionsPerOneMinute);
-        var combinedRateLimit = Policy.WrapAsync(rateLimitPolicyPerSecond, rateLimitPolicyPerMinute);
-        
         var rateLimitExceptiondHandlerPolicy = Policy.Handle<RateLimitRejectedException>()
             .WaitAndRetryForeverAsync(
                 sleepDurationProvider: (retryAttempt, ex, _) =>
@@ -77,14 +74,14 @@ public static class PollyPolicies
                     logger.LogInformation($"Retrying {retry} times. Should wait {ts}");
                     return Task.CompletedTask;
                 }).AsAsyncPolicy<HttpResponseMessage>();
-        return Policy.WrapAsync(rateLimitExceptiondHandlerPolicy, combinedRateLimit);
+        return Policy.WrapAsync(rateLimitExceptiondHandlerPolicy, rateLimitPolicyPerMinute);
     }
     
-    public static IAsyncPolicy<HttpResponseMessage> GetCombinedPolicy(ILogger logger, int executionsPerOneSecond, int executionsPerOneMinute)
+    public static IAsyncPolicy<HttpResponseMessage> GetCombinedPolicy(ILogger logger, int executionsPerOneMinute)
     {
         var transientRetryPolicy = GetTransientRetryPolicy(logger);
         var retryAfterPolicy = GetRetryAfterPolicy(logger);
-        var rateLimitPolicy = GetRateLimiterPolicy(logger, executionsPerOneSecond, executionsPerOneMinute);
+        var rateLimitPolicy = GetRateLimiterPolicy(logger, executionsPerOneMinute);
         
         return Policy.WrapAsync(rateLimitPolicy, transientRetryPolicy, retryAfterPolicy);
     }
