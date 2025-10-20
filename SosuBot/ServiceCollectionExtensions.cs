@@ -7,7 +7,7 @@ namespace SosuBot;
 
 public static class ServiceCollectionExtensions
 {
-    public static IHttpClientBuilder AddCustomHttpClient(this IServiceCollection services, string name, ILogger logger, int executionsPerOneSecond, int executionsPerOneMinute)
+    public static IHttpClientBuilder AddCustomHttpClient(this IServiceCollection services, string name)
     {
         return services.AddHttpClient(name)
             .ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler
@@ -28,12 +28,6 @@ public static class ServiceCollectionExtensions
             {
                 // Make request timeout slightly larger than your long polling timeout.
                 client.Timeout = TimeSpan.FromSeconds(62);
-            })
-            .AddTypedClient<ITelegramBotClient>((httpClient, sp) =>
-            {
-                var options = sp.GetRequiredService<IOptions<BotConfiguration>>();
-                return new TelegramBotClient(options.Value.Token, httpClient);
-            })
-            .AddPolicyHandler(PollyPolicies.GetCombinedPolicy(logger, executionsPerOneSecond, executionsPerOneMinute));
+            });
     }
 }
