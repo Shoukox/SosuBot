@@ -26,14 +26,27 @@ public sealed class OsuCompareCommand : CommandBase<Message>
         await BeforeExecuteAsync();
 
         ILocalization language = new Russian();
+        var osuUserInDatabase = await Context.Database.OsuUsers.FindAsync(Context.Update.From!.Id);
 
         var waitMessage = await Context.Update.ReplyAsync(Context.BotClient, language.waiting);
         var parameters = Context.Update.Text!.GetCommandParameters()!;
 
-        if (parameters.Length < 2)
+        string user1IdAsString;
+        string user2IdAsString;
+        if (parameters.Length == 1)
         {
-            await waitMessage.EditAsync(Context.BotClient, language.error_argsLength);
-            return;
+            if (osuUserInDatabase == null)
+            {
+                await waitMessage.EditAsync(Context.BotClient, language.error_argsLength);
+                return;
+            }
+            user1IdAsString = osuUserInDatabase.OsuUsername;
+            user2IdAsString = parameters[0];
+        }
+        else
+        {
+            user1IdAsString = parameters[0];
+            user2IdAsString = parameters[1];
         }
 
         var ruleset = Ruleset.Osu;
@@ -46,21 +59,21 @@ public sealed class OsuCompareCommand : CommandBase<Message>
                 return;
             }
         }
-
+        
         var getUser1Response =
-            await _osuApiV2.Users.GetUser($"@{parameters[0]}", new GetUserQueryParameters(), ruleset);
+            await _osuApiV2.Users.GetUser($"@{user1IdAsString}", new GetUserQueryParameters(), ruleset);
         var getUser2Response =
-            await _osuApiV2.Users.GetUser($"@{parameters[1]}", new GetUserQueryParameters(), ruleset);
+            await _osuApiV2.Users.GetUser($"@{user2IdAsString}", new GetUserQueryParameters(), ruleset);
 
         if (getUser1Response == null)
         {
-            await waitMessage.EditAsync(Context.BotClient, language.error_specificUserNotFound.Fill([parameters[0]]));
+            await waitMessage.EditAsync(Context.BotClient, language.error_specificUserNotFound.Fill([user1IdAsString]));
             return;
         }
 
         if (getUser2Response == null)
         {
-            await waitMessage.EditAsync(Context.BotClient, language.error_specificUserNotFound.Fill([parameters[1]]));
+            await waitMessage.EditAsync(Context.BotClient, language.error_specificUserNotFound.Fill([user2IdAsString]));
             return;
         }
 
@@ -85,10 +98,10 @@ public sealed class OsuCompareCommand : CommandBase<Message>
             user1.Username.PadRight(max),
             user2.Username!,
 
-            ("#" + user1.Statistics.GlobalRank.ReplaceIfNull()).PadRight(max),
+            ("#" + user1.Statistics.GlobalRank.ReplaceIfNull()).PadRight(max-1),
             $"#{user2.Statistics.GlobalRank.ReplaceIfNull()}",
 
-            ("#" + user1.Statistics.CountryRank.ReplaceIfNull() + " " + user1.CountryCode).PadRight(max),
+            ("#" + user1.Statistics.CountryRank.ReplaceIfNull() + " " + user1.CountryCode).PadRight(max-1),
             "#" + user2.Statistics.CountryRank.ReplaceIfNull() + " " + user2.CountryCode,
 
             (user1.Statistics.Pp!.Value.ToString("N2") + "pp").PadRight(max),
