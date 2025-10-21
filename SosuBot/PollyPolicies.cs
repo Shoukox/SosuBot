@@ -11,7 +11,8 @@ namespace SosuBot;
 public static class PollyPolicies
 {
     private static Random _jitterer = new Random();
-    public static IAsyncPolicy<HttpResponseMessage> GetTransientRetryPolicy(ILogger logger)
+
+    private static IAsyncPolicy<HttpResponseMessage> GetTransientRetryPolicy(ILogger logger)
     {
         return HttpPolicyExtensions
             .HandleTransientHttpError()
@@ -25,7 +26,7 @@ public static class PollyPolicies
                 });
     }
 
-    public static IAsyncPolicy<HttpResponseMessage> GetRetryAfterPolicy(ILogger logger)
+    private static IAsyncPolicy<HttpResponseMessage> GetRetryAfterPolicy(ILogger logger)
     {
         return Policy
             .HandleResult<HttpResponseMessage>(r =>
@@ -57,7 +58,7 @@ public static class PollyPolicies
                 });
     }
     
-    public static IAsyncPolicy<HttpResponseMessage> GetRateLimiterPolicy(ILogger logger, int executionsPerOneMinute)
+    private static IAsyncPolicy<HttpResponseMessage> GetRateLimiterPolicy(ILogger logger, int executionsPerOneMinute)
     {
         var rateLimitPolicyPerMinute = Policy.RateLimitAsync<HttpResponseMessage>(executionsPerOneMinute, TimeSpan.FromMinutes(1), executionsPerOneMinute);
         var rateLimitExceptiondHandlerPolicy = Policy.Handle<RateLimitRejectedException>()
