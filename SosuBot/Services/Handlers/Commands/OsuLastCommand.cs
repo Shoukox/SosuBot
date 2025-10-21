@@ -220,7 +220,7 @@ public class OsuLastCommand(bool onlyPassed = false) : CommandBase<Message>
                 $"{beatmap.Status}",
                 $"{ppCalculator.LastDifficultyAttributes!.StarRating:N2}",
                 $"{ScoreHelper.GetScoreStatisticsText(score.Statistics!, playmode)}",
-                $"{score.Statistics!.Miss + score.Statistics!.LargeTickMiss}",
+                $"{score.Statistics!.Miss}",
                 $"{score.Accuracy * 100:N2}",
                 $"{ScoreHelper.GetModsText(mods)}",
                 $"{score.MaxCombo}",
@@ -239,7 +239,7 @@ public class OsuLastCommand(bool onlyPassed = false) : CommandBase<Message>
             textToSend += "\n\n";
         }
 
-        if (playmode != Playmode.Osu) textToSend += "Для не std-скоров расчет пп может быть не верным.";
+        if (playmode != Playmode.Osu) textToSend += "Для не std-скоров расчет пп на FC может быть не верным.";
 
         await waitMessage.EditAsync(Context.BotClient, textToSend);
     }
