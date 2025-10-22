@@ -18,11 +18,11 @@ public static class PollyPolicies
             .HandleTransientHttpError()
             .WaitAndRetryAsync(
                 Backoff.DecorrelatedJitterBackoffV2(TimeSpan.FromSeconds(1), 3),
-                (delay, attempt, outcome, _) =>
+                (_, delay, attempt, _) =>
                 {
                     logger.LogWarning(
-                        "Transient error (attempt {Attempt}). Waiting {Delay} before retry. Status: {Status}", attempt,
-                        delay, outcome);
+                        "Transient error (attempt {Attempt}). Waiting {Delay} before retry.", attempt,
+                        delay);
                 });
     }
 

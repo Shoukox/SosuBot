@@ -59,9 +59,9 @@ public sealed class ScoresObserverBackgroundService(
                 ObserveScores(stoppingToken)
             );
         }
-        catch (OperationCanceledException)
+        catch (OperationCanceledException e)
         {
-            logger.LogWarning("Operation cancelled");
+            logger.LogError(e, "Operation cancelled");
         }
     }
 
@@ -180,7 +180,7 @@ public sealed class ScoresObserverBackgroundService(
                                 await ScoreHelper.GetDailyStatisticsSendText((Playmode)i, dailyStatistics, osuApi);
                             await botClient.SendMessage(_adminTelegramId, sendText,
                                 ParseMode.Html, linkPreviewOptions: true, cancellationToken: stoppingToken);
-                            await Task.Delay(1000);
+                            await Task.Delay(1000, stoppingToken);
                         }
                     }
                     catch (Exception e)
@@ -204,9 +204,9 @@ public sealed class ScoresObserverBackgroundService(
                 getManiaScoresCursor = getManiaScoresResponse.CursorString;
                 await Task.Delay(7_000, stoppingToken);
             }
-            catch (OperationCanceledException)
+            catch (OperationCanceledException e)
             {
-                logger.LogWarning("Operation cancelled");
+                logger.LogError(e, "Operation cancelled");
                 return;
             }
             catch (HttpRequestException httpRequestException)
@@ -225,7 +225,7 @@ public sealed class ScoresObserverBackgroundService(
             }
             catch (Exception e)
             {
-                logger.LogError(e, "Unexpected exception");
+                logger.LogError(e, "[ObserveScoresGetScores] Unexpected exception");
             }
     }
 
@@ -264,9 +264,9 @@ public sealed class ScoresObserverBackgroundService(
                     await Task.Delay(1000, stoppingToken);
                 }
             }
-            catch (OperationCanceledException)
+            catch (OperationCanceledException e)
             {
-                logger.LogWarning("Operation cancelled");
+                logger.LogError(e, "Operation cancelled");
                 return;
             }
             catch (Exception e)

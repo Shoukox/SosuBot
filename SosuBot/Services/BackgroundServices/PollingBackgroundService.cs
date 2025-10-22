@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using osuTK.Graphics.OpenGL;
 using Telegram.Bot;
 
 namespace SosuBot.Services.BackgroundServices;
@@ -21,9 +22,9 @@ public sealed class PollingBackgroundService(
             var pendingUpdates = await botClient.GetUpdates(cancellationToken: stoppingToken);
             if (pendingUpdates.Length != 0) _offset = pendingUpdates.Last().Id + 1;
         }
-        catch (OperationCanceledException)
+        catch (OperationCanceledException e)
         {
-            logger.LogWarning("Operation cancelled");
+            logger.LogError(e, "Operation cancelled");
             return;
         }
 
@@ -43,9 +44,9 @@ public sealed class PollingBackgroundService(
                 _offset = updates.Last().Id + 1;
                 foreach (var update in updates) await updateQueueService.EnqueueUpdateAsync(update, stoppingToken);
             }
-            catch (OperationCanceledException)
+            catch (OperationCanceledException e)
             {
-                logger.LogWarning("Operation cancelled");
+                logger.LogError(e, "Operation cancelled");
                 return;
             }
             catch (Exception e)
