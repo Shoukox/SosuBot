@@ -82,7 +82,7 @@ internal class Program
             .AddPolicyHandler(PollyPolicies.GetCombinedPolicy(_logger, Int16.MaxValue));
         
         builder.Services
-            .AddCustomHttpClient(nameof(ApiV2))
+            .AddCustomHttpClient("CustomHttpClient")
             .AddPolicyHandler(PollyPolicies.GetCombinedPolicy(_logger, 1000));;
 
         var osuApiV2Configuration = builder.Services.BuildServiceProvider()
@@ -90,7 +90,7 @@ internal class Program
         builder.Services.AddSingleton<ApiV2>(provider =>
         {
             var config = osuApiV2Configuration;
-            var httpClient = provider.GetRequiredService<IHttpClientFactory>().CreateClient(nameof(ApiV2));
+            var httpClient = provider.GetRequiredService<IHttpClientFactory>().CreateClient("CustomHttpClient");
             var logger = provider.GetRequiredService<ILogger<ApiV2>>();
             httpClient.DefaultRequestHeaders.ConnectionClose = true;
             return new ApiV2(config.ClientId, config.ClientSecret, httpClient, logger);

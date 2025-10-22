@@ -30,9 +30,9 @@ public sealed class UpdateHandlerBackgroundService(
 
             await Task.WhenAll(workers);
         }
-        catch (OperationCanceledException)
+        catch (OperationCanceledException e)
         {
-            logger.LogWarning("Operation cancelled");
+            logger.LogError(e, "Operation cancelled");
         }
     }
 
@@ -50,9 +50,9 @@ public sealed class UpdateHandlerBackgroundService(
             {
                 await updateHandler.HandleUpdateAsync(bot, update, stoppingToken);
             }
-            catch (OperationCanceledException)
+            catch (OperationCanceledException e)
             {
-                logger.LogWarning("Operation cancelled");
+                logger.LogError(e, "Operation cancelled");
                 return;
             }
             catch (Exception ex)
