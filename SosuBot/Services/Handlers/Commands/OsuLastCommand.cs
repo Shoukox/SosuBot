@@ -182,6 +182,7 @@ public class OsuLastCommand(bool onlyPassed = false) : CommandBase<Message>
                     scoreMods: scoreMods,
                     scoreStatistics: null,
                     rulesetId: (int)playmode,
+                    greatsMania: playmode == Playmode.Mania ? score.Statistics?.Great : null,
                     cancellationToken: Context.CancellationToken)
             };
             
