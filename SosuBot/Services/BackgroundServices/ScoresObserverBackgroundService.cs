@@ -142,7 +142,7 @@ public sealed class ScoresObserverBackgroundService(
                         m with { Mode = Ruleset.Mania, ModeInt = (int)Playmode.Mania }));
 
                 // Scores only from UZ and only from today
-                var tashkentToday = DateTime.Today.ChangeTimezone(Country.Uzbekistan);
+                var tashkentToday = DateTime.UtcNow.ChangeTimezone(Country.Uzbekistan).Date;
                 var uzScores = allOsuScores.Where(m =>
                 {
                     bool scoreDateIsOk = m.EndedAt!.Value.ChangeTimezone(Country.Uzbekistan) >= tashkentToday;
@@ -179,7 +179,7 @@ public sealed class ScoresObserverBackgroundService(
                             var sendText =
                                 await ScoreHelper.GetDailyStatisticsSendText((Playmode)i, dailyStatistics, osuApi);
                             await botClient.SendMessage(_adminTelegramId, sendText,
-                                ParseMode.Html, linkPreviewOptions: true);
+                                ParseMode.Html, linkPreviewOptions: true, cancellationToken: stoppingToken);
                             await Task.Delay(1000, stoppingToken);
                         }
                     }

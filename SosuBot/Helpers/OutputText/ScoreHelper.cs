@@ -242,7 +242,7 @@ public static class ScoreHelper
             }
         }
 
-        var tashkentToday = DateTime.Today.ChangeTimezone(Country.Uzbekistan);
+        var tashkentToday = DateTime.UtcNow.ChangeTimezone(Country.Uzbekistan).Date;
         foreach (var getUserScoresResponse in lastScoresOfUzUsers)
         {
             if (getUserScoresResponse.Result == null) continue;

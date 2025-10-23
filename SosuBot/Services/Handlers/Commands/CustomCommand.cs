@@ -181,8 +181,10 @@ public sealed class CustomCommand : CommandBase<Message>
             {
                 return passedStdScores.Any(std => std.Id == m.Id && std.ModeInt != m.ModeInt && m.ModeInt != 0);
             });
-
-            var tashkentToday = DateTime.Today.ChangeTimezone(Country.Uzbekistan);
+            /*
+             * 23.10.2025 02:00 UTC => alles bis 23.10.2025 07:00 UZ
+             */
+            var tashkentToday = DateTime.UtcNow.ChangeTimezone(Country.Uzbekistan).Date;
             _logger.LogInformation(tashkentToday.ToString("g"));
             removed += dailyStatistics.Scores.RemoveAll(m =>
                 m.EndedAt!.Value.ChangeTimezone(Country.Uzbekistan) < tashkentToday);
