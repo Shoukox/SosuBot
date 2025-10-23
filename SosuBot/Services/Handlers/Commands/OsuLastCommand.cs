@@ -82,6 +82,7 @@ public class OsuLastCommand(bool onlyPassed = false) : CommandBase<Message>
                 }
 
                 osuUsernameForLastScores = osuUserInDatabase.OsuUsername;
+                ruleset = osuUserInDatabase.OsuMode.ToRuleset();
             }
 
             if (positionalParametersExists)
