@@ -92,7 +92,6 @@ internal class Program
             var config = osuApiV2Configuration;
             var httpClient = provider.GetRequiredService<IHttpClientFactory>().CreateClient("CustomHttpClient");
             var logger = provider.GetRequiredService<ILogger<ApiV2>>();
-            httpClient.DefaultRequestHeaders.ConnectionClose = true;
             return new ApiV2(config.ClientId, config.ClientSecret, httpClient, logger);
         });
         

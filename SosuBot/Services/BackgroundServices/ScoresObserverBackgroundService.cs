@@ -49,7 +49,7 @@ public sealed class ScoresObserverBackgroundService(
 
         try
         {
-            _adminTelegramId = (await database.OsuUsers.FirstAsync(m => m.IsAdmin, stoppingToken))
+            _adminTelegramId = (await database.OsuUsers.FirstAsync(m => m.IsAdmin))
                 .TelegramId;
             await AddPlayersToObserverList("uz");
             await AddPlayersToObserverList();
@@ -179,7 +179,7 @@ public sealed class ScoresObserverBackgroundService(
                             var sendText =
                                 await ScoreHelper.GetDailyStatisticsSendText((Playmode)i, dailyStatistics, osuApi);
                             await botClient.SendMessage(_adminTelegramId, sendText,
-                                ParseMode.Html, linkPreviewOptions: true, cancellationToken: stoppingToken);
+                                ParseMode.Html, linkPreviewOptions: true);
                             await Task.Delay(1000, stoppingToken);
                         }
                     }
