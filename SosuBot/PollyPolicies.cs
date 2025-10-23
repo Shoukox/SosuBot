@@ -61,7 +61,7 @@ public static class PollyPolicies
     private static IAsyncPolicy<HttpResponseMessage> GetRateLimiterPolicy(ILogger logger, int executionsPerOneMinute)
     {
         var rateLimitPolicyPerMinute = Policy.RateLimitAsync<HttpResponseMessage>(executionsPerOneMinute, TimeSpan.FromMinutes(1), executionsPerOneMinute);
-        var rateLimitExceptiondHandlerPolicy = Policy.Handle<RateLimitRejectedException>()
+        var rateLimitExceptionHandlerPolicy = Policy.Handle<RateLimitRejectedException>()
             .WaitAndRetryForeverAsync(
                 sleepDurationProvider: (retryAttempt, ex, _) =>
                 {
@@ -70,12 +70,12 @@ public static class PollyPolicies
 
                     return TimeSpan.FromSeconds(Math.Pow(2, retryAttempt));
                 },
-                onRetryAsync: (ex, retry, ts, ct) =>
+                onRetryAsync: (_, retry, ts, _) =>
                 {
                     logger.LogInformation($"Retrying {retry} times. Should wait {ts}");
                     return Task.CompletedTask;
                 }).AsAsyncPolicy<HttpResponseMessage>();
-        return Policy.WrapAsync(rateLimitExceptiondHandlerPolicy, rateLimitPolicyPerMinute);
+        return Policy.WrapAsync(rateLimitExceptionHandlerPolicy, rateLimitPolicyPerMinute);
     }
     
     public static IAsyncPolicy<HttpResponseMessage> GetCombinedPolicy(ILogger logger, int executionsPerOneMinute)
