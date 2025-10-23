@@ -117,13 +117,23 @@ public static class OsuTypesExtensions
         };
     }
 
-    public static double CalculateCompletion(this Score score, int beatmapObjects)
+    public static double CalculateCompletion(this Score score, BeatmapExtended beatmap, Playmode playmode)
     {
-        var scoreHittedObjects = score.CalculateObjectsAmount();
-        return scoreHittedObjects / (double)beatmapObjects * 100.0;
+        int beatmapObjects = beatmap.CalculateObjectsAmount();
+        int beatmapHitResultObjects = beatmapObjects + (playmode switch
+        {
+            Playmode.Osu => 0,
+            Playmode.Taiko => -beatmap.CountSpinners!.Value,
+            Playmode.Catch => 0,
+            Playmode.Mania => beatmap.CountSliders!.Value,
+            _ => 0,
+        });
+        
+        var scoreHittedObjects = score.CalculateSumOfHitResults();
+        return scoreHittedObjects / (double)beatmapHitResultObjects * 100.0;
     }
 
-    public static int CalculateObjectsAmount(this Score score)
+    public static int CalculateSumOfHitResults(this Score score)
     {
         return score.Statistics!.Perfect
                + score.Statistics.Great

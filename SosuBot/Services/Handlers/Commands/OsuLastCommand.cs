@@ -229,7 +229,7 @@ public class OsuLastCommand(bool onlyPassed = false) : CommandBase<Message>
                 $"{scoreIfFcPpText}",
                 $"{accuracyIfFc * 100:N2}",
                 $"{scoreEndedMinutesAgo}",
-                $"{score.CalculateCompletion(beatmap.CalculateObjectsAmount()):N1}"
+                $"{score.CalculateCompletion(beatmap, playmode):N1}"
             ]);
             if (scoreModsContainsModIdk)
             {
