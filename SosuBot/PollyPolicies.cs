@@ -82,8 +82,8 @@ public static class PollyPolicies
     {
         var transientRetryPolicy = GetTransientRetryPolicy(logger);
         var retryAfterPolicy = GetRetryAfterPolicy(logger);
-        var rateLimitPolicy = GetRateLimiterPolicy(logger, executionsPerOneMinute);
+        //var rateLimitPolicy = GetRateLimiterPolicy(logger, executionsPerOneMinute);
         
-        return Policy.WrapAsync(rateLimitPolicy, transientRetryPolicy, retryAfterPolicy);
+        return Policy.WrapAsync(transientRetryPolicy, retryAfterPolicy);
     }
 }
