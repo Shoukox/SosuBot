@@ -49,7 +49,7 @@ public sealed class ScoresObserverBackgroundService(
 
         try
         {
-            _adminTelegramId = (await database.OsuUsers.FirstAsync(m => m.IsAdmin))
+            _adminTelegramId = (await database.OsuUsers.FirstAsync(m => m.IsAdmin, cancellationToken: stoppingToken))
                 .TelegramId;
             await AddPlayersToObserverList("uz");
             await AddPlayersToObserverList();
@@ -211,15 +211,10 @@ public sealed class ScoresObserverBackgroundService(
             }
             catch (HttpRequestException httpRequestException)
             {
-                if (httpRequestException.StatusCode != null && (int)httpRequestException.StatusCode >= 500)
+                if (httpRequestException.StatusCode != null && ((int)httpRequestException.StatusCode >= 500 || httpRequestException.StatusCode == HttpStatusCode.RequestTimeout))
                 {
                     int waitMs = 10_000;
                     logger.LogWarning($"OsuApi: status code {httpRequestException.StatusCode}. Waiting {waitMs}ms...");
-
-                    if (httpRequestException.StatusCode == HttpStatusCode.BadGateway)
-                    {
-                    }
-
                     await Task.Delay(waitMs, stoppingToken);
                 }
             }
@@ -255,7 +250,7 @@ public sealed class ScoresObserverBackgroundService(
                         {
                             await botClient.SendMessage(_adminTelegramId,
                                 $"<b>{score.User?.Username}</b> set a <b>{score.Pp}pp</b> {ScoreHelper.GetScoreUrlWrappedInString(score.Id!.Value, "score!")}",
-                                ParseMode.Html, linkPreviewOptions: true);
+                                ParseMode.Html, linkPreviewOptions: true, cancellationToken: stoppingToken);
                             await Task.Delay(1000, stoppingToken);
                         }
                     }

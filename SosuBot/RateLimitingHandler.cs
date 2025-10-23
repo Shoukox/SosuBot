@@ -1,35 +1,33 @@
 ﻿using System.Threading.RateLimiting;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
 
 namespace SosuBot;
 
-public class RateLimitingHandler(ILogger<RateLimitingHandler> logger, int executionsPerMinute) : DelegatingHandler
+public class RateLimitingHandler(ILogger<RateLimitingHandler> logger, int executionsPerMinute, int queueLimit = 1000) : DelegatingHandler
 {
     private readonly RateLimiter _rateLimiter = new TokenBucketRateLimiter(new TokenBucketRateLimiterOptions
     {
         TokenLimit = executionsPerMinute,
-        QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
-        QueueLimit = executionsPerMinute, // allow some queueing; tune as needed
         ReplenishmentPeriod = TimeSpan.FromMinutes(1),
         TokensPerPeriod = executionsPerMinute,
-        AutoReplenishment = true
+        AutoReplenishment = true,
+        QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+        QueueLimit = queueLimit, // allow some queueing; tune as needed
     });
 
     protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {
         // Acquire a permit — this waits but is cancellable.
         using var lease = await _rateLimiter.AcquireAsync(1, cancellationToken);
-        logger.LogInformation($"Acquired: {lease.IsAcquired}, Available permits: {_rateLimiter.GetStatistics()?.CurrentAvailablePermits}");
         if (!lease.IsAcquired)
         {
-            // we were cancelled or couldn't acquire — return 429 or throw
-            // Throwing allows caller to see cancellation; returning 429 is another option.
+            logger.LogWarning($"Acquired: {lease.IsAcquired}, Rate limiter statistics: {JsonConvert.SerializeObject(_rateLimiter.GetStatistics())}");
             var resp = new HttpResponseMessage(System.Net.HttpStatusCode.TooManyRequests);
             resp.RequestMessage = request;
             return resp;
         }
 
-        // Proceed to actual HTTP call
         return await base.SendAsync(request, cancellationToken);
     }
 }
