@@ -183,7 +183,7 @@ public sealed class CustomCommand : CommandBase<Message>
             });
 
             var tashkentToday = DateTime.Today.ChangeTimezone(Country.Uzbekistan);
-            _logger.LogInformation(tashkentToday.ToLongDateString());
+            _logger.LogInformation(tashkentToday.ToString("g"));
             removed += dailyStatistics.Scores.RemoveAll(m =>
                 m.EndedAt!.Value.ChangeTimezone(Country.Uzbekistan) < tashkentToday);
             await waitMessage.EditAsync(Context.BotClient, $"Scores removed: {removed}");
