@@ -33,14 +33,16 @@ public sealed class OsuCompareCommand : CommandBase<Message>
 
         string user1IdAsString;
         string user2IdAsString;
+
+        if (parameters.Length == 0 || (parameters.Length == 1 && osuUserInDatabase == null) || parameters.Length > 2)
+        {
+            await waitMessage.EditAsync(Context.BotClient, language.error_argsLength);
+            return;
+        }
+        
         if (parameters.Length == 1)
         {
-            if (osuUserInDatabase == null)
-            {
-                await waitMessage.EditAsync(Context.BotClient, language.error_argsLength);
-                return;
-            }
-            user1IdAsString = osuUserInDatabase.OsuUsername;
+            user1IdAsString = osuUserInDatabase!.OsuUsername;
             user2IdAsString = parameters[0];
         }
         else
