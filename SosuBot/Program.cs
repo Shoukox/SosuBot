@@ -46,14 +46,12 @@ internal class Program
         builder.Configuration.AddJsonFile(openaiConfigurationFileName, false);
 
         // Logging
-        var loggingFileName = "logs/{Date}.log";
+        var loggingFileName = "logs/{Date}.log"; 
         builder.Logging.ClearProviders();
         builder.Logging.AddConsole();
         builder.Logging.AddFile(loggingFileName, LogLevel.Warning);
         builder.Logging.AddConfiguration(builder.Configuration.GetSection("Logging"));
         builder.Logging.AddConsoleFormatter<CustomConsoleFormatter, CustomConsoleFormatterOptions>();
-        
-        // Instantiate a logger for this class
         _logger = builder.Services.BuildServiceProvider().GetRequiredService<ILogger<Program>>();
 
         // Handling fatal errors 
