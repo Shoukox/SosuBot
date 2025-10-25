@@ -49,7 +49,7 @@ public sealed class ScoresObserverBackgroundService(
 
         try
         {
-            _adminTelegramId = (await database.OsuUsers.FirstAsync(m => m.IsAdmin, cancellationToken: stoppingToken))
+            _adminTelegramId = (await database.OsuUsers.FirstAsync(m => m.IsAdmin))
                 .TelegramId;
             await AddPlayersToObserverList("uz");
             await AddPlayersToObserverList();
@@ -179,8 +179,8 @@ public sealed class ScoresObserverBackgroundService(
                             var sendText =
                                 await ScoreHelper.GetDailyStatisticsSendText((Playmode)i, dailyStatistics, osuApi);
                             await botClient.SendMessage(_adminTelegramId, sendText,
-                                ParseMode.Html, linkPreviewOptions: true, cancellationToken: stoppingToken);
-                            await Task.Delay(1000, stoppingToken);
+                                ParseMode.Html, linkPreviewOptions: true);
+                            await Task.Delay(1000);
                         }
                     }
                     catch (Exception e)
@@ -202,7 +202,7 @@ public sealed class ScoresObserverBackgroundService(
                 getTaikoScoresCursor = getTaikoScoresResponse.CursorString;
                 getFruitsScoresCursor = getFruitsScoresResponse.CursorString;
                 getManiaScoresCursor = getManiaScoresResponse.CursorString;
-                await Task.Delay(7_000, stoppingToken);
+                await Task.Delay(7_000);
             }
             catch (OperationCanceledException e)
             {
@@ -215,7 +215,7 @@ public sealed class ScoresObserverBackgroundService(
                 {
                     int waitMs = 10_000;
                     logger.LogWarning($"OsuApi: status code {httpRequestException.StatusCode}. Waiting {waitMs}ms...");
-                    await Task.Delay(waitMs, stoppingToken);
+                    await Task.Delay(waitMs);
                 }
             }
             catch (Exception e)
@@ -250,13 +250,13 @@ public sealed class ScoresObserverBackgroundService(
                         {
                             await botClient.SendMessage(_adminTelegramId,
                                 $"<b>{score.User?.Username}</b> set a <b>{score.Pp}pp</b> {ScoreHelper.GetScoreUrlWrappedInString(score.Id!.Value, "score!")}",
-                                ParseMode.Html, linkPreviewOptions: true, cancellationToken: stoppingToken);
-                            await Task.Delay(1000, stoppingToken);
+                                ParseMode.Html, linkPreviewOptions: true);
+                            await Task.Delay(1000);
                         }
                     }
 
                     scores[userId] = userBestScores;
-                    await Task.Delay(1000, stoppingToken);
+                    await Task.Delay(1000);
                 }
             }
             catch (OperationCanceledException e)
