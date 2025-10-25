@@ -40,7 +40,7 @@ public sealed class UpdateHandlerBackgroundService(
     {
         while (!stoppingToken.IsCancellationRequested)
         {
-            var update = await updateQueue.DequeueUpdateAsync(stoppingToken);
+            var update = await updateQueue.DequeueUpdateAsync(CancellationToken.None);
 
             await using var scope = serviceProvider.CreateAsyncScope();
             var updateHandler = scope.ServiceProvider.GetRequiredService<UpdateHandler>();
@@ -48,7 +48,7 @@ public sealed class UpdateHandlerBackgroundService(
 
             try
             {
-                await updateHandler.HandleUpdateAsync(bot, update, stoppingToken);
+                await updateHandler.HandleUpdateAsync(bot, update, CancellationToken.None);
             }
             catch (OperationCanceledException e)
             {
@@ -57,7 +57,7 @@ public sealed class UpdateHandlerBackgroundService(
             }
             catch (Exception ex)
             {
-                await updateHandler.HandleErrorAsync(bot, ex, HandleErrorSource.HandleUpdateError, stoppingToken);
+                await updateHandler.HandleErrorAsync(bot, ex, HandleErrorSource.HandleUpdateError, CancellationToken.None);
             }
         }
 

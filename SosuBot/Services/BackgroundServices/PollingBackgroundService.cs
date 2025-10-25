@@ -19,7 +19,7 @@ public sealed class PollingBackgroundService(
         try
         {
             // Skip pending updates
-            var pendingUpdates = await botClient.GetUpdates(cancellationToken: stoppingToken);
+            var pendingUpdates = await botClient.GetUpdates();
             if (pendingUpdates.Length != 0) _offset = pendingUpdates.Last().Id + 1;
         }
         catch (OperationCanceledException e)
@@ -38,11 +38,11 @@ public sealed class PollingBackgroundService(
         while (!stoppingToken.IsCancellationRequested)
             try
             {
-                var updates = await botClient.GetUpdates(_offset, timeout: 30, cancellationToken: stoppingToken);
+                var updates = await botClient.GetUpdates(_offset, timeout: 30);
                 if (updates.Length == 0) continue;
 
                 _offset = updates.Last().Id + 1;
-                foreach (var update in updates) await updateQueueService.EnqueueUpdateAsync(update, stoppingToken);
+                foreach (var update in updates) await updateQueueService.EnqueueUpdateAsync(update, CancellationToken.None);
             }
             catch (OperationCanceledException e)
             {
