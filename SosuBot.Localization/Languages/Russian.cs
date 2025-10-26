@@ -79,8 +79,8 @@ public struct Russian : ILocalization
 
     public string command_userbest =>
         "{}. 🎵(<b>{}</b>) <a href=\"http://osu.ppy.sh/b/{}\">{} [{}]</a> (<b>{}</b>)\n" +
-        "{} / {}❌ - <b><i>{}</i></b>%🎯\n" +
-        "<b>➕{}</b> <i>{}x/{}x</i> <b><u>{}pp💪</u></b>\n\n";
+        "{}/{}❌ - <b><i>{}</i></b>%🎯\n" +
+        "<b>➕{}</b> <i>{}x ({})</i> <b><u>{}pp💪</u></b>\n\n";
 
     public string command_chatstats_title => "Топ-10 осеров (<b>{}</b>) в группе:\n\n";
     public string command_chatstats_row => "<b>{}. {}</b>: <i>{}pp💪</i>\n";

@@ -93,11 +93,10 @@ public sealed class OsuUserbestCommand : CommandBase<Message>
         var playmode = ruleset.ParseRulesetToPlaymode();
         var textToSend = $"{osuUsernameForUserbest} (<b>{gamemode}</b>)\n\n";
         
-        GetBeatmapResponse[] beatmaps = (await Task.WhenAll(bestScores .Select(score => _osuApiV2.Beatmaps.GetBeatmap((long)score.Beatmap!.Id)))).ToArray()!;
         for (var i = 0; i <= bestScores.Length - 1; i++)
         {
             var score = bestScores[i];
-            var beatmap = beatmaps[i];
+            var isFcText = score.IsPerfectCombo!.Value ? "PFC" : "not PFC";
             textToSend += language.command_userbest.Fill([
                 $"{i + 1}",
                 $"{ScoreHelper.GetScoreRankEmoji(score.Rank)}{ScoreHelper.ParseScoreRank(score.Rank!)}",
@@ -110,7 +109,7 @@ public sealed class OsuUserbestCommand : CommandBase<Message>
                 $"{score.Accuracy * 100:N2}",
                 $"{ScoreHelper.GetModsText(score.Mods!)}",
                 $"{score.MaxCombo}",
-                $"{beatmap.BeatmapExtended!.MaxCombo}",
+                $"{score.Statistics.LargeTickMiss} sliderbreaks, {isFcText}",
                 $"{ScoreHelper.GetFormattedPpTextConsideringNull(score.Pp)}"
             ]);
         }
