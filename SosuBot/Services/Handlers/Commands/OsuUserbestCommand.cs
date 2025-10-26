@@ -98,11 +98,6 @@ public sealed class OsuUserbestCommand : CommandBase<Message>
         {
             var score = bestScores[i];
             string fcText = " (" + (score.IsPerfectCombo!.Value ? "PFC" : "notPFC") + ")";
-            string sbText = "";
-            if (playmode == Playmode.Osu)
-            {
-                sbText = $" - {score.Statistics!.LargeTickMiss}sb";
-            }
             
             textToSend += language.command_userbest.Fill([
                 $"{i + 1}",
@@ -113,7 +108,6 @@ public sealed class OsuUserbestCommand : CommandBase<Message>
                 $"{score.Beatmapset.Status}",
                 $"{ScoreHelper.GetScoreStatisticsText(score.Statistics!, playmode)}",
                 $"{score.Statistics!.Miss}",
-                $"{sbText}",
                 $"{score.Accuracy * 100:N2}",
                 $"{ScoreHelper.GetModsText(score.Mods!)}",
                 $"{score.MaxCombo}",

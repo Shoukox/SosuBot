@@ -98,7 +98,7 @@ public class OsuLastCommand(bool onlyPassed = false) : CommandBase<Message>
         //l mrekk 5
         else if (parameters.Length == 2)
         {
-            limit = int.Parse(Regex.Match(string.Join(" ", parameters), @"(\d)").Value);
+            limit = int.Parse(Regex.Match(string.Join(" ", parameters), @" (\d)").Value);
             osuUsernameForLastScores = Regex.Match(string.Join(" ", parameters), @"(\S{3,})").Value;
         }
         else
@@ -210,11 +210,6 @@ public class OsuLastCommand(bool onlyPassed = false) : CommandBase<Message>
             
             var scoreEndedMinutesAgo = (int)(DateTime.UtcNow - score.EndedAt!.Value).TotalMinutes;
             
-            string sbText = "";
-            if (playmode == Playmode.Osu)
-            {
-                sbText = $" - {score.Statistics!.LargeTickMiss}sb";
-            }
             textToSend += language.command_last.Fill([
                 $"{textBeforeBeatmapLink}",
                 $"{scoreRank}",
@@ -225,7 +220,6 @@ public class OsuLastCommand(bool onlyPassed = false) : CommandBase<Message>
                 $"{ppCalculator.LastDifficultyAttributes!.StarRating:N2}",
                 $"{ScoreHelper.GetScoreStatisticsText(score.Statistics!, playmode)}",
                 $"{score.Statistics!.Miss}",
-                $"{sbText}",
                 $"{score.Accuracy * 100:N2}",
                 $"{ScoreHelper.GetModsText(mods)}",
                 $"{score.MaxCombo}",
