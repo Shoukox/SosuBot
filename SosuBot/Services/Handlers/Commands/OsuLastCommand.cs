@@ -207,9 +207,14 @@ public class OsuLastCommand(bool onlyPassed = false) : CommandBase<Message>
                     : scorePp);
             var scoreIfFcPpText =
                 ScoreHelper.GetFormattedPpTextConsideringNull(scoreModsContainsModIdk ? null : scorePpIfFc);
-
+            
             var scoreEndedMinutesAgo = (int)(DateTime.UtcNow - score.EndedAt!.Value).TotalMinutes;
-
+            
+            string sbText = "";
+            if (playmode == Playmode.Osu)
+            {
+                sbText = $" - {score.Statistics!.LargeTickMiss}sb";
+            }
             textToSend += language.command_last.Fill([
                 $"{textBeforeBeatmapLink}",
                 $"{scoreRank}",
@@ -220,6 +225,7 @@ public class OsuLastCommand(bool onlyPassed = false) : CommandBase<Message>
                 $"{ppCalculator.LastDifficultyAttributes!.StarRating:N2}",
                 $"{ScoreHelper.GetScoreStatisticsText(score.Statistics!, playmode)}",
                 $"{score.Statistics!.Miss}",
+                $"{sbText}",
                 $"{score.Accuracy * 100:N2}",
                 $"{ScoreHelper.GetModsText(mods)}",
                 $"{score.MaxCombo}",

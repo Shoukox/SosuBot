@@ -7,6 +7,7 @@ using OsuApi.V2.Models;
 using OsuApi.V2.Users.Models;
 using SosuBot.Extensions;
 using SosuBot.Helpers.OutputText;
+using SosuBot.Helpers.Types;
 using SosuBot.Localization;
 using SosuBot.Localization.Languages;
 using SosuBot.Services.Handlers.Abstract;
@@ -96,7 +97,11 @@ public sealed class OsuUserbestCommand : CommandBase<Message>
         for (var i = 0; i <= bestScores.Length - 1; i++)
         {
             var score = bestScores[i];
-            var isFcText = score.IsPerfectCombo!.Value ? "PFC" : "not PFC";
+            string sbFcText = "";
+            if (playmode == Playmode.Osu)
+            {
+                sbFcText = $"|{score.Statistics!.LargeTickMiss}sb|" + (score.IsPerfectCombo!.Value ? "PFC" : "notPFC");
+            }
             textToSend += language.command_userbest.Fill([
                 $"{i + 1}",
                 $"{ScoreHelper.GetScoreRankEmoji(score.Rank)}{ScoreHelper.ParseScoreRank(score.Rank!)}",
@@ -109,7 +114,7 @@ public sealed class OsuUserbestCommand : CommandBase<Message>
                 $"{score.Accuracy * 100:N2}",
                 $"{ScoreHelper.GetModsText(score.Mods!)}",
                 $"{score.MaxCombo}",
-                $"{score.Statistics.LargeTickMiss} sliderbreaks, {isFcText}",
+                $"{sbFcText}",
                 $"{ScoreHelper.GetFormattedPpTextConsideringNull(score.Pp)}"
             ]);
         }

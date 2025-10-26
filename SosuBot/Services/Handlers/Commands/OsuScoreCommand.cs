@@ -205,18 +205,25 @@ public sealed class OsuScoreCommand : CommandBase<Message>
 
         var textToSend =
             $"{UserHelper.GetUserProfileUrlWrappedInUsernameString(userResponse.UserExtend!.Id.Value, $"<b>{osuUsernameForScore}</b>")}\n\n";
+        Playmode currentPlaymode = beatmapPlaymode ?? playmode.Value;
         for (var i = 0; i <= scores.Length - 1; i++)
         {
             var score = scores[i];
-
+            
+            string sbText = "";
+            if (currentPlaymode == Playmode.Osu)
+            {
+                sbText = $" - {score.Statistics!.LargeTickMiss}sb";
+            }
             textToSend += language.command_score.Fill([
                 $"{ScoreHelper.GetScoreRankEmoji(score.Rank)}{ScoreHelper.ParseScoreRank(score.Rank!)}",
                 $"{beatmap.Url}",
                 $"{beatmapset.Title.EncodeHtml()}",
                 $"{beatmap.Version.EncodeHtml()}",
                 $"{beatmap.Status}",
-                $"{ScoreHelper.GetScoreStatisticsText(score.Statistics!, beatmapPlaymode ?? playmode.Value)}",
+                $"{ScoreHelper.GetScoreStatisticsText(score.Statistics!, currentPlaymode)}",
                 $"{score.Statistics!.Miss}",
+                $"{sbText}",
                 $"{score.Accuracy * 100:N2}",
                 $"{ScoreHelper.GetModsText(score.Mods!)}",
                 $"{score.MaxCombo}",
