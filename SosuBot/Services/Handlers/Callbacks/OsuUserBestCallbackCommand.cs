@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using OsuApi.V2;
+using OsuApi.V2.Clients.Beatmaps.HttpIO;
 using OsuApi.V2.Clients.Users.HttpIO;
 using OsuApi.V2.Models;
 using OsuApi.V2.Users.Models;
@@ -65,15 +66,13 @@ public class OsuUserBestCallbackCommand : CommandBase<CallbackQuery>
         scores = userScoreResponse.Scores;
         if (scores.Length == 0) return;
 
-        BeatmapExtended[] beatmaps = scores
-            .Select(async score => await _osuApiV2.Beatmaps.GetBeatmap((long)score.Beatmap!.Id))
-            .Select(t => t.Result!.BeatmapExtended).ToArray()!;
-
+        GetBeatmapResponse[] beatmaps = (await Task.WhenAll(scores.Select(score => _osuApiV2.Beatmaps.GetBeatmap((long)score.Beatmap!.Id)))).ToArray()!;
+        
         var textToSend = $"{osuUsername}({playmode.ToGamemode()})\n\n";
         var index = page * 5;
         foreach (var score in scores)
         {
-            var beatmap = beatmaps[index - page * 5];
+            var beatmap = beatmaps[index - page * 5].BeatmapExtended!;
 
             // should be equal to the variant from OsuUserbestCommand
             textToSend += language.command_userbest.Fill([

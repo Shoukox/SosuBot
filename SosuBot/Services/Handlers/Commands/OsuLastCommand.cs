@@ -1,8 +1,6 @@
 using System.Text.RegularExpressions;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using osu.Game.Rulesets.Mods;
-using osu.Game.Rulesets.Scoring;
 using OsuApi.V2;
 using OsuApi.V2.Clients.Beatmaps.HttpIO;
 using OsuApi.V2.Clients.Users.HttpIO;
@@ -22,10 +20,10 @@ namespace SosuBot.Services.Handlers.Commands;
 public class OsuLastCommand(bool onlyPassed = false) : CommandBase<Message>
 {
     public static readonly string[] Commands = ["/last", "/l"];
-    private bool _onlyPassed;
-    private ApiV2 _osuApiV2 = null!;
     private ILogger<OsuLastCommand> _logger = null!;
     private ILogger<PPCalculator> _loggerPpCalculator = null!;
+    private bool _onlyPassed;
+    private ApiV2 _osuApiV2 = null!;
 
     public override Task BeforeExecuteAsync()
     {
@@ -162,10 +160,10 @@ public class OsuLastCommand(bool onlyPassed = false) : CommandBase<Message>
 
             if (i == 0) chatInDatabase!.LastBeatmapId = beatmap.Id;
 
-            bool passed = score.Passed!.Value;
-            Dictionary<HitResult, int> scoreStatistics = score.Statistics!.ToStatistics();
+            var passed = score.Passed!.Value;
+            var scoreStatistics = score.Statistics!.ToStatistics();
 
-            Mod[] scoreMods = mods.ToOsuMods(playmode);
+            var scoreMods = mods.ToOsuMods(playmode);
             var calculatedPp = new PPResult
             {
                 Current = score.Pp != null
@@ -183,23 +181,19 @@ public class OsuLastCommand(bool onlyPassed = false) : CommandBase<Message>
                     scoreMods: scoreMods,
                     scoreStatistics: null,
                     rulesetId: (int)playmode,
-                    greatsMania: playmode == Playmode.Mania ? score.Statistics?.Great : null,
                     cancellationToken: Context.CancellationToken)
             };
-            
-            string scoreRank = ScoreHelper.GetScoreRankEmoji(score.Rank!, score.Passed!.Value) +
+
+            var scoreRank = ScoreHelper.GetScoreRankEmoji(score.Rank!, score.Passed!.Value) +
                             ScoreHelper.ParseScoreRank(score.Passed!.Value ? score.Rank! : "F");
-            string textBeforeBeatmapLink = lastScores.Length == 1 ? "" : $"{i + 1}. ";
+            var textBeforeBeatmapLink = lastScores.Length == 1 ? "" : $"{i + 1}. ";
             double? scorePp = calculatedPp.Current?.Pp ?? score.Pp!.Value;
-            if (scorePp is Double.NaN)
-            {
-                scorePp = null;
-            }
-            
+            if (scorePp is double.NaN) scorePp = null;
+
             double? scorePpIfFc = calculatedPp.IfFC.Pp;
-            double accuracyIfFc = calculatedPp.IfFC.CalculatedAccuracy;
-            bool isFc = score.MaxCombo == beatmap.MaxCombo;
-            bool scoreModsContainsModIdk = scoreMods.Any(m => m is ModIdk);
+            var accuracyIfFc = calculatedPp.IfFC.CalculatedAccuracy;
+            var isFc = score.MaxCombo == beatmap.MaxCombo;
+            var scoreModsContainsModIdk = scoreMods.Any(m => m is ModIdk);
 
             if (isFc)
             {
@@ -207,11 +201,14 @@ public class OsuLastCommand(bool onlyPassed = false) : CommandBase<Message>
                 accuracyIfFc = (double)score.Accuracy;
             }
 
-            string scorePpText = ScoreHelper.GetFormattedPpTextConsideringNull(scoreModsContainsModIdk && calculatedPp.Current != null ? null : scorePp);
-            string scoreIfFcPpText =
+            var scorePpText =
+                ScoreHelper.GetFormattedPpTextConsideringNull(scoreModsContainsModIdk && calculatedPp.Current != null
+                    ? null
+                    : scorePp);
+            var scoreIfFcPpText =
                 ScoreHelper.GetFormattedPpTextConsideringNull(scoreModsContainsModIdk ? null : scorePpIfFc);
 
-            int scoreEndedMinutesAgo = (int)(DateTime.UtcNow - score.EndedAt!.Value).TotalMinutes;
+            var scoreEndedMinutesAgo = (int)(DateTime.UtcNow - score.EndedAt!.Value).TotalMinutes;
 
             textToSend += language.command_last.Fill([
                 $"{textBeforeBeatmapLink}",
@@ -234,9 +231,7 @@ public class OsuLastCommand(bool onlyPassed = false) : CommandBase<Message>
                 $"{score.CalculateCompletion(beatmap, playmode):N1}"
             ]);
             if (scoreModsContainsModIdk)
-            {
                 textToSend += "\nВ скоре присутствуют неизвестные боту моды, расчет пп невозможен.";
-            }
 
             textToSend += "\n\n";
         }

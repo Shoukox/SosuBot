@@ -1,7 +1,6 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
-using NUnit.Framework.Internal;
 using osu.Game.Rulesets.Osu.Mods;
 using OsuApi.V2;
 using OsuApi.V2.Clients.Users.HttpIO;
@@ -25,10 +24,10 @@ namespace SosuBot.Services.Handlers.Commands;
 public sealed class CustomCommand : CommandBase<Message>
 {
     public static readonly string[] Commands = ["/c"];
-    private OpenAiService _openaiService = null!;
-    private ApiV2 _osuApiV2 = null!;
     private ILogger<CustomCommand> _logger = null!;
     private ILogger<PPCalculator> _loggerPpCalculator = null!;
+    private OpenAiService _openaiService = null!;
+    private ApiV2 _osuApiV2 = null!;
 
     public override Task BeforeExecuteAsync()
     {
@@ -177,7 +176,7 @@ public sealed class CustomCommand : CommandBase<Message>
             var waitMessage = await Context.Update.ReplyAsync(Context.BotClient, language.waiting);
             var dailyStatistics = ScoresObserverBackgroundService.AllDailyStatistics.Last();
             var passedStdScores = dailyStatistics.Scores.Where(m => m.ModeInt == (int)Playmode.Osu).ToList();
-            int removed = dailyStatistics.Scores.RemoveAll(m =>
+            var removed = dailyStatistics.Scores.RemoveAll(m =>
             {
                 return passedStdScores.Any(std => std.Id == m.Id && std.ModeInt != m.ModeInt && m.ModeInt != 0);
             });
@@ -193,7 +192,7 @@ public sealed class CustomCommand : CommandBase<Message>
         else if (parameters[0] == "test1")
         {
             var ppCalculator = new PPCalculator(_loggerPpCalculator);
-            for (int i = 1; i <= 1000; i++)
+            for (var i = 1; i <= 1000; i++)
             {
                 var calculatedPp = await ppCalculator.CalculatePpAsync(970048, 0.9889,
                     scoreMaxCombo: 1466,

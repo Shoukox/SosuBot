@@ -153,7 +153,7 @@ public sealed class OsuScoreCommand : CommandBase<Message>
 
         // getting osu!player through username
         var userResponse =
-            await _osuApiV2.Users.GetUser($"@{osuUsernameForScore}", new ());
+            await _osuApiV2.Users.GetUser($"@{osuUsernameForScore}", new GetUserQueryParameters());
         if (userResponse is null)
         {
             await waitMessage.EditAsync(Context.BotClient,
@@ -165,23 +165,30 @@ public sealed class OsuScoreCommand : CommandBase<Message>
 
         // if username was entered, then use as ruleset his (this username) standard ruleset.
         playmode ??= userResponse.UserExtend!.Playmode!.ParseRulesetToPlaymode();
+        var areScoresFromOtherRuleset = false;
+        Playmode? beatmapPlaymode = null;
 
         var scoresResponse = await _osuApiV2.Beatmaps.GetUserBeatmapScores(beatmapId.Value,
             userResponse.UserExtend!.Id.Value,
-            new() {Ruleset = playmode.Value.ToRuleset()}); 
+            new GetUserBeatmapScoresQueryParameters { Ruleset = playmode.Value.ToRuleset() });
 
         if (scoresResponse?.Scores?.Length == 0)
         {
+            areScoresFromOtherRuleset = true;
             scoresResponse = await _osuApiV2.Beatmaps.GetUserBeatmapScores(beatmapId.Value,
                 userResponse.UserExtend!.Id.Value,
-                new () ); // Ruleset defaults to beatmaps ruleset
+                new GetUserBeatmapScoresQueryParameters()); // Ruleset defaults to beatmaps ruleset
         }
-        
+
         if (scoresResponse is null)
         {
             await waitMessage.EditAsync(Context.BotClient, language.error_noRecords);
             return;
         }
+
+        if (areScoresFromOtherRuleset && scoresResponse.Scores!.Length != 0)
+            beatmapPlaymode =
+                (Playmode)(await _osuApiV2.Beatmaps.GetBeatmap(beatmapId.Value))!.BeatmapExtended!.ModeInt!.Value;
 
         var scores = scoresResponse.Scores!.GroupBy(s => string.Join("", s.Mods!.Select(m => m.Acronym)))
             .Select(m => m.MaxBy(s => s.Pp)!).OrderByDescending(m => m.Pp).ToArray();
@@ -196,7 +203,8 @@ public sealed class OsuScoreCommand : CommandBase<Message>
         if (beatmapset is null) beatmapset = await _osuApiV2.Beatmapsets.GetBeatmapset(beatmap.BeatmapsetId.Value);
         chatInDatabase!.LastBeatmapId = beatmap.Id;
 
-        var textToSend = $"{UserHelper.GetUserProfileUrlWrappedInUsernameString(userResponse.UserExtend!.Id.Value, $"<b>{osuUsernameForScore}</b>")}\n\n";
+        var textToSend =
+            $"{UserHelper.GetUserProfileUrlWrappedInUsernameString(userResponse.UserExtend!.Id.Value, $"<b>{osuUsernameForScore}</b>")}\n\n";
         for (var i = 0; i <= scores.Length - 1; i++)
         {
             var score = scores[i];
@@ -207,7 +215,7 @@ public sealed class OsuScoreCommand : CommandBase<Message>
                 $"{beatmapset.Title.EncodeHtml()}",
                 $"{beatmap.Version.EncodeHtml()}",
                 $"{beatmap.Status}",
-                $"{ScoreHelper.GetScoreStatisticsText(score.Statistics!, playmode.Value)}",
+                $"{ScoreHelper.GetScoreStatisticsText(score.Statistics!, beatmapPlaymode ?? playmode.Value)}",
                 $"{score.Statistics!.Miss}",
                 $"{score.Accuracy * 100:N2}",
                 $"{ScoreHelper.GetModsText(score.Mods!)}",

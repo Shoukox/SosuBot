@@ -3,14 +3,13 @@ using Microsoft.Extensions.Logging;
 using Polly;
 using Polly.Contrib.WaitAndRetry;
 using Polly.Extensions.Http;
-using Polly.RateLimit;
 using ILogger = Microsoft.Extensions.Logging.ILogger;
 
 namespace SosuBot;
 
 public static class PollyPolicies
 {
-    private static Random _jitterer = new Random();
+    private static Random _jitterer = new();
 
     private static IAsyncPolicy<HttpResponseMessage> GetTransientRetryPolicy(ILogger logger)
     {
@@ -37,11 +36,8 @@ public static class PollyPolicies
                 {
                     var ra = response.Result.Headers.RetryAfter;
 
-                    if (ra == null)
-                    {
-                        return TimeSpan.FromSeconds(5);
-                    }
-                    
+                    if (ra == null) return TimeSpan.FromSeconds(5);
+
                     if (ra.Delta.HasValue) return ra.Delta.Value;
                     if (ra.Date.HasValue)
                     {
@@ -57,12 +53,12 @@ public static class PollyPolicies
                     await Task.CompletedTask;
                 });
     }
-    
+
     public static IAsyncPolicy<HttpResponseMessage> GetCombinedPolicy(ILogger logger)
     {
         var transientRetryPolicy = GetTransientRetryPolicy(logger);
         var retryAfterPolicy = GetRetryAfterPolicy(logger);
-        
+
         return Policy.WrapAsync(transientRetryPolicy, retryAfterPolicy);
     }
 }

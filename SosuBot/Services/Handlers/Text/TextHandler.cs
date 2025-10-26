@@ -18,9 +18,9 @@ namespace SosuBot.Services.Handlers.Text;
 
 public sealed class TextHandler : CommandBase<Message>
 {
-    private ApiV2 _osuApiV2 = null!;
     private ILogger<TextHandler> _logger = null!;
     private ILogger<PPCalculator> _loggerPpCalculator = null!;
+    private ApiV2 _osuApiV2 = null!;
 
     public override Task BeforeExecuteAsync()
     {
@@ -53,7 +53,7 @@ public sealed class TextHandler : CommandBase<Message>
         double? currentPp = user.Statistics!.Pp;
         var ppDifferenceText =
             await UserHelper.GetPpDifferenceTextAsync(Context.Database, user, playmode, currentPp);
-        
+
         DateTime.TryParse(user.JoinDate?.Value, out var registerDateTime);
         var textToSend = language.command_user.Fill([
             $"{playmode.ToGamemode()}",
@@ -227,7 +227,7 @@ public sealed class TextHandler : CommandBase<Message>
             { CallbackData = $"{Context.Update.Chat.Id} songpreview {beatmapset.Id}" });
 
         if (playmode != Playmode.Osu) textToSend += "Для не std-скоров расчет пп на FC может быть не верным.";
-        
+
         try
         {
             await Context.Update.ReplyPhotoAsync(Context.BotClient, photo, textToSend,

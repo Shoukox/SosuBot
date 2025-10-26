@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using System.Collections.Concurrent;
+using Microsoft.Extensions.DependencyInjection;
 using OsuApi.V2;
 using OsuApi.V2.Clients.Beatmaps.HttpIO;
 using OsuApi.V2.Clients.Users.HttpIO;
@@ -55,8 +56,6 @@ public sealed class OsuUserbestCommand : CommandBase<Message>
             ruleset = osuUserInDatabase.OsuMode.ToRuleset();
             osuUsernameForUserbest = osuUserInDatabase.OsuUsername;
             osuUserIdForUserbest = osuUserInDatabase.OsuUserId;
-            bestScores = (await _osuApiV2.Users.GetUserScores(osuUserInDatabase.OsuUserId, ScoreType.Best,
-                new GetUserScoreQueryParameters { Limit = 5, Mode = ruleset }))!.Scores;
         }
         else
         {
@@ -79,10 +78,10 @@ public sealed class OsuUserbestCommand : CommandBase<Message>
             if (!rulesetAlreadySet) ruleset = userResponse.UserExtend!.Playmode!;
             osuUsernameForUserbest = userResponse.UserExtend!.Username!;
             osuUserIdForUserbest = userResponse.UserExtend!.Id.Value;
-            var userbestResponse = await _osuApiV2.Users.GetUserScores(userResponse.UserExtend!.Id.Value,
-                ScoreType.Best, new GetUserScoreQueryParameters { Limit = 5, Mode = ruleset });
-            bestScores = userbestResponse!.Scores;
         }
+        
+        bestScores = (await _osuApiV2.Users.GetUserScores(osuUserIdForUserbest, ScoreType.Best,
+            new GetUserScoreQueryParameters { Limit = 5, Mode = ruleset }))!.Scores;
 
         if (bestScores.Length == 0)
         {
@@ -93,10 +92,8 @@ public sealed class OsuUserbestCommand : CommandBase<Message>
         var gamemode = ruleset.ParseRulesetToGamemode();
         var playmode = ruleset.ParseRulesetToPlaymode();
         var textToSend = $"{osuUsernameForUserbest} (<b>{gamemode}</b>)\n\n";
-
-        GetBeatmapResponse[] beatmaps = bestScores
-            .Select(async score => await _osuApiV2.Beatmaps.GetBeatmap((long)score.Beatmap!.Id))
-            .Select(t => t.Result).ToArray()!;
+        
+        GetBeatmapResponse[] beatmaps = (await Task.WhenAll(bestScores .Select(score => _osuApiV2.Beatmaps.GetBeatmap((long)score.Beatmap!.Id)))).ToArray()!;
         for (var i = 0; i <= bestScores.Length - 1; i++)
         {
             var score = bestScores[i];

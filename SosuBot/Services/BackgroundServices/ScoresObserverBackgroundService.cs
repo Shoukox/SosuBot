@@ -59,10 +59,12 @@ public sealed class ScoresObserverBackgroundService(
                 ObserveScores(stoppingToken)
             );
         }
-        catch (OperationCanceledException e)
+        catch (OperationCanceledException)
         {
-            logger.LogError(e, "Operation cancelled");
+            logger.LogWarning("Operation cancelled");
         }
+
+        logger.LogInformation("Finished its work");
     }
 
     private async Task ObserveScoresGetScores(CancellationToken stoppingToken)
@@ -145,8 +147,8 @@ public sealed class ScoresObserverBackgroundService(
                 var tashkentToday = DateTime.UtcNow.ChangeTimezone(Country.Uzbekistan).Date;
                 var uzScores = allOsuScores.Where(m =>
                 {
-                    bool scoreDateIsOk = m.EndedAt!.Value.ChangeTimezone(Country.Uzbekistan) >= tashkentToday;
-                    bool isUzPlayer = _userDatabase.ContainsUserStatistics(m.UserId!.Value);
+                    var scoreDateIsOk = m.EndedAt!.Value.ChangeTimezone(Country.Uzbekistan) >= tashkentToday;
+                    var isUzPlayer = _userDatabase.ContainsUserStatistics(m.UserId!.Value);
                     return scoreDateIsOk && isUzPlayer;
                 }).ToArray();
                 foreach (var score in uzScores)
@@ -204,16 +206,13 @@ public sealed class ScoresObserverBackgroundService(
                 getManiaScoresCursor = getManiaScoresResponse.CursorString;
                 await Task.Delay(7_000);
             }
-            catch (OperationCanceledException e)
-            {
-                logger.LogError(e, "Operation cancelled");
-                return;
-            }
             catch (HttpRequestException httpRequestException)
             {
-                if (httpRequestException.StatusCode != null && ((int)httpRequestException.StatusCode >= 500 || httpRequestException.StatusCode == HttpStatusCode.RequestTimeout))
+                if (httpRequestException.StatusCode != null && ((int)httpRequestException.StatusCode >= 500 ||
+                                                                httpRequestException.StatusCode ==
+                                                                HttpStatusCode.RequestTimeout))
                 {
-                    int waitMs = 10_000;
+                    var waitMs = 10_000;
                     logger.LogWarning($"OsuApi: status code {httpRequestException.StatusCode}. Waiting {waitMs}ms...");
                     await Task.Delay(waitMs);
                 }
@@ -256,20 +255,13 @@ public sealed class ScoresObserverBackgroundService(
                     }
 
                     scores[userId] = userBestScores;
-                    await Task.Delay(1000);
+                    await Task.Delay(5000);
                 }
-            }
-            catch (OperationCanceledException e)
-            {
-                logger.LogError(e, "Operation cancelled");
-                return;
             }
             catch (Exception e)
             {
                 logger.LogError(e, "Unexpected exception");
             }
-
-        logger.LogWarning("Finished its work");
     }
 
     /// <summary>

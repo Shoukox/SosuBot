@@ -29,10 +29,7 @@ public class SpamResistance
         {
             // If already blocked, then return instantly
             var messagingUser = _usersDict.GetOrAdd(userId, _ => AddNew(userId));
-            if (IsBlocked(messagingUser))
-            {
-                return (false, false);
-            }
+            if (IsBlocked(messagingUser)) return (false, false);
 
             var dateTimeNow = DateTime.UtcNow;
 
