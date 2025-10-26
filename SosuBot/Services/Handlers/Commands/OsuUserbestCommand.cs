@@ -102,6 +102,11 @@ public sealed class OsuUserbestCommand : CommandBase<Message>
             {
                 sbFcText = $"|{score.Statistics!.LargeTickMiss}sb|" + (score.IsPerfectCombo!.Value ? "PFC" : "notPFC");
             }
+            else
+            {
+                sbFcText = " (" + (score.IsPerfectCombo!.Value ? "PFC" : "notPFC") + ")";
+            }
+            
             textToSend += language.command_userbest.Fill([
                 $"{i + 1}",
                 $"{ScoreHelper.GetScoreRankEmoji(score.Rank)}{ScoreHelper.ParseScoreRank(score.Rank!)}",
