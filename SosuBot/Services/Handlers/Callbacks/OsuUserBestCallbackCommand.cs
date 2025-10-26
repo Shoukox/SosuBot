@@ -66,15 +66,12 @@ public class OsuUserBestCallbackCommand : CommandBase<CallbackQuery>
         scores = userScoreResponse.Scores;
         if (scores.Length == 0) return;
 
-        GetBeatmapResponse[] beatmaps = (await Task.WhenAll(scores.Select(score => _osuApiV2.Beatmaps.GetBeatmap((long)score.Beatmap!.Id)))).ToArray()!;
-        
         var textToSend = $"{osuUsername}({playmode.ToGamemode()})\n\n";
         var index = page * 5;
         foreach (var score in scores)
         {
-            var beatmap = beatmaps[index - page * 5].BeatmapExtended!;
-
             // should be equal to the variant from OsuUserbestCommand
+            var isFcText = score.IsPerfectCombo!.Value ? "PFC" : "not PFC";
             textToSend += language.command_userbest.Fill([
                 $"{index + 1}",
                 $"{ScoreHelper.GetScoreRankEmoji(score.Rank)}{score.Rank}",
@@ -87,7 +84,7 @@ public class OsuUserBestCallbackCommand : CommandBase<CallbackQuery>
                 $"{score.Accuracy * 100:N2}",
                 $"{ScoreHelper.GetModsText(score.Mods!)}",
                 $"{score.MaxCombo}",
-                $"{beatmap.MaxCombo}",
+                $"{score.Statistics.LargeTickMiss} sliderbreaks, {isFcText}",
                 $"{ScoreHelper.GetFormattedPpTextConsideringNull(score.Pp)}"
             ]);
             index += 1;
