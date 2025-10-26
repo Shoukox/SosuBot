@@ -71,29 +71,27 @@ public class OsuUserBestCallbackCommand : CommandBase<CallbackQuery>
         foreach (var score in scores)
         {
             // should be equal to the variant from OsuUserbestCommand
-            string sbFcText = "";
+            string fcText = " (" + (score.IsPerfectCombo!.Value ? "PFC" : "notPFC") + ")";
+            string sbText = "";
             if (playmode == Playmode.Osu)
             {
-                sbFcText = $"|{score.Statistics!.LargeTickMiss}sb|" + (score.IsPerfectCombo!.Value ? "PFC" : "notPFC");
-            }
-            else
-            {
-                sbFcText = " (" + (score.IsPerfectCombo!.Value ? "PFC" : "notPFC") + ")";
+                sbText = $" - {score.Statistics!.LargeTickMiss}sb";
             }
             
             textToSend += language.command_userbest.Fill([
                 $"{index + 1}",
-                $"{ScoreHelper.GetScoreRankEmoji(score.Rank)}{score.Rank}",
+                $"{ScoreHelper.GetScoreRankEmoji(score.Rank)}{ScoreHelper.ParseScoreRank(score.Rank!)}",
                 $"{score.BeatmapId}",
                 $"{score.Beatmapset!.Title.EncodeHtml()}",
                 $"{score.Beatmap!.Version.EncodeHtml()}",
                 $"{score.Beatmapset.Status}",
                 $"{ScoreHelper.GetScoreStatisticsText(score.Statistics!, playmode)}",
                 $"{score.Statistics!.Miss}",
+                $"{sbText}",
                 $"{score.Accuracy * 100:N2}",
                 $"{ScoreHelper.GetModsText(score.Mods!)}",
                 $"{score.MaxCombo}",
-                $"{sbFcText}",
+                $"{fcText}",
                 $"{ScoreHelper.GetFormattedPpTextConsideringNull(score.Pp)}"
             ]);
             index += 1;

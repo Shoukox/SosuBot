@@ -97,14 +97,11 @@ public sealed class OsuUserbestCommand : CommandBase<Message>
         for (var i = 0; i <= bestScores.Length - 1; i++)
         {
             var score = bestScores[i];
-            string sbFcText = "";
+            string fcText = " (" + (score.IsPerfectCombo!.Value ? "PFC" : "notPFC") + ")";
+            string sbText = "";
             if (playmode == Playmode.Osu)
             {
-                sbFcText = $"|{score.Statistics!.LargeTickMiss}sb|" + (score.IsPerfectCombo!.Value ? "PFC" : "notPFC");
-            }
-            else
-            {
-                sbFcText = " (" + (score.IsPerfectCombo!.Value ? "PFC" : "notPFC") + ")";
+                sbText = $" - {score.Statistics!.LargeTickMiss}sb";
             }
             
             textToSend += language.command_userbest.Fill([
@@ -116,10 +113,11 @@ public sealed class OsuUserbestCommand : CommandBase<Message>
                 $"{score.Beatmapset.Status}",
                 $"{ScoreHelper.GetScoreStatisticsText(score.Statistics!, playmode)}",
                 $"{score.Statistics!.Miss}",
+                $"{sbText}",
                 $"{score.Accuracy * 100:N2}",
                 $"{ScoreHelper.GetModsText(score.Mods!)}",
                 $"{score.MaxCombo}",
-                $"{sbFcText}",
+                $"{fcText}",
                 $"{ScoreHelper.GetFormattedPpTextConsideringNull(score.Pp)}"
             ]);
         }
