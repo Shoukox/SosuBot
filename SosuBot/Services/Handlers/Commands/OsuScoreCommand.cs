@@ -210,11 +210,6 @@ public sealed class OsuScoreCommand : CommandBase<Message>
         {
             var score = scores[i];
             
-            string sbText = "";
-            if (currentPlaymode == Playmode.Osu)
-            {
-                sbText = $" - {score.Statistics!.LargeTickMiss}sb";
-            }
             textToSend += language.command_score.Fill([
                 $"{ScoreHelper.GetScoreRankEmoji(score.Rank)}{ScoreHelper.ParseScoreRank(score.Rank!)}",
                 $"{beatmap.Url}",
@@ -223,7 +218,6 @@ public sealed class OsuScoreCommand : CommandBase<Message>
                 $"{beatmap.Status}",
                 $"{ScoreHelper.GetScoreStatisticsText(score.Statistics!, currentPlaymode)}",
                 $"{score.Statistics!.Miss}",
-                $"{sbText}",
                 $"{score.Accuracy * 100:N2}",
                 $"{ScoreHelper.GetModsText(score.Mods!)}",
                 $"{score.MaxCombo}",

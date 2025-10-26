@@ -72,11 +72,6 @@ public class OsuUserBestCallbackCommand : CommandBase<CallbackQuery>
         {
             // should be equal to the variant from OsuUserbestCommand
             string fcText = " (" + (score.IsPerfectCombo!.Value ? "PFC" : "notPFC") + ")";
-            string sbText = "";
-            if (playmode == Playmode.Osu)
-            {
-                sbText = $" - {score.Statistics!.LargeTickMiss}sb";
-            }
             
             textToSend += language.command_userbest.Fill([
                 $"{index + 1}",
@@ -87,7 +82,6 @@ public class OsuUserBestCallbackCommand : CommandBase<CallbackQuery>
                 $"{score.Beatmapset.Status}",
                 $"{ScoreHelper.GetScoreStatisticsText(score.Statistics!, playmode)}",
                 $"{score.Statistics!.Miss}",
-                $"{sbText}",
                 $"{score.Accuracy * 100:N2}",
                 $"{ScoreHelper.GetModsText(score.Mods!)}",
                 $"{score.MaxCombo}",
