@@ -71,7 +71,11 @@ public class OsuUserBestCallbackCommand : CommandBase<CallbackQuery>
         foreach (var score in scores)
         {
             // should be equal to the variant from OsuUserbestCommand
-            var isFcText = score.IsPerfectCombo!.Value ? "PFC" : "not PFC";
+            string sbFcText = "";
+            if (playmode == Playmode.Osu)
+            {
+                sbFcText = $"|{score.Statistics!.LargeTickMiss}sb|" + (score.IsPerfectCombo!.Value ? "PFC" : "notPFC");
+            }
             textToSend += language.command_userbest.Fill([
                 $"{index + 1}",
                 $"{ScoreHelper.GetScoreRankEmoji(score.Rank)}{score.Rank}",
@@ -84,7 +88,7 @@ public class OsuUserBestCallbackCommand : CommandBase<CallbackQuery>
                 $"{score.Accuracy * 100:N2}",
                 $"{ScoreHelper.GetModsText(score.Mods!)}",
                 $"{score.MaxCombo}",
-                $"{score.Statistics.LargeTickMiss} sliderbreaks, {isFcText}",
+                $"{sbFcText}",
                 $"{ScoreHelper.GetFormattedPpTextConsideringNull(score.Pp)}"
             ]);
             index += 1;

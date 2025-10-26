@@ -33,8 +33,8 @@ public struct Russian : ILocalization
 
     public string command_last =>
         "🎵{}<b>({})</b> <a href=\"https://osu.ppy.sh/beatmaps/{}\">{} [{}]</a> <b>({}; {}⭐️)</b>\n" +
-        "{}/{}❌ - <b><i>{}</i></b>%🎯\n" +
-        "<b>➕{}</b> <i>{}x/{}x</i> <b><u>{}pp💪</u></b>\n" +
+        "{}/{}❌<b>{}</b> - <b><i>{}</i></b>%🎯\n" +
+        "<b>➕{}</b> <i><b>{}x/{}x</b></i> <b><u>{}pp💪</u></b>\n" +
         "(<b><u>{}pp</u></b> if <b>{}%</b> FC)\n" +
         "{} минут назад | {}% пройдено";
 
@@ -49,8 +49,8 @@ public struct Russian : ILocalization
 
     public string command_score =>
         "🎵<b>({})</b> <a href=\"{}\">{} [{}]</a> <b>({})</b>\n" +
-        "{}/{}❌ - <b><i>{}</i></b>%🎯\n" +
-        "<b>➕{}</b> <i>{}x/{}x</i> <b><u>{}pp💪</u></b>\n" +
+        "{}/{}❌<b>{}</b> - <b><i>{}</i></b>%🎯\n" +
+        "<b>➕{}</b> <i><b>{}x/{}x</b></i> <b><u>{}pp💪</u></b>\n" +
         "{}\n\n";
 
     public string command_user =>
@@ -80,7 +80,7 @@ public struct Russian : ILocalization
     public string command_userbest =>
         "{}. 🎵(<b>{}</b>) <a href=\"http://osu.ppy.sh/b/{}\">{} [{}]</a> (<b>{}</b>)\n" +
         "{}/{}❌ - <b><i>{}</i></b>%🎯\n" +
-        "<b>➕{}</b> <i>{}x ({})</i> <b><u>{}pp💪</u></b>\n\n";
+        "<b>➕{}</b> <i><b>{}x</b>{}</i> <b><u>{}pp💪</u></b>\n\n";
 
     public string command_chatstats_title => "Топ-10 осеров (<b>{}</b>) в группе:\n\n";
     public string command_chatstats_row => "<b>{}. {}</b>: <i>{}pp💪</i>\n";
