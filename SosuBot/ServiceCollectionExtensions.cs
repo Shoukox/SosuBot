@@ -1,13 +1,12 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
-using Telegram.Bot;
 
 namespace SosuBot;
 
 public static class ServiceCollectionExtensions
 {
-    public static IHttpClientBuilder AddCustomHttpClient(this IServiceCollection services, string name, int executionsPerMinute)
+    public static IHttpClientBuilder AddCustomHttpClient(this IServiceCollection services, string name,
+        int executionsPerMinute)
     {
         return services.AddHttpClient(name)
             .ConfigureHttpClient(client =>
@@ -15,6 +14,7 @@ public static class ServiceCollectionExtensions
                 client.Timeout = Timeout.InfiniteTimeSpan;
                 client.DefaultRequestHeaders.ConnectionClose = true;
             })
-            .AddHttpMessageHandler((sp) => new RateLimitingHandler(sp.GetRequiredService<ILogger<RateLimitingHandler>>(), executionsPerMinute));
+            .AddHttpMessageHandler(sp =>
+                new RateLimitingHandler(sp.GetRequiredService<ILogger<RateLimitingHandler>>(), executionsPerMinute));
     }
 }

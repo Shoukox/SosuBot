@@ -35,9 +35,8 @@ public static class BotContextExtensions
             }
         }
         finally
-        { 
+        {
             semaphoreSlim.Release();
         }
-
     }
 }

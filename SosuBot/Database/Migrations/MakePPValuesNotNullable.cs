@@ -1,6 +1,7 @@
 ﻿#nullable disable
 
 using Microsoft.EntityFrameworkCore.Migrations;
+
 // ReSharper disable InconsistentNaming
 
 namespace SosuBot.Database.Migrations;

@@ -11,7 +11,7 @@ namespace SosuBot.Services.BackgroundServices;
 public sealed class UpdateHandlerBackgroundService(
     UpdateQueueService updateQueue,
     IServiceProvider serviceProvider,
-    ILogger<ScoresObserverBackgroundService> logger)
+    ILogger<UpdateHandlerBackgroundService> logger)
     : BackgroundService
 {
     private readonly int _workersCount = 100;
@@ -30,17 +30,19 @@ public sealed class UpdateHandlerBackgroundService(
 
             await Task.WhenAll(workers);
         }
-        catch (OperationCanceledException e)
+        catch (OperationCanceledException)
         {
-            logger.LogError(e, "Operation cancelled");
+            logger.LogWarning("Operation cancelled");
         }
+
+        logger.LogInformation("Finished its work");
     }
 
     private async Task HandleUpdateWorker(CancellationToken stoppingToken)
     {
         while (!stoppingToken.IsCancellationRequested)
         {
-            var update = await updateQueue.DequeueUpdateAsync(CancellationToken.None);
+            var update = await updateQueue.DequeueUpdateAsync(stoppingToken);
 
             await using var scope = serviceProvider.CreateAsyncScope();
             var updateHandler = scope.ServiceProvider.GetRequiredService<UpdateHandler>();
@@ -48,20 +50,18 @@ public sealed class UpdateHandlerBackgroundService(
 
             try
             {
-                await updateHandler.HandleUpdateAsync(bot, update, CancellationToken.None);
+                await updateHandler.HandleUpdateAsync(bot, update, stoppingToken);
             }
-            catch (OperationCanceledException e)
+            catch (OperationCanceledException)
             {
-                logger.LogError(e, "Operation cancelled");
-                return;
+                logger.LogWarning("Operation cancelled");
+                break;
             }
             catch (Exception ex)
             {
-                await updateHandler.HandleErrorAsync(bot, ex, HandleErrorSource.HandleUpdateError, CancellationToken.None);
+                await updateHandler.HandleErrorAsync(bot, ex, HandleErrorSource.HandleUpdateError, stoppingToken);
             }
         }
-
-        logger.LogWarning("Finished its work");
     }
 
     #region stresstest

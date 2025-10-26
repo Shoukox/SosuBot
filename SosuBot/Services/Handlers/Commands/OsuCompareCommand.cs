@@ -39,7 +39,7 @@ public sealed class OsuCompareCommand : CommandBase<Message>
             await waitMessage.EditAsync(Context.BotClient, language.error_argsLength);
             return;
         }
-        
+
         if (parameters.Length == 1)
         {
             user1IdAsString = osuUserInDatabase!.OsuUsername;
@@ -61,7 +61,7 @@ public sealed class OsuCompareCommand : CommandBase<Message>
                 return;
             }
         }
-        
+
         var getUser1Response =
             await _osuApiV2.Users.GetUser($"@{user1IdAsString}", new GetUserQueryParameters(), ruleset);
         var getUser2Response =
@@ -100,10 +100,10 @@ public sealed class OsuCompareCommand : CommandBase<Message>
             user1.Username.PadRight(max),
             user2.Username!,
 
-            ("#" + user1.Statistics.GlobalRank.ReplaceIfNull()).PadRight(max-1),
+            ("#" + user1.Statistics.GlobalRank.ReplaceIfNull()).PadRight(max - 1),
             $"#{user2.Statistics.GlobalRank.ReplaceIfNull()}",
 
-            ("#" + user1.Statistics.CountryRank.ReplaceIfNull() + " " + user1.CountryCode).PadRight(max-1),
+            ("#" + user1.Statistics.CountryRank.ReplaceIfNull() + " " + user1.CountryCode).PadRight(max - 1),
             "#" + user2.Statistics.CountryRank.ReplaceIfNull() + " " + user2.CountryCode,
 
             (user1.Statistics.Pp!.Value.ToString("N2") + "pp").PadRight(max),

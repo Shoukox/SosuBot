@@ -1,16 +1,10 @@
-﻿using System.Net;
-using System.Threading.RateLimiting;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using OsuApi;
 using OsuApi.V2;
-using Polly;
-using Polly.Contrib.WaitAndRetry;
-using Polly.Extensions.Http;
 using SosuBot.Database;
 using SosuBot.Logging;
 using SosuBot.Services;
@@ -38,7 +32,7 @@ internal class Program
         if (!File.Exists(configurationFileName))
             throw new FileNotFoundException($"{configurationFileName} was not found!", configurationFileName);
         builder.Configuration.AddJsonFile(configurationFileName, false);
-        
+
         // OpenAI configuration
         var openaiConfigurationFileName = "openai-settings.json";
         if (!File.Exists(openaiConfigurationFileName))
@@ -46,7 +40,7 @@ internal class Program
         builder.Configuration.AddJsonFile(openaiConfigurationFileName, false);
 
         // Logging
-        var loggingFileName = "logs/{Date}.log"; 
+        var loggingFileName = "logs/{Date}.log";
         builder.Logging.ClearProviders();
         builder.Logging.AddConsole();
         builder.Logging.AddFile(loggingFileName, LogLevel.Warning);
@@ -71,17 +65,18 @@ internal class Program
             builder.Configuration.GetSection(nameof(OsuApiV2Configuration)));
         builder.Services.Configure<OpenAiConfiguration>(builder.Configuration.GetSection(nameof(OpenAiConfiguration)));
         builder.Services
-            .AddCustomHttpClient(nameof(ITelegramBotClient), Int16.MaxValue)
+            .AddCustomHttpClient(nameof(ITelegramBotClient), short.MaxValue)
             .AddTypedClient<ITelegramBotClient>((httpClient, sp) =>
             {
                 var options = sp.GetRequiredService<IOptions<BotConfiguration>>();
                 return new TelegramBotClient(options.Value.Token, httpClient);
             })
             .AddPolicyHandler(PollyPolicies.GetCombinedPolicy(_logger));
-        
+
         builder.Services
             .AddCustomHttpClient("CustomHttpClient", 1000)
-            .AddPolicyHandler(PollyPolicies.GetCombinedPolicy(_logger));;
+            .AddPolicyHandler(PollyPolicies.GetCombinedPolicy(_logger));
+        ;
 
         var osuApiV2Configuration = builder.Services.BuildServiceProvider()
             .GetRequiredService<IOptions<OsuApiV2Configuration>>().Value;
@@ -92,7 +87,7 @@ internal class Program
             var logger = provider.GetRequiredService<ILogger<ApiV2>>();
             return new ApiV2(config.ClientId, config.ClientSecret, httpClient, logger);
         });
-        
+
         builder.Services.AddSingleton<UpdateQueueService>();
         builder.Services.AddSingleton<RabbitMqService>();
         builder.Services.AddSingleton<OpenAiService>();

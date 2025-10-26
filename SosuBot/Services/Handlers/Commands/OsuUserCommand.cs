@@ -95,6 +95,7 @@ public class OsuUserCommand(bool includeIdInSearch = false) : CommandBase<Messag
 
                 user = userResponse.UserExtend;
             }
+
             playmode = user!.Playmode!.ParseRulesetToPlaymode();
         }
         else

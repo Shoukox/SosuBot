@@ -49,7 +49,8 @@ public sealed class GetRankingCommand : CommandBase<Message>
             rankingText +=
                 $"{i + 1}. {UserHelper.GetUserProfileUrlWrappedInUsernameString(users[i].User!.Id.Value, users[i].User!.Username!)} - <b>{users[i].Pp:N2}pp💪</b>\n";
 
-        var sendText = $"Топ игроков в <b>{countryCode?.ToUpperInvariant() ?? "global"}</b>:\n\n" +
+        var flagEmoji = countryCode == null ? "🌍" : UserHelper.CountryCodeToFlag(countryCode);
+        var sendText = $"Топ игроков в {flagEmoji}:\n\n" +
                        rankingText;
 
         await waitMessage.EditAsync(Context.BotClient, sendText);

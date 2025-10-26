@@ -1,5 +1,4 @@
-﻿using osu.Framework.Localisation;
-using osu.Game.Rulesets.Catch.Mods;
+﻿using osu.Game.Rulesets.Catch.Mods;
 using osu.Game.Rulesets.Mania.Mods;
 using osu.Game.Rulesets.Mods;
 using osu.Game.Rulesets.Osu.Mods;
@@ -65,6 +64,7 @@ public static class OsuTypesExtensions
                 osuMods.Add(new ModIdk());
                 continue;
             }
+
             var modType = foundMod.GetType();
             var osuMod = Activator.CreateInstance(modType) as Mod;
 
@@ -119,16 +119,16 @@ public static class OsuTypesExtensions
 
     public static double CalculateCompletion(this Score score, BeatmapExtended beatmap, Playmode playmode)
     {
-        int beatmapObjects = beatmap.CalculateObjectsAmount();
-        int beatmapHitResultObjects = beatmapObjects + (playmode switch
+        var beatmapObjects = beatmap.CalculateObjectsAmount();
+        var beatmapHitResultObjects = beatmapObjects + playmode switch
         {
             Playmode.Osu => 0,
             Playmode.Taiko => -beatmap.CountSpinners!.Value,
             Playmode.Catch => 0,
             Playmode.Mania => beatmap.CountSliders!.Value,
-            _ => 0,
-        });
-        
+            _ => 0
+        };
+
         var scoreHittedObjects = score.CalculateSumOfHitResults();
         return scoreHittedObjects / (double)beatmapHitResultObjects * 100.0;
     }
