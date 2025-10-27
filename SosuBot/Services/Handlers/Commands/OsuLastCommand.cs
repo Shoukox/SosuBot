@@ -1,6 +1,7 @@
 using System.Text.RegularExpressions;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using osu.Game.Rulesets.Mods;
 using OsuApi.V2;
 using OsuApi.V2.Clients.Beatmaps.HttpIO;
 using OsuApi.V2.Clients.Users.HttpIO;
@@ -194,6 +195,14 @@ public class OsuLastCommand(bool onlyPassed = false) : CommandBase<Message>
             var accuracyIfFc = calculatedPp.IfFC.CalculatedAccuracy;
             var isFc = score.MaxCombo == beatmap.MaxCombo;
             var scoreModsContainsModIdk = scoreMods.Any(m => m is ModIdk);
+            
+            // beatmap.MaxCombo in mania is classic max combo, not lazer
+            int? scoreMaxCombo = beatmap.MaxCombo;
+            if (playmode == Playmode.Mania && !scoreMods.Any(m => m is ModClassic))
+            {
+                // lazer max combo in mania
+                scoreMaxCombo = beatmap.CountCircles + beatmap.CountSliders * 2;
+            }
 
             if (isFc)
             {
@@ -207,7 +216,6 @@ public class OsuLastCommand(bool onlyPassed = false) : CommandBase<Message>
                     : scorePp);
             var scoreIfFcPpText =
                 ScoreHelper.GetFormattedPpTextConsideringNull(scoreModsContainsModIdk ? null : scorePpIfFc);
-            
             var scoreEndedMinutesAgo = (int)(DateTime.UtcNow - score.EndedAt!.Value).TotalMinutes;
             
             textToSend += language.command_last.Fill([
@@ -223,7 +231,7 @@ public class OsuLastCommand(bool onlyPassed = false) : CommandBase<Message>
                 $"{score.Accuracy * 100:N2}",
                 $"{ScoreHelper.GetModsText(mods)}",
                 $"{score.MaxCombo}",
-                $"{beatmap.MaxCombo}",
+                $"{scoreMaxCombo}",
                 $"{scorePpText}",
                 $"{scoreIfFcPpText}",
                 $"{accuracyIfFc * 100:N2}",
