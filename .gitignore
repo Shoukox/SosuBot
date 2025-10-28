@@ -7,3 +7,6 @@ obj/
 SosuBot/Properties/launchSettings.json
 logs/
 openai-settings.json
+.secrets/
+.proxy/
+*.load
