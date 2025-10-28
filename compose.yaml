@@ -1,13 +1,88 @@
 ﻿services:
-  sosubot.web:
-    image: sosubot.web
-    build:
-      context: .
-      dockerfile: SosuBot.Web/SosuBot.Web/Dockerfile
+  sosubot-service:
+    build: .
+    restart: unless-stopped
+    deploy:
+      mode: replicated
+      replicas: 1
+    environment:
+      DB_HOST: db-service
+      DB_PORT: "5432"
+      DB_NAME: sosubot
+      DB_USER: sosubot
+      DB_PASSWORD_FILE: /run/secrets/db-password
+    secrets:
+      - db-password
+    depends_on:
+      db-service:
+        condition: service_healthy
+      proxy-service:
+        condition: service_started
+  
+  redis-service:
+    image: redis
+    
+  db-service:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    secrets:
+      - db-password
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_DB: sosubot
+      POSTGRES_USER: sosubot
+      POSTGRES_PASSWORD_FILE: /run/secrets/db-password
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: [ "CMD", "pg_isready", "-U", "sosubot", "-d", "sosubot" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+      
+  pgadmin:
+    image: dpage/pgadmin4
+    environment:
+      PGADMIN_DEFAULT_EMAIL: shachzod2004@gmail.com
+      PGADMIN_DEFAULT_PASSWORD_FILE: /run/secrets/db-password
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+    secrets:
+      - db-password
+    volumes:
+      - pgadmin:/var/lib/pgadmin
+    ports:
+      - "${PGADMIN_PORT:-5050}:80"
+    restart: unless-stopped
 
-  sosubot.web.client:
-    image: sosubot.web.client
-    build:
-      context: .
-      dockerfile: SosuBot.Web/SosuBot.Web.Client/Dockerfile
-
+  proxy-service:
+    image: nginx
+    volumes:
+      - type: bind
+        source: ./.proxy/nginx.conf
+        target: /etc/nginx/nginx.conf
+        read_only: true
+      - type: bind
+        source: ./.proxy/certs/authenticated_origin_pull_ca.pem
+        target: /etc/ssl/authenticated_origin_pull_ca.pem
+        read_only: true
+      - type: bind
+        source: ./.proxy/certs/shoukko.de-cf.key
+        target: /etc/ssl/shoukko.de-cf.key
+        read_only: true
+      - type: bind
+        source: ./.proxy/certs/shoukko.de-cf.pem
+        target: /etc/ssl/shoukko.de-cf.pem
+        read_only: true
+    ports:
+      - "80:80"
+      - "443:443"
+    
+secrets:
+  db-password:
+    file: .secrets/db_password
+    
+volumes:
+  db-data:
+  pgadmin:

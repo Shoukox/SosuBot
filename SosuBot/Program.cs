@@ -1,4 +1,6 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using System.Security.AccessControl;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -6,6 +8,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using OsuApi.V2;
 using SosuBot.Database;
+using SosuBot.Helpers.Types;
 using SosuBot.Logging;
 using SosuBot.Services;
 using SosuBot.Services.BackgroundServices;
@@ -97,10 +100,25 @@ internal class Program
         builder.Services.AddHostedService<ScoresObserverBackgroundService>();
 
         // Database
-        var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ??
-                               throw new InvalidOperationException("Connection string" +
-                                                                   "'DefaultConnection' not found.");
-        builder.Services.AddDbContextPool<BotContext>(options => options.UseSqlite(connectionString));
+        var pwFile = Environment.GetEnvironmentVariable("DB_PASSWORD_FILE") ??
+                     Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "..", "..", "..", ".secrets",
+                         "db_password");
+        var dbPassword = File.ReadAllText(pwFile).Trim();
+        ;
+        var host = Environment.GetEnvironmentVariable("DB_HOST") ?? "localhost";
+        var port = Environment.GetEnvironmentVariable("DB_PORT") ?? "5432";
+        var db = Environment.GetEnvironmentVariable("DB_NAME") ?? "sosubot";
+        var user = Environment.GetEnvironmentVariable("DB_USER") ?? "sosubot";
+        var connectionString = $"Host={host};Port={port};Database={db};Username={user};Password={dbPassword}";
+        //var connectionString = $"Data Source=bot.db";
+
+        _logger.LogInformation($"Using the following connection string: {connectionString}");
+        builder.Services.AddDbContextPool<BotContext>(options =>
+            options.UseNpgsql(connectionString, (m) => m.MapEnum<Playmode>())
+                .ConfigureWarnings(m => m.Ignore(RelationalEventId.PendingModelChangesWarning)));
+
+        bool shouldMigrate = Environment.GetEnvironmentVariable("DB_MIGRATE") == "YES";
+        builder.Services.BuildServiceProvider().GetRequiredService<BotContext>().Database.Migrate();
 
         var app = builder.Build();
         app.Run();

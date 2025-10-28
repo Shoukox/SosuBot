@@ -1,4 +1,6 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.Data.Sqlite;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using osu.Game.Rulesets.Osu.Mods;
@@ -6,6 +8,8 @@ using OsuApi.V2;
 using OsuApi.V2.Clients.Users.HttpIO;
 using OsuApi.V2.Models;
 using OsuApi.V2.Users.Models;
+using SosuBot.Database;
+using SosuBot.Database.Models;
 using SosuBot.Extensions;
 using SosuBot.Helpers;
 using SosuBot.Helpers.OutputText;
@@ -28,11 +32,13 @@ public sealed class CustomCommand : CommandBase<Message>
     private ILogger<PPCalculator> _loggerPpCalculator = null!;
     private OpenAiService _openaiService = null!;
     private ApiV2 _osuApiV2 = null!;
+    private BotContext _dbContext = null!;
 
     public override Task BeforeExecuteAsync()
     {
         _openaiService = Context.ServiceProvider.GetRequiredService<OpenAiService>();
         _osuApiV2 = Context.ServiceProvider.GetRequiredService<ApiV2>();
+        _dbContext = Context.ServiceProvider.GetRequiredService<BotContext>();
         _logger = Context.ServiceProvider.GetRequiredService<ILogger<CustomCommand>>();
         _loggerPpCalculator = Context.ServiceProvider.GetRequiredService<ILogger<PPCalculator>>();
         return Task.CompletedTask;
@@ -203,6 +209,111 @@ public sealed class CustomCommand : CommandBase<Message>
                     cancellationToken: Context.CancellationToken);
                 await Task.Delay(1000);
             }
+        }
+        else if (parameters[0] == "add-from-sqlite")
+        {
+            await using SqliteConnection sqlite = new SqliteConnection("Data Source=bot.db");
+            await sqlite.OpenAsync();
+            (int addedOsuUsers, int addedTelegramChats) = (0, 0);
+
+            using var osuUsersCommand = sqlite.CreateCommand();
+            osuUsersCommand.CommandText = "SELECT * FROM OsuUsers";
+            await using var osuUsersReader = await osuUsersCommand.ExecuteReaderAsync();
+            while (await osuUsersReader.ReadAsync())
+            {
+                var telegramId = osuUsersReader.GetInt64(osuUsersReader.GetOrdinal("TelegramId"));
+                var osuUserId = osuUsersReader.GetInt64(osuUsersReader.GetOrdinal("OsuUserId"));
+                var osuUsername = osuUsersReader.GetString(osuUsersReader.GetOrdinal("OsuUsername"));
+                var osuMode =
+                    osuUsersReader.GetInt32(osuUsersReader.GetOrdinal("OsuMode")); // or string depending on schema
+                var isAdmin =
+                    osuUsersReader.GetBoolean(
+                        osuUsersReader.GetOrdinal("IsAdmin")); // only works if column type is boolean
+                var stdPp = osuUsersReader.GetDouble(osuUsersReader.GetOrdinal("StdPPValue"));
+                var taikoPp = osuUsersReader.GetDouble(osuUsersReader.GetOrdinal("TaikoPPValue"));
+                var catchPp = osuUsersReader.GetDouble(osuUsersReader.GetOrdinal("CatchPPValue"));
+                var maniaPp = osuUsersReader.GetDouble(osuUsersReader.GetOrdinal("ManiaPPValue"));
+
+                if (_dbContext.OsuUsers.FirstOrDefault(m => m.TelegramId == telegramId) is { } osuUser)
+                {
+                    osuUser.OsuUserId = osuUserId;
+                    osuUser.OsuUsername = osuUsername;
+                    osuUser.OsuMode = (Playmode)osuMode;
+                    osuUser.StdPPValue = stdPp;
+                    osuUser.TaikoPPValue = taikoPp;
+                    osuUser.CatchPPValue = catchPp;
+                    osuUser.ManiaPPValue = maniaPp;
+                }
+                else
+                {
+                    osuUser = new OsuUser()
+                    {
+                        TelegramId = telegramId,
+                        OsuUserId = osuUserId,
+                        OsuUsername = osuUsername,
+                        OsuMode = (Playmode)osuMode,
+                        StdPPValue = stdPp,
+                        TaikoPPValue = taikoPp,
+                        CatchPPValue = catchPp,
+                        ManiaPPValue = maniaPp
+                    };
+                    _dbContext.OsuUsers.Add(osuUser);
+                    addedOsuUsers += 1;
+                }
+
+                await _dbContext.SaveChangesAsync();
+            }
+
+            using var telegramChatsCommand = sqlite.CreateCommand();
+            telegramChatsCommand.CommandText = "SELECT * FROM TelegramChats";
+            await using var telegramChatsReader = await telegramChatsCommand.ExecuteReaderAsync();
+            while (await telegramChatsReader.ReadAsync())
+            {
+                var chatId = telegramChatsReader.GetInt64(telegramChatsReader.GetOrdinal("ChatId"));
+                var chatMembers = telegramChatsReader.GetValue(telegramChatsReader.GetOrdinal("ChatMembers"));
+                var excl = telegramChatsReader.GetValue(telegramChatsReader.GetOrdinal("ExcludeFromChatstats"));
+                var lastBeatmapId = telegramChatsReader.GetValue(telegramChatsReader.GetOrdinal("LastBeatmapId"));
+
+                List<long>? parsedChatMembers;
+                if (chatMembers is DBNull || chatMembers.ToString()!.Length == 2) parsedChatMembers = null;
+                else
+                    parsedChatMembers = ((string)chatMembers).Replace("[", "").Replace("]", "").Split(',')
+                        .Select(long.Parse).ToList();
+
+                List<long>? parsedExcl;
+                if (excl is DBNull || excl.ToString()!.Length == 2) parsedExcl = null;
+                else
+                    parsedExcl = ((string)excl).Replace("[", "").Replace("]", "").Split(',').Select(long.Parse)
+                        .ToList();
+
+                int? parsedLastBeatmapId;
+                if (lastBeatmapId is DBNull || lastBeatmapId.ToString()!.Length == 2) parsedLastBeatmapId = null;
+                else parsedLastBeatmapId = lastBeatmapId is DBNull ? null : Convert.ToInt32(lastBeatmapId);
+
+                if (_dbContext.TelegramChats.FirstOrDefault(m => m.ChatId == chatId) is { } tgChat)
+                {
+                    tgChat.ChatMembers = parsedChatMembers;
+                    tgChat.ExcludeFromChatstats = parsedExcl;
+                    tgChat.LastBeatmapId = parsedLastBeatmapId;
+                }
+                else
+                {
+                    tgChat = new TelegramChat()
+                    {
+                        ChatId = chatId,
+                        ChatMembers = parsedChatMembers,
+                        ExcludeFromChatstats = parsedExcl,
+                        LastBeatmapId = parsedLastBeatmapId
+                    };
+                    _dbContext.TelegramChats.Add(tgChat);
+                    addedTelegramChats += 1;
+                }
+
+                await _dbContext.SaveChangesAsync();
+            }
+
+            await Context.Update.ReplyAsync(Context.BotClient,
+                $"Added osuUsers: {addedOsuUsers}\nAdded telegramChats: {addedTelegramChats}");
         }
     }
 }

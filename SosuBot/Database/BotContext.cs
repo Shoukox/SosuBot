@@ -11,6 +11,7 @@ public class BotContext : DbContext
 {
     public BotContext(DbContextOptions<BotContext> options) : base(options)
     {
+        
     }
 
     public DbSet<TelegramChat> TelegramChats { get; set; }
@@ -19,7 +20,7 @@ public class BotContext : DbContext
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
-
+        
         modelBuilder.Entity<OsuUser>().HasData(new OsuUser
         {
             OsuUserId = 15319810,
