@@ -2,6 +2,7 @@ using System.Collections.Concurrent;
 using System.Net;
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using OsuApi.V2;
@@ -22,12 +23,13 @@ using Country = SosuBot.Helpers.Country;
 
 namespace SosuBot.Services.BackgroundServices;
 
-public sealed class ScoresObserverBackgroundService(
-    ApiV2 osuApi,
-    ITelegramBotClient botClient,
-    BotContext database,
-    ILogger<ScoresObserverBackgroundService> logger) : BackgroundService
+public sealed class ScoresObserverBackgroundService(IServiceProvider serviceProvider) : BackgroundService
 {
+    private readonly ITelegramBotClient _botClient = serviceProvider.GetRequiredService<ITelegramBotClient>();
+    private readonly BotContext _database = serviceProvider.GetRequiredService<BotContext>();
+    private readonly ApiV2 _osuApi = serviceProvider.GetRequiredService<ApiV2>();
+    private readonly ILogger<ScoresObserverBackgroundService> _logger = serviceProvider.GetRequiredService<ILogger<ScoresObserverBackgroundService>>();
+    
     public static readonly ConcurrentBag<long> ObservedUsers = new();
     public static List<DailyStatistics> AllDailyStatistics = new();
 
@@ -39,17 +41,18 @@ public sealed class ScoresObserverBackgroundService(
     private static readonly string CachePath =
         Path.Combine(CacheDirectory, "statistics.cache");
 
-    private readonly UserStatisticsCacheDatabase _userDatabase = new(osuApi);
+    private UserStatisticsCacheDatabase _userDatabase = null!; // initialized in ExecuteAsync
 
     private long _adminTelegramId;
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        logger.LogInformation("Scores observer background service started");
+        _userDatabase = new(_osuApi);
+        _logger.LogInformation("Scores observer background service started");
 
         try
         {
-            _adminTelegramId = (await database.OsuUsers.FirstAsync(m => m.IsAdmin))
+            _adminTelegramId = (await _database.OsuUsers.FirstAsync(m => m.IsAdmin == true))
                 .TelegramId;
             await AddPlayersToObserverList("uz");
             await AddPlayersToObserverList();
@@ -61,10 +64,10 @@ public sealed class ScoresObserverBackgroundService(
         }
         catch (OperationCanceledException)
         {
-            logger.LogWarning("Operation cancelled");
+            _logger.LogWarning("Operation cancelled");
         }
 
-        logger.LogInformation("Finished its work");
+        _logger.LogInformation("Finished its work");
     }
 
     private async Task ObserveScoresGetScores(CancellationToken stoppingToken)
@@ -93,13 +96,13 @@ public sealed class ScoresObserverBackgroundService(
         while (!stoppingToken.IsCancellationRequested)
             try
             {
-                var getStdScoresResponseTask = osuApi.Scores.GetScores(new ScoresQueryParameters
+                var getStdScoresResponseTask = _osuApi.Scores.GetScores(new ScoresQueryParameters
                     { CursorString = getStdScoresCursor, Ruleset = Ruleset.Osu });
-                var getTaikoScoresResponseTask = osuApi.Scores.GetScores(new ScoresQueryParameters
+                var getTaikoScoresResponseTask = _osuApi.Scores.GetScores(new ScoresQueryParameters
                     { CursorString = getTaikoScoresCursor, Ruleset = Ruleset.Taiko });
-                var getFruitsScoresResponseTask = osuApi.Scores.GetScores(new ScoresQueryParameters
+                var getFruitsScoresResponseTask = _osuApi.Scores.GetScores(new ScoresQueryParameters
                     { CursorString = getFruitsScoresCursor, Ruleset = Ruleset.Fruits });
-                var getManiaScoresResponseTask = osuApi.Scores.GetScores(new ScoresQueryParameters
+                var getManiaScoresResponseTask = _osuApi.Scores.GetScores(new ScoresQueryParameters
                     { CursorString = getManiaScoresCursor, Ruleset = Ruleset.Mania });
 
                 await Task.WhenAll(getStdScoresResponseTask, getTaikoScoresResponseTask, getFruitsScoresResponseTask,
@@ -112,25 +115,25 @@ public sealed class ScoresObserverBackgroundService(
 
                 if (getStdScoresResponse == null)
                 {
-                    logger.LogWarning("getStdScoresResponse returned null");
+                    _logger.LogWarning("getStdScoresResponse returned null");
                     continue;
                 }
 
                 if (getTaikoScoresResponse == null)
                 {
-                    logger.LogWarning("getTaikoScoresResponse returned null");
+                    _logger.LogWarning("getTaikoScoresResponse returned null");
                     continue;
                 }
 
                 if (getFruitsScoresResponse == null)
                 {
-                    logger.LogWarning("getFruitsScoresResponse returned null");
+                    _logger.LogWarning("getFruitsScoresResponse returned null");
                     continue;
                 }
 
                 if (getManiaScoresResponse == null)
                 {
-                    logger.LogWarning("getManiaScoresResponse returned null");
+                    _logger.LogWarning("getManiaScoresResponse returned null");
                     continue;
                 }
 
@@ -156,7 +159,7 @@ public sealed class ScoresObserverBackgroundService(
                     var userStatistics = await _userDatabase.GetUserStatistics(score.UserId!.Value);
                     if (userStatistics == null)
                     {
-                        logger.LogError($"User statistics is null for userId = {score.UserId!.Value}");
+                        _logger.LogError($"User statistics is null for userId = {score.UserId!.Value}");
                         continue;
                     }
 
@@ -179,15 +182,15 @@ public sealed class ScoresObserverBackgroundService(
                         for (var i = 0; i <= 3; i++)
                         {
                             var sendText =
-                                await ScoreHelper.GetDailyStatisticsSendText((Playmode)i, dailyStatistics, osuApi);
-                            await botClient.SendMessage(_adminTelegramId, sendText,
+                                await ScoreHelper.GetDailyStatisticsSendText((Playmode)i, dailyStatistics, _osuApi);
+                            await _botClient.SendMessage(_adminTelegramId, sendText,
                                 ParseMode.Html, linkPreviewOptions: true);
                             await Task.Delay(1000);
                         }
                     }
                     catch (Exception e)
                     {
-                        logger.LogError(e, "Error while sending final daily statistics");
+                        _logger.LogError(e, "Error while sending final daily statistics");
                     }
 
                     dailyStatistics = new DailyStatistics(CountryCode.Uzbekistan,
@@ -213,13 +216,13 @@ public sealed class ScoresObserverBackgroundService(
                                                                 HttpStatusCode.RequestTimeout))
                 {
                     var waitMs = 10_000;
-                    logger.LogWarning($"OsuApi: status code {httpRequestException.StatusCode}. Waiting {waitMs}ms...");
+                    _logger.LogWarning($"OsuApi: status code {httpRequestException.StatusCode}. Waiting {waitMs}ms...");
                     await Task.Delay(waitMs);
                 }
             }
             catch (Exception e)
             {
-                logger.LogError(e, "[ObserveScoresGetScores] Unexpected exception");
+                _logger.LogError(e, "[ObserveScoresGetScores] Unexpected exception");
             }
     }
 
@@ -232,11 +235,11 @@ public sealed class ScoresObserverBackgroundService(
                 foreach (int userId in ObservedUsers)
                 {
                     var userBestScores =
-                        await osuApi.Users.GetUserScores(userId, ScoreType.Best,
+                        await _osuApi.Users.GetUserScores(userId, ScoreType.Best,
                             new GetUserScoreQueryParameters { Limit = 50 });
                     if (userBestScores == null)
                     {
-                        logger.LogWarning($"{userId} has no scores!");
+                        _logger.LogWarning($"{userId} has no scores!");
                         continue;
                     }
 
@@ -247,7 +250,7 @@ public sealed class ScoresObserverBackgroundService(
                             userBestScores.Scores.Except(scores[userId].Scores, ScoreComparer);
                         foreach (var score in newScores)
                         {
-                            await botClient.SendMessage(_adminTelegramId,
+                            await _botClient.SendMessage(_adminTelegramId,
                                 $"<b>{score.User?.Username}</b> set a <b>{score.Pp}pp</b> {ScoreHelper.GetScoreUrlWrappedInString(score.Id!.Value, "score!")}",
                                 ParseMode.Html, linkPreviewOptions: true);
                             await Task.Delay(1000);
@@ -260,7 +263,7 @@ public sealed class ScoresObserverBackgroundService(
             }
             catch (Exception e)
             {
-                logger.LogError(e, "Unexpected exception");
+                _logger.LogError(e, "Unexpected exception");
             }
     }
 
@@ -272,11 +275,11 @@ public sealed class ScoresObserverBackgroundService(
     /// <exception cref="Exception"></exception>
     private async Task<UserStatistics[]> GetBestPlayersFor(string? countryCode = null)
     {
-        var rankings = await osuApi.Rankings.GetRanking(Ruleset.Osu, RankingType.Performance,
+        var rankings = await _osuApi.Rankings.GetRanking(Ruleset.Osu, RankingType.Performance,
             new GetRankingQueryParameters { Country = countryCode, Filter = Filter.All });
         if (rankings == null)
         {
-            logger.LogError($"Ranking is null. {countryCode}");
+            _logger.LogError($"Ranking is null. {countryCode}");
             throw new Exception("Ranking is null. See logs for details");
         }
 

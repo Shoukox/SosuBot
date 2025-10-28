@@ -4,12 +4,20 @@
 FROM mcr.microsoft.com/dotnet/runtime:8.0 AS base
 USER $APP_UID
 WORKDIR /app
-
+ 
 
 # This stage is used to build the service project
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
+COPY ["OsuApi/OsuApi/OsuApi.csproj", "OsuApi/OsuApi/"]
+RUN dotnet restore "./OsuApi/OsuApi/OsuApi.csproj"
+COPY ["SosuBot.Localization/SosuBot.Localization.csproj", "SosuBot.Localization/"]
+RUN dotnet restore "./SosuBot.Localization/SosuBot.Localization.csproj"
+COPY ["SosuBot.OsuCard/SosuBot.OsuCard.csproj", "SosuBot.OsuCard/"]
+RUN dotnet restore "./SosuBot.OsuCard/SosuBot.OsuCard.csproj"
+COPY ["SosuBot.PerformanceCalculator/SosuBot.PerformanceCalculator.csproj", "SosuBot.PerformanceCalculator/"]
+RUN dotnet restore "./SosuBot.PerformanceCalculator/SosuBot.PerformanceCalculator.csproj"
 COPY ["SosuBot/SosuBot.csproj", "SosuBot/"]
 RUN dotnet restore "./SosuBot/SosuBot.csproj"
 COPY . .
