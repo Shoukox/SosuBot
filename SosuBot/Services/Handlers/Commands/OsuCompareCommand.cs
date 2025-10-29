@@ -34,7 +34,7 @@ public sealed class OsuCompareCommand : CommandBase<Message>
         string user1IdAsString;
         string user2IdAsString;
 
-        if (parameters.Length == 0 || (parameters.Length == 1 && osuUserInDatabase == null) || parameters.Length > 2)
+        if (parameters.Length == 0 || (parameters.Length == 1 && osuUserInDatabase == null) || parameters.Length > 3)
         {
             await waitMessage.EditAsync(Context.BotClient, language.error_argsLength);
             return;
@@ -52,7 +52,7 @@ public sealed class OsuCompareCommand : CommandBase<Message>
         }
 
         var ruleset = Ruleset.Osu;
-        if (parameters.Length >= 3)
+        if (parameters.Length == 3)
         {
             ruleset = parameters[2].ParseToRuleset();
             if (ruleset is null)

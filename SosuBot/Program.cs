@@ -101,6 +101,10 @@ internal class Program
                                throw new InvalidOperationException("Connection string" +
                                                                    "'DefaultConnection' not found.");
         builder.Services.AddDbContextPool<BotContext>(options => options.UseSqlite(connectionString));
+        if (!File.Exists("bot.db"))
+        {
+            builder.Services.BuildServiceProvider().GetRequiredService<BotContext>().Database.Migrate();
+        }
 
         var app = builder.Build();
         app.Run();
