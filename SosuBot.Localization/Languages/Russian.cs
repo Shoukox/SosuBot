@@ -36,7 +36,7 @@ public struct Russian : ILocalization
         "{}/{}❌ - <b><i>{}</i></b>%🎯\n" +
         "<b>➕{}</b> <i><b>{}x/{}x</b></i> <b><u>{}pp💪</u></b>\n" +
         "(<b><u>{}pp</u></b> if <b>{}%</b> FC)\n" +
-        "{} минут назад | {}% пройдено";
+        "{} | {}% пройдено";
 
     public string command_set =>
         "Теперь ты <b>{}</b>, {}pp💪\n" +
@@ -96,16 +96,16 @@ public struct Russian : ILocalization
         "<code>" +
         "acc      | classic\n" +
         "---------+---------\n" +
-        "{}| {}pp\n" +
-        "{}| {}pp\n" +
-        "{}| {}pp\n" +
+        "{}" +
+        "{}" +
+        "{}" +
         "</code>\n\n" +
         "<code>" +
         "acc      | lazer\n" +
         "---------+---------\n" +
-        "{}| {}pp\n" +
-        "{}| {}pp\n" +
-        "{}| {}pp\n" +
+        "{}" +
+        "{}" +
+        "{}" +
         "</code>\n";
 
     public string send_dailyStatistic =>

@@ -1,10 +1,15 @@
+using System.Data;
+using System.Globalization;
 using System.Text.RegularExpressions;
+using Humanizer;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using osu.Game.Rulesets.Mods;
+using osu.Game.Rulesets.Scoring;
 using OsuApi.V2;
 using OsuApi.V2.Clients.Beatmaps.HttpIO;
 using OsuApi.V2.Clients.Users.HttpIO;
+using OsuApi.V2.Models;
 using OsuApi.V2.Users.Models;
 using SosuBot.Extensions;
 using SosuBot.Helpers;
@@ -121,7 +126,8 @@ public class OsuLastCommand(bool onlyPassed = false) : CommandBase<Message>
         osuUsernameForLastScores = userResponse.UserExtend!.Username!;
 
         // if username was entered, then use as ruleset his (this username) standard ruleset.
-        ruleset ??= userResponse.UserExtend!.Playmode!;
+        // ruleset ??= userResponse.UserExtend!.Playmode!;
+        ruleset = Ruleset.Mania;
 
         var lastScoresResponse = await _osuApiV2.Users.GetUserScores(userResponse.UserExtend!.Id.Value,
             ScoreType.Recent,
@@ -163,8 +169,33 @@ public class OsuLastCommand(bool onlyPassed = false) : CommandBase<Message>
 
             var passed = score.Passed!.Value;
             var scoreStatistics = score.Statistics!.ToStatistics();
-
+            
+            // Get osu! mods of the score
             var scoreMods = mods.ToOsuMods(playmode);
+            
+            // Get score statistics for fc
+            Dictionary<HitResult, int>? scoreStatisticsIfFc = null;
+            if (passed)
+            {
+                scoreStatisticsIfFc = new Dictionary<HitResult, int>()
+                {
+                    { HitResult.Great, scoreStatistics.GetValueOrDefault(HitResult.Great) },
+                    { HitResult.Good, scoreStatistics.GetValueOrDefault(HitResult.Good) },
+                    { HitResult.Ok, scoreStatistics.GetValueOrDefault(HitResult.Ok) },
+                    { HitResult.Meh, scoreStatistics.GetValueOrDefault(HitResult.Meh) + scoreStatistics.GetValueOrDefault(HitResult.Miss)},
+                    { HitResult.Miss, 0}
+                };
+            }
+            
+            // beatmap.MaxCombo in mania is classic max combo, not lazer
+            int? beatmapMaxCombo = beatmap.MaxCombo;
+            if (playmode == Playmode.Mania && !scoreMods.Any(m => m is ModClassic))
+            {
+                // lazer max combo in mania
+                beatmapMaxCombo = beatmap.CountCircles + beatmap.CountSliders * 2;
+            }
+            
+            // Calculate pp
             var calculatedPp = new PPResult
             {
                 Current = score.Pp != null
@@ -178,32 +209,25 @@ public class OsuLastCommand(bool onlyPassed = false) : CommandBase<Message>
                         cancellationToken: Context.CancellationToken),
 
                 IfFC = await ppCalculator.CalculatePpAsync(beatmap.Id.Value, (double)score.Accuracy!,
-                    scoreMaxCombo: beatmap.MaxCombo!.Value,
+                    scoreMaxCombo: beatmapMaxCombo,
                     scoreMods: scoreMods,
-                    scoreStatistics: null,
+                    scoreStatistics: scoreStatisticsIfFc,
                     rulesetId: (int)playmode,
                     cancellationToken: Context.CancellationToken)
             };
 
             var scoreRank = ScoreHelper.GetScoreRankEmoji(score.Rank!, score.Passed!.Value) +
                             ScoreHelper.ParseScoreRank(score.Passed!.Value ? score.Rank! : "F");
-            var textBeforeBeatmapLink = lastScores.Length == 1 ? "" : $"{i + 1}. ";
+            var counterText = lastScores.Length == 1 ? "" : $"{i + 1}. ";
             double? scorePp = calculatedPp.Current?.Pp ?? score.Pp!.Value;
             if (scorePp is double.NaN) scorePp = null;
 
             double? scorePpIfFc = calculatedPp.IfFC.Pp;
             var accuracyIfFc = calculatedPp.IfFC.CalculatedAccuracy;
-            var isFc = score.MaxCombo == beatmap.MaxCombo;
-            var scoreModsContainsModIdk = scoreMods.Any(m => m is ModIdk);
+            bool scoreModsContainsModIdk = scoreMods.Any(m => m is ModIdk);
             
-            // beatmap.MaxCombo in mania is classic max combo, not lazer
-            int? scoreMaxCombo = beatmap.MaxCombo;
-            if (playmode == Playmode.Mania && !scoreMods.Any(m => m is ModClassic))
-            {
-                // lazer max combo in mania
-                scoreMaxCombo = beatmap.CountCircles + beatmap.CountSliders * 2;
-            }
-
+            // If fc, then curPp = fcPp
+            bool isFc = score.MaxCombo == beatmapMaxCombo;
             if (isFc)
             {
                 scorePpIfFc = scorePp;
@@ -216,10 +240,12 @@ public class OsuLastCommand(bool onlyPassed = false) : CommandBase<Message>
                     : scorePp);
             var scoreIfFcPpText =
                 ScoreHelper.GetFormattedPpTextConsideringNull(scoreModsContainsModIdk ? null : scorePpIfFc);
-            var scoreEndedMinutesAgo = (int)(DateTime.UtcNow - score.EndedAt!.Value).TotalMinutes;
-            
+            var scoreEndedMinutesAgoText =
+                (DateTime.UtcNow - score.EndedAt!.Value).Humanize(
+                    culture: CultureInfo.GetCultureInfoByIetfLanguageTag("ru-RU"));
+
             textToSend += language.command_last.Fill([
-                $"{textBeforeBeatmapLink}",
+                $"{counterText}",
                 $"{scoreRank}",
                 $"{beatmap.Id}",
                 $"{score.Beatmapset?.Title.EncodeHtml()}",
@@ -231,11 +257,11 @@ public class OsuLastCommand(bool onlyPassed = false) : CommandBase<Message>
                 $"{score.Accuracy * 100:N2}",
                 $"{ScoreHelper.GetModsText(mods)}",
                 $"{score.MaxCombo}",
-                $"{scoreMaxCombo}",
+                $"{beatmapMaxCombo}",
                 $"{scorePpText}",
                 $"{scoreIfFcPpText}",
                 $"{accuracyIfFc * 100:N2}",
-                $"{scoreEndedMinutesAgo}",
+                $"{scoreEndedMinutesAgoText}",
                 $"{score.CalculateCompletion(beatmap, playmode):N1}"
             ]);
             if (scoreModsContainsModIdk)
