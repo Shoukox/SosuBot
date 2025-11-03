@@ -114,7 +114,7 @@ internal class Program
         var user = Environment.GetEnvironmentVariable("DB_USER") ?? "sosubot";
         var connectionString = $"Host={host};Port={port};Database={db};Username={user};Password={dbPassword}";
 
-        bool usePostgres = Environment.GetEnvironmentVariable("USE_SQLITE") == "YES";
+        bool usePostgres = Environment.GetEnvironmentVariable("USE_POSTGRES") == "YES";
         if (!usePostgres)
         {
             connectionString = $"Data Source=bot.db";
