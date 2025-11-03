@@ -126,8 +126,7 @@ public class OsuLastCommand(bool onlyPassed = false) : CommandBase<Message>
         osuUsernameForLastScores = userResponse.UserExtend!.Username!;
 
         // if username was entered, then use as ruleset his (this username) standard ruleset.
-        // ruleset ??= userResponse.UserExtend!.Playmode!;
-        ruleset = Ruleset.Mania;
+        ruleset ??= userResponse.UserExtend!.Playmode!;
 
         var lastScoresResponse = await _osuApiV2.Users.GetUserScores(userResponse.UserExtend!.Id.Value,
             ScoreType.Recent,
@@ -242,7 +241,7 @@ public class OsuLastCommand(bool onlyPassed = false) : CommandBase<Message>
                 ScoreHelper.GetFormattedPpTextConsideringNull(scoreModsContainsModIdk ? null : scorePpIfFc);
             var scoreEndedMinutesAgoText =
                 (DateTime.UtcNow - score.EndedAt!.Value).Humanize(
-                    culture: CultureInfo.GetCultureInfoByIetfLanguageTag("ru-RU"));
+                    culture: CultureInfo.GetCultureInfoByIetfLanguageTag("ru-RU")) + " назад";
 
             textToSend += language.command_last.Fill([
                 $"{counterText}",
