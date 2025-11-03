@@ -11,6 +11,8 @@
       DB_NAME: sosubot
       DB_USER: sosubot
       DB_PASSWORD_FILE: /run/secrets/db-password
+      DB_MIGRATE: "NO"
+      USE_POSTGRES: "YES"
     secrets:
       - db-password
     expose:
