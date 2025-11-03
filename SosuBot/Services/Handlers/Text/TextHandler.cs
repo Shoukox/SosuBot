@@ -137,23 +137,27 @@ public sealed class TextHandler : CommandBase<Message>
                 rulesetId: (int)playmode,
                 cancellationToken: Context.CancellationToken),
 
-            Classic99 = await ppCalculator.CalculatePpAsync(
-                accuracy: 0.99,
-                beatmapId: beatmap.Id.Value,
-                scoreMaxCombo: null,
-                scoreMods: classicModsToApply,
-                scoreStatistics: null,
-                rulesetId: (int)playmode,
-                cancellationToken: Context.CancellationToken),
+            Classic99 = playmode == Playmode.Mania
+                ? null
+                : await ppCalculator.CalculatePpAsync(
+                    accuracy: 0.99,
+                    beatmapId: beatmap.Id.Value,
+                    scoreMaxCombo: null,
+                    scoreMods: classicModsToApply,
+                    scoreStatistics: null,
+                    rulesetId: (int)playmode,
+                    cancellationToken: Context.CancellationToken),
 
-            Classic98 = await ppCalculator.CalculatePpAsync(
-                accuracy: 0.98,
-                beatmapId: beatmap.Id.Value,
-                scoreMaxCombo: null,
-                scoreMods: classicModsToApply,
-                scoreStatistics: null,
-                rulesetId: (int)playmode,
-                cancellationToken: Context.CancellationToken),
+            Classic98 = playmode == Playmode.Mania
+                ? null
+                : await ppCalculator.CalculatePpAsync(
+                    accuracy: 0.98,
+                    beatmapId: beatmap.Id.Value,
+                    scoreMaxCombo: null,
+                    scoreMods: classicModsToApply,
+                    scoreStatistics: null,
+                    rulesetId: (int)playmode,
+                    cancellationToken: Context.CancellationToken),
 
             LazerSS = await ppCalculator.CalculatePpAsync(
                 accuracy: 1,
@@ -164,29 +168,53 @@ public sealed class TextHandler : CommandBase<Message>
                 rulesetId: (int)playmode,
                 cancellationToken: Context.CancellationToken),
 
-            Lazer99 = await ppCalculator.CalculatePpAsync(
-                accuracy: 0.99,
-                beatmapId: beatmap.Id.Value,
-                scoreMaxCombo: null,
-                scoreMods: lazerModsToApply,
-                scoreStatistics: null,
-                rulesetId: (int)playmode,
-                cancellationToken: Context.CancellationToken),
+            Lazer99 = playmode == Playmode.Mania
+                ? null
+                : await ppCalculator.CalculatePpAsync(
+                    accuracy: 0.99,
+                    beatmapId: beatmap.Id.Value,
+                    scoreMaxCombo: null,
+                    scoreMods: lazerModsToApply,
+                    scoreStatistics: null,
+                    rulesetId: (int)playmode,
+                    cancellationToken: Context.CancellationToken),
 
-            Lazer98 = await ppCalculator.CalculatePpAsync(
-                accuracy: 0.98,
-                beatmapId: beatmap.Id.Value,
-                scoreMaxCombo: null,
-                scoreMods: lazerModsToApply,
-                scoreStatistics: null,
-                rulesetId: (int)playmode,
-                cancellationToken: Context.CancellationToken)
+            Lazer98 = playmode == Playmode.Mania
+                ? null
+                : await ppCalculator.CalculatePpAsync(
+                    accuracy: 0.98,
+                    beatmapId: beatmap.Id.Value,
+                    scoreMaxCombo: null,
+                    scoreMods: lazerModsToApply,
+                    scoreStatistics: null,
+                    rulesetId: (int)playmode,
+                    cancellationToken: Context.CancellationToken)
         };
 
         var duration = $"{beatmap.TotalLength / 60}:{beatmap.TotalLength % 60:00}";
-
-
         var padLength = 9;
+
+        string classicSSText = $"{calculatedPp.ClassicSS.CalculatedAccuracy * 100:N2}%".PadRight(padLength) + "| " +
+                               $"{calculatedPp.ClassicSS.Pp:N2}pp\n";
+        string classic99Text = playmode == Playmode.Mania
+            ? ""
+            : $"{calculatedPp.Classic99!.CalculatedAccuracy * 100:N2}%".PadRight(padLength) + "| " +
+              $"{calculatedPp.Classic99.Pp:N2}pp\n";
+        string classic98Text = playmode == Playmode.Mania
+            ? ""
+            : $"{calculatedPp.Classic98!.CalculatedAccuracy * 100:N2}%".PadRight(padLength) + "| " +
+              $"{calculatedPp.Classic98.Pp:N2}pp\n";
+        string lazerSSText = $"{calculatedPp.LazerSS.CalculatedAccuracy * 100:N2}%".PadRight(padLength) + "| " +
+                             $"{calculatedPp.LazerSS.Pp:N2}pp\n";
+        string lazer99Text = playmode == Playmode.Mania
+            ? ""
+            : $"{calculatedPp.Lazer99!.CalculatedAccuracy * 100:N2}%".PadRight(padLength) + "| " +
+              $"{calculatedPp.Lazer99.Pp:N2}pp\n";
+        string lazer98Text = playmode == Playmode.Mania
+            ? ""
+            : $"{calculatedPp.Lazer98!.CalculatedAccuracy * 100:N2}%".PadRight(padLength) + "| " +
+              $"{calculatedPp.Lazer98.Pp:N2}pp\n";
+
         var textToSend = language.send_mapInfo.Fill([
             $"{playmode.ToGamemode()}",
             $"{beatmap.Version.EncodeHtml()}",
@@ -202,23 +230,13 @@ public sealed class TextHandler : CommandBase<Message>
             $"{lazerModsToApply.ModsToString(playmode)}",
 
             $"{ppCalculator.LastDifficultyAttributes!.StarRating:N2}",
-            $"{calculatedPp.ClassicSS.CalculatedAccuracy * 100:N2}%".PadRight(padLength),
-            $"{calculatedPp.ClassicSS.Pp:N2}",
 
-            $"{calculatedPp.Classic99.CalculatedAccuracy * 100:N2}%".PadRight(padLength),
-            $"{calculatedPp.Classic99.Pp:N2}",
-
-            $"{calculatedPp.Classic98.CalculatedAccuracy * 100:N2}%".PadRight(padLength),
-            $"{calculatedPp.Classic98.Pp:N2}",
-
-            $"{calculatedPp.LazerSS.CalculatedAccuracy * 100:N2}%".PadRight(padLength),
-            $"{calculatedPp.LazerSS.Pp:N2}",
-
-            $"{calculatedPp.Lazer99.CalculatedAccuracy * 100:N2}%".PadRight(padLength),
-            $"{calculatedPp.Lazer99.Pp:N2}",
-
-            $"{calculatedPp.Lazer98.CalculatedAccuracy * 100:N2}%".PadRight(padLength),
-            $"{calculatedPp.Lazer98.Pp:N2}"
+            classicSSText,
+            classic99Text,
+            classic98Text,
+            lazerSSText,
+            lazer99Text,
+            lazer98Text,
         ]);
 
         var photo = new InputFileUrl(

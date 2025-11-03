@@ -13,6 +13,7 @@ using SosuBot.Logging;
 using SosuBot.Services;
 using SosuBot.Services.BackgroundServices;
 using SosuBot.Services.Handlers;
+using StackExchange.Redis;
 using Telegram.Bot;
 
 namespace SosuBot;
@@ -20,6 +21,7 @@ namespace SosuBot;
 internal class Program
 {
     private static ILogger<Program>? _logger;
+    private static string _redisContainerName = "redis-service";
 
     private static void Main(string[] args)
     {
@@ -94,6 +96,7 @@ internal class Program
         builder.Services.AddSingleton<UpdateQueueService>();
         builder.Services.AddSingleton<RabbitMqService>();
         builder.Services.AddSingleton<OpenAiService>();
+        builder.Services.AddSingleton<IConnectionMultiplexer>(_ => ConnectionMultiplexer.Connect(_redisContainerName));
         builder.Services.AddScoped<UpdateHandler>();
         builder.Services.AddHostedService<PollingBackgroundService>();
         builder.Services.AddHostedService<UpdateHandlerBackgroundService>();
@@ -110,15 +113,34 @@ internal class Program
         var db = Environment.GetEnvironmentVariable("DB_NAME") ?? "sosubot";
         var user = Environment.GetEnvironmentVariable("DB_USER") ?? "sosubot";
         var connectionString = $"Host={host};Port={port};Database={db};Username={user};Password={dbPassword}";
-        //var connectionString = $"Data Source=bot.db";
+
+        bool usePostgres = Environment.GetEnvironmentVariable("USE_SQLITE") == "YES";
+        if (!usePostgres)
+        {
+            connectionString = $"Data Source=bot.db";
+        }
 
         _logger.LogInformation($"Using the following connection string: {connectionString}");
-        builder.Services.AddDbContextPool<BotContext>(options =>
-            options.UseNpgsql(connectionString, (m) => m.MapEnum<Playmode>())
-                .ConfigureWarnings(m => m.Ignore(RelationalEventId.PendingModelChangesWarning)));
+
+        if (usePostgres)
+        {
+            builder.Services.AddDbContextPool<BotContext>(options =>
+                options.UseNpgsql(connectionString, (m) => m.MapEnum<Playmode>())
+                    .ConfigureWarnings(m => m.Ignore(RelationalEventId.PendingModelChangesWarning)));
+        }
+        else
+        {
+            builder.Services.AddDbContextPool<BotContext>(options =>
+                options.UseSqlite(connectionString)
+                    .ConfigureWarnings(m => m.Ignore(RelationalEventId.PendingModelChangesWarning)));
+        }
 
         bool shouldMigrate = Environment.GetEnvironmentVariable("DB_MIGRATE") == "YES";
-        builder.Services.BuildServiceProvider().GetRequiredService<BotContext>().Database.Migrate();
+        if (shouldMigrate)
+        {
+            var database = builder.Services.BuildServiceProvider().GetRequiredService<BotContext>();
+            database.Database.Migrate();
+        }
 
         var app = builder.Build();
         app.Run();
