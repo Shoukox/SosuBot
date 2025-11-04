@@ -279,7 +279,7 @@ public class OsuLastCommand(bool onlyPassed = false) : CommandBase<Message>
             textToSend += "\n\n";
         }
 
-        if (playmode != Playmode.Osu) textToSend += "Для не std-скоров расчет пп на FC может быть не верным.";
+        if (playmode != Playmode.Osu && playmode != Playmode.Mania) textToSend += "Для не std-скоров расчет пп на FC может быть не верным.";
 
         await waitMessage.EditAsync(Context.BotClient, textToSend);
     }
