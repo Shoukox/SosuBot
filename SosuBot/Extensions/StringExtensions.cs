@@ -25,12 +25,34 @@ public static class StringExtensions
         return text[..spaceIndex];
     }
 
+    /// <summary>
+    ///     Gets all args from a string
+    /// </summary>
+    /// <param name="text">Text</param>
+    /// <returns>Array of args</returns>
     public static string[]? GetCommandParameters(this string text)
     {
         if (text.Length == 0 || text[0] != '/') return null;
         return text.Split(' ', StringSplitOptions.TrimEntries)[1..];
     }
-
+    
+    /// <summary>
+    ///     Gets all kwargs from a string. Key can only start with a letter
+    ///     Examples: mode=osu, mode=1, a=a
+    /// </summary>
+    /// <param name="text">Text</param>
+    /// <returns>Array of kwargs</returns>
+    public static string[]? GetCommandKeywordParameters(this string text)
+    {
+        if (text.Length == 0 || text[0] != '/') return null;
+        return text.Split(' ', StringSplitOptions.TrimEntries)[1..]
+            .Where(m => 
+                m.Split("=") is { } keyvalue 
+                && keyvalue.Length == 2 
+                && keyvalue.All(s => s.Length > 0) 
+                && char.IsLetter(keyvalue[0][0])).ToArray();
+    }
+    
     /// <summary>
     ///     Tries to convert the user's input into a <see cref="Ruleset" /> string
     /// </summary>
@@ -54,7 +76,7 @@ public static class StringExtensions
     }
 
     /// <summary>
-    ///     Tries to convert a <see cref="Ruleset" /> string into a more readable and user friendly version
+    ///     Tries to convert a <see cref="Ruleset" /> string into a more readable and osu!user friendly version
     /// </summary>
     /// <param name="ruleset"></param>
     /// <returns></returns>

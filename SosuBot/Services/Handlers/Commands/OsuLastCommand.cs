@@ -54,7 +54,9 @@ public class OsuLastCommand(bool onlyPassed = false) : CommandBase<Message>
         var waitMessage = await Context.Update.ReplyAsync(Context.BotClient, language.waiting);
 
         var osuUsernameForLastScores = string.Empty;
-        var parameters = Context.Update.Text!.GetCommandParameters()!;
+        var keywordParameters = Context.Update.Text!.GetCommandKeywordParameters()!;
+        var parameters = Context.Update.Text!.GetCommandParameters()!.Except(keywordParameters).ToArray();
+        ;
 
         var limit = 1;
         string? ruleset = null;
@@ -75,9 +77,8 @@ public class OsuLastCommand(bool onlyPassed = false) : CommandBase<Message>
         //l mrekk
         else if (parameters.Length == 1)
         {
-            var limitParsed = parameters[0].Length == 1 && int.TryParse(char.ToString(parameters[0][0]), out limit);
-            var positionalParametersExists = parameters[0].StartsWith("mode=");
-            if (limitParsed || positionalParametersExists)
+            var limitParsed = parameters[0].Length == 1 && char.IsDigit(parameters[0][0]);
+            if (limitParsed)
             {
                 if (osuUserInDatabase is null)
                 {
@@ -89,17 +90,7 @@ public class OsuLastCommand(bool onlyPassed = false) : CommandBase<Message>
                 ruleset = osuUserInDatabase.OsuMode.ToRuleset();
             }
 
-            if (positionalParametersExists)
-            {
-                ruleset = parameters[0].Split('=')[1].ParseToRuleset();
-                if (ruleset is null)
-                {
-                    await waitMessage.EditAsync(Context.BotClient, language.error_modeIncorrect);
-                    return;
-                }
-            }
-
-            if (!limitParsed && !positionalParametersExists) osuUsernameForLastScores = parameters[0];
+            if (!limitParsed) osuUsernameForLastScores = parameters[0];
         }
         //l mrekk 5
         else if (parameters.Length == 2)
@@ -111,6 +102,19 @@ public class OsuLastCommand(bool onlyPassed = false) : CommandBase<Message>
         {
             await waitMessage.EditAsync(Context.BotClient, language.error_argsLength);
             return;
+        }
+
+        if (keywordParameters.Length != 0)
+        {
+            if (keywordParameters.FirstOrDefault(m => m.StartsWith("mode")) is { } keyword)
+            {
+                ruleset = keyword.Split('=')[1].ParseToRuleset();
+                if (ruleset is null)
+                {
+                    await waitMessage.EditAsync(Context.BotClient, language.error_modeIncorrect);
+                    return;
+                }
+            }
         }
 
         // getting osu!player through username
@@ -158,8 +162,7 @@ public class OsuLastCommand(bool onlyPassed = false) : CommandBase<Message>
             var sum = beatmap.CountCircles + beatmap.CountSliders + beatmap.CountSpinners;
             if (sum is > 20_000)
             {
-                await waitMessage.EditAsync(Context.BotClient, language.error_baseMessage + "\nСлишком большая карта!");
-                return;
+                continue;
             }
 
             var mods = score.Mods!;
@@ -168,24 +171,28 @@ public class OsuLastCommand(bool onlyPassed = false) : CommandBase<Message>
 
             var passed = score.Passed!.Value;
             var scoreStatistics = score.Statistics!.ToStatistics();
-            
+
             // Get osu! mods of the score
             var scoreMods = mods.ToOsuMods(playmode);
-            
+
             // Get score statistics for fc
             Dictionary<HitResult, int>? scoreStatisticsIfFc = null;
-            if (passed)
+            if (passed && playmode != Playmode.Mania)
             {
                 scoreStatisticsIfFc = new Dictionary<HitResult, int>()
                 {
                     { HitResult.Great, scoreStatistics.GetValueOrDefault(HitResult.Great) },
                     { HitResult.Good, scoreStatistics.GetValueOrDefault(HitResult.Good) },
                     { HitResult.Ok, scoreStatistics.GetValueOrDefault(HitResult.Ok) },
-                    { HitResult.Meh, scoreStatistics.GetValueOrDefault(HitResult.Meh) + scoreStatistics.GetValueOrDefault(HitResult.Miss)},
-                    { HitResult.Miss, 0}
+                    {
+                        HitResult.Meh,
+                        scoreStatistics.GetValueOrDefault(HitResult.Meh) +
+                        scoreStatistics.GetValueOrDefault(HitResult.Miss)
+                    },
+                    { HitResult.Miss, 0 }
                 };
             }
-            
+
             // beatmap.MaxCombo in mania is classic max combo, not lazer
             int? beatmapMaxCombo = beatmap.MaxCombo;
             if (playmode == Playmode.Mania && !scoreMods.Any(m => m is ModClassic))
@@ -193,7 +200,7 @@ public class OsuLastCommand(bool onlyPassed = false) : CommandBase<Message>
                 // lazer max combo in mania
                 beatmapMaxCombo = beatmap.CountCircles + beatmap.CountSliders * 2;
             }
-            
+
             // Calculate pp
             var calculatedPp = new PPResult
             {
@@ -207,7 +214,8 @@ public class OsuLastCommand(bool onlyPassed = false) : CommandBase<Message>
                         rulesetId: (int)playmode,
                         cancellationToken: Context.CancellationToken),
 
-                IfFC = await ppCalculator.CalculatePpAsync(beatmap.Id.Value, (double)score.Accuracy!,
+                IfFC = await ppCalculator.CalculatePpAsync(beatmap.Id.Value,
+                    playmode == Playmode.Mania ? 1 : (double)score.Accuracy!,
                     scoreMaxCombo: beatmapMaxCombo,
                     scoreMods: scoreMods,
                     scoreStatistics: scoreStatisticsIfFc,
@@ -222,23 +230,26 @@ public class OsuLastCommand(bool onlyPassed = false) : CommandBase<Message>
             if (scorePp is double.NaN) scorePp = null;
 
             double? scorePpIfFc = calculatedPp.IfFC.Pp;
-            var accuracyIfFc = calculatedPp.IfFC.CalculatedAccuracy;
+            double accuracyIfFc = calculatedPp.IfFC.CalculatedAccuracy;
             bool scoreModsContainsModIdk = scoreMods.Any(m => m is ModIdk);
-            
+
             // If fc, then curPp = fcPp
             bool isFc = score.MaxCombo == beatmapMaxCombo;
             if (isFc)
             {
                 scorePpIfFc = scorePp;
-                accuracyIfFc = (double)score.Accuracy;
+                accuracyIfFc = (double)score.Accuracy!;
             }
 
-            var scorePpText =
+            string scorePpText =
                 ScoreHelper.GetFormattedPpTextConsideringNull(scoreModsContainsModIdk && calculatedPp.Current != null
                     ? null
                     : scorePp);
-            var scoreIfFcPpText =
-                ScoreHelper.GetFormattedPpTextConsideringNull(scoreModsContainsModIdk ? null : scorePpIfFc);
+
+            string scoreIfFcPpText =
+                $"{ScoreHelper.GetFormattedPpTextConsideringNull(scoreModsContainsModIdk ? null : scorePpIfFc)}pp if ";
+            scoreIfFcPpText += playmode == Playmode.Mania ? "SS" : $"{accuracyIfFc * 100:N2}% FC";
+
             var scoreEndedMinutesAgoText =
                 (DateTime.UtcNow - score.EndedAt!.Value).Humanize(
                     culture: CultureInfo.GetCultureInfoByIetfLanguageTag("ru-RU")) + " назад";
@@ -259,7 +270,6 @@ public class OsuLastCommand(bool onlyPassed = false) : CommandBase<Message>
                 $"{beatmapMaxCombo}",
                 $"{scorePpText}",
                 $"{scoreIfFcPpText}",
-                $"{accuracyIfFc * 100:N2}",
                 $"{scoreEndedMinutesAgoText}",
                 $"{score.CalculateCompletion(beatmap, playmode):N1}"
             ]);

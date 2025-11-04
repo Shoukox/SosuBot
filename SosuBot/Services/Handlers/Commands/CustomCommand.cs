@@ -216,7 +216,7 @@ public sealed class CustomCommand : CommandBase<Message>
             await sqlite.OpenAsync();
             (int addedOsuUsers, int addedTelegramChats) = (0, 0);
 
-            using var osuUsersCommand = sqlite.CreateCommand();
+            await using var osuUsersCommand = sqlite.CreateCommand();
             osuUsersCommand.CommandText = "SELECT * FROM OsuUsers";
             await using var osuUsersReader = await osuUsersCommand.ExecuteReaderAsync();
             while (await osuUsersReader.ReadAsync())
@@ -264,7 +264,7 @@ public sealed class CustomCommand : CommandBase<Message>
                 await _dbContext.SaveChangesAsync();
             }
 
-            using var telegramChatsCommand = sqlite.CreateCommand();
+            await using var telegramChatsCommand = sqlite.CreateCommand();
             telegramChatsCommand.CommandText = "SELECT * FROM TelegramChats";
             await using var telegramChatsReader = await telegramChatsCommand.ExecuteReaderAsync();
             while (await telegramChatsReader.ReadAsync())

@@ -1,5 +1,4 @@
-﻿using System.Security.AccessControl;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -13,6 +12,7 @@ using SosuBot.Logging;
 using SosuBot.Services;
 using SosuBot.Services.BackgroundServices;
 using SosuBot.Services.Handlers;
+using SosuBot.Services.StartupServices;
 using StackExchange.Redis;
 using Telegram.Bot;
 
@@ -98,6 +98,7 @@ internal class Program
         builder.Services.AddSingleton<OpenAiService>();
         builder.Services.AddSingleton<IConnectionMultiplexer>(_ => ConnectionMultiplexer.Connect(_redisContainerName));
         builder.Services.AddScoped<UpdateHandler>();
+        builder.Services.AddHostedService<ConfigureBotService>();
         builder.Services.AddHostedService<PollingBackgroundService>();
         builder.Services.AddHostedService<UpdateHandlerBackgroundService>();
         builder.Services.AddHostedService<ScoresObserverBackgroundService>();
@@ -113,7 +114,7 @@ internal class Program
         var db = Environment.GetEnvironmentVariable("DB_NAME") ?? "sosubot";
         var user = Environment.GetEnvironmentVariable("DB_USER") ?? "sosubot";
         var connectionString = $"Host={host};Port={port};Database={db};Username={user};Password={dbPassword}";
-
+        
         bool usePostgres = Environment.GetEnvironmentVariable("USE_POSTGRES") == "YES";
         if (!usePostgres)
         {
