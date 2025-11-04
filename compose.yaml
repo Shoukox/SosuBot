@@ -17,6 +17,8 @@
       - db-password
     expose:
       - "5000"
+    volumes:
+      - ./cache:/app/cache
     depends_on:
       db-service:
         condition: service_healthy
