@@ -41,6 +41,13 @@ public static class OsuTypesExtensions
         .Where(t => t.Name.StartsWith("CatchMod"))
         .Select(t => (Mod)Activator.CreateInstance(t)!)
         .ToArray();
+    
+    public static readonly Mod[] AllMods = typeof(ModNoFail).Assembly.GetTypes()
+        .Where(t => t.IsClass && !t.IsAbstract && t.IsPublic)
+        .Where(t => typeof(Mod).IsAssignableFrom(t))
+        .Where(t => t.Name.StartsWith("Mod"))
+        .Select(t => (Mod)Activator.CreateInstance(t)!)
+        .ToArray();
 
     public static Mod[] ToOsuMods(this OsuApi.V2.Models.Mod[] mods, Playmode playmode)
     {
@@ -58,6 +65,12 @@ public static class OsuTypesExtensions
             var foundMod =
                 rulesetMods.FirstOrDefault(m =>
                     m.Acronym.Equals(mod.Acronym, StringComparison.InvariantCultureIgnoreCase));
+
+            if (foundMod == null)
+            {
+                foundMod = AllMods.FirstOrDefault(m =>
+                    m.Acronym.Equals(mod.Acronym, StringComparison.InvariantCultureIgnoreCase));
+            }
 
             if (foundMod == null)
             {

@@ -61,7 +61,7 @@ public static class TelegramUpdateExtensions
     public static IEnumerable<string> GetAllLinks(this Message message)
     {
         if (message.Text == null || message.Entities == null) return [];
-
+    
         List<string> links = [];
         foreach (var me in message.Entities.Where(e =>
                      e.Type is MessageEntityType.Url or MessageEntityType.TextLink))
