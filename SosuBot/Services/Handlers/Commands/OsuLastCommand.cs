@@ -282,5 +282,6 @@ public class OsuLastCommand(bool onlyPassed = false) : CommandBase<Message>
         if (playmode != Playmode.Osu && playmode != Playmode.Mania) textToSend += "Для не std-скоров расчет пп на FC может быть не верным.";
 
         await waitMessage.EditAsync(Context.BotClient, textToSend);
+        await Context.Database.SaveChangesAsync();
     }
 }

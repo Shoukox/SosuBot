@@ -85,8 +85,14 @@ namespace SosuBot.Migrations
                     b.PrimitiveCollection<List<long>>("ExcludeFromChatstats")
                         .HasColumnType("bigint[]");
 
+                    b.Property<bool>("IsGroup")
+                        .HasColumnType("boolean");
+
                     b.Property<int?>("LastBeatmapId")
                         .HasColumnType("integer");
+
+                    b.PrimitiveCollection<List<int>>("TrackedPlayers")
+                        .HasColumnType("integer[]");
 
                     b.HasKey("ChatId");
 

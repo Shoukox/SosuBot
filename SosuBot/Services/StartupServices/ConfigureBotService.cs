@@ -1,6 +1,8 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using SosuBot.Database;
+using SosuBot.Services.BackgroundServices;
 using Telegram.Bot;
 using Telegram.Bot.Types;
 
@@ -18,7 +20,7 @@ public class ConfigureBotService(IServiceProvider serviceProvider) : IHostedServ
     public async Task StartAsync(CancellationToken cancellationToken)
     {
         await _botClient.SetMyCommands(botCommands, cancellationToken: CancellationToken.None);
-        _logger.LogInformation("Bot configuration was successful");
+        _logger.LogInformation("Successfully set bot commands");
     }
 
     public Task StopAsync(CancellationToken cancellationToken)

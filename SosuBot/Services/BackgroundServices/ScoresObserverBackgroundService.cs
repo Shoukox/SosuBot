@@ -28,9 +28,12 @@ public sealed class ScoresObserverBackgroundService(IServiceProvider serviceProv
     private readonly ITelegramBotClient _botClient = serviceProvider.GetRequiredService<ITelegramBotClient>();
     private readonly BotContext _database = serviceProvider.GetRequiredService<BotContext>();
     private readonly ApiV2 _osuApi = serviceProvider.GetRequiredService<ApiV2>();
-    private readonly ILogger<ScoresObserverBackgroundService> _logger = serviceProvider.GetRequiredService<ILogger<ScoresObserverBackgroundService>>();
-    
-    public static readonly ConcurrentBag<long> ObservedUsers = new();
+
+    private readonly ILogger<ScoresObserverBackgroundService> _logger =
+        serviceProvider.GetRequiredService<ILogger<ScoresObserverBackgroundService>>();
+
+    private static readonly SemaphoreSlim Semaphore = new SemaphoreSlim(1, 1);
+    public static readonly ConcurrentBag<int> ObservedUsers = new();
     public static List<DailyStatistics> AllDailyStatistics = new();
 
     private static readonly ScoreEqualityComparer ScoreComparer = new();
@@ -42,8 +45,19 @@ public sealed class ScoresObserverBackgroundService(IServiceProvider serviceProv
         Path.Combine(CacheDirectory, "statistics.cache");
 
     private UserStatisticsCacheDatabase _userDatabase = null!; // initialized in ExecuteAsync
-
     private long _adminTelegramId;
+
+    private async Task SetupObserverList()
+    {
+        await AddPlayersToObserverListFromSpecificCountryLeaderboard("uz");
+        await AddPlayersToObserverListFromSpecificCountryLeaderboard();
+        
+        var chatsWithTrackedPlayers = _database.TelegramChats.Where(m => m.TrackedPlayers != null);
+        _logger.LogInformation($"Found {chatsWithTrackedPlayers.Count()} chats with tracked players");
+        
+        await Task.WhenAll(chatsWithTrackedPlayers.Select(m => AddPlayersToObserverList(m.TrackedPlayers!.ToArray())));
+        _logger.LogInformation($"Successfully added tracked players to the {nameof(ScoresObserverBackgroundService)}");
+    }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
@@ -54,8 +68,8 @@ public sealed class ScoresObserverBackgroundService(IServiceProvider serviceProv
         {
             _adminTelegramId = (await _database.OsuUsers.FirstAsync(m => m.IsAdmin == true))
                 .TelegramId;
-            await AddPlayersToObserverList("uz");
-            await AddPlayersToObserverList();
+            
+            await SetupObserverList();
 
             await Task.WhenAll(
                 ObserveScoresGetScores(stoppingToken),
@@ -250,10 +264,14 @@ public sealed class ScoresObserverBackgroundService(IServiceProvider serviceProv
                             userBestScores.Scores.Except(scores[userId].Scores, ScoreComparer);
                         foreach (var score in newScores)
                         {
-                            await _botClient.SendMessage(_adminTelegramId,
-                                $"<b>{score.User?.Username}</b> set a <b>{score.Pp}pp</b> {ScoreHelper.GetScoreUrlWrappedInString(score.Id!.Value, "score!")}",
-                                ParseMode.Html, linkPreviewOptions: true);
-                            await Task.Delay(1000);
+                            var chatsToSend = _database.TelegramChats.Where(m => m.TrackedPlayers != null && m.TrackedPlayers.Contains(userId));
+                            foreach (var chat in chatsToSend)
+                            {
+                                await _botClient.SendMessage(chat.ChatId,
+                                    $"<b>{score.User?.Username}</b> set a <b>{score.Pp}pp</b> {ScoreHelper.GetScoreUrlWrappedInString(score.Id!.Value, "score!")}",
+                                    ParseMode.Html, linkPreviewOptions: true);
+                                await Task.Delay(1000);
+                            }
                         }
                     }
 
@@ -287,14 +305,39 @@ public sealed class ScoresObserverBackgroundService(IServiceProvider serviceProv
     }
 
     /// <summary>
-    ///     Add players to the <see cref="ObservedUsers" />
+    ///     Add players to the <see cref="ObservedUsers" /> from a specific country leaderboard
     /// </summary>
     /// <param name="countryCode">If null, take from global ranking</param>
     /// <param name="count">Amount of players to add</param>
-    private async Task AddPlayersToObserverList(string? countryCode = null, int count = 50)
+    private async Task AddPlayersToObserverListFromSpecificCountryLeaderboard(string? countryCode = null,
+        int count = 50)
     {
         var bestPlayersStatistics = (await GetBestPlayersFor(countryCode)).Take(count).ToArray();
         foreach (var playerStatistics in bestPlayersStatistics) ObservedUsers.Add(playerStatistics.User!.Id.Value);
+    }
+
+    /// <summary>
+    ///     Add players to the <see cref="ObservedUsers" /> if they are not there
+    /// </summary>
+    /// <param name="countryCode">If null, take from global ranking</param>
+    /// <param name="count">Amount of players to add</param>
+    public static async Task AddPlayersToObserverList(int[] playerIds)
+    {
+        try
+        {
+            await Semaphore.WaitAsync();
+            foreach (var osuUserId in playerIds)
+            {
+                if (!ObservedUsers.Contains(osuUserId))
+                {
+                    ObservedUsers.Add(osuUserId);
+                }
+            }
+        }
+        finally
+        {
+            Semaphore.Release();
+        }
     }
 
     private async Task SaveDailyStatistics()
