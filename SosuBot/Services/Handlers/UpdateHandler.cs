@@ -74,11 +74,23 @@ public class UpdateHandler(
         // Add new chat and update chat members
         await database.AddOrUpdateTelegramChat(msg);
 
-        if (msg.Text is not { } text) return;
+        if (msg.Text == null)
+        {
+            if (msg.Caption != null)
+            {
+                msg.Text = msg.Caption;
+                msg.Entities = msg.CaptionEntities;
+            }
+            else
+            {
+                return;
+            }
+        }
         if (msg.From is null) return;
-
+        
+        // msg.Text is guaranteed to be not null
         // Execute necessary functions
-        if (text.IsCommand())
+        if (msg.Text.IsCommand())
             await OnCommand(botClient, msg, cancellationToken);
         else
             await OnText(botClient, msg, cancellationToken);
