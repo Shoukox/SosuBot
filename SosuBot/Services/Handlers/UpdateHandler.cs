@@ -189,6 +189,9 @@ public class UpdateHandler(
             case string render when ReplayRenderCommand.Commands.Contains(render):
                 executableCommand = new ReplayRenderCommand();
                 break;
+            case string track when TrackCommand.Commands.Contains(track):
+                executableCommand = new TrackCommand();
+                break;
             default:
                 executableCommand = new Commands.DummyCommand();
                 break;

@@ -19,7 +19,7 @@ public sealed class OsuChatstatsExcludeCommand : CommandBase<Message>
         var parameters = Context.Update.Text!.GetCommandParameters()!;
         if (parameters.Length == 0)
         {
-            await waitMessage.ReplyAsync(Context.BotClient, language.error_nameIsEmpty);
+            await waitMessage.EditAsync(Context.BotClient, language.error_nameIsEmpty);
             return;
         }
 
@@ -28,14 +28,14 @@ public sealed class OsuChatstatsExcludeCommand : CommandBase<Message>
             m.OsuUsername.Trim().Equals(osuUsernameToExclude.Trim(), StringComparison.InvariantCultureIgnoreCase));
         if (osuUserToExclude is null)
         {
-            await waitMessage.ReplyAsync(Context.BotClient, language.error_userNotFoundInBotsDatabase);
+            await waitMessage.EditAsync(Context.BotClient, language.error_userNotFoundInBotsDatabase);
             return;
         }
 
         chatInDatabase!.ExcludeFromChatstats = chatInDatabase.ExcludeFromChatstats ?? new List<long>();
         if (chatInDatabase.ExcludeFromChatstats.Contains(osuUserToExclude.OsuUserId))
         {
-            await waitMessage.ReplyAsync(Context.BotClient, language.error_excludeListAlreadyContainsThisId);
+            await waitMessage.EditAsync(Context.BotClient, language.error_excludeListAlreadyContainsThisId);
             return;
         }
 
