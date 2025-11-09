@@ -221,7 +221,7 @@ public sealed class ScoresObserverBackgroundService(IServiceProvider serviceProv
                 getTaikoScoresCursor = getTaikoScoresResponse.CursorString;
                 getFruitsScoresCursor = getFruitsScoresResponse.CursorString;
                 getManiaScoresCursor = getManiaScoresResponse.CursorString;
-                await Task.Delay(7_000);
+                await Task.Delay(7000);
             }
             catch (HttpRequestException httpRequestException)
             {
@@ -260,19 +260,31 @@ public sealed class ScoresObserverBackgroundService(IServiceProvider serviceProv
                     // ReSharper disable once CanSimplifyDictionaryLookupWithTryGetValue
                     if (scores.ContainsKey(userId))
                     {
-                        var newScores =
-                            userBestScores.Scores.Except(scores[userId].Scores, ScoreComparer);
-                        foreach (var score in newScores)
+                        _ = Task.Run(async () =>
                         {
-                            var chatsToSend = _database.TelegramChats.Where(m => m.TrackedPlayers != null && m.TrackedPlayers.Contains(userId));
-                            foreach (var chat in chatsToSend)
+                            var newScores =
+                                userBestScores.Scores.Except(scores[userId].Scores, ScoreComparer);
+                            
+                            foreach (var score in newScores)
                             {
-                                await _botClient.SendMessage(chat.ChatId,
+                                // Send it to the admin
+                                await _botClient.SendMessage(_adminTelegramId,
                                     $"<b>{score.User?.Username}</b> set a <b>{score.Pp}pp</b> {ScoreHelper.GetScoreUrlWrappedInString(score.Id!.Value, "score!")}",
                                     ParseMode.Html, linkPreviewOptions: true);
                                 await Task.Delay(1000);
+
+                                
+                                // Send it to all chats tracking 
+                                var chatsToSend = _database.TelegramChats.Where(m => m.TrackedPlayers != null && m.TrackedPlayers.Contains(userId));
+                                foreach (var chat in chatsToSend)
+                                {
+                                    await _botClient.SendMessage(chat.ChatId,
+                                        $"<b>{score.User?.Username}</b> set a <b>{score.Pp}pp</b> {ScoreHelper.GetScoreUrlWrappedInString(score.Id!.Value, "score!")}",
+                                        ParseMode.Html, linkPreviewOptions: true);
+                                    await Task.Delay(1000);
+                                }
                             }
-                        }
+                        }).ConfigureAwait(false);
                     }
 
                     scores[userId] = userBestScores;
