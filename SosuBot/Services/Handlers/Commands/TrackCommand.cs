@@ -35,7 +35,7 @@ public sealed class TrackCommand : CommandBase<Message>
             return;
         }
 
-        int maxArgsCount = 1;
+        int maxArgsCount = 3;
         if (parameters.Length > maxArgsCount)
         {
             await waitMessage.EditAsync(Context.BotClient, language.error_argsLength + $"\nДопустимо макс. {maxArgsCount} игрока на группу");

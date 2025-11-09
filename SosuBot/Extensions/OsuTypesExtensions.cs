@@ -133,7 +133,7 @@ public static class OsuTypesExtensions
     public static double CalculateCompletion(this Score score, BeatmapExtended beatmap, Playmode playmode)
     {
         var beatmapObjects = beatmap.CalculateObjectsAmount();
-        var beatmapHitResultObjects = beatmapObjects + playmode switch
+        var beatmapHitResults = beatmapObjects + playmode switch
         {
             Playmode.Osu => 0,
             Playmode.Taiko => -beatmap.CountSpinners!.Value,
@@ -142,8 +142,8 @@ public static class OsuTypesExtensions
             _ => 0
         };
 
-        var scoreHittedObjects = score.CalculateSumOfHitResults();
-        return scoreHittedObjects / (double)beatmapHitResultObjects * 100.0;
+        var scoreHitResults = score.CalculateSumOfHitResults();
+        return scoreHitResults / (double)beatmapHitResults * 100.0;
     }
 
     public static int CalculateSumOfHitResults(this Score score)
