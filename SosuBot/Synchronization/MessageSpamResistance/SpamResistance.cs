@@ -8,7 +8,7 @@ public class SpamResistance
 
     public static readonly TimeSpan Interval = TimeSpan.FromSeconds(5);
     public static readonly TimeSpan BlockInterval = TimeSpan.FromSeconds(15);
-    private readonly int _maxMessagesPerInterval = 5;
+    private readonly int _maxMessagesPerInterval = 7;
 
     private readonly ConcurrentDictionary<long, MessagingUser> _usersDict;
 
@@ -31,7 +31,7 @@ public class SpamResistance
             var messagingUser = _usersDict.GetOrAdd(userId, _ => AddNew(userId));
             if (IsBlocked(messagingUser)) return (false, false);
 
-            var dateTimeNow = DateTime.UtcNow;
+            var dateTimeNow = DateTime.Now;
 
             // Ban if necessary
             bool canSend;
@@ -85,7 +85,7 @@ public class SpamResistance
         queue.TryPeek(out var peekQueueDateTime);
 
         while (queue.Count > 0 && dateTimeNow - peekQueueDateTime > Interval) queue.TryDequeue(out _);
-        queue.Enqueue(messageSent.ToUniversalTime());
+        queue.Enqueue(messageSent); // It's in our current timezone
 
         return new MessagingUser
         {

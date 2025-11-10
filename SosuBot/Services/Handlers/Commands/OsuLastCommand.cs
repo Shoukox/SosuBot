@@ -77,7 +77,7 @@ public class OsuLastCommand(bool onlyPassed = false) : CommandBase<Message>
         //l mrekk
         else if (parameters.Length == 1)
         {
-            var limitParsed = parameters[0].Length == 1 && char.IsDigit(parameters[0][0]);
+            var limitParsed = parameters[0].Length == 1 && int.TryParse(parameters[0][0].ToString(), out limit);
             if (limitParsed)
             {
                 if (osuUserInDatabase is null)
@@ -235,7 +235,7 @@ public class OsuLastCommand(bool onlyPassed = false) : CommandBase<Message>
 
             // If fc, then curPp = fcPp
             bool isFc = score.MaxCombo == beatmapMaxCombo;
-            if (isFc)
+            if (isFc && playmode == Playmode.Osu)
             {
                 scorePpIfFc = scorePp;
                 accuracyIfFc = (double)score.Accuracy!;
@@ -247,8 +247,7 @@ public class OsuLastCommand(bool onlyPassed = false) : CommandBase<Message>
                     : scorePp);
 
             string scoreIfFcPpText =
-                $"{ScoreHelper.GetFormattedPpTextConsideringNull(scoreModsContainsModIdk ? null : scorePpIfFc)}pp if ";
-            scoreIfFcPpText += playmode == Playmode.Mania ? "SS" : $"{accuracyIfFc * 100:N2}% FC";
+                $"{ScoreHelper.GetFormattedPpTextConsideringNull(scoreModsContainsModIdk ? null : scorePpIfFc)}pp if {accuracyIfFc * 100:N2}% FC";
 
             var scoreEndedMinutesAgoText =
                 (DateTime.UtcNow - score.EndedAt!.Value).Humanize(
