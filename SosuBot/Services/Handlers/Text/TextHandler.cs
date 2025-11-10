@@ -244,8 +244,6 @@ public sealed class TextHandler : CommandBase<Message>
         var ik = new InlineKeyboardMarkup(new InlineKeyboardButton("Song preview")
             { CallbackData = $"{Context.Update.Chat.Id} songpreview {beatmapset.Id}" });
 
-        if (playmode != Playmode.Osu) textToSend += "Для не std-скоров расчет пп на FC может быть не верным.";
-
         try
         {
             await Context.Update.ReplyPhotoAsync(Context.BotClient, photo, textToSend,

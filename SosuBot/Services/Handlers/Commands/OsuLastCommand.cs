@@ -181,13 +181,17 @@ public class OsuLastCommand(bool onlyPassed = false) : CommandBase<Message>
             {
                 scoreStatisticsIfFc = new Dictionary<HitResult, int>()
                 {
-                    { HitResult.Great, scoreStatistics.GetValueOrDefault(HitResult.Great) },
+                    {
+                        HitResult.Great, 
+                        scoreStatistics.GetValueOrDefault(HitResult.Great) +
+                        playmode == Playmode.Catch ? scoreStatistics.GetValueOrDefault(HitResult.Miss) : 0
+                    },
                     { HitResult.Good, scoreStatistics.GetValueOrDefault(HitResult.Good) },
                     { HitResult.Ok, scoreStatistics.GetValueOrDefault(HitResult.Ok) },
                     {
                         HitResult.Meh,
                         scoreStatistics.GetValueOrDefault(HitResult.Meh) +
-                        scoreStatistics.GetValueOrDefault(HitResult.Miss)
+                        playmode != Playmode.Catch ? scoreStatistics.GetValueOrDefault(HitResult.Miss) : 0
                     },
                     { HitResult.Miss, 0 }
                 };
@@ -277,8 +281,6 @@ public class OsuLastCommand(bool onlyPassed = false) : CommandBase<Message>
 
             textToSend += "\n\n";
         }
-
-        if (playmode != Playmode.Osu && playmode != Playmode.Mania) textToSend += "Для не std-скоров расчет пп на FC может быть не верным.";
 
         await waitMessage.EditAsync(Context.BotClient, textToSend);
         await Context.Database.SaveChangesAsync();
