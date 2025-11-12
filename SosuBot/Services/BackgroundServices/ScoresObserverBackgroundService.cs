@@ -1,5 +1,8 @@
+using System.Buffers.Text;
 using System.Collections.Concurrent;
 using System.Net;
+using System.Net.Mime;
+using System.Text;
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -102,6 +105,7 @@ public sealed class ScoresObserverBackgroundService(IServiceProvider serviceProv
             AllDailyStatistics.Add(dailyStatistics);
         }
 
+        //string cursor = Convert.ToBase64String("{\"id\":5737168425}"u8.ToArray());
         string? getStdScoresCursor = null;
         string? getTaikoScoresCursor = null;
         string? getFruitsScoresCursor = null;
@@ -118,7 +122,7 @@ public sealed class ScoresObserverBackgroundService(IServiceProvider serviceProv
                     { CursorString = getFruitsScoresCursor, Ruleset = Ruleset.Fruits });
                 var getManiaScoresResponseTask = _osuApi.Scores.GetScores(new ScoresQueryParameters
                     { CursorString = getManiaScoresCursor, Ruleset = Ruleset.Mania });
-
+                
                 await Task.WhenAll(getStdScoresResponseTask, getTaikoScoresResponseTask, getFruitsScoresResponseTask,
                     getManiaScoresResponseTask);
 
@@ -126,7 +130,7 @@ public sealed class ScoresObserverBackgroundService(IServiceProvider serviceProv
                 var getTaikoScoresResponse = getTaikoScoresResponseTask.Result;
                 var getFruitsScoresResponse = getFruitsScoresResponseTask.Result;
                 var getManiaScoresResponse = getManiaScoresResponseTask.Result;
-
+                
                 if (getStdScoresResponse == null)
                 {
                     _logger.LogWarning("getStdScoresResponse returned null");
@@ -221,18 +225,18 @@ public sealed class ScoresObserverBackgroundService(IServiceProvider serviceProv
                 getTaikoScoresCursor = getTaikoScoresResponse.CursorString;
                 getFruitsScoresCursor = getFruitsScoresResponse.CursorString;
                 getManiaScoresCursor = getManiaScoresResponse.CursorString;
+                
+                _logger.LogInformation($"Current cursor for std: {getStdScoresCursor}");
+                _logger.LogInformation($"Current cursor for taiko: {getTaikoScoresCursor}");
+                _logger.LogInformation($"Current cursor for fruits: {getFruitsScoresCursor}");
+                _logger.LogInformation($"Current cursor for mania: {getManiaScoresCursor}");
                 await Task.Delay(7000);
             }
             catch (HttpRequestException httpRequestException)
             {
-                if (httpRequestException.StatusCode != null && ((int)httpRequestException.StatusCode >= 500 ||
-                                                                httpRequestException.StatusCode ==
-                                                                HttpStatusCode.RequestTimeout))
-                {
-                    var waitMs = 10_000;
-                    _logger.LogWarning($"OsuApi: status code {httpRequestException.StatusCode}. Waiting {waitMs}ms...");
-                    await Task.Delay(waitMs);
-                }
+                var waitMs = 10_000;
+                _logger.LogWarning($"[{nameof(ScoresObserverBackgroundService)}]: status code {httpRequestException.StatusCode}. Waiting {waitMs}ms...");
+                await Task.Delay(waitMs);
             }
             catch (Exception e)
             {

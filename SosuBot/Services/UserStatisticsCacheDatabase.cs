@@ -46,8 +46,15 @@ public class UserStatisticsCacheDatabase(ApiV2 api, string? usersCachePath = nul
             if (!Directory.Exists(UsersCachePath) ||
                 (Directory.GetFiles(UsersCachePath) is { } files && files.Length == 0) ||
                 (Directory.GetFiles(UsersCachePath) is { } foundFiles &&
-                 IsUserStatisticsCacheExpired(int.Parse(Path.GetFileName(foundFiles[0]).Split('.')[0]))))
+                 IsUserStatisticsCacheExpired(int.Parse(Path.GetFileNameWithoutExtension(foundFiles[0])))))
+            {
                 await CacheUsersFromGivenCountry(CountryCode.Uzbekistan);
+
+                if (Directory.GetFiles(UsersCachePath) is { } foundCachedUsers)
+                {
+                    RemoveUnnecessaryCachedUsers(foundCachedUsers);
+                }
+            }
         }
         finally
         {
@@ -106,6 +113,24 @@ public class UserStatisticsCacheDatabase(ApiV2 api, string? usersCachePath = nul
         foreach (var user in users)
             await File.WriteAllTextAsync(GetCachedUserStatisticsPath(user!.User!.Id.Value),
                 JsonSerializer.Serialize(user, new JsonSerializerOptions { WriteIndented = false }));
+    }
+
+    private void RemoveUnnecessaryCachedUsers(string[] foundCachedUsersFiles)
+    {
+        foreach (string file in foundCachedUsersFiles)
+        {
+            try
+            {
+                if (IsUserStatisticsCacheExpired(int.Parse(Path.GetFileNameWithoutExtension(file))))
+                {
+                    File.Delete(file);
+                }
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.Message);   
+            }
+        }
     }
 
     private string GetCachedUserStatisticsPath(int userId)
