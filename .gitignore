@@ -8,3 +8,7 @@ SosuBot/Properties/launchSettings.json
 logs/
 openai-settings.json
 .proxy/
+/SosuBot/migrate.load
+/cache
+/.secrets
+/.redis/data
