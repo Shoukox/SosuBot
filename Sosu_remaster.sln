@@ -1,15 +1,13 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 17
-VisualStudioVersion = 17.4.33213.308
+# Visual Studio Version 18
+VisualStudioVersion = 18.0.11205.157 d18.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SosuBot.Localization", "SosuBot.Localization\SosuBot.Localization.csproj", "{F7B610F1-A276-4684-809F-48E059D3A8F8}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SosuBot", "SosuBot\SosuBot.csproj", "{EA368A83-79FD-444E-8139-EC5BC29891C3}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SosuBot.PerformanceCalculator", "SosuBot.PerformanceCalculator\SosuBot.PerformanceCalculator.csproj", "{6403AEA0-CD36-53FD-B57B-1C701EAB2DFA}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SosuBot.OsuCard", "SosuBot.OsuCard\SosuBot.OsuCard.csproj", "{F50A2A6E-994A-46E4-99F5-FF38273084AB}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{959C20C0-0F61-440E-888B-A5B8537E8697}"
 EndProject
@@ -23,11 +21,13 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OsuApi.Examples", "OsuApi\O
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{6AF597B5-CAE0-47EA-BD76-B3D578741A54}"
 	ProjectSection(SolutionItems) = preProject
+		.dockerignore = .dockerignore
 		compose.yaml = compose.yaml
 		Dockerfile = Dockerfile
 		.proxy\nginx.conf = .proxy\nginx.conf
-		.dockerignore = .dockerignore
 	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SosuBot.Graphics", "SosuBot.Graphics\SosuBot.Graphics.csproj", "{A2593FEA-7C39-46A6-A1FF-FC53CB96766A}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -47,10 +47,6 @@ Global
 		{6403AEA0-CD36-53FD-B57B-1C701EAB2DFA}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{6403AEA0-CD36-53FD-B57B-1C701EAB2DFA}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{6403AEA0-CD36-53FD-B57B-1C701EAB2DFA}.Release|Any CPU.Build.0 = Release|Any CPU
-		{F50A2A6E-994A-46E4-99F5-FF38273084AB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{F50A2A6E-994A-46E4-99F5-FF38273084AB}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{F50A2A6E-994A-46E4-99F5-FF38273084AB}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{F50A2A6E-994A-46E4-99F5-FF38273084AB}.Release|Any CPU.Build.0 = Release|Any CPU
 		{04AAF54E-D0E3-4414-8827-678957FF2B3A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{04AAF54E-D0E3-4414-8827-678957FF2B3A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{04AAF54E-D0E3-4414-8827-678957FF2B3A}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -59,19 +55,23 @@ Global
 		{B2CF36B9-516C-465D-9BFB-FDE087E7F8F3}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B2CF36B9-516C-465D-9BFB-FDE087E7F8F3}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B2CF36B9-516C-465D-9BFB-FDE087E7F8F3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A2593FEA-7C39-46A6-A1FF-FC53CB96766A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A2593FEA-7C39-46A6-A1FF-FC53CB96766A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A2593FEA-7C39-46A6-A1FF-FC53CB96766A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A2593FEA-7C39-46A6-A1FF-FC53CB96766A}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
-	GlobalSection(ExtensibilityGlobals) = postSolution
-		SolutionGuid = {9AED0D6F-185A-4498-833E-87111BF57447}
-	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
-		{EA368A83-79FD-444E-8139-EC5BC29891C3} = {959C20C0-0F61-440E-888B-A5B8537E8697}
-		{F50A2A6E-994A-46E4-99F5-FF38273084AB} = {959C20C0-0F61-440E-888B-A5B8537E8697}
 		{F7B610F1-A276-4684-809F-48E059D3A8F8} = {959C20C0-0F61-440E-888B-A5B8537E8697}
+		{EA368A83-79FD-444E-8139-EC5BC29891C3} = {959C20C0-0F61-440E-888B-A5B8537E8697}
 		{6403AEA0-CD36-53FD-B57B-1C701EAB2DFA} = {959C20C0-0F61-440E-888B-A5B8537E8697}
 		{04AAF54E-D0E3-4414-8827-678957FF2B3A} = {959C20C0-0F61-440E-888B-A5B8537E8697}
 		{B2CF36B9-516C-465D-9BFB-FDE087E7F8F3} = {19F94DDE-F12A-42F1-A80D-49E5BE7BB704}
+		{A2593FEA-7C39-46A6-A1FF-FC53CB96766A} = {959C20C0-0F61-440E-888B-A5B8537E8697}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {9AED0D6F-185A-4498-833E-87111BF57447}
 	EndGlobalSection
 EndGlobal

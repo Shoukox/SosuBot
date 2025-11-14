@@ -1,0 +1,6 @@
+@SosuBot.Graphics_HostAddress = http://localhost:5091
+
+GET {{SosuBot.Graphics_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

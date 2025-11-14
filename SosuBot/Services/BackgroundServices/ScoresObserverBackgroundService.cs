@@ -217,7 +217,11 @@ public sealed class ScoresObserverBackgroundService(IServiceProvider serviceProv
                 }
 
                 // Save every timedelay*100 seconds
-                if (counter % 100 == 0) await SaveDailyStatistics();
+                if (counter % 20 == 0)
+                {
+                    await SaveDailyStatistics();
+                    _logger.LogInformation($"Saved daily stats");
+                }
 
                 counter = (counter + 1) % int.MaxValue;
 
