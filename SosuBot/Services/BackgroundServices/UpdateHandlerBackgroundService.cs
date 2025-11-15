@@ -51,11 +51,6 @@ public sealed class UpdateHandlerBackgroundService(IServiceProvider serviceProvi
             {
                 await updateHandler.HandleUpdateAsync(bot, update, CancellationToken.None);
             }
-            catch (OperationCanceledException)
-            {
-                _logger.LogWarning("Operation cancelled");
-                break;
-            }
             catch (Exception ex)
             {
                 await updateHandler.HandleErrorAsync(bot, ex, HandleErrorSource.HandleUpdateError, CancellationToken.None);

@@ -272,32 +272,45 @@ public sealed class ScoresObserverBackgroundService(IServiceProvider serviceProv
                         {
                             var newScores =
                                 userBestScores.Scores.Except(scores[userId].Scores, ScoreComparer);
-                            
+
                             foreach (var score in newScores)
                             {
-                                // Send it to the admin
-                                await _botClient.SendMessage(_adminTelegramId,
-                                    $"<b>{score.User?.Username}</b> set a <b>{score.Pp}pp</b> {ScoreHelper.GetScoreUrlWrappedInString(score.Id!.Value, "score!")}",
-                                    ParseMode.Html, linkPreviewOptions: true);
-                                await Task.Delay(1000);
-
-                                
-                                // Send it to all chats tracking 
-                                var chatsToSend = _database.TelegramChats.Where(m => m.TrackedPlayers != null && m.TrackedPlayers.Contains(userId));
-                                foreach (var chat in chatsToSend)
+                                try
                                 {
-                                    await _botClient.SendMessage(chat.ChatId,
+                                    // Send it to the admin
+                                    await _botClient.SendMessage(_adminTelegramId,
                                         $"<b>{score.User?.Username}</b> set a <b>{score.Pp}pp</b> {ScoreHelper.GetScoreUrlWrappedInString(score.Id!.Value, "score!")}",
                                         ParseMode.Html, linkPreviewOptions: true);
                                     await Task.Delay(1000);
+
+
+                                    // Send it to all chats tracking 
+                                    var chatsToSend = _database.TelegramChats.Where(m => m.TrackedPlayers != null && m.TrackedPlayers.Contains(userId));
+                                    foreach (var chat in chatsToSend)
+                                    {
+                                        await _botClient.SendMessage(chat.ChatId,
+                                            $"<b>{score.User?.Username}</b> set a <b>{score.Pp}pp</b> {ScoreHelper.GetScoreUrlWrappedInString(score.Id!.Value, "score!")}",
+                                            ParseMode.Html, linkPreviewOptions: true);
+                                        await Task.Delay(1000);
+                                    }
+                                }
+                                catch (Exception e)
+                                {
+                                    _logger.LogError(e, "Error while sending new score notification");
                                 }
                             }
-                        }).ConfigureAwait(false);
+                        });
                     }
 
                     scores[userId] = userBestScores;
                     await Task.Delay(5000);
                 }
+            }
+            catch (HttpRequestException httpRequestException)
+            {
+                var waitMs = 10_000;
+                _logger.LogWarning($"[{nameof(ScoresObserverBackgroundService)}]: status code {httpRequestException.StatusCode}. Waiting {waitMs}ms...");
+                await Task.Delay(waitMs);
             }
             catch (Exception e)
             {
