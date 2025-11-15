@@ -14,8 +14,8 @@ COPY ["OsuApi/OsuApi/OsuApi.csproj", "OsuApi/OsuApi/"]
 RUN dotnet restore "./OsuApi/OsuApi/OsuApi.csproj"
 COPY ["SosuBot.Localization/SosuBot.Localization.csproj", "SosuBot.Localization/"]
 RUN dotnet restore "./SosuBot.Localization/SosuBot.Localization.csproj"
-COPY ["SosuBot.OsuCard/SosuBot.OsuCard.csproj", "SosuBot.OsuCard/"]
-RUN dotnet restore "./SosuBot.OsuCard/SosuBot.OsuCard.csproj"
+COPY ["SosuBot.Graphics/SosuBot.Graphics.csproj", "SosuBot.Graphics/"]
+RUN dotnet restore "./SosuBot.Graphics/SosuBot.Graphics.csproj"
 COPY ["SosuBot.PerformanceCalculator/SosuBot.PerformanceCalculator.csproj", "SosuBot.PerformanceCalculator/"]
 RUN dotnet restore "./SosuBot.PerformanceCalculator/SosuBot.PerformanceCalculator.csproj"
 COPY ["SosuBot/SosuBot.csproj", "SosuBot/"]
