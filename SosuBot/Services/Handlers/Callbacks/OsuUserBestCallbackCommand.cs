@@ -82,11 +82,11 @@ public class OsuUserBestCallbackCommand : CommandBase<CallbackQuery>
                 $"{score.Beatmapset.Status}",
                 $"{ScoreHelper.GetScoreStatisticsText(score.Statistics!, playmode)}",
                 $"{score.Statistics!.Miss}",
-                $"{score.Accuracy * 100:N2}",
+                $"{ScoreHelper.GetFormattedNumConsideringNull(score.Accuracy * 100, round:false)}",
                 $"{ScoreHelper.GetModsText(score.Mods!)}",
                 $"{score.MaxCombo}",
                 $"{fcText}",
-                $"{ScoreHelper.GetFormattedPpTextConsideringNull(score.Pp)}"
+                $"{ScoreHelper.GetFormattedNumConsideringNull(score.Pp)}"
             ]);
             index += 1;
         }

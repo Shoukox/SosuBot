@@ -25,9 +25,18 @@ public static class ScoreHelper
         return modsText;
     }
 
-    public static string GetFormattedPpTextConsideringNull(double? scorePp, string format = "N2")
+    public static string GetFormattedNumConsideringNull(double? num, string format = "N2", bool round = true)
     {
-        var ppText = scorePp?.ToString(format) ?? "—";
+        if (num == null) return "—";
+
+        if (!round)
+        {
+            int decimalPlaces = char.IsDigit(format[^1]) ? int.Parse(format[^1].ToString()) : 2;
+            int multiplier = (int)Math.Pow(10, decimalPlaces);
+            num = Math.Truncate(num.Value * multiplier) / multiplier; //0.972756, 0.972756 * 100 * 1000 = 97275.6, Truncate = 97275, / 1000 = 97.275
+        }
+
+        var ppText = num.Value.ToString(format) ?? "—";
         return ppText;
     }
 
@@ -153,7 +162,7 @@ public static class ScoreHelper
                 .Select(m => m.MaxBy(s => s.Pp))
                 .OrderByDescending(m => m!.Pp)
                 .Select(m => GetScoreUrlWrappedInString(m!.Id!.Value,
-                    $"{GetFormattedPpTextConsideringNull(m.Pp, "N0")}pp{modeEmoji}"))
+                    $"{GetFormattedNumConsideringNull(m.Pp, "N0")}pp{modeEmoji}"))
                 .ToArray();
 
             var topPpScoresTextForCurrentUser = string.Join(", ", scoresOrderedByPp.Take(3));
@@ -170,7 +179,7 @@ public static class ScoreHelper
         {
             if (count >= 5) break;
             topActivePlayers +=
-                $"{count + 1}. <b>{UserHelper.GetUserProfileUrlWrappedInUsernameString(us.m.Id.Value, us.m.Username!)}</b> — {us.Item2.Length} скоров, макс. <i>{GetFormattedPpTextConsideringNull(us.Item2.Max(m => m.Pp), "N0")}pp💪</i>\n";
+                $"{count + 1}. <b>{UserHelper.GetUserProfileUrlWrappedInUsernameString(us.m.Id.Value, us.m.Username!)}</b> — {us.Item2.Length} скоров, макс. <i>{GetFormattedNumConsideringNull(us.Item2.Max(m => m.Pp), "N0")}pp💪</i>\n";
             count += 1;
         }
 
