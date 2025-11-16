@@ -246,12 +246,12 @@ public class OsuLastCommand(bool onlyPassed = false) : CommandBase<Message>
             }
 
             string scorePpText =
-                ScoreHelper.GetFormattedPpTextConsideringNull(scoreModsContainsModIdk && calculatedPp.Current != null
+                ScoreHelper.GetFormattedNumConsideringNull(scoreModsContainsModIdk && calculatedPp.Current != null
                     ? null
                     : scorePp);
 
             string scoreIfFcPpText =
-                $"{ScoreHelper.GetFormattedPpTextConsideringNull(scoreModsContainsModIdk ? null : scorePpIfFc)}pp if {accuracyIfFc * 100:N2}% FC";
+                $"{ScoreHelper.GetFormattedNumConsideringNull(scoreModsContainsModIdk ? null : scorePpIfFc)}pp if {ScoreHelper.GetFormattedNumConsideringNull(accuracyIfFc * 100, round: false)}% FC";
 
             var scoreEndedMinutesAgoText =
                 (DateTime.UtcNow - score.EndedAt!.Value).Humanize(
@@ -267,7 +267,7 @@ public class OsuLastCommand(bool onlyPassed = false) : CommandBase<Message>
                 $"{ppCalculator.LastDifficultyAttributes!.StarRating:N2}",
                 $"{ScoreHelper.GetScoreStatisticsText(score.Statistics!, playmode)}",
                 $"{score.Statistics!.Miss}",
-                $"{score.Accuracy * 100:N2}",
+                $"{ScoreHelper.GetFormattedNumConsideringNull(score.Accuracy * 100, round: false)}",
                 $"{ScoreHelper.GetModsText(mods)}",
                 $"{score.MaxCombo}",
                 $"{beatmapMaxCombo}",

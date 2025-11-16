@@ -218,11 +218,11 @@ public sealed class OsuScoreCommand : CommandBase<Message>
                 $"{beatmap.Status}",
                 $"{ScoreHelper.GetScoreStatisticsText(score.Statistics!, currentPlaymode)}",
                 $"{score.Statistics!.Miss}",
-                $"{score.Accuracy * 100:N2}",
+                $"{ScoreHelper.GetFormattedNumConsideringNull(score.Accuracy * 100, round: false)}",
                 $"{ScoreHelper.GetModsText(score.Mods!)}",
                 $"{score.MaxCombo}",
                 $"{beatmap.MaxCombo}",
-                $"{ScoreHelper.GetFormattedPpTextConsideringNull(score.Pp)}",
+                $"{ScoreHelper.GetFormattedNumConsideringNull(score.Pp)}",
                 $"({score.EndedAt!.Value:dd.MM.yyyy HH:mm}) {ScoreHelper.GetScoreUrlWrappedInString(score.Id!.Value, "link")}"
             ]);
         }

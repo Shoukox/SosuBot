@@ -51,7 +51,7 @@ public class OsuUserCallbackCommand : CommandBase<CallbackQuery>
             $"{UserHelper.GetUserRankText(user.Statistics.GlobalRank)}",
             $"{UserHelper.GetUserRankText(user.Statistics.CountryRank)}",
             $"{UserHelper.CountryCodeToFlag(user.CountryCode ?? "nn")}",
-            $"{ScoreHelper.GetFormattedPpTextConsideringNull(currentPp)}",
+            $"{ScoreHelper.GetFormattedNumConsideringNull(currentPp)}",
             $"{ppDifferenceText}",
             $"{user.Statistics.HitAccuracy:N2}%",
             $"{user.Statistics.PlayCount:N0}",

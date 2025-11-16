@@ -61,7 +61,7 @@ public sealed class TextHandler : CommandBase<Message>
             $"{UserHelper.GetUserRankText(user.Statistics.GlobalRank)}",
             $"{UserHelper.GetUserRankText(user.Statistics.CountryRank)}",
             $"{UserHelper.CountryCodeToFlag(user.CountryCode ?? "nn")}",
-            $"{ScoreHelper.GetFormattedPpTextConsideringNull(currentPp)}",
+            $"{ScoreHelper.GetFormattedNumConsideringNull(currentPp)}",
             $"{ppDifferenceText}",
             $"{user.Statistics.HitAccuracy:N2}%",
             $"{user.Statistics.PlayCount:N0}",
