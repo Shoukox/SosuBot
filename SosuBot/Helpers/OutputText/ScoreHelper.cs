@@ -25,9 +25,9 @@ public static class ScoreHelper
         return modsText;
     }
 
-    public static string GetFormattedNumConsideringNull(double? num, string format = "N2", bool round = true)
+    public static string GetFormattedNumConsideringNull(double? num, string defaultValue = "—", string format = "N2", bool round = true)
     {
-        if (num == null) return "—";
+        if (num == null) return defaultValue;
 
         if (!round)
         {
@@ -36,7 +36,7 @@ public static class ScoreHelper
             num = Math.Truncate(num.Value * multiplier) / multiplier; //0.972756, 0.972756 * 100 * 1000 = 97275.6, Truncate = 97275, / 1000 = 97.275
         }
 
-        var ppText = num.Value.ToString(format) ?? "—";
+        var ppText = num.Value.ToString(format) ?? defaultValue;
         return ppText;
     }
 
