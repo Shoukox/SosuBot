@@ -1,4 +1,5 @@
-﻿using SosuBot.Helpers.OutputText;
+﻿using SosuBot.Extensions;
+using SosuBot.Helpers.OutputText;
 using SosuBot.Services.Handlers.Abstract;
 using Telegram.Bot;
 using Telegram.Bot.Types;
@@ -17,6 +18,12 @@ public class OsuSongPreviewCallbackCommand : CommandBase<CallbackQuery>
         var beatmapsetId = int.Parse(parameters[2]);
 
         var data = await OsuHelper.GetSongPreviewAsync(beatmapsetId);
+        if(data == null)
+        {
+            await Context.Update.AnswerAsync(Context.BotClient, text: "Song preview was not found");
+            return;
+        }
+
         using var ms = new MemoryStream(data);
         await Context.BotClient.SendAudio(chatId, new InputFileStream(ms, $"{beatmapsetId}.mp3"),
             "Запрос от: " + TelegramHelper.GetUserUrlWrappedInString(Context.Update.From.Id,

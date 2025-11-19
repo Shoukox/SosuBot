@@ -230,10 +230,10 @@ public sealed class ScoresObserverBackgroundService(IServiceProvider serviceProv
                 getFruitsScoresCursor = getFruitsScoresResponse.CursorString;
                 getManiaScoresCursor = getManiaScoresResponse.CursorString;
                 
-                _logger.LogInformation($"Current cursor for std: {getStdScoresCursor}");
-                _logger.LogInformation($"Current cursor for taiko: {getTaikoScoresCursor}");
-                _logger.LogInformation($"Current cursor for fruits: {getFruitsScoresCursor}");
-                _logger.LogInformation($"Current cursor for mania: {getManiaScoresCursor}");
+                //_logger.LogInformation($"Current cursor for std: {getStdScoresCursor}");
+                //_logger.LogInformation($"Current cursor for taiko: {getTaikoScoresCursor}");
+                //_logger.LogInformation($"Current cursor for fruits: {getFruitsScoresCursor}");
+                //_logger.LogInformation($"Current cursor for mania: {getManiaScoresCursor}");
                 await Task.Delay(7000);
             }
             catch (HttpRequestException httpRequestException)

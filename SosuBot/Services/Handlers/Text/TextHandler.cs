@@ -1,7 +1,8 @@
-using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using OsuApi.V2;
 using OsuApi.V2.Clients.Users.HttpIO;
+using OsuApi.V2.Models;
 using OsuApi.V2.Users.Models;
 using SosuBot.Extensions;
 using SosuBot.Helpers;
@@ -10,6 +11,7 @@ using SosuBot.Helpers.Types;
 using SosuBot.Localization;
 using SosuBot.Localization.Languages;
 using SosuBot.PerformanceCalculator;
+using SosuBot.PerformanceCalculator.Models;
 using SosuBot.Services.Handlers.Abstract;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.ReplyMarkups;
@@ -111,8 +113,9 @@ public sealed class TextHandler : CommandBase<Message>
         }
 
         beatmap ??= (await _osuApiV2.Beatmaps.GetBeatmap(beatmapId!.Value))!.BeatmapExtended!;
-        var sum = beatmap.CountCircles + beatmap.CountSliders + beatmap.CountSpinners;
-        if (sum is > 20_000) return;
+
+        var hitobjectsSum = beatmap.CountCircles + beatmap.CountSliders + beatmap.CountSpinners;
+        bool beatmapContainsTooManyHitObjects = hitobjectsSum >= 20000;
 
         beatmapset ??= await _osuApiV2.Beatmapsets.GetBeatmapset(beatmap.BeatmapsetId.Value);
 
@@ -126,94 +129,114 @@ public sealed class TextHandler : CommandBase<Message>
         var lazerModsToApply = modsFromMessage.Distinct().ToArray();
 
         var ppCalculator = new PPCalculator(_loggerPpCalculator);
-        var calculatedPp = new
-        {
-            ClassicSS = await ppCalculator.CalculatePpAsync(
-                accuracy: 1,
-                beatmapId: beatmap.Id.Value,
-                scoreMaxCombo: null,
-                scoreMods: classicModsToApply,
-                scoreStatistics: null,
-                rulesetId: (int)playmode,
-                cancellationToken: Context.CancellationToken),
-
-            Classic99 = playmode == Playmode.Mania
-                ? null
-                : await ppCalculator.CalculatePpAsync(
-                    accuracy: 0.99,
-                    beatmapId: beatmap.Id.Value,
-                    scoreMaxCombo: null,
-                    scoreMods: classicModsToApply,
-                    scoreStatistics: null,
-                    rulesetId: (int)playmode,
-                    cancellationToken: Context.CancellationToken),
-
-            Classic98 = playmode == Playmode.Mania
-                ? null
-                : await ppCalculator.CalculatePpAsync(
-                    accuracy: 0.98,
-                    beatmapId: beatmap.Id.Value,
-                    scoreMaxCombo: null,
-                    scoreMods: classicModsToApply,
-                    scoreStatistics: null,
-                    rulesetId: (int)playmode,
-                    cancellationToken: Context.CancellationToken),
-
-            LazerSS = await ppCalculator.CalculatePpAsync(
-                accuracy: 1,
-                beatmapId: beatmap.Id.Value,
-                scoreMaxCombo: null,
-                scoreMods: lazerModsToApply,
-                scoreStatistics: null,
-                rulesetId: (int)playmode,
-                cancellationToken: Context.CancellationToken),
-
-            Lazer99 = playmode == Playmode.Mania
-                ? null
-                : await ppCalculator.CalculatePpAsync(
-                    accuracy: 0.99,
-                    beatmapId: beatmap.Id.Value,
-                    scoreMaxCombo: null,
-                    scoreMods: lazerModsToApply,
-                    scoreStatistics: null,
-                    rulesetId: (int)playmode,
-                    cancellationToken: Context.CancellationToken),
-
-            Lazer98 = playmode == Playmode.Mania
-                ? null
-                : await ppCalculator.CalculatePpAsync(
-                    accuracy: 0.98,
-                    beatmapId: beatmap.Id.Value,
-                    scoreMaxCombo: null,
-                    scoreMods: lazerModsToApply,
-                    scoreStatistics: null,
-                    rulesetId: (int)playmode,
-                    cancellationToken: Context.CancellationToken)
+        var calculatedPp = new {
+            ClassicSS = (PPCalculationResult?)null,
+            Classic99 = (PPCalculationResult?)null,
+            Classic98 = (PPCalculationResult?)null,
+            LazerSS = (PPCalculationResult?)null,
+            Lazer99 = (PPCalculationResult?)null,
+            Lazer98 = (PPCalculationResult?)null,
         };
+        if (!beatmapContainsTooManyHitObjects)
+        {
+            calculatedPp = new 
+            {
+                ClassicSS = (PPCalculationResult?)await ppCalculator.CalculatePpAsync(
+              accuracy: 1,
+              beatmapId: beatmap.Id.Value,
+              scoreMaxCombo: null,
+              scoreMods: classicModsToApply,
+              scoreStatistics: null,
+              rulesetId: (int)playmode,
+              cancellationToken: Context.CancellationToken),
 
-        var duration = $"{beatmap.TotalLength / 60}:{beatmap.TotalLength % 60:00}";
+                Classic99 = playmode == Playmode.Mania
+              ? null
+              : await ppCalculator.CalculatePpAsync(
+                  accuracy: 0.99,
+                  beatmapId: beatmap.Id.Value,
+                  scoreMaxCombo: null,
+                  scoreMods: classicModsToApply,
+                  scoreStatistics: null,
+                  rulesetId: (int)playmode,
+                  cancellationToken: Context.CancellationToken),
+
+                Classic98 = playmode == Playmode.Mania
+              ? null
+              : await ppCalculator.CalculatePpAsync(
+                  accuracy: 0.98,
+                  beatmapId: beatmap.Id.Value,
+                  scoreMaxCombo: null,
+                  scoreMods: classicModsToApply,
+                  scoreStatistics: null,
+                  rulesetId: (int)playmode,
+                  cancellationToken: Context.CancellationToken),
+
+                LazerSS = (PPCalculationResult?)await ppCalculator.CalculatePpAsync(
+              accuracy: 1,
+              beatmapId: beatmap.Id.Value,
+              scoreMaxCombo: null,
+              scoreMods: lazerModsToApply,
+              scoreStatistics: null,
+              rulesetId: (int)playmode,
+              cancellationToken: Context.CancellationToken),
+
+                Lazer99 = playmode == Playmode.Mania
+              ? null
+              : await ppCalculator.CalculatePpAsync(
+                  accuracy: 0.99,
+                  beatmapId: beatmap.Id.Value,
+                  scoreMaxCombo: null,
+                  scoreMods: lazerModsToApply,
+                  scoreStatistics: null,
+                  rulesetId: (int)playmode,
+                  cancellationToken: Context.CancellationToken),
+
+                Lazer98 = playmode == Playmode.Mania
+              ? null
+              : await ppCalculator.CalculatePpAsync(
+                  accuracy: 0.98,
+                  beatmapId: beatmap.Id.Value,
+                  scoreMaxCombo: null,
+                  scoreMods: lazerModsToApply,
+                  scoreStatistics: null,
+                  rulesetId: (int)playmode,
+                  cancellationToken: Context.CancellationToken)
+            };
+        }
+      
+
+        var duration = $"{beatmap.TotalLength / 60}m{beatmap.TotalLength % 60:00}s";
         var padLength = 9;
 
-        string classicSSText = $"{calculatedPp.ClassicSS.CalculatedAccuracy * 100:N2}%".PadRight(padLength) + "| " +
-                               $"{calculatedPp.ClassicSS.Pp:N2}pp\n";
+        string classicSSText = $"{ScoreHelper.GetFormattedNumConsideringNull(calculatedPp.ClassicSS?.CalculatedAccuracy * 100, defaultValue: $"{100:N2}")}%".PadRight(padLength) + "| " +
+                               $"{ScoreHelper.GetFormattedNumConsideringNull(calculatedPp.ClassicSS?.Pp)}pp\n";
         string classic99Text = playmode == Playmode.Mania
             ? ""
-            : $"{calculatedPp.Classic99!.CalculatedAccuracy * 100:N2}%".PadRight(padLength) + "| " +
-              $"{calculatedPp.Classic99.Pp:N2}pp\n";
+            : $"{ScoreHelper.GetFormattedNumConsideringNull(calculatedPp.Classic99?.CalculatedAccuracy * 100, defaultValue: $"{99:N2}")}%".PadRight(padLength) + "| " +
+              $"{ScoreHelper.GetFormattedNumConsideringNull(calculatedPp.Classic99?.Pp)}pp\n";
         string classic98Text = playmode == Playmode.Mania
             ? ""
-            : $"{calculatedPp.Classic98!.CalculatedAccuracy * 100:N2}%".PadRight(padLength) + "| " +
-              $"{calculatedPp.Classic98.Pp:N2}pp\n";
-        string lazerSSText = $"{calculatedPp.LazerSS.CalculatedAccuracy * 100:N2}%".PadRight(padLength) + "| " +
-                             $"{calculatedPp.LazerSS.Pp:N2}pp\n";
+            : $"{ScoreHelper.GetFormattedNumConsideringNull(calculatedPp.Classic98?.CalculatedAccuracy * 100, defaultValue: $"{98:N2}")}%".PadRight(padLength) + "| " +
+              $"{ScoreHelper.GetFormattedNumConsideringNull(calculatedPp.Classic98?.Pp)}pp\n";
+        string lazerSSText = $"{ScoreHelper.GetFormattedNumConsideringNull(calculatedPp.LazerSS?.CalculatedAccuracy * 100, defaultValue: $"{100:N2}")}%".PadRight(padLength) + "| " +
+                             $"{ScoreHelper.GetFormattedNumConsideringNull(calculatedPp.LazerSS?.Pp)}pp\n";
         string lazer99Text = playmode == Playmode.Mania
             ? ""
-            : $"{calculatedPp.Lazer99!.CalculatedAccuracy * 100:N2}%".PadRight(padLength) + "| " +
-              $"{calculatedPp.Lazer99.Pp:N2}pp\n";
+            : $"{ScoreHelper.GetFormattedNumConsideringNull(calculatedPp.Lazer99?.CalculatedAccuracy * 100, defaultValue: $"{99:N2}")}%".PadRight(padLength) + "| " +
+              $"{ScoreHelper.GetFormattedNumConsideringNull(calculatedPp.Lazer99?.Pp)}pp\n";
         string lazer98Text = playmode == Playmode.Mania
             ? ""
-            : $"{calculatedPp.Lazer98!.CalculatedAccuracy * 100:N2}%".PadRight(padLength) + "| " +
-              $"{calculatedPp.Lazer98.Pp:N2}pp\n";
+            : $"{ScoreHelper.GetFormattedNumConsideringNull(calculatedPp.Lazer98?.CalculatedAccuracy * 100, defaultValue: $"{98:N2}")}%".PadRight(padLength) + "| " +
+              $"{ScoreHelper.GetFormattedNumConsideringNull(calculatedPp.Lazer98?.Pp)}pp\n";
+
+        // Calculate diff rating
+        double? difficultyRatingForGivenMods = ppCalculator.LastDifficultyAttributes?.StarRating;
+        if (difficultyRatingForGivenMods == null)
+        {
+            var beatmapAttributesResponse = await _osuApiV2.Beatmaps.GetBeatmapAttributes(beatmap.Id.Value, new() { RulesetId = ((int)playmode).ToString(), Mods = lazerModsToApply.Select(m => new Mod { Acronym = m.Acronym}).ToArray() });
+            difficultyRatingForGivenMods = beatmapAttributesResponse?.DifficultyAttributes?.StarRating;
+        }
 
         var textToSend = language.send_mapInfo.Fill([
             $"{playmode.ToGamemode()}",
@@ -229,7 +252,7 @@ public sealed class TextHandler : CommandBase<Message>
             $"{beatmap.BPM}",
             $"{lazerModsToApply.ModsToString(playmode)}",
 
-            $"{ppCalculator.LastDifficultyAttributes!.StarRating:N2}",
+            $"{ScoreHelper.GetFormattedNumConsideringNull(difficultyRatingForGivenMods)}",
 
             classicSSText,
             classic99Text,
@@ -242,7 +265,10 @@ public sealed class TextHandler : CommandBase<Message>
         var photo = new InputFileUrl(
             new Uri($"https://assets.ppy.sh/beatmaps/{beatmapset.Id}/covers/card@2x.jpg"));
         var ik = new InlineKeyboardMarkup(new InlineKeyboardButton("Song preview")
-            { CallbackData = $"{Context.Update.Chat.Id} songpreview {beatmapset.Id}" });
+        { CallbackData = $"{Context.Update.Chat.Id} songpreview {beatmapset.Id}" });
+
+        if (beatmapContainsTooManyHitObjects)
+            textToSend += "\nВ карте слишком много объектов, пп расчет не будет проведен.";
 
         try
         {

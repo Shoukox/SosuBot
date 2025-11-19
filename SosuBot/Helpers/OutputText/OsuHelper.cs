@@ -18,10 +18,17 @@ public static class OsuHelper
     private static readonly Regex OsuUserLinkRegex = new(@"(?>https?:\/\/)?(?>osu|old)\.ppy\.sh\/u(?>sers)?\/(\d+|\S+)",
         RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
-    public static async Task<byte[]> GetSongPreviewAsync(int beatmapsetId)
+    public static async Task<byte[]?> GetSongPreviewAsync(int beatmapsetId)
     {
-        using var hc = new HttpClient();
-        return await hc.GetByteArrayAsync($"https://b.ppy.sh/preview/{beatmapsetId}.mp3");
+        try
+        {
+            using var hc = new HttpClient();
+            return await hc.GetByteArrayAsync($"https://b.ppy.sh/preview/{beatmapsetId}.mp3");
+        }
+        catch
+        {
+            return null;
+        }
     }
 
     public static string? ParseOsuBeatmapLink(IEnumerable<string>? urls, out int? beatmapsetId, out int? beatmapId)
