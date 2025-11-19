@@ -162,7 +162,7 @@ public static class ScoreHelper
                 .Select(m => m.MaxBy(s => s.Pp))
                 .OrderByDescending(m => m!.Pp)
                 .Select(m => GetScoreUrlWrappedInString(m!.Id!.Value,
-                    $"{GetFormattedNumConsideringNull(m.Pp, "N0")}pp{modeEmoji}"))
+                    $"{GetFormattedNumConsideringNull(m.Pp, format: "N0")}pp{modeEmoji}"))
                 .ToArray();
 
             var topPpScoresTextForCurrentUser = string.Join(", ", scoresOrderedByPp.Take(3));
@@ -179,7 +179,7 @@ public static class ScoreHelper
         {
             if (count >= 5) break;
             topActivePlayers +=
-                $"{count + 1}. <b>{UserHelper.GetUserProfileUrlWrappedInUsernameString(us.m.Id.Value, us.m.Username!)}</b> — {us.Item2.Length} скоров, макс. <i>{GetFormattedNumConsideringNull(us.Item2.Max(m => m.Pp), "N0")}pp💪</i>\n";
+                $"{count + 1}. <b>{UserHelper.GetUserProfileUrlWrappedInUsernameString(us.m.Id.Value, us.m.Username!)}</b> — {us.Item2.Length} скоров, макс. <i>{GetFormattedNumConsideringNull(us.Item2.Max(m => m.Pp), format: "N0")}pp💪</i>\n";
             count += 1;
         }
 
