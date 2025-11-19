@@ -270,6 +270,17 @@ public class OsuLastCommand(bool onlyPassed = false) : CommandBase<Message>
                 (DateTime.UtcNow - score.EndedAt!.Value).Humanize(
                     culture: CultureInfo.GetCultureInfoByIetfLanguageTag("ru-RU")) + " назад";
 
+            // Caclculate completion
+            double? completion = (double)score.CalculateSumOfHitResults() / calculatedPp?.IfFC?.ScoreHitResultsCount * 100.0;
+            if(completion == null)
+            {
+                if (passed) completion = 100;
+                else
+                {
+                    completion = score.MaxCombo / beatmapMaxCombo;
+                }
+            }
+
             textToSend += language.command_last.Fill([
                 $"{counterText}",
                 $"{scoreRank}",
@@ -287,7 +298,7 @@ public class OsuLastCommand(bool onlyPassed = false) : CommandBase<Message>
                 $"{scorePpText}",
                 $"{scoreIfFcPpText}",
                 $"{scoreEndedMinutesAgoText}",
-                $"{ScoreHelper.GetFormattedNumConsideringNull((double)score.CalculateSumOfHitResults() / calculatedPp?.IfFC?.ScoreHitResultsCount * 100.0, format: "N1")}"
+                $"{ScoreHelper.GetFormattedNumConsideringNull(completion, format: "N1")}"
             ]);
 
             if (scoreModsContainsModIdk)
