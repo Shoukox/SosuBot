@@ -135,7 +135,7 @@ public class OsuLastCommand(bool onlyPassed = false) : CommandBase<Message>
         var lastScoresResponse = await _osuApiV2.Users.GetUserScores(userResponse.UserExtend!.Id.Value,
             ScoreType.Recent,
             new GetUserScoreQueryParameters
-                { IncludeFails = Convert.ToInt32(!_onlyPassed), Limit = limit, Mode = ruleset });
+            { IncludeFails = Convert.ToInt32(!_onlyPassed), Limit = limit, Mode = ruleset });
         if (lastScoresResponse!.Scores.Length == 0)
         {
             await waitMessage.EditAsync(Context.BotClient,
@@ -159,12 +159,8 @@ public class OsuLastCommand(bool onlyPassed = false) : CommandBase<Message>
             var score = lastScores[i];
             var beatmap = beatmaps[i].BeatmapExtended!;
 
-            var sum = beatmap.CountCircles + beatmap.CountSliders + beatmap.CountSpinners;
-            if (sum is > 20_000)
-            {
-                continue;
-            }
-
+            var hitobjectsSum = beatmap.CountCircles + beatmap.CountSliders + beatmap.CountSpinners;
+            bool beatmapContainsTooManyHitObjects = hitobjectsSum >= 20000;
             var mods = score.Mods!;
 
             if (i == 0) chatInDatabase!.LastBeatmapId = beatmap.Id;
@@ -182,7 +178,7 @@ public class OsuLastCommand(bool onlyPassed = false) : CommandBase<Message>
                 scoreStatisticsIfFc = new Dictionary<HitResult, int>()
                 {
                     {
-                        HitResult.Great, 
+                        HitResult.Great,
                         scoreStatistics.GetValueOrDefault(HitResult.Great) +
                         playmode == Playmode.Catch ? scoreStatistics.GetValueOrDefault(HitResult.Miss) : 0
                     },
@@ -197,45 +193,62 @@ public class OsuLastCommand(bool onlyPassed = false) : CommandBase<Message>
                 };
             }
 
-            // beatmap.MaxCombo in mania is classic max combo, not lazer
-            int? beatmapMaxCombo = beatmap.MaxCombo;
-            if (playmode == Playmode.Mania && !scoreMods.Any(m => m is ModClassic))
-            {
-                // lazer max combo in mania
-                beatmapMaxCombo = beatmap.CountCircles + beatmap.CountSliders * 2;
-            }
-
             // Calculate pp
-            var calculatedPp = new PPResult
+            PPResult? calculatedPp = new PPResult() { Current = null, IfFC = null };
+            if (!beatmapContainsTooManyHitObjects)
             {
-                Current = score.Pp != null
-                    ? null
-                    : await ppCalculator.CalculatePpAsync(beatmap.Id.Value, (double)score.Accuracy!,
-                        scoreMaxCombo: score.MaxCombo!.Value,
-                        passed: passed,
-                        scoreMods: scoreMods,
-                        scoreStatistics: scoreStatistics,
-                        rulesetId: (int)playmode,
-                        cancellationToken: Context.CancellationToken),
+                calculatedPp = new PPResult
+                {
+                    Current = score.Pp != null ? null : 
+                        await ppCalculator.CalculatePpAsync(beatmap.Id.Value, (double)score.Accuracy!,
+                             scoreMaxCombo: score.MaxCombo!.Value,
+                             passed: passed,
+                             scoreMods: scoreMods,
+                             scoreStatistics: scoreStatistics,
+                             rulesetId: (int)playmode,
+                             cancellationToken: Context.CancellationToken),
 
-                IfFC = await ppCalculator.CalculatePpAsync(beatmap.Id.Value,
-                    playmode == Playmode.Mania ? 1 : (double)score.Accuracy!,
-                    scoreMaxCombo: beatmapMaxCombo,
-                    scoreMods: scoreMods,
-                    scoreStatistics: scoreStatisticsIfFc,
-                    rulesetId: (int)playmode,
-                    cancellationToken: Context.CancellationToken)
-            };
-
+                    IfFC = await ppCalculator.CalculatePpAsync(beatmap.Id.Value,
+                             playmode == Playmode.Mania ? 1 : (double)score.Accuracy!,
+                             scoreMaxCombo: null,
+                             scoreMods: scoreMods,
+                             scoreStatistics: scoreStatisticsIfFc,
+                             rulesetId: (int)playmode,
+                             cancellationToken: Context.CancellationToken)
+                };
+            }
             var scoreRank = ScoreHelper.GetScoreRankEmoji(score.Rank!, score.Passed!.Value) +
                             ScoreHelper.ParseScoreRank(score.Passed!.Value ? score.Rank! : "F");
             var counterText = lastScores.Length == 1 ? "" : $"{i + 1}. ";
-            double? scorePp = calculatedPp.Current?.Pp ?? score.Pp!.Value;
+            double? scorePp = calculatedPp?.Current?.Pp ?? score.Pp;
             if (scorePp is double.NaN) scorePp = null;
 
-            double? scorePpIfFc = calculatedPp.IfFC.Pp;
-            double accuracyIfFc = calculatedPp.IfFC.CalculatedAccuracy;
+            double? scorePpIfFc = calculatedPp?.IfFC?.Pp;
+            double? accuracyIfFc = calculatedPp?.IfFC?.CalculatedAccuracy;
             bool scoreModsContainsModIdk = scoreMods.Any(m => m is ModIdk);
+            
+
+            // Beatmap max combo from pp calculation (or use beatmap.MaxCombo if null)
+            int? beatmapMaxCombo = calculatedPp?.IfFC?.BeatmapMaxCombo;
+            if(beatmap.ModeInt == (int)playmode)
+            {
+                beatmapMaxCombo ??= beatmap.MaxCombo;
+            }
+
+            // Calculate diff rating
+            double? difficultyRating = ppCalculator.LastDifficultyAttributes?.StarRating;
+            if (difficultyRating == null)
+            {
+                var beatmapAttributesResponse = await _osuApiV2.Beatmaps.GetBeatmapAttributes(beatmap.Id.Value, new() { RulesetId = ((int)playmode).ToString(), Mods = mods });
+
+                int? maxCombo = beatmapAttributesResponse?.DifficultyAttributes?.MaxCombo;
+                if (maxCombo != null && maxCombo != 0)
+                {
+                    beatmapMaxCombo ??= maxCombo;
+                }
+                difficultyRating = beatmapAttributesResponse?.DifficultyAttributes?.StarRating;
+            }
+
 
             // If fc, then curPp = fcPp
             bool isFc = score.MaxCombo == beatmapMaxCombo;
@@ -246,7 +259,7 @@ public class OsuLastCommand(bool onlyPassed = false) : CommandBase<Message>
             }
 
             string scorePpText =
-                ScoreHelper.GetFormattedNumConsideringNull(scoreModsContainsModIdk && calculatedPp.Current != null
+                ScoreHelper.GetFormattedNumConsideringNull(scoreModsContainsModIdk && calculatedPp?.Current != null
                     ? null
                     : scorePp);
 
@@ -264,20 +277,24 @@ public class OsuLastCommand(bool onlyPassed = false) : CommandBase<Message>
                 $"{score.Beatmapset?.Title.EncodeHtml()}",
                 $"{beatmap.Version.EncodeHtml()}",
                 $"{beatmap.Status}",
-                $"{ppCalculator.LastDifficultyAttributes!.StarRating:N2}",
+                $"{ScoreHelper.GetFormattedNumConsideringNull(difficultyRating, format: "N2")}",
                 $"{ScoreHelper.GetScoreStatisticsText(score.Statistics!, playmode)}",
                 $"{score.Statistics!.Miss}",
                 $"{ScoreHelper.GetFormattedNumConsideringNull(score.Accuracy * 100, round: false)}",
                 $"{ScoreHelper.GetModsText(mods)}",
                 $"{score.MaxCombo}",
-                $"{beatmapMaxCombo}",
+                $"{ScoreHelper.GetFormattedNumConsideringNull(beatmapMaxCombo, format: "")}",
                 $"{scorePpText}",
                 $"{scoreIfFcPpText}",
                 $"{scoreEndedMinutesAgoText}",
-                $"{score.CalculateCompletion(beatmap, playmode):N1}"
+                $"{ScoreHelper.GetFormattedNumConsideringNull((double)score.CalculateSumOfHitResults() / calculatedPp?.IfFC?.ScoreHitResultsCount * 100.0, format: "N1")}"
             ]);
+
             if (scoreModsContainsModIdk)
                 textToSend += "\nВ скоре присутствуют неизвестные боту моды, расчет пп невозможен.";
+
+            if (beatmapContainsTooManyHitObjects)
+                textToSend += "\nВ карте слишком много объектов, доступная информация будет ограничена.";
 
             textToSend += "\n\n";
         }

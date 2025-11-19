@@ -130,22 +130,6 @@ public static class OsuTypesExtensions
         };
     }
 
-    public static double CalculateCompletion(this Score score, BeatmapExtended beatmap, Playmode playmode)
-    {
-        var beatmapObjects = beatmap.CalculateObjectsAmount();
-        var beatmapHitResults = beatmapObjects + playmode switch
-        {
-            Playmode.Osu => 0,
-            Playmode.Taiko => -beatmap.CountSpinners!.Value,
-            Playmode.Catch => 0,
-            Playmode.Mania => beatmap.CountSliders!.Value,
-            _ => 0
-        };
-
-        var scoreHitResults = score.CalculateSumOfHitResults();
-        return scoreHitResults / (double)beatmapHitResults * 100.0;
-    }
-
     public static int CalculateSumOfHitResults(this Score score)
     {
         return score.Statistics!.Perfect
@@ -155,7 +139,6 @@ public static class OsuTypesExtensions
                + score.Statistics.Meh
                + score.Statistics.Miss;
     }
-
     public static int CalculateObjectsAmount(this BeatmapExtended beatmapExtended)
     {
         return beatmapExtended.CountCircles!.Value + beatmapExtended.CountSliders!.Value +
