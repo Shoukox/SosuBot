@@ -1,8 +1,4 @@
-using System.Buffers.Text;
 using System.Collections.Concurrent;
-using System.Net;
-using System.Net.Mime;
-using System.Text;
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -54,10 +50,10 @@ public sealed class ScoresObserverBackgroundService(IServiceProvider serviceProv
     {
         await AddPlayersToObserverListFromSpecificCountryLeaderboard("uz");
         await AddPlayersToObserverListFromSpecificCountryLeaderboard();
-        
+
         var chatsWithTrackedPlayers = _database.TelegramChats.Where(m => m.TrackedPlayers != null);
         _logger.LogInformation($"Found {chatsWithTrackedPlayers.Count()} chats with tracked players");
-        
+
         await Task.WhenAll(chatsWithTrackedPlayers.Select(m => AddPlayersToObserverList(m.TrackedPlayers!.ToArray())));
         _logger.LogInformation($"Successfully added tracked players to the {nameof(ScoresObserverBackgroundService)}");
     }
@@ -71,7 +67,7 @@ public sealed class ScoresObserverBackgroundService(IServiceProvider serviceProv
         {
             _adminTelegramId = (await _database.OsuUsers.FirstAsync(m => m.IsAdmin == true))
                 .TelegramId;
-            
+
             await SetupObserverList();
 
             await Task.WhenAll(
@@ -110,59 +106,57 @@ public sealed class ScoresObserverBackgroundService(IServiceProvider serviceProv
         string? getTaikoScoresCursor = null;
         string? getFruitsScoresCursor = null;
         string? getManiaScoresCursor = null;
-        var counter = 0;
+
+        ulong counter = 0;
         while (!stoppingToken.IsCancellationRequested)
             try
             {
-                var getStdScoresResponseTask = _osuApi.Scores.GetScores(new ScoresQueryParameters
-                    { CursorString = getStdScoresCursor, Ruleset = Ruleset.Osu });
-                var getTaikoScoresResponseTask = _osuApi.Scores.GetScores(new ScoresQueryParameters
-                    { CursorString = getTaikoScoresCursor, Ruleset = Ruleset.Taiko });
-                var getFruitsScoresResponseTask = _osuApi.Scores.GetScores(new ScoresQueryParameters
-                    { CursorString = getFruitsScoresCursor, Ruleset = Ruleset.Fruits });
-                var getManiaScoresResponseTask = _osuApi.Scores.GetScores(new ScoresQueryParameters
-                    { CursorString = getManiaScoresCursor, Ruleset = Ruleset.Mania });
-                
-                await Task.WhenAll(getStdScoresResponseTask, getTaikoScoresResponseTask, getFruitsScoresResponseTask,
-                    getManiaScoresResponseTask);
+                ScoresResponse? getStdScoresResponse = await _osuApi.Scores.GetScores(new() { CursorString = getStdScoresCursor, Ruleset = Ruleset.Osu });
 
-                var getStdScoresResponse = getStdScoresResponseTask.Result;
-                var getTaikoScoresResponse = getTaikoScoresResponseTask.Result;
-                var getFruitsScoresResponse = getFruitsScoresResponseTask.Result;
-                var getManiaScoresResponse = getManiaScoresResponseTask.Result;
-                
-                if (getStdScoresResponse == null)
+                // get taiko scores every 4th iteration (for delay)
+                ScoresResponse? getTaikoScoresResponse = null;
+                if (counter % 8 == 0)
                 {
-                    _logger.LogWarning("getStdScoresResponse returned null");
+                    getTaikoScoresResponse = await _osuApi.Scores.GetScores(new ScoresQueryParameters { CursorString = getTaikoScoresCursor, Ruleset = Ruleset.Taiko });
+                }
+
+                // get fruits scores every 4th iteration (for delay)
+                ScoresResponse? getFruitsScoresResponse = null;
+                if (counter % 12 == 0)
+                {
+                    getFruitsScoresResponse = await _osuApi.Scores.GetScores(new ScoresQueryParameters { CursorString = getFruitsScoresCursor, Ruleset = Ruleset.Fruits });
+                }
+
+                // get mania scores every 4th iteration (for delay)
+                ScoresResponse? getManiaScoresResponse = null;
+                if (counter % 4 == 0)
+                {
+                    getManiaScoresResponse = await _osuApi.Scores.GetScores(new ScoresQueryParameters { CursorString = getManiaScoresCursor, Ruleset = Ruleset.Mania });
+                }
+
+                if (getStdScoresResponse == null && getTaikoScoresResponse == null && getFruitsScoresResponse == null && getManiaScoresResponse == null)
+                {
+                    _logger.LogWarning($"GetScores returned null: stdNull={getStdScoresResponse == null} taikoNull={getTaikoScoresResponse == null} fruitsNull={getFruitsScoresResponse == null} maniaNull={getManiaScoresResponse == null}");
+                    _logger.LogWarning("Waiting 60 seconds before retrying...");
+                    await Task.Delay(60_000);
                     continue;
                 }
 
-                if (getTaikoScoresResponse == null)
-                {
-                    _logger.LogWarning("getTaikoScoresResponse returned null");
-                    continue;
-                }
-
-                if (getFruitsScoresResponse == null)
-                {
-                    _logger.LogWarning("getFruitsScoresResponse returned null");
-                    continue;
-                }
-
-                if (getManiaScoresResponse == null)
-                {
-                    _logger.LogWarning("getManiaScoresResponse returned null");
-                    continue;
-                }
-
-                var allOsuScores = getStdScoresResponse.Scores!
+                var allOsuScores = getStdScoresResponse?.Scores?
                     .Select(m => m with { Mode = Ruleset.Osu, ModeInt = (int)Playmode.Osu })
-                    .Concat(getTaikoScoresResponse.Scores!.Select(m =>
-                        m with { Mode = Ruleset.Taiko, ModeInt = (int)Playmode.Taiko }))
-                    .Concat(getFruitsScoresResponse.Scores!.Select(m =>
-                        m with { Mode = Ruleset.Fruits, ModeInt = (int)Playmode.Catch }))
-                    .Concat(getManiaScoresResponse.Scores!.Select(m =>
-                        m with { Mode = Ruleset.Mania, ModeInt = (int)Playmode.Mania }));
+                    .Concat(getTaikoScoresResponse?.Scores?.Select(m =>
+                        m with { Mode = Ruleset.Taiko, ModeInt = (int)Playmode.Taiko }) ?? [])
+                    .Concat(getFruitsScoresResponse?.Scores?.Select(m =>
+                        m with { Mode = Ruleset.Fruits, ModeInt = (int)Playmode.Catch }) ?? [])
+                    .Concat(getManiaScoresResponse?.Scores?.Select(m =>
+                        m with { Mode = Ruleset.Mania, ModeInt = (int)Playmode.Mania }) ?? []) ?? [];
+
+                if (!allOsuScores.Any())
+                {
+                    _logger.LogWarning("No scores retrieved from GetScores. Waiting 20 seconds before retrying...");
+                    await Task.Delay(20_000);
+                    continue;
+                }
 
                 // Scores only from UZ and only from today
                 var tashkentToday = DateTime.UtcNow.ChangeTimezone(Country.Uzbekistan).Date;
@@ -172,6 +166,7 @@ public sealed class ScoresObserverBackgroundService(IServiceProvider serviceProv
                     var isUzPlayer = _userDatabase.ContainsUserStatistics(m.UserId!.Value);
                     return scoreDateIsOk && isUzPlayer;
                 }).ToArray();
+
                 foreach (var score in uzScores)
                 {
                     var userStatistics = await _userDatabase.GetUserStatistics(score.UserId!.Value);
@@ -183,11 +178,9 @@ public sealed class ScoresObserverBackgroundService(IServiceProvider serviceProv
 
                     dailyStatistics.Scores.Add(score);
 
-                    // ReSharper disable once SimplifyLinqExpressionUseAll
                     if (!dailyStatistics.ActiveUsers.Any(m => m.Id == userStatistics.User!.Id))
                         dailyStatistics.ActiveUsers.Add(userStatistics.User!);
 
-                    // ReSharper disable once SimplifyLinqExpressionUseAll
                     if (!dailyStatistics.BeatmapsPlayed.Any(m => m == score.BeatmapId!.Value))
                         dailyStatistics.BeatmapsPlayed.Add(score.BeatmapId!.Value);
                 }
@@ -216,29 +209,33 @@ public sealed class ScoresObserverBackgroundService(IServiceProvider serviceProv
                     AllDailyStatistics.Add(dailyStatistics);
                 }
 
-                // Save every timedelay*100 seconds
                 if (counter % 20 == 0)
                 {
                     await SaveDailyStatistics();
                     _logger.LogInformation($"Saved daily stats");
                 }
 
-                counter = (counter + 1) % int.MaxValue;
+                getStdScoresCursor = getStdScoresResponse?.CursorString;
+                getTaikoScoresCursor = getTaikoScoresResponse?.CursorString;
+                getFruitsScoresCursor = getFruitsScoresResponse?.CursorString;
+                getManiaScoresCursor = getManiaScoresResponse?.CursorString;
 
-                getStdScoresCursor = getStdScoresResponse.CursorString;
-                getTaikoScoresCursor = getTaikoScoresResponse.CursorString;
-                getFruitsScoresCursor = getFruitsScoresResponse.CursorString;
-                getManiaScoresCursor = getManiaScoresResponse.CursorString;
-                
-                //_logger.LogInformation($"Current cursor for std: {getStdScoresCursor}");
-                //_logger.LogInformation($"Current cursor for taiko: {getTaikoScoresCursor}");
-                //_logger.LogInformation($"Current cursor for fruits: {getFruitsScoresCursor}");
-                //_logger.LogInformation($"Current cursor for mania: {getManiaScoresCursor}");
-                await Task.Delay(7000);
+                if(getStdScoresResponse?.Scores?.Length >= 1000 || getTaikoScoresResponse?.Scores?.Length >= 1000 || getFruitsScoresResponse?.Scores?.Length >= 1000 || getManiaScoresResponse?.Scores?.Length >= 1000)
+                {
+                    _logger.LogWarning($"GetScores returned 1000+ scores in one of the modes. std={getStdScoresResponse?.Scores?.Length} taiko={getTaikoScoresResponse?.Scores?.Length} fruits={getFruitsScoresResponse?.Scores?.Length} mania={getManiaScoresResponse?.Scores?.Length}");
+                }
+
+                int stdScoresCount = getStdScoresResponse?.Scores?.Length ?? 0;
+                int delay = 3000 + 1000 * (1000 / stdScoresCount); //3sec + 1*n seconds
+                int clampedDelay = Math.Clamp(delay, 3000, 60_000);
+                _logger.LogInformation($"Processed {stdScoresCount} std scores. Next GetScores in {clampedDelay}ms.");
+                await Task.Delay(clampedDelay);
+
+                counter++;
             }
             catch (HttpRequestException httpRequestException)
             {
-                var waitMs = 10_000;
+                var waitMs = 20_000;
                 _logger.LogWarning($"[{nameof(ScoresObserverBackgroundService)}]: status code {httpRequestException.StatusCode}. Waiting {waitMs}ms...");
                 await Task.Delay(waitMs);
             }
@@ -268,20 +265,20 @@ public sealed class ScoresObserverBackgroundService(IServiceProvider serviceProv
                     // ReSharper disable once CanSimplifyDictionaryLookupWithTryGetValue
                     if (scores.ContainsKey(userId))
                     {
+                        IEnumerable<Score> newScores =
+                            userBestScores.Scores.Except(scores[userId].Scores, ScoreComparer);
                         _ = Task.Run(async () =>
                         {
-                            var newScores =
-                                userBestScores.Scores.Except(scores[userId].Scores, ScoreComparer);
-
                             foreach (var score in newScores)
                             {
                                 try
                                 {
+                                    int waitMs = 1000 + Random.Shared.Next(500, 1500);
                                     // Send it to the admin
                                     await _botClient.SendMessage(_adminTelegramId,
                                         $"<b>{score.User?.Username}</b> set a <b>{score.Pp}pp</b> {ScoreHelper.GetScoreUrlWrappedInString(score.Id!.Value, "score!")}",
                                         ParseMode.Html, linkPreviewOptions: true);
-                                    await Task.Delay(1000);
+                                    await Task.Delay(waitMs);
 
 
                                     // Send it to all chats tracking 
@@ -291,7 +288,7 @@ public sealed class ScoresObserverBackgroundService(IServiceProvider serviceProv
                                         await _botClient.SendMessage(chat.ChatId,
                                             $"<b>{score.User?.Username}</b> set a <b>{score.Pp}pp</b> {ScoreHelper.GetScoreUrlWrappedInString(score.Id!.Value, "score!")}",
                                             ParseMode.Html, linkPreviewOptions: true);
-                                        await Task.Delay(1000);
+                                        await Task.Delay(waitMs);
                                     }
                                 }
                                 catch (Exception e)

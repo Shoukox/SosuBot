@@ -204,6 +204,9 @@ public class UpdateHandler(
             case string track when TrackCommand.Commands.Contains(track):
                 executableCommand = new TrackCommand();
                 break;
+            case string beatmapLeaderboard when OsuChatBeatmapLeaderboardCommand.Commands.Contains(beatmapLeaderboard):
+                executableCommand = new OsuChatBeatmapLeaderboardCommand();
+                break;
             default:
                 executableCommand = new Commands.DummyCommand();
                 break;
