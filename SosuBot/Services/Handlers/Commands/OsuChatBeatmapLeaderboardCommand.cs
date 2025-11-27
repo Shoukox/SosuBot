@@ -109,6 +109,11 @@ public sealed class OsuChatBeatmapLeaderboardCommand : CommandBase<Message>
             sendMessage += $"{i + 1}. <b>{score.User?.Username}</b> - <b><i>{ScoreHelper.GetFormattedNumConsideringNull(score.Accuracy * 100, round: false)}</i></b>%🎯 - {score.Statistics!.Miss}❌ - <b><u>{ScoreHelper.GetScoreUrlWrappedInString(score.Id!.Value, $"{score.Pp:N2}pp")}💪</u></b>\n";
         }
 
+        if(foundScores.Count == 0)
+        {
+            sendMessage = "На этой карте нет скоров от игроков из этого чата.";
+        }
+
         await Task.Delay(delayPerUser);
         await waitMessage.EditAsync(Context.BotClient, sendMessage);
     }
