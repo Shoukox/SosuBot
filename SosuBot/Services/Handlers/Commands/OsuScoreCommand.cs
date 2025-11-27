@@ -74,7 +74,7 @@ public sealed class OsuScoreCommand : CommandBase<Message>
         // s mrekk, with reply
         else if (parameters.Length == 1)
         {
-            // s mrekk, with reply
+            // s with reply
             var link = OsuHelper.ParseOsuBeatmapLink(Context.Update.ReplyToMessage?.GetAllLinks(), out var beatmapsetId,
                 out beatmapId);
             if (link is not null)
@@ -88,9 +88,9 @@ public sealed class OsuScoreCommand : CommandBase<Message>
                 osuUsernameForScore = parameters[0];
                 playmode = null;
             }
-            // s url
             else
             {
+                // s url
                 link = OsuHelper.ParseOsuBeatmapLink([parameters[0]], out beatmapsetId, out beatmapId);
                 if (link is not null)
                 {

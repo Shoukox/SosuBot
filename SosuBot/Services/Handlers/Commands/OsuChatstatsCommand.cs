@@ -21,7 +21,6 @@ public sealed class OsuChatstatsCommand : CommandBase<Message>
         ILocalization language = new Russian();
         var chatInDatabase = await Context.Database.TelegramChats.FindAsync(Context.Update.Chat.Id);
 
-        var foundChatMembers = new List<OsuUser>();
         var parameters = Context.Update.Text!.GetCommandParameters()!;
 
         var waitMessage = await Context.Update.ReplyAsync(Context.BotClient, language.waiting);
@@ -39,6 +38,7 @@ public sealed class OsuChatstatsCommand : CommandBase<Message>
             playmode = ruleset.ParseRulesetToPlaymode();
         }
 
+        var foundChatMembers = new List<OsuUser>();
         chatInDatabase!.ExcludeFromChatstats = chatInDatabase.ExcludeFromChatstats ?? new List<long>();
         foreach (var memberId in chatInDatabase.ChatMembers!)
         {

@@ -95,8 +95,9 @@ public class OsuLastCommand(bool onlyPassed = false) : CommandBase<Message>
         //l mrekk 5
         else if (parameters.Length == 2)
         {
-            limit = int.Parse(Regex.Match(string.Join(" ", parameters), @" (\d)").Value);
-            osuUsernameForLastScores = Regex.Match(string.Join(" ", parameters), @"(\S{3,})").Value;
+            string parametersJoined = string.Join(" ", parameters);
+            limit = int.Parse(Regex.Match(parametersJoined, @" (\d)").Value);
+            osuUsernameForLastScores = Regex.Match(parametersJoined, @"(\S{3,})").Value;
         }
         else
         {

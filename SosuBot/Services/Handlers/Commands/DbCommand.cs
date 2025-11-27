@@ -14,8 +14,11 @@ public sealed class DbCommand : CommandBase<Message>
     public override async Task ExecuteAsync()
     {
         var osuUserInDatabase = await Context.Database.OsuUsers.FindAsync(Context.Update.From!.Id);
-
-        if (osuUserInDatabase is null || !osuUserInDatabase.IsAdmin) return;
+        if (osuUserInDatabase is null || !osuUserInDatabase.IsAdmin)
+        {
+            await Context.Update.ReplyAsync(Context.BotClient, "Пшол вон!");
+            return;
+        }
 
         var parameters = Context.Update.Text!.GetCommandParameters()!;
 
