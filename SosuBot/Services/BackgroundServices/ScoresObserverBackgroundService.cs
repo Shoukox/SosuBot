@@ -247,6 +247,7 @@ public sealed class ScoresObserverBackgroundService(IServiceProvider serviceProv
 
     private async Task ObserveScores(CancellationToken stoppingToken)
     {
+        int scoresLimit = 50;
         Dictionary<int, GetUserScoresResponse> scores = new();
         while (!stoppingToken.IsCancellationRequested)
             try
@@ -255,48 +256,52 @@ public sealed class ScoresObserverBackgroundService(IServiceProvider serviceProv
                 {
                     var userBestScores =
                         await _osuApi.Users.GetUserScores(userId, ScoreType.Best,
-                            new GetUserScoreQueryParameters { Limit = 50 });
+                            new GetUserScoreQueryParameters { Limit = scoresLimit });
                     if (userBestScores == null)
                     {
                         _logger.LogWarning($"{userId} has no scores!");
                         continue;
                     }
 
-                    // ReSharper disable once CanSimplifyDictionaryLookupWithTryGetValue
-                    if (scores.ContainsKey(userId))
+                    if (scores.ContainsKey(userId) && !scores[userId].Scores.Any(m => m.ModeInt != userBestScores.Scores.FirstOrDefault()?.ModeInt))
                     {
-                        IEnumerable<Score> newScores =
-                            userBestScores.Scores.Except(scores[userId].Scores, ScoreComparer);
-                        _ = Task.Run(async () =>
+                        Score[] newScores =
+                            userBestScores.Scores.Except(scores[userId].Scores, ScoreComparer).ToArray();
+
+                        // if new scores amount equals to the limit, then probably the user has switched his default game mode
+                        if (newScores.Length != scoresLimit)
                         {
-                            foreach (var score in newScores)
+                            _ = Task.Run(async () =>
                             {
-                                try
+                                foreach (var score in newScores)
                                 {
-                                    int waitMs = 1000 + Random.Shared.Next(500, 1500);
-                                    // Send it to the admin
-                                    await _botClient.SendMessage(_adminTelegramId,
-                                        $"<b>{score.User?.Username}</b> set a <b>{score.Pp}pp</b> {ScoreHelper.GetScoreUrlWrappedInString(score.Id!.Value, "score!")}",
-                                        ParseMode.Html, linkPreviewOptions: true);
-                                    await Task.Delay(waitMs);
-
-
-                                    // Send it to all chats tracking 
-                                    var chatsToSend = _database.TelegramChats.Where(m => m.TrackedPlayers != null && m.TrackedPlayers.Contains(userId));
-                                    foreach (var chat in chatsToSend)
+                                    try
                                     {
-                                        await _botClient.SendMessage(chat.ChatId,
+                                        int waitMs = 1000 + Random.Shared.Next(500, 1500);
+                                        // Send it to the admin
+                                        await _botClient.SendMessage(_adminTelegramId,
                                             $"<b>{score.User?.Username}</b> set a <b>{score.Pp}pp</b> {ScoreHelper.GetScoreUrlWrappedInString(score.Id!.Value, "score!")}",
                                             ParseMode.Html, linkPreviewOptions: true);
                                         await Task.Delay(waitMs);
+
+
+                                        // Send it to all chats tracking 
+                                        var chatsToSend = _database.TelegramChats.Where(m => m.TrackedPlayers != null && m.TrackedPlayers.Contains(userId));
+                                        foreach (var chat in chatsToSend)
+                                        {
+                                            await _botClient.SendMessage(chat.ChatId,
+                                                $"<b>{score.User?.Username}</b> set a <b>{score.Pp}pp</b> {ScoreHelper.GetScoreUrlWrappedInString(score.Id!.Value, "score!")}",
+                                                ParseMode.Html, linkPreviewOptions: true);
+                                            await Task.Delay(waitMs);
+                                        }
+                                    }
+                                    catch (Exception e)
+                                    {
+                                        _logger.LogError(e, "Error while sending new score notification");
                                     }
                                 }
-                                catch (Exception e)
-                                {
-                                    _logger.LogError(e, "Error while sending new score notification");
-                                }
-                            }
-                        });
+                            }).ConfigureAwait(false);
+                        }
                     }
 
                     scores[userId] = userBestScores;

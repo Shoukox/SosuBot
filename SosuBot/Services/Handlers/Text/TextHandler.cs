@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using OsuApi.V2;
 using OsuApi.V2.Clients.Users.HttpIO;
 using OsuApi.V2.Models;
@@ -22,6 +23,7 @@ public sealed class TextHandler : CommandBase<Message>
 {
     private ILogger<TextHandler> _logger = null!;
     private ILogger<PPCalculator> _loggerPpCalculator = null!;
+    private BotConfiguration _botConfig = null!;
     private ApiV2 _osuApiV2 = null!;
 
     public override Task BeforeExecuteAsync()
@@ -29,6 +31,7 @@ public sealed class TextHandler : CommandBase<Message>
         _osuApiV2 = Context.ServiceProvider.GetRequiredService<ApiV2>();
         _logger = Context.ServiceProvider.GetRequiredService<ILogger<TextHandler>>();
         _loggerPpCalculator = Context.ServiceProvider.GetRequiredService<ILogger<PPCalculator>>();
+        _botConfig = Context.ServiceProvider.GetRequiredService<IOptions<BotConfiguration>>().Value;
         return Task.CompletedTask;
     }
 
@@ -36,8 +39,10 @@ public sealed class TextHandler : CommandBase<Message>
     {
         await BeforeExecuteAsync();
 
-        ILocalization language = new Russian();
+        // If msg comes from a forwarded message of the bot itself, ignore it
+        if (Context.Update.ForwardFrom?.Username == _botConfig.Username) return;
 
+        ILocalization language = new Russian();
         await HandleBeatmapLink(language);
         await HandleUserProfileLink(language);
     }
@@ -46,6 +51,13 @@ public sealed class TextHandler : CommandBase<Message>
     {
         var userProfileLink = OsuHelper.ParseOsuUserLink(Context.Update.GetAllLinks(), out var userId);
         if (userProfileLink == null) return;
+
+        if (userProfileLink.EndsWith('-'))
+        {
+            _logger.LogInformation($"User profile link ends with '-', skipping gathering infos. Link: {userProfileLink}");
+            return;
+        }
+
         if (await Context.Update.IsUserSpamming(Context.BotClient))
             return;
 
@@ -100,7 +112,15 @@ public sealed class TextHandler : CommandBase<Message>
     {
         var beatmapLink = OsuHelper.ParseOsuBeatmapLink(Context.Update.GetAllLinks(), out var beatmapsetId,
             out var beatmapId);
+
         if (beatmapLink == null) return;
+
+        if (beatmapLink.EndsWith('-'))
+        {
+            _logger.LogInformation($"Beatmap link ends with '-', skipping pp calculation. Link: {beatmapLink}");
+            return;
+        }
+
         if (await Context.Update.IsUserSpamming(Context.BotClient))
             return;
 
@@ -121,9 +141,14 @@ public sealed class TextHandler : CommandBase<Message>
 
         var playmode = beatmap.Mode!.ParseRulesetToPlaymode();
         var classicMod = OsuHelper.GetClassicMode(playmode);
-        var modsFromMessage = beatmapLink.Contains('+')
-            ? beatmapLink.Split('+')[1].ToMods(playmode).Except([classicMod]).ToArray()
-            : [];
+
+        osu.Game.Rulesets.Mods.Mod[] modsFromMessage = [];
+        if (beatmapLink.Contains('+'))
+        {
+            string[] splittedMessage = beatmapLink.Split("+");
+            if (splittedMessage[1].Length % 2 != 0) return;
+            modsFromMessage = splittedMessage[1].ToMods(playmode).Except([classicMod]).ToArray();
+        }
 
         var classicModsToApply = modsFromMessage.Concat([classicMod]).Distinct().ToArray();
         var lazerModsToApply = modsFromMessage.Distinct().ToArray();
