@@ -215,11 +215,11 @@ public sealed class ScoresObserverBackgroundService(IServiceProvider serviceProv
                     _logger.LogInformation($"Saved daily stats");
                 }
 
-                getStdScoresCursor = getStdScoresResponse?.CursorString;
-                getTaikoScoresCursor = getTaikoScoresResponse?.CursorString;
-                getFruitsScoresCursor = getFruitsScoresResponse?.CursorString;
-                getManiaScoresCursor = getManiaScoresResponse?.CursorString;
-
+                if(getStdScoresResponse != null) getStdScoresCursor = getStdScoresResponse.CursorString;
+                if(getTaikoScoresResponse != null) getTaikoScoresCursor = getTaikoScoresResponse.CursorString;
+                if(getFruitsScoresResponse != null) getFruitsScoresCursor = getFruitsScoresResponse.CursorString;
+                if(getManiaScoresResponse != null) getManiaScoresCursor = getManiaScoresResponse.CursorString;
+                
                 if(getStdScoresResponse?.Scores?.Length >= 1000 || getTaikoScoresResponse?.Scores?.Length >= 1000 || getFruitsScoresResponse?.Scores?.Length >= 1000 || getManiaScoresResponse?.Scores?.Length >= 1000)
                 {
                     _logger.LogWarning($"GetScores returned 1000+ scores in one of the modes. std={getStdScoresResponse?.Scores?.Length} taiko={getTaikoScoresResponse?.Scores?.Length} fruits={getFruitsScoresResponse?.Scores?.Length} mania={getManiaScoresResponse?.Scores?.Length}");
