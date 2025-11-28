@@ -211,13 +211,12 @@ public sealed class CustomCommand : CommandBase<Message>
                 await Task.Delay(1000);
             }
         }
-        else if (parameters[0] == "fix28112025_taikoscores")
+        else if (parameters[0] == "fix28112025_distinctscores")
         {
-            var distinctScores = ScoresObserverBackgroundService.AllDailyStatistics.Last().Scores.Where(m => m.ModeInt == (int)Playmode.Taiko && m.UserId == 4284154).DistinctBy(m => m.Id).ToList();
-            int count = ScoresObserverBackgroundService.AllDailyStatistics.Last().Scores.RemoveAll(m => m.ModeInt == (int)Playmode.Taiko && m.UserId == 4284154);
-            ScoresObserverBackgroundService.AllDailyStatistics.Last().Scores.AddRange(distinctScores);
-
-            await Context.Update.ReplyAsync(Context.BotClient, $"Scores removed: {count}\nDistinct scores added: {distinctScores.Count}");
+            // this id is raisy
+            int oldCount = ScoresObserverBackgroundService.AllDailyStatistics.Last().Scores.Count;
+            ScoresObserverBackgroundService.AllDailyStatistics.Last().Scores = ScoresObserverBackgroundService.AllDailyStatistics.Last().Scores.DistinctBy(m => m.Id).ToList();
+            await Context.Update.ReplyAsync(Context.BotClient, $"Scores old count: {oldCount}\nScores new count: {ScoresObserverBackgroundService.AllDailyStatistics.Last().Scores.Count}");
         }
         else if (parameters[0] == "add-from-sqlite")
         {
