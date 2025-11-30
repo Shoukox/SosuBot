@@ -66,7 +66,7 @@ public class OsuUserBestCallbackCommand : CommandBase<CallbackQuery>
         scores = userScoreResponse.Scores;
         if (scores.Length == 0) return;
 
-        var textToSend = $"{osuUsername}({playmode.ToGamemode()})\n\n";
+        var textToSend = $"{UserHelper.GetUserProfileUrlWrappedInUsernameString((int)osuUserId, osuUsername)} (<b>{playmode.ToGamemode()}</b>)\n\n";
         var index = page * 5;
         foreach (var score in scores)
         {
