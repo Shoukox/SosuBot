@@ -92,7 +92,7 @@ public sealed class OsuUserbestCommand : CommandBase<Message>
 
         var gamemode = ruleset.ParseRulesetToGamemode();
         var playmode = ruleset.ParseRulesetToPlaymode();
-        var textToSend = $"{osuUsernameForUserbest} (<b>{gamemode}</b>)\n\n";
+        var textToSend = $"{UserHelper.GetUserProfileUrlWrappedInUsernameString((int)osuUserIdForUserbest, osuUsernameForUserbest)} (<b>{gamemode}</b>)\n\n";
         
         for (var i = 0; i <= bestScores.Length - 1; i++)
         {
