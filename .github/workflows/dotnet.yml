@@ -5,9 +5,9 @@ name: .NET
 
 on:
   push:
-    branches: [ $default-branch ]
+    branches: [ "master" ]
   pull_request:
-    branches: [ $default-branch ]
+    branches: [ "master" ]
 
 jobs:
   build:
@@ -16,10 +16,15 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
+      with:
+        # ensure submodules (and nested submodules) are initialized & updated
+        submodules: 'recursive'
+        # required if submodules point to tags/commits that need history
+        fetch-depth: 0
     - name: Setup .NET
       uses: actions/setup-dotnet@v4
       with:
-        dotnet-version: 9.0.x
+        dotnet-version: 10.0.x
     - name: Restore dependencies
       run: dotnet restore
     - name: Build
