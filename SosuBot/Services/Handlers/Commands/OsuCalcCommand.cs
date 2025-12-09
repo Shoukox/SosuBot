@@ -42,11 +42,7 @@ public class OsuCalcCommand : CommandBase<Message>
         var osuUserInDatabase = await Context.Database.OsuUsers.FindAsync(Context.Update.From!.Id);
 
         var waitMessage = await Context.Update.ReplyAsync(Context.BotClient, language.waiting);
-
-        var osuUsernameForLastScores = string.Empty;
-        var keywordParameters = Context.Update.Text!.GetCommandKeywordParameters()!;
-        var parameters = Context.Update.Text!.GetCommandParameters()!.Where(m => !keywordParameters.Contains(m)).ToArray();
-
+        var parameters = Context.Update.Text!.GetCommandParameters()!.ToArray();
         if (parameters.Length <= 2 || parameters.Length >= 5)
         {
             await waitMessage.EditAsync(Context.BotClient, language.error_argsLength);
@@ -145,8 +141,8 @@ public class OsuCalcCommand : CommandBase<Message>
             $"<b>[{beatmap.Version.EncodeHtml()}]</b>\n\n" +
             $"<b>+{modsFromMessage.ModsToString(playmode)}</b> {ScoreHelper.GetFormattedNumConsideringNull(difficultyRatingForGivenMods, round: false)}⭐️\n" +
             $"{ScoreHelper.GetScoreStatisticsText(scoreStatistics, playmode)}/{miss}❌\n" +
-            $"Lazer: {ScoreHelper.GetFormattedNumConsideringNull(ppLazer.CalculatedAccuracy * 100)}% - <b><u>{ScoreHelper.GetFormattedNumConsideringNull(ppLazer.Pp)}pp</u></b>\n" +
-            $"Stable: {ScoreHelper.GetFormattedNumConsideringNull(ppClassic.CalculatedAccuracy * 100)}% - <b><u>{ScoreHelper.GetFormattedNumConsideringNull(ppClassic.Pp)}pp</u></b>";
+            $"Lazer: {ScoreHelper.GetFormattedNumConsideringNull(ppLazer.CalculatedAccuracy * 100, round: false)}% - <b><u>{ScoreHelper.GetFormattedNumConsideringNull(ppLazer.Pp)}pp</u></b>\n" +
+            $"Stable: {ScoreHelper.GetFormattedNumConsideringNull(ppClassic.CalculatedAccuracy * 100, round: false)}% - <b><u>{ScoreHelper.GetFormattedNumConsideringNull(ppClassic.Pp)}pp</u></b>";
         await waitMessage.EditAsync(Context.BotClient, textToSend);
     }
 }
