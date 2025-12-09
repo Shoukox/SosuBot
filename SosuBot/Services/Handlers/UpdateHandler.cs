@@ -1,12 +1,14 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using osu.Game.Rulesets.Osu.Mods;
 using SosuBot.Database;
 using SosuBot.Extensions;
 using SosuBot.Services.Handlers.Abstract;
 using SosuBot.Services.Handlers.Callbacks;
 using SosuBot.Services.Handlers.Commands;
 using SosuBot.Services.Handlers.Text;
+using System.Runtime.CompilerServices;
 using Telegram.Bot;
 using Telegram.Bot.Polling;
 using Telegram.Bot.Types;
@@ -51,6 +53,7 @@ public class UpdateHandler(
     {
         _currentUpdate = update;
         cancellationToken.ThrowIfCancellationRequested();
+
 
         var eventHandler = update switch
         {
@@ -206,6 +209,9 @@ public class UpdateHandler(
                 break;
             case string beatmapLeaderboard when OsuChatBeatmapLeaderboardCommand.Commands.Contains(beatmapLeaderboard):
                 executableCommand = new OsuChatBeatmapLeaderboardCommand();
+                break;
+            case string calc when OsuCalcCommand.Commands.Contains(calc):
+                executableCommand = new OsuCalcCommand();
                 break;
             default:
                 executableCommand = new Commands.DummyCommand();

@@ -55,8 +55,7 @@ public class OsuLastCommand(bool onlyPassed = false) : CommandBase<Message>
 
         var osuUsernameForLastScores = string.Empty;
         var keywordParameters = Context.Update.Text!.GetCommandKeywordParameters()!;
-        var parameters = Context.Update.Text!.GetCommandParameters()!.Except(keywordParameters).ToArray();
-        ;
+        var parameters = Context.Update.Text!.GetCommandParameters()!.Where(m => !keywordParameters.Contains(m)).ToArray();
 
         var limit = 1;
         string? ruleset = null;
@@ -154,7 +153,6 @@ public class OsuLastCommand(bool onlyPassed = false) : CommandBase<Message>
             $"<b>{UserHelper.GetUserProfileUrlWrappedInUsernameString(userResponse.UserExtend!.Id.Value, osuUsernameForLastScores)}</b> (<i>{ruleset.ParseRulesetToGamemode()}</i>)\n\n";
 
         var playmode = (Playmode)lastScores[0].RulesetId!;
-
         for (var i = 0; i <= lastScores.Length - 1; i++)
         {
             var score = lastScores[i];
@@ -289,7 +287,7 @@ public class OsuLastCommand(bool onlyPassed = false) : CommandBase<Message>
                 $"{score.Beatmapset?.Title.EncodeHtml()}",
                 $"{beatmap.Version.EncodeHtml()}",
                 $"{beatmap.Status}",
-                $"{ScoreHelper.GetFormattedNumConsideringNull(difficultyRating, format: "N2")}",
+                $"{ScoreHelper.GetFormattedNumConsideringNull(difficultyRating, format: "N2", round: false)}",
                 $"{ScoreHelper.GetScoreStatisticsText(score.Statistics!, playmode)}",
                 $"{score.Statistics!.Miss}",
                 $"{ScoreHelper.GetFormattedNumConsideringNull(score.Accuracy * 100, round: false)}",
@@ -312,6 +310,5 @@ public class OsuLastCommand(bool onlyPassed = false) : CommandBase<Message>
         }
 
         await waitMessage.EditAsync(Context.BotClient, textToSend);
-        await Context.Database.SaveChangesAsync();
     }
 }

@@ -1,4 +1,5 @@
-﻿using OsuApi.V2;
+﻿using osu.Game.Rulesets.Scoring;
+using OsuApi.V2;
 using OsuApi.V2.Clients.Users.HttpIO;
 using OsuApi.V2.Models;
 using OsuApi.V2.Users.Models;
@@ -61,6 +62,20 @@ public static class ScoreHelper
         }
 
         return scoreStatisticsText;
+    }
+
+    public static string GetScoreStatisticsText(Dictionary<HitResult, int> scoreStatistics, Playmode playmode)
+    {
+        var scoreStatisticsFromOsuApi = new ScoreStatistics();
+        scoreStatisticsFromOsuApi.Perfect = scoreStatistics.GetValueOrDefault(HitResult.Perfect, 0);
+        scoreStatisticsFromOsuApi.Great = scoreStatistics.GetValueOrDefault(HitResult.Great, 0);
+        scoreStatisticsFromOsuApi.Good = scoreStatistics.GetValueOrDefault(HitResult.Good, 0);
+        scoreStatisticsFromOsuApi.Ok = scoreStatistics.GetValueOrDefault(HitResult.Ok, 0);
+        scoreStatisticsFromOsuApi.Meh = scoreStatistics.GetValueOrDefault(HitResult.Meh, 0);
+        scoreStatisticsFromOsuApi.SmallTickHit = scoreStatistics.GetValueOrDefault(HitResult.SmallTickHit, 0);
+        scoreStatisticsFromOsuApi.SmallTickMiss = scoreStatistics.GetValueOrDefault(HitResult.SmallTickMiss, 0);
+        scoreStatisticsFromOsuApi.Miss = scoreStatistics.GetValueOrDefault(HitResult.Miss, 0);
+        return GetScoreStatisticsText(scoreStatisticsFromOsuApi, playmode);
     }
 
     /// <summary>

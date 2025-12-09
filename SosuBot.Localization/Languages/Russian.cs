@@ -153,4 +153,5 @@ public struct Russian : ILocalization
     public string error_noBestScores => $"{error_baseMessage}\nУ этого пользователя еще нету лучших рекордов";
     public string error_excludeListAlreadyContainsThisId => "Этот пользователь уже был исключен из /chatstats";
     public string error_userWasNotExcluded => "Этот пользователь и так не был исключен из /chatstats";
+    public string error_beatmapNotFound => "Карта не найдена";
 }

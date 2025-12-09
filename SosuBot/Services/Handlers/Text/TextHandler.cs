@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using osu.Game.Beatmaps;
 using OsuApi.V2;
 using OsuApi.V2.Clients.Users.HttpIO;
 using OsuApi.V2.Models;
@@ -266,7 +267,7 @@ public sealed class TextHandler : CommandBase<Message>
         var textToSend = language.send_mapInfo.Fill([
             $"{playmode.ToGamemode()}",
             $"{beatmap.Version.EncodeHtml()}",
-            $"{beatmap.DifficultyRating:N2}",
+            $"{ScoreHelper.GetFormattedNumConsideringNull(beatmap.DifficultyRating, round: false)}",
             $"{duration}",
             $"{beatmapset.Creator}",
             $"{beatmap.Status}",
@@ -277,7 +278,7 @@ public sealed class TextHandler : CommandBase<Message>
             $"{beatmap.BPM}",
             $"{lazerModsToApply.ModsToString(playmode)}",
 
-            $"{ScoreHelper.GetFormattedNumConsideringNull(difficultyRatingForGivenMods)}",
+            $"{ScoreHelper.GetFormattedNumConsideringNull(difficultyRatingForGivenMods, round: false)}",
 
             classicSSText,
             classic99Text,

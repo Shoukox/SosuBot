@@ -42,4 +42,5 @@ public interface ILocalization
     public string error_noBestScores { get; }
     public string error_excludeListAlreadyContainsThisId { get; }
     public string error_userWasNotExcluded { get; }
+    public string error_beatmapNotFound { get; }
 }
