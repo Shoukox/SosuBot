@@ -41,7 +41,7 @@ public static class OsuTypesExtensions
         .Where(t => t.Name.StartsWith("CatchMod"))
         .Select(t => (Mod)Activator.CreateInstance(t)!)
         .ToArray();
-    
+
     public static readonly Mod[] AllMods = typeof(ModNoFail).Assembly.GetTypes()
         .Where(t => t.IsClass && !t.IsAbstract && t.IsPublic)
         .Where(t => typeof(Mod).IsAssignableFrom(t))
@@ -146,15 +146,29 @@ public static class OsuTypesExtensions
     }
 
     public static Dictionary<HitResult, int> GetMaximumStatistics(
-        this BeatmapExtended beatmapExtended)
+        this BeatmapExtended beatmapExtended, Playmode playmode = Playmode.Osu)
     {
-        return new Dictionary<HitResult, int>
+        return playmode switch
         {
+            Playmode.Osu => new Dictionary<HitResult, int>
             {
-                HitResult.Great,
-                beatmapExtended.CountCircles!.Value + beatmapExtended.CountSliders!.Value +
-                beatmapExtended.CountSpinners!.Value
-            }
+                {
+                    HitResult.Great,
+                    beatmapExtended.CountCircles!.Value + beatmapExtended.CountSliders!.Value +
+                    beatmapExtended.CountSpinners!.Value
+                }
+            },
+            Playmode.Mania => new Dictionary<HitResult, int>
+            {
+                {
+                    HitResult.Perfect,
+                    beatmapExtended.CountCircles!.Value + 2 * beatmapExtended.CountSliders!.Value +
+                    beatmapExtended.CountSpinners!.Value
+                }
+            },
+            Playmode.Catch => throw new NotImplementedException(),
+            Playmode.Taiko => throw new NotImplementedException(),
+            _ => throw new NotImplementedException()
         };
     }
 }

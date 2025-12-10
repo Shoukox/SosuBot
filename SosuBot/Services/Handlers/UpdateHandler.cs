@@ -213,6 +213,9 @@ public class UpdateHandler(
             case string calc when OsuCalcCommand.Commands.Contains(calc):
                 executableCommand = new OsuCalcCommand();
                 break;
+            case string calcMania when OsuCalcManiaCommand.Commands.Contains(calcMania):
+                executableCommand = new OsuCalcManiaCommand();
+                break;
             default:
                 executableCommand = new Commands.DummyCommand();
                 break;

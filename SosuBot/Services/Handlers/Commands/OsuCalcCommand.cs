@@ -17,15 +17,13 @@ namespace SosuBot.Services.Handlers.Commands;
 
 public class OsuCalcCommand : CommandBase<Message>
 {
-    public static readonly string[] Commands = ["/calculate", "/calc"];
-    private ILogger<OsuCalcCommand> _logger = null!;
+    public static readonly string[] Commands = ["/calculate", "/calcstd", "/calcosu", "/calc"];
     private ILogger<PPCalculator> _loggerPpCalculator = null!;
     private ApiV2 _osuApiV2 = null!;
 
     public override Task BeforeExecuteAsync()
     {
         _osuApiV2 = Context.ServiceProvider.GetRequiredService<ApiV2>();
-        _logger = Context.ServiceProvider.GetRequiredService<ILogger<OsuCalcCommand>>();
         _loggerPpCalculator = Context.ServiceProvider.GetRequiredService<ILogger<PPCalculator>>();
         return Task.CompletedTask;
     }
@@ -81,7 +79,7 @@ public class OsuCalcCommand : CommandBase<Message>
         }
 
         var beatmap = getBeatmapResponse.BeatmapExtended!;
-        if (beatmap.ModeInt != 0)
+        if (beatmap.ModeInt != (int)Playmode.Osu)
         {
             await waitMessage.EditAsync(Context.BotClient, $"Эта команда поддерживает только {Playmode.Osu.ToGamemode()} карты");
             return;
@@ -109,6 +107,12 @@ public class OsuCalcCommand : CommandBase<Message>
         if(!int.TryParse(parameters[0], out int okCount) || !int.TryParse(parameters[1], out int mehCount) || !int.TryParse(parameters[2], out int missCount))
         {
             await waitMessage.EditAsync(Context.BotClient, language.error_baseMessage + "\n/calc x100 x50 xMiss [mods]\nПервые три параметра - цифры. Моды (HDDT) - опциональны");
+            return;
+        }
+
+        if(okCount < 0 || mehCount < 0 || missCount < 0 || okCount + mehCount + missCount > scoreStatistics[HitResult.Great])
+        {
+            await waitMessage.EditAsync(Context.BotClient, language.error_baseMessage + "\nНекорректная статистика скора");
             return;
         }
         
