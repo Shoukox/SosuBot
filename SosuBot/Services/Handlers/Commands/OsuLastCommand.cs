@@ -298,7 +298,7 @@ public class OsuLastCommand(bool onlyPassed = false) : CommandBase<Message>
                 $"{ScoreHelper.GetFormattedNumConsideringNull(score.Accuracy * 100, round: false)}",
                 $"{ScoreHelper.GetModsText(mods)}",
                 $"{score.MaxCombo}",
-                $"{ScoreHelper.GetFormattedNumConsideringNull(beatmapMaxCombo, format: "")}",
+                $"{ScoreHelper.GetFormattedNumConsideringNull(beatmapMaxCombo, format: "F0")}",
                 $"{scorePpText}",
                 $"{scoreIfFcPpText}",
                 $"{scoreEndedMinutesAgoText}",

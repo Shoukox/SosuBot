@@ -1,5 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using osu.Game.Rulesets.Mania.Mods;
 using osu.Game.Rulesets.Osu.Mods;
 using osu.Game.Rulesets.Scoring;
 using OsuApi.V2;
@@ -15,9 +16,9 @@ using Telegram.Bot.Types;
 
 namespace SosuBot.Services.Handlers.Commands;
 
-public class OsuCalcCommand : CommandBase<Message>
+public class OsuCalcManiaCommand : CommandBase<Message>
 {
-    public static readonly string[] Commands = ["/calculate", "/calcstd", "/calcosu", "/calc"];
+    public static readonly string[] Commands = ["/calculatemania", "/calcmania"];
     private ILogger<PPCalculator> _loggerPpCalculator = null!;
     private ApiV2 _osuApiV2 = null!;
 
@@ -41,7 +42,7 @@ public class OsuCalcCommand : CommandBase<Message>
 
         var waitMessage = await Context.Update.ReplyAsync(Context.BotClient, language.waiting);
         var parameters = Context.Update.Text!.GetCommandParameters()!.ToArray();
-        if (parameters.Length <= 2 || parameters.Length >= 5)
+        if (parameters.Length <= 4 || parameters.Length >= 7)
         {
             await waitMessage.EditAsync(Context.BotClient, language.error_argsLength);
             return;
@@ -52,7 +53,7 @@ public class OsuCalcCommand : CommandBase<Message>
         var link = OsuHelper.ParseOsuBeatmapLink(Context.Update.ReplyToMessage?.GetAllLinks(), out var beatmapsetId, out var beatmapId);
         if (link is not null)
         {
-            // calc x100 x50 xMiss, with reply
+            // calc x300 x200 x100 x50 xMiss, with reply
             if (beatmapId is null && beatmapsetId is not null)
             {
                 beatmapset = await _osuApiV2.Beatmapsets.GetBeatmapset(beatmapsetId.Value);
@@ -61,7 +62,7 @@ public class OsuCalcCommand : CommandBase<Message>
         }
         else
         {
-            // calc x100 x50 xMiss, no reply
+            // calc x300 x200 x100 x50 xMiss, no reply
             beatmapId = chatInDatabase!.LastBeatmapId;
         }
 
@@ -79,9 +80,9 @@ public class OsuCalcCommand : CommandBase<Message>
         }
 
         var beatmap = getBeatmapResponse.BeatmapExtended!;
-        if (beatmap.ModeInt != (int)Playmode.Osu)
+        if (beatmap.ModeInt != (int)Playmode.Mania)
         {
-            await waitMessage.EditAsync(Context.BotClient, $"Эта команда поддерживает только {Playmode.Osu.ToGamemode()} карты");
+            await waitMessage.EditAsync(Context.BotClient, $"Эта команда поддерживает только {Playmode.Mania.ToGamemode()} карты");
             return;
         }
         var hitobjectsSum = beatmap.CountCircles + beatmap.CountSliders + beatmap.CountSpinners;
@@ -97,29 +98,35 @@ public class OsuCalcCommand : CommandBase<Message>
 
         // get mods from parameters
         osu.Game.Rulesets.Mods.Mod[] modsFromMessage = [];
-        if (parameters.Length == 4)
+        if (parameters.Length == 6)
         {
-            modsFromMessage = parameters[3].ToMods(playmode).Except([new OsuModClassic()]).ToArray();
+            modsFromMessage = parameters[5].ToMods(playmode).Except([new ManiaModClassic()]).ToArray();
         }
 
         // get score statistics from parameters
-        Dictionary<HitResult, int> scoreStatistics = beatmap.GetMaximumStatistics();
-        if(!int.TryParse(parameters[0], out int okCount) || !int.TryParse(parameters[1], out int mehCount) || !int.TryParse(parameters[2], out int missCount))
+        Dictionary<HitResult, int> scoreStatistics = beatmap.GetMaximumStatistics(playmode);
+        if(!int.TryParse(parameters[0], out int greatCount) 
+            || !int.TryParse(parameters[1], out int goodCount) 
+            || !int.TryParse(parameters[1], out int okCount) 
+            || !int.TryParse(parameters[1], out int mehCount) 
+            || !int.TryParse(parameters[2], out int missCount))
         {
-            await waitMessage.EditAsync(Context.BotClient, language.error_baseMessage + "\n/calc x100 x50 xMiss [mods]\nПервые три параметра - цифры. Моды (HDDT) - опциональны");
+            await waitMessage.EditAsync(Context.BotClient, language.error_baseMessage + "\n/calc x300 x200 x100 x50 xMiss [mods]\nПервые параметры - цифры. Моды (HDDT) - опциональны");
             return;
         }
 
-        if(okCount < 0 || mehCount < 0 || missCount < 0 || okCount + mehCount + missCount > scoreStatistics[HitResult.Great])
+        if(greatCount < 0 || goodCount < 0 || okCount < 0 || mehCount < 0 || missCount < 0 || greatCount + goodCount + okCount + mehCount + missCount > scoreStatistics[HitResult.Perfect])
         {
             await waitMessage.EditAsync(Context.BotClient, language.error_baseMessage + "\nНекорректная статистика скора");
             return;
         }
         
+        scoreStatistics[HitResult.Great] = greatCount;
+        scoreStatistics[HitResult.Good] = goodCount;
         scoreStatistics[HitResult.Ok] = okCount;
         scoreStatistics[HitResult.Meh] = mehCount;
         scoreStatistics[HitResult.Miss] = missCount;
-        scoreStatistics[HitResult.Great] = scoreStatistics[HitResult.Great] - scoreStatistics[HitResult.Ok] - scoreStatistics[HitResult.Meh] - scoreStatistics[HitResult.Miss];
+        scoreStatistics[HitResult.Perfect] = scoreStatistics[HitResult.Perfect] - scoreStatistics[HitResult.Great] - scoreStatistics[HitResult.Good] - scoreStatistics[HitResult.Ok] - scoreStatistics[HitResult.Meh] - scoreStatistics[HitResult.Miss];
 
         var ppCalculator = new PPCalculator(_loggerPpCalculator);
         var ppLazer = await ppCalculator.CalculatePpAsync(beatmap.Id!.Value, null,
