@@ -106,9 +106,15 @@ public class OsuCalcCommand : CommandBase<Message>
 
         // get score statistics from parameters
         Dictionary<HitResult, int> scoreStatistics = beatmap.GetMaximumStatistics();
-        scoreStatistics[HitResult.Ok] = Convert.ToInt32(parameters[0]);
-        scoreStatistics[HitResult.Meh] = Convert.ToInt32(parameters[1]);
-        scoreStatistics[HitResult.Miss] = Convert.ToInt32(parameters[2]);
+        if(!int.TryParse(parameters[0], out int okCount) || !int.TryParse(parameters[1], out int mehCount) || !int.TryParse(parameters[2], out int missCount))
+        {
+            await waitMessage.EditAsync(Context.BotClient, language.error_baseMessage + "\n/calc x100 x50 xMiss [mods]\nПервые три параметра - цифры. Моды (HDDT) - опциональны");
+            return;
+        }
+        
+        scoreStatistics[HitResult.Ok] = okCount;
+        scoreStatistics[HitResult.Meh] = mehCount;
+        scoreStatistics[HitResult.Miss] = missCount;
         scoreStatistics[HitResult.Great] = scoreStatistics[HitResult.Great] - scoreStatistics[HitResult.Ok] - scoreStatistics[HitResult.Meh] - scoreStatistics[HitResult.Miss];
 
         var ppCalculator = new PPCalculator(_loggerPpCalculator);

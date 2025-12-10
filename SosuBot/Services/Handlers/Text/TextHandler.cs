@@ -235,25 +235,25 @@ public sealed class TextHandler : CommandBase<Message>
         var duration = $"{beatmap.TotalLength / 60}m{beatmap.TotalLength % 60:00}s";
         var padLength = 9;
 
-        string classicSSText = $"{ScoreHelper.GetFormattedNumConsideringNull(calculatedPp.ClassicSS?.CalculatedAccuracy * 100, defaultValue: $"{100:N2}")}%".PadRight(padLength) + "| " +
+        string classicSSText = $"{ScoreHelper.GetFormattedNumConsideringNull(calculatedPp.ClassicSS?.CalculatedAccuracy * 100, defaultValue: $"{100:N2}", round: false)}%".PadRight(padLength) + "| " +
                                $"{ScoreHelper.GetFormattedNumConsideringNull(calculatedPp.ClassicSS?.Pp)}pp\n";
         string classic99Text = playmode == Playmode.Mania
             ? ""
-            : $"{ScoreHelper.GetFormattedNumConsideringNull(calculatedPp.Classic99?.CalculatedAccuracy * 100, defaultValue: $"{99:N2}")}%".PadRight(padLength) + "| " +
+            : $"{ScoreHelper.GetFormattedNumConsideringNull(calculatedPp.Classic99?.CalculatedAccuracy * 100, defaultValue: $"{99:N2}", round: false)}%".PadRight(padLength) + "| " +
               $"{ScoreHelper.GetFormattedNumConsideringNull(calculatedPp.Classic99?.Pp)}pp\n";
         string classic98Text = playmode == Playmode.Mania
             ? ""
-            : $"{ScoreHelper.GetFormattedNumConsideringNull(calculatedPp.Classic98?.CalculatedAccuracy * 100, defaultValue: $"{98:N2}")}%".PadRight(padLength) + "| " +
+            : $"{ScoreHelper.GetFormattedNumConsideringNull(calculatedPp.Classic98?.CalculatedAccuracy * 100, defaultValue: $"{98:N2}", round: false)}%".PadRight(padLength) + "| " +
               $"{ScoreHelper.GetFormattedNumConsideringNull(calculatedPp.Classic98?.Pp)}pp\n";
-        string lazerSSText = $"{ScoreHelper.GetFormattedNumConsideringNull(calculatedPp.LazerSS?.CalculatedAccuracy * 100, defaultValue: $"{100:N2}")}%".PadRight(padLength) + "| " +
+        string lazerSSText = $"{ScoreHelper.GetFormattedNumConsideringNull(calculatedPp.LazerSS?.CalculatedAccuracy * 100, defaultValue: $"{100:N2}", round: false)}%".PadRight(padLength) + "| " +
                              $"{ScoreHelper.GetFormattedNumConsideringNull(calculatedPp.LazerSS?.Pp)}pp\n";
         string lazer99Text = playmode == Playmode.Mania
             ? ""
-            : $"{ScoreHelper.GetFormattedNumConsideringNull(calculatedPp.Lazer99?.CalculatedAccuracy * 100, defaultValue: $"{99:N2}")}%".PadRight(padLength) + "| " +
+            : $"{ScoreHelper.GetFormattedNumConsideringNull(calculatedPp.Lazer99?.CalculatedAccuracy * 100, defaultValue: $"{99:N2}", round: false)}%".PadRight(padLength) + "| " +
               $"{ScoreHelper.GetFormattedNumConsideringNull(calculatedPp.Lazer99?.Pp)}pp\n";
         string lazer98Text = playmode == Playmode.Mania
             ? ""
-            : $"{ScoreHelper.GetFormattedNumConsideringNull(calculatedPp.Lazer98?.CalculatedAccuracy * 100, defaultValue: $"{98:N2}")}%".PadRight(padLength) + "| " +
+            : $"{ScoreHelper.GetFormattedNumConsideringNull(calculatedPp.Lazer98?.CalculatedAccuracy * 100, defaultValue: $"{98:N2}", round: false)}%".PadRight(padLength) + "| " +
               $"{ScoreHelper.GetFormattedNumConsideringNull(calculatedPp.Lazer98?.Pp)}pp\n";
 
         // Calculate diff rating

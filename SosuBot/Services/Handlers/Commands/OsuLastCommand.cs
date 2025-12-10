@@ -95,7 +95,12 @@ public class OsuLastCommand(bool onlyPassed = false) : CommandBase<Message>
         else if (parameters.Length == 2)
         {
             string parametersJoined = string.Join(" ", parameters);
-            limit = int.Parse(Regex.Match(parametersJoined, @" (\d)").Value);
+            string numberAsText = Regex.Match(parametersJoined, @" (\d)").Value;
+            if(!int.TryParse(numberAsText, out limit))
+            {
+                await waitMessage.EditAsync(Context.BotClient, language.error_baseMessage + "\n/last nickname count\n/last Shoukko 5");
+                return;
+            }
             osuUsernameForLastScores = Regex.Match(parametersJoined, @"(\S{3,})").Value;
         }
         else
