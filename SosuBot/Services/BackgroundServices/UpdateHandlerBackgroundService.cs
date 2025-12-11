@@ -41,31 +41,28 @@ public sealed class UpdateHandlerBackgroundService(IServiceProvider serviceProvi
     {
         while (!stoppingToken.IsCancellationRequested)
         {
-            ITelegramBotClient bot;
-            UpdateHandler updateHandler;
-            Update update;
             try
             {
-                update = await _updateQueue.DequeueUpdateAsync(CancellationToken.None);
+                var update = await _updateQueue.DequeueUpdateAsync(CancellationToken.None);
                 _logger.LogInformation("Worker dequeueing an update.");
 
                 await using var scope = serviceProvider.CreateAsyncScope();
-                updateHandler = scope.ServiceProvider.GetRequiredService<UpdateHandler>();
-                bot = scope.ServiceProvider.GetRequiredService<ITelegramBotClient>();
+                var updateHandler = scope.ServiceProvider.GetRequiredService<UpdateHandler>();
+                var bot = scope.ServiceProvider.GetRequiredService<ITelegramBotClient>();
+
+                try
+                {
+                    await updateHandler.HandleUpdateAsync(bot, update, CancellationToken.None);
+                }
+                catch (Exception ex)
+                {
+                    await updateHandler.HandleErrorAsync(bot, ex, HandleErrorSource.HandleUpdateError, CancellationToken.None);
+                }
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Exception in update handler worker");
                 continue;
-            }
-
-            try
-            {
-                await updateHandler.HandleUpdateAsync(bot, update, CancellationToken.None);
-            }
-            catch (Exception ex)
-            {
-                await updateHandler.HandleErrorAsync(bot, ex, HandleErrorSource.HandleUpdateError, CancellationToken.None);
             }
         }
     }
