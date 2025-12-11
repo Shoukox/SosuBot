@@ -236,7 +236,7 @@ public sealed class ScoresObserverBackgroundService(IServiceProvider serviceProv
             catch (HttpRequestException httpRequestException)
             {
                 var waitMs = 20_000;
-                _logger.LogWarning($"[{nameof(ScoresObserverBackgroundService)}]: status code {httpRequestException.StatusCode}. Waiting {waitMs}ms...");
+                _logger.LogWarning($"[{nameof(ScoresObserverBackgroundService)}]: status code {httpRequestException.StatusCode}. Message: {httpRequestException.Message}. Waiting {waitMs}ms...");
                 await Task.Delay(waitMs);
             }
             catch (Exception e)
@@ -311,7 +311,7 @@ public sealed class ScoresObserverBackgroundService(IServiceProvider serviceProv
             catch (HttpRequestException httpRequestException)
             {
                 var waitMs = 10_000;
-                _logger.LogWarning($"[{nameof(ScoresObserverBackgroundService)}]: status code {httpRequestException.StatusCode}. Waiting {waitMs}ms...");
+                _logger.LogWarning($"[{nameof(ScoresObserverBackgroundService)}]: status code {httpRequestException.StatusCode}. Message: {httpRequestException.Message}. Waiting {waitMs}ms...");
                 await Task.Delay(waitMs);
             }
             catch (Exception e)

@@ -17,13 +17,28 @@ public static class PollyPolicies
             .HandleTransientHttpError()
             .WaitAndRetryAsync(
                 Backoff.DecorrelatedJitterBackoffV2(TimeSpan.FromSeconds(1), 3),
-                (_, delay, attempt, _) =>
+                onRetry: (outcome, delay, attempt, context) =>
                 {
-                    logger.LogWarning(
-                        "Transient error (attempt {Attempt}). Waiting {Delay} before retry.", attempt,
-                        delay);
+                    if (outcome.Exception != null)
+                    {
+                        // vollständige Exception (inkl. Stack) loggen
+                        logger.LogWarning(outcome.Exception,
+                            "Transient exception (attempt {Attempt}). Waiting {Delay} before retry. Exception: {Message}",
+                            attempt, delay, outcome.Exception.Message);
+                    }
+                    else if (outcome.Result != null)
+                    {
+                        logger.LogWarning(
+                            "Transient HTTP response (attempt {Attempt}). StatusCode: {StatusCode}. Waiting {Delay} before retry. ReasonPhrase: {Reason}",
+                            attempt, (int)outcome.Result.StatusCode, delay, outcome.Result.ReasonPhrase);
+                    }
+                    else
+                    {
+                        logger.LogWarning("Transient error (attempt {Attempt}). Waiting {Delay} before retry.", attempt, delay);
+                    }
                 });
     }
+
 
     private static IAsyncPolicy<HttpResponseMessage> GetRetryAfterPolicy(ILogger logger)
     {
@@ -47,10 +62,10 @@ public static class PollyPolicies
 
                     return TimeSpan.FromSeconds(10);
                 },
-                async (_, timespan, retryCount, _) =>
+                (_, timespan, retryCount, _) =>
                 {
                     logger.LogWarning("Received 429. Retrying after {Delay} (retry {Retry}).", timespan, retryCount);
-                    await Task.CompletedTask;
+                    return Task.CompletedTask;
                 });
     }
 

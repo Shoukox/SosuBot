@@ -25,7 +25,7 @@ public sealed class UpdateHandlerBackgroundService(IServiceProvider serviceProvi
         {
             var workers =
                 Enumerable.Range(0, _workersCount)
-                    .Select(_ => Task.Run(() => HandleUpdateWorker(stoppingToken)));
+                    .Select(_ => Task.Run(() => HandleUpdateWorker(CancellationToken.None)));
 
             await Task.WhenAll(workers);
         }
@@ -41,11 +41,23 @@ public sealed class UpdateHandlerBackgroundService(IServiceProvider serviceProvi
     {
         while (!stoppingToken.IsCancellationRequested)
         {
-            var update = await _updateQueue.DequeueUpdateAsync(CancellationToken.None);
+            ITelegramBotClient bot;
+            UpdateHandler updateHandler;
+            Update update;
+            try
+            {
+                update = await _updateQueue.DequeueUpdateAsync(CancellationToken.None);
+                _logger.LogInformation("Worker dequeueing an update.");
 
-            await using var scope = serviceProvider.CreateAsyncScope();
-            var updateHandler = scope.ServiceProvider.GetRequiredService<UpdateHandler>();
-            var bot = scope.ServiceProvider.GetRequiredService<ITelegramBotClient>();
+                await using var scope = serviceProvider.CreateAsyncScope();
+                updateHandler = scope.ServiceProvider.GetRequiredService<UpdateHandler>();
+                bot = scope.ServiceProvider.GetRequiredService<ITelegramBotClient>();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Exception in update handler worker");
+                continue;
+            }
 
             try
             {
