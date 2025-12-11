@@ -79,7 +79,7 @@ internal class Program
             .AddPolicyHandler(PollyPolicies.GetCombinedPolicy(_logger));
 
         builder.Services
-            .AddCustomHttpClient("CustomHttpClient", 1000)
+            .AddCustomHttpClient("CustomHttpClient", 300)
             .AddPolicyHandler(PollyPolicies.GetCombinedPolicy(_logger));
         ;
 
