@@ -1,3 +1,5 @@
+using SosuBot.Extensions;
+using SosuBot.Helpers.Types;
 using System.Text;
 
 namespace SosuBot.Helpers.OutputText;
@@ -27,6 +29,26 @@ public static class TextHelper
         }
 
         return result;
+    }
+
+    public static Playmode? GetPlaymodeFromParameters(string[] parameters, out string[] parametersWithoutPlaymode)
+    {
+        var playmodeParameter = parameters.Where(m => m.Length == 1 && char.IsAscii(m[0])).FirstOrDefault();
+        if(playmodeParameter == null)
+        {
+            parametersWithoutPlaymode = parameters;
+            return null;
+        }
+
+        parametersWithoutPlaymode = parameters.Where(m => m != playmodeParameter).ToArray();
+        return playmodeParameter[0] switch
+        {
+            't' or 'T' => Playmode.Taiko,
+            'c' or 'C' => Playmode.Catch,
+            'm' or 'M' => Playmode.Mania,
+            'o' => Playmode.Osu,
+            _ => null
+        };
     }
 
     public static Stream TextToStream(string text)

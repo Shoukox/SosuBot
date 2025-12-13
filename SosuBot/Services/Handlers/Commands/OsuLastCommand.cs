@@ -58,7 +58,7 @@ public class OsuLastCommand(bool onlyPassed = false) : CommandBase<Message>
         var parameters = Context.Update.Text!.GetCommandParameters()!.Where(m => !keywordParameters.Contains(m)).ToArray();
 
         var limit = 1;
-        string? ruleset = null;
+        string? ruleset = TextHelper.GetPlaymodeFromParameters(parameters, out parameters)?.ToRuleset();
 
         //l
         if (parameters.Length == 0)
@@ -70,7 +70,7 @@ public class OsuLastCommand(bool onlyPassed = false) : CommandBase<Message>
             }
 
             osuUsernameForLastScores = osuUserInDatabase.OsuUsername;
-            ruleset = osuUserInDatabase.OsuMode.ToRuleset();
+            ruleset ??= osuUserInDatabase.OsuMode.ToRuleset();
         }
         //l 5
         //l mrekk
@@ -86,7 +86,7 @@ public class OsuLastCommand(bool onlyPassed = false) : CommandBase<Message>
                 }
 
                 osuUsernameForLastScores = osuUserInDatabase.OsuUsername;
-                ruleset = osuUserInDatabase.OsuMode.ToRuleset();
+                ruleset ??= osuUserInDatabase.OsuMode.ToRuleset();
             }
 
             if (!limitParsed) osuUsernameForLastScores = parameters[0];
@@ -109,7 +109,7 @@ public class OsuLastCommand(bool onlyPassed = false) : CommandBase<Message>
             return;
         }
 
-        if (keywordParameters.Length != 0)
+        if (ruleset == null && keywordParameters.Length != 0)
         {
             if (keywordParameters.FirstOrDefault(m => m.StartsWith("mode")) is { } keyword)
             {
