@@ -45,7 +45,8 @@ public sealed class GetDailyStatisticsCommand : CommandBase<Message>
             return;
         }
 
-        var ruleset = parameters[0].ParseToRuleset();
+        string? ruleset = TextHelper.GetPlaymodeFromParameters(parameters, out parameters)?.ToRuleset();
+        ruleset ??= parameters[0].ParseToRuleset();
         if (string.IsNullOrEmpty(ruleset)) ruleset = Ruleset.Osu;
 
         if (ScoresObserverBackgroundService.AllDailyStatistics.Count == 0 ||
