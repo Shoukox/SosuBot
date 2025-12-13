@@ -33,7 +33,7 @@ public static class TextHelper
 
     public static Playmode? GetPlaymodeFromParameters(string[] parameters, out string[] parametersWithoutPlaymode)
     {
-        var playmodeParameter = parameters.Where(m => m.Length == 1 && char.IsAscii(m[0])).FirstOrDefault();
+        var playmodeParameter = parameters.Where(m => m.Length == 1 && char.IsAsciiLetter(m[0])).FirstOrDefault();
         if(playmodeParameter == null)
         {
             parametersWithoutPlaymode = parameters;
