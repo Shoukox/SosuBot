@@ -63,7 +63,7 @@ public static class StringExtensions
         text = text.Trim().ToLowerInvariant().Replace("mode=", "");
 
         // user can type taiko/mania, but fruits can be written in another way
-        string[] possibilitiesOfFruitsInput = ["ctb", "catch"];
+        string[] possibilitiesOfFruitsInput = ["ctb", "catch", "fruits"];
 
         // osu ruleset can be also written in some another way
         string[] possibilitiesOfOsuInput = ["osu", "std", "standard", "standart"];

@@ -64,23 +64,25 @@ internal class Program
             eventArgs.SetObserved();
         };
 
+        // Policy
+        var pollyPolicies = PollyPolicies.GetCombinedPolicy(_logger);
+
         // Services
         builder.Services.Configure<BotConfiguration>(builder.Configuration.GetSection(nameof(BotConfiguration)));
         builder.Services.Configure<OsuApiV2Configuration>(
             builder.Configuration.GetSection(nameof(OsuApiV2Configuration)));
         builder.Services.Configure<OpenAiConfiguration>(builder.Configuration.GetSection(nameof(OpenAiConfiguration)));
         builder.Services
-            .AddCustomHttpClient(nameof(ITelegramBotClient), short.MaxValue)
+            .AddCustomHttpClient(nameof(ITelegramBotClient), 32_767)
             .AddTypedClient<ITelegramBotClient>((httpClient, sp) =>
             {
                 var options = sp.GetRequiredService<IOptions<BotConfiguration>>();
                 return new TelegramBotClient(options.Value.Token, httpClient);
             })
-            .AddPolicyHandler(PollyPolicies.GetCombinedPolicy(_logger));
-
+            .AddPolicyHandler(pollyPolicies);
         builder.Services
             .AddCustomHttpClient("CustomHttpClient", 300)
-            .AddPolicyHandler(PollyPolicies.GetCombinedPolicy(_logger));
+            .AddPolicyHandler(pollyPolicies);
         ;
 
         var osuApiV2Configuration = builder.Services.BuildServiceProvider()

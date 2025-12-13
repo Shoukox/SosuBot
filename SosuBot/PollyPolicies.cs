@@ -60,6 +60,7 @@ public static class PollyPolicies
                         return delta > TimeSpan.Zero ? delta : TimeSpan.FromSeconds(1);
                     }
 
+                    logger.LogWarning("Retry-After header is present but has no Delta or Date. Using default delay.");
                     return TimeSpan.FromSeconds(10);
                 },
                 (_, timespan, retryCount, _) =>
