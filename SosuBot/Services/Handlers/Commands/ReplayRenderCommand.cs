@@ -33,6 +33,9 @@ public sealed class ReplayRenderCommand : CommandBase<Message>
         ILocalization language = new Russian();
         var waitMessage = await Context.Update.ReplyAsync(Context.BotClient, language.waiting);
 
+        // Fake 500ms wait
+        await Task.Delay(500);
+
         var tempFilePath = Path.GetTempFileName();
         var tempFileName = Path.GetFileName(tempFilePath);
         var tgfile = await Context.BotClient.GetFile(Context.Update.ReplyToMessage.Document.FileId);

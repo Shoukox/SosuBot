@@ -138,7 +138,7 @@ public static class DatabaseExtensions
                 if (readerHeaderRow)
                     stringValue = reader.GetName(i);
                 else
-                    stringValue = reader.GetString(i);
+                    stringValue = reader.GetValue(i).ToString()!;
             }
 
             row.Add(stringValue);

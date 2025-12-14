@@ -2,6 +2,7 @@
 using SosuBot.Localization;
 using SosuBot.Localization.Languages;
 using SosuBot.Services.Handlers.Abstract;
+using Telegram.Bot;
 using Telegram.Bot.Types;
 
 namespace SosuBot.Services.Handlers.Commands;
@@ -12,10 +13,26 @@ public sealed class OsuChatstatsIncludeCommand : CommandBase<Message>
 
     public override async Task ExecuteAsync()
     {
+        if (Context.Update.Chat.Type == Telegram.Bot.Types.Enums.ChatType.Private)
+        {
+            await Context.Update.ReplyAsync(Context.BotClient, "Только для групп.");
+            return;
+        }
+        var chatAdmins = await Context.BotClient.GetChatAdministrators(Context.Update.Chat.Id);
+        if (!chatAdmins.Any(m => m.User.Id == Context.Update.From?.Id))
+        {
+            await Context.Update.ReplyAsync(Context.BotClient, "Только для админов.");
+            return;
+        }
+
         ILocalization language = new Russian();
         var chatInDatabase = await Context.Database.TelegramChats.FindAsync(Context.Update.Chat.Id);
 
         var waitMessage = await Context.Update.ReplyAsync(Context.BotClient, language.waiting);
+
+        // Fake 500ms wait
+        await Task.Delay(500);
+
         var parameters = Context.Update.Text!.GetCommandParameters()!;
         if (parameters.Length == 0)
         {

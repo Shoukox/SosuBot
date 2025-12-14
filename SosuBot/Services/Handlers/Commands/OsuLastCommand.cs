@@ -53,6 +53,9 @@ public class OsuLastCommand(bool onlyPassed = false) : CommandBase<Message>
 
         var waitMessage = await Context.Update.ReplyAsync(Context.BotClient, language.waiting);
 
+        // Fake 500ms wait
+        await Task.Delay(500);
+
         var osuUsernameForLastScores = string.Empty;
         var keywordParameters = Context.Update.Text!.GetCommandKeywordParameters()!;
         var parameters = Context.Update.Text!.GetCommandParameters()!.Where(m => !keywordParameters.Contains(m)).ToArray();

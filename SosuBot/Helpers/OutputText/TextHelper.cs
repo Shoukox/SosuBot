@@ -34,14 +34,13 @@ public static class TextHelper
     public static Playmode? GetPlaymodeFromParameters(string[] parameters, out string[] parametersWithoutPlaymode)
     {
         var playmodeParameter = parameters.Where(m => m.Length == 1 && char.IsAsciiLetter(m[0])).FirstOrDefault();
-        if(playmodeParameter == null)
+        if (playmodeParameter == null)
         {
             parametersWithoutPlaymode = parameters;
             return null;
         }
 
-        parametersWithoutPlaymode = parameters.Where(m => m != playmodeParameter).ToArray();
-        return playmodeParameter[0] switch
+        Playmode? playmode = playmodeParameter[0] switch
         {
             't' or 'T' => Playmode.Taiko,
             'c' or 'C' => Playmode.Catch,
@@ -49,6 +48,12 @@ public static class TextHelper
             'o' => Playmode.Osu,
             _ => null
         };
+        if (playmode != null)
+        {
+            parametersWithoutPlaymode = parameters.Where(m => m != playmodeParameter).ToArray();
+        }
+        else parametersWithoutPlaymode = parameters;
+        return playmode;
     }
 
     public static Stream TextToStream(string text)

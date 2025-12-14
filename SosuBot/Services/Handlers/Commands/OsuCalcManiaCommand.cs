@@ -41,6 +41,10 @@ public class OsuCalcManiaCommand : CommandBase<Message>
         var osuUserInDatabase = await Context.Database.OsuUsers.FindAsync(Context.Update.From!.Id);
 
         var waitMessage = await Context.Update.ReplyAsync(Context.BotClient, language.waiting);
+
+        // Fake 500ms wait
+        await Task.Delay(500);
+
         var parameters = Context.Update.Text!.GetCommandParameters()!.ToArray();
         if (parameters.Length <= 4 || parameters.Length >= 7)
         {
