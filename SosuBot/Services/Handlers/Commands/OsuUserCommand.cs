@@ -38,6 +38,9 @@ public class OsuUserCommand(bool includeIdInSearch = false) : CommandBase<Messag
 
         var waitMessage = await Context.Update.ReplyAsync(Context.BotClient, language.waiting);
 
+        // Fake 500ms wait
+        await Task.Delay(500);
+
         UserExtend? user;
         Playmode playmode;
 

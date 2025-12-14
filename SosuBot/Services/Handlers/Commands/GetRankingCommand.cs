@@ -32,6 +32,9 @@ public sealed class GetRankingCommand : CommandBase<Message>
         ILocalization language = new Russian();
         var waitMessage = await Context.Update.ReplyAsync(Context.BotClient, language.waiting);
 
+        // Fake 500ms wait
+        await Task.Delay(500);
+
         var parameters = Context.Update.Text!.GetCommandParameters()!;
 
         var countryCode = parameters.Length > 0 ? parameters[0] : null;

@@ -32,7 +32,7 @@ public sealed class ScoresObserverBackgroundService(IServiceProvider serviceProv
         serviceProvider.GetRequiredService<ILogger<ScoresObserverBackgroundService>>();
 
     private static readonly SemaphoreSlim Semaphore = new SemaphoreSlim(1, 1);
-    public static readonly ConcurrentBag<int> ObservedUsers = new();
+    public static ConcurrentBag<int> ObservedUsers = new();
     public static List<DailyStatistics> AllDailyStatistics = new();
 
     private static readonly ScoreEqualityComparer ScoreComparer = new();
@@ -215,12 +215,12 @@ public sealed class ScoresObserverBackgroundService(IServiceProvider serviceProv
                     _logger.LogInformation($"Saved daily stats");
                 }
 
-                if(getStdScoresResponse != null) getStdScoresCursor = getStdScoresResponse.CursorString;
-                if(getTaikoScoresResponse != null) getTaikoScoresCursor = getTaikoScoresResponse.CursorString;
-                if(getFruitsScoresResponse != null) getFruitsScoresCursor = getFruitsScoresResponse.CursorString;
-                if(getManiaScoresResponse != null) getManiaScoresCursor = getManiaScoresResponse.CursorString;
-                
-                if(getStdScoresResponse?.Scores?.Length >= 1000 || getTaikoScoresResponse?.Scores?.Length >= 1000 || getFruitsScoresResponse?.Scores?.Length >= 1000 || getManiaScoresResponse?.Scores?.Length >= 1000)
+                if (getStdScoresResponse != null) getStdScoresCursor = getStdScoresResponse.CursorString;
+                if (getTaikoScoresResponse != null) getTaikoScoresCursor = getTaikoScoresResponse.CursorString;
+                if (getFruitsScoresResponse != null) getFruitsScoresCursor = getFruitsScoresResponse.CursorString;
+                if (getManiaScoresResponse != null) getManiaScoresCursor = getManiaScoresResponse.CursorString;
+
+                if (getStdScoresResponse?.Scores?.Length >= 1000 || getTaikoScoresResponse?.Scores?.Length >= 1000 || getFruitsScoresResponse?.Scores?.Length >= 1000 || getManiaScoresResponse?.Scores?.Length >= 1000)
                 {
                     _logger.LogWarning($"GetScores returned 1000+ scores in one of the modes. std={getStdScoresResponse?.Scores?.Length} taiko={getTaikoScoresResponse?.Scores?.Length} fruits={getFruitsScoresResponse?.Scores?.Length} mania={getManiaScoresResponse?.Scores?.Length}");
                 }
@@ -368,6 +368,19 @@ public sealed class ScoresObserverBackgroundService(IServiceProvider serviceProv
                     ObservedUsers.Add(osuUserId);
                 }
             }
+        }
+        finally
+        {
+            Semaphore.Release();
+        }
+    }
+
+    public static async Task RemovePlayersFromObserverList(IEnumerable<int> playerIds)
+    {
+        try
+        {
+            await Semaphore.WaitAsync();
+            ObservedUsers = new ConcurrentBag<int>(ObservedUsers.Except(playerIds));
         }
         finally
         {

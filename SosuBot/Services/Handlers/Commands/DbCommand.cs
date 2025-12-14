@@ -54,12 +54,6 @@ public sealed class DbCommand : CommandBase<Message>
         }
         else if (parameters[0] == "query")
         {
-            if (Context.Update.From.Id != 728384906) // Shoukko's telegram id
-            {
-                await Context.Update.ReplyAsync(Context.BotClient, "Пшел отсюда!");
-                return;
-            }
-
             var query = string.Join(" ", parameters[1..]);
             var response = Context.Database.RawSqlQuery(query);
 

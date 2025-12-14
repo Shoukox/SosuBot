@@ -40,6 +40,9 @@ public sealed class OsuUserbestCommand : CommandBase<Message>
 
         var waitMessage = await Context.Update.ReplyAsync(Context.BotClient, language.waiting);
 
+        // Fake 500ms wait
+        await Task.Delay(500);
+
         Score[] bestScores;
         string osuUsernameForUserbest;
         long osuUserIdForUserbest;

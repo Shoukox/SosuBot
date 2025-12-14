@@ -18,12 +18,21 @@ public sealed class OsuChatstatsCommand : CommandBase<Message>
 
     public override async Task ExecuteAsync()
     {
+        if (Context.Update.Chat.Type == Telegram.Bot.Types.Enums.ChatType.Private)
+        {
+            await Context.Update.ReplyAsync(Context.BotClient, "Только для групп.");
+            return;
+        }
+
         ILocalization language = new Russian();
         var chatInDatabase = await Context.Database.TelegramChats.FindAsync(Context.Update.Chat.Id);
 
         var parameters = Context.Update.Text!.GetCommandParameters()!;
 
         var waitMessage = await Context.Update.ReplyAsync(Context.BotClient, language.waiting);
+
+        // Fake 500ms wait
+        await Task.Delay(500);
 
         var playmode = Playmode.Osu;
         if (parameters.Length == 1)

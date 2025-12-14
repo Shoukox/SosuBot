@@ -29,6 +29,10 @@ public sealed class OsuCompareCommand : CommandBase<Message>
         var osuUserInDatabase = await Context.Database.OsuUsers.FindAsync(Context.Update.From!.Id);
 
         var waitMessage = await Context.Update.ReplyAsync(Context.BotClient, language.waiting);
+
+        // Fake 500ms wait
+        await Task.Delay(500);
+
         var parameters = Context.Update.Text!.GetCommandParameters()!;
 
         string user1IdAsString;
