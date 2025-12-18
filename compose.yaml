@@ -6,6 +6,7 @@
       mode: replicated
       replicas: 1
     environment:
+      REDIS_HOST: redis-service
       DB_HOST: db-service
       DB_PORT: "5432"
       DB_NAME: sosubot
@@ -34,10 +35,12 @@
     image: redis
     container_name: redis
     command: redis-server /usr/local/etc/redis/redis.conf
+    environment:
+      - REDIS_PORT=6379
     ports:
       - "6379:6379"
     volumes:
-      - redis-data:/data
+      - ./.redis/data:/data
       - ./.redis/redis.conf:/usr/local/etc/redis/redis.conf
     healthcheck:
       test: [ "CMD-SHELL", "redis-cli ping | grep PONG" ]
@@ -47,13 +50,14 @@
     networks:
       - app-network
     
+
   db-service:
     image: postgres:17-alpine
     restart: unless-stopped
     secrets:
       - db-password
     volumes:
-      - db-data:/var/lib/postgresql/data
+      - ./.db-data:/var/lib/postgresql/data
     environment:
       POSTGRES_DB: sosubot
       POSTGRES_USER: sosubot
@@ -69,21 +73,6 @@
     networks:
       - app-network
       
-  pgadmin:
-    image: dpage/pgadmin4
-    environment:
-      PGADMIN_DEFAULT_EMAIL: shachzod2004@gmail.com
-      PGADMIN_DEFAULT_PASSWORD_FILE: /run/secrets/db-password
-      PGADMIN_CONFIG_SERVER_MODE: 'False'
-    secrets:
-      - db-password
-    volumes:
-      - pgadmin:/var/lib/pgadmin
-    ports:
-      - "${PGADMIN_PORT:-5050}:80"
-    restart: unless-stopped
-    networks:
-      - app-network
 
   proxy-service:
     image: nginx
@@ -110,17 +99,18 @@
     networks:
       - app-network
     
+
 secrets:
   db-password:
     file: .secrets/db_password
   redis-password:
     file: .secrets/redis_password
     
+
 volumes:
   db-data:
-  pgadmin:
-  redis-data:
     
+
 networks:
   app-network:
     driver: bridge
