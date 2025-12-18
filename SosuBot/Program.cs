@@ -6,6 +6,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using OsuApi.V2;
+using SosuBot.Caching;
 using SosuBot.Database;
 using SosuBot.Helpers.Types;
 using SosuBot.Logging;
@@ -21,7 +22,6 @@ namespace SosuBot;
 internal class Program
 {
     private static ILogger<Program>? _logger;
-    private static string _redisContainerName = "redis-service";
 
     private static void Main(string[] args)
     {
@@ -98,7 +98,18 @@ internal class Program
         builder.Services.AddSingleton<UpdateQueueService>();
         builder.Services.AddSingleton<RabbitMqService>();
         builder.Services.AddSingleton<OpenAiService>();
-        builder.Services.AddSingleton<IConnectionMultiplexer>(_ => ConnectionMultiplexer.Connect(_redisContainerName));
+
+        var redisHost = Environment.GetEnvironmentVariable("REDIS_HOST") ?? "localhost";
+        builder.Services.AddSingleton<IConnectionMultiplexer>(_ => ConnectionMultiplexer.Connect(new ConfigurationOptions()
+        {
+            EndPoints =
+            {
+                { redisHost, 6379 }
+            },
+            KeepAlive = 10,
+            AbortOnConnectFail = false
+        }));
+        builder.Services.AddSingleton<RedisCaching>();
         builder.Services.AddScoped<UpdateHandler>();
         builder.Services.AddHostedService<ConfigureBotService>();
         builder.Services.AddHostedService<PollingBackgroundService>();
@@ -116,7 +127,7 @@ internal class Program
         var db = Environment.GetEnvironmentVariable("DB_NAME") ?? "sosubot";
         var user = Environment.GetEnvironmentVariable("DB_USER") ?? "sosubot";
         var connectionString = $"Host={host};Port={port};Database={db};Username={user};Password={dbPassword}";
-        
+
         bool usePostgres = Environment.GetEnvironmentVariable("USE_POSTGRES") == "YES";
         if (!usePostgres)
         {

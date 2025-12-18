@@ -155,7 +155,8 @@ public sealed class TextHandler : CommandBase<Message>
         var lazerModsToApply = modsFromMessage.Distinct().ToArray();
 
         var ppCalculator = new PPCalculator(_loggerPpCalculator);
-        var calculatedPp = new {
+        var calculatedPp = new
+        {
             ClassicSS = (PPCalculationResult?)null,
             Classic99 = (PPCalculationResult?)null,
             Classic98 = (PPCalculationResult?)null,
@@ -165,7 +166,7 @@ public sealed class TextHandler : CommandBase<Message>
         };
         if (!beatmapContainsTooManyHitObjects)
         {
-            calculatedPp = new 
+            calculatedPp = new
             {
                 ClassicSS = (PPCalculationResult?)await ppCalculator.CalculatePpAsync(
               accuracy: 1,
@@ -230,7 +231,7 @@ public sealed class TextHandler : CommandBase<Message>
                   cancellationToken: Context.CancellationToken)
             };
         }
-      
+
 
         var duration = $"{beatmap.TotalLength / 60}m{beatmap.TotalLength % 60:00}s";
         var padLength = 9;
@@ -260,7 +261,7 @@ public sealed class TextHandler : CommandBase<Message>
         double? difficultyRatingForGivenMods = ppCalculator.LastDifficultyAttributes?.StarRating;
         if (difficultyRatingForGivenMods == null)
         {
-            var beatmapAttributesResponse = await _osuApiV2.Beatmaps.GetBeatmapAttributes(beatmap.Id.Value, new() { RulesetId = ((int)playmode).ToString(), Mods = lazerModsToApply.Select(m => new Mod { Acronym = m.Acronym}).ToArray() });
+            var beatmapAttributesResponse = await _osuApiV2.Beatmaps.GetBeatmapAttributes(beatmap.Id.Value, new() { RulesetId = ((int)playmode).ToString(), Mods = lazerModsToApply.Select(m => new Mod { Acronym = m.Acronym }).ToArray() });
             difficultyRatingForGivenMods = beatmapAttributesResponse?.DifficultyAttributes?.StarRating;
         }
 
@@ -288,17 +289,18 @@ public sealed class TextHandler : CommandBase<Message>
             lazer98Text,
         ]);
 
-        var photo = new InputFileUrl(
-            new Uri($"https://assets.ppy.sh/beatmaps/{beatmapset.Id}/covers/card@2x.jpg"));
         var ik = new InlineKeyboardMarkup(new InlineKeyboardButton("Song preview")
         { CallbackData = $"{Context.Update.Chat.Id} songpreview {beatmapset.Id}" });
 
         if (beatmapContainsTooManyHitObjects)
             textToSend += "\nВ карте слишком много объектов, пп расчет не будет проведен.";
 
+        // Get beatmapset cover from cache
+        InputFile cover = await RedisHelper.GetOrCacheBeatmapsetCover(beatmapset.Id!.Value, Context.Redis, _logger);
+
         try
         {
-            await Context.Update.ReplyPhotoAsync(Context.BotClient, photo, textToSend,
+            await Context.Update.ReplyPhotoAsync(Context.BotClient, cover, textToSend,
                 replyMarkup: ik);
         }
         catch

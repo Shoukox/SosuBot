@@ -21,17 +21,17 @@
         <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.22.1" />
         <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="9.0.4" />
         <PackageReference Include="NRedisStack" Version="1.1.1" />
-        <PackageReference Include="OpenAI" Version="2.5.0"/>
-        <PackageReference Include="Polly.Contrib.WaitAndRetry" Version="1.1.1"/>
-        <PackageReference Include="Polly.RateLimiting" Version="8.6.4"/>
-        <PackageReference Include="RabbitMQ.Client" Version="7.1.2"/>
+        <PackageReference Include="OpenAI" Version="2.5.0" />
+        <PackageReference Include="OsuApi.Core" Version="0.0.505" />
+        <PackageReference Include="Polly.Contrib.WaitAndRetry" Version="1.1.1" />
+        <PackageReference Include="Polly.RateLimiting" Version="8.6.4" />
+        <PackageReference Include="RabbitMQ.Client" Version="7.1.2" />
         <PackageReference Include="Telegram.Bot" Version="22.7.4" />
     </ItemGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\OsuApi\OsuApi\OsuApi.csproj"/>
-        <ProjectReference Include="..\SosuBot.Localization\SosuBot.Localization.csproj"/>
-        <ProjectReference Include="..\SosuBot.PerformanceCalculator\SosuBot.PerformanceCalculator.csproj"/>
+        <ProjectReference Include="..\SosuBot.Localization\SosuBot.Localization.csproj" />
+        <ProjectReference Include="..\SosuBot.PerformanceCalculator\SosuBot.PerformanceCalculator.csproj" />
     </ItemGroup>
 
     <ItemGroup>
@@ -47,7 +47,7 @@
     </ItemGroup>
 
     <ItemGroup>
-        <Folder Include="Logging\"/>
+        <Folder Include="Logging\" />
     </ItemGroup>
 
     <ItemGroup>

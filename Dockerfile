@@ -10,8 +10,6 @@ WORKDIR /app
 FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
-COPY ["OsuApi/OsuApi/OsuApi.csproj", "OsuApi/OsuApi/"]
-RUN dotnet restore "./OsuApi/OsuApi/OsuApi.csproj"
 COPY ["SosuBot.Localization/SosuBot.Localization.csproj", "SosuBot.Localization/"]
 RUN dotnet restore "./SosuBot.Localization/SosuBot.Localization.csproj"
 COPY ["SosuBot.Graphics/SosuBot.Graphics.csproj", "SosuBot.Graphics/"]

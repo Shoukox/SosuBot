@@ -1,10 +1,12 @@
-﻿using System.Text.RegularExpressions;
+﻿using System.Runtime.InteropServices.Marshalling;
+using System.Text.RegularExpressions;
 using osu.Game.Rulesets.Catch.Mods;
 using osu.Game.Rulesets.Mania.Mods;
 using osu.Game.Rulesets.Mods;
 using osu.Game.Rulesets.Osu.Mods;
 using osu.Game.Rulesets.Taiko.Mods;
 using SosuBot.Helpers.Types;
+using Telegram.Bot.Types;
 
 namespace SosuBot.Helpers.OutputText;
 
@@ -115,4 +117,6 @@ public static class OsuHelper
             _ => throw new NotImplementedException()
         };
     }
+
+    public static InputFile GetBeatmapCoverPhotoAsInputFile(int beatmapsetId) => new InputFileUrl(new Uri(string.Format(OsuConstants.BeatmapsCover, beatmapsetId.ToString())));
 }

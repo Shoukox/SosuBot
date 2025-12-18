@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using osu.Game.Rulesets.Osu.Mods;
+using SosuBot.Caching;
 using SosuBot.Database;
 using SosuBot.Extensions;
 using SosuBot.Services.Handlers.Abstract;
@@ -22,7 +23,8 @@ public class UpdateHandler(
     BotContext database,
     IOptions<BotConfiguration> botConfig,
     ILogger<UpdateHandler> logger,
-    IServiceProvider serviceProvider) : IUpdateHandler
+    IServiceProvider serviceProvider,
+    RedisCaching redisCaching) : IUpdateHandler
 {
     private Update? _currentUpdate;
 
@@ -128,6 +130,7 @@ public class UpdateHandler(
                 callbackQuery,
                 database,
                 serviceProvider,
+                redisCaching,
                 cancellationToken));
 
         await executableCommand.ExecuteAsync();
@@ -170,6 +173,9 @@ public class UpdateHandler(
                 break;
             case string last when OsuLastCommand.Commands.Contains(last):
                 executableCommand = new OsuLastCommand();
+                break;
+            case string lastWithCover when OsuLastWithCoverCommand.Commands.Contains(lastWithCover):
+                executableCommand = new OsuLastWithCoverCommand();
                 break;
             case string lastpassed when OsuLastPassedCommand.Commands.Contains(lastpassed):
                 executableCommand = new OsuLastPassedCommand();
@@ -227,6 +233,7 @@ public class UpdateHandler(
                 msg,
                 database,
                 serviceProvider,
+                redisCaching,
                 cancellationToken));
 
         await executableCommand.ExecuteAsync();
@@ -242,6 +249,7 @@ public class UpdateHandler(
                 msg,
                 database,
                 serviceProvider,
+                redisCaching,
                 cancellationToken));
 
         await textHandler.ExecuteAsync();

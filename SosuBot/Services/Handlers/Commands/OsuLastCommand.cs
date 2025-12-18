@@ -19,11 +19,12 @@ using SosuBot.Localization;
 using SosuBot.Localization.Languages;
 using SosuBot.PerformanceCalculator;
 using SosuBot.Services.Handlers.Abstract;
+using Telegram.Bot;
 using Telegram.Bot.Types;
 
 namespace SosuBot.Services.Handlers.Commands;
 
-public class OsuLastCommand(bool onlyPassed = false) : CommandBase<Message>
+public class OsuLastCommand(bool onlyPassed = false, bool sendCover = false) : CommandBase<Message>
 {
     public static readonly string[] Commands = ["/last", "/l"];
     private ILogger<OsuLastCommand> _logger = null!;
@@ -112,7 +113,7 @@ public class OsuLastCommand(bool onlyPassed = false) : CommandBase<Message>
             return;
         }
 
-        if (ruleset == null && keywordParameters.Length != 0)
+        if (ruleset == null || keywordParameters.Length != 0)
         {
             if (keywordParameters.FirstOrDefault(m => m.StartsWith("mode")) is { } keyword)
             {
@@ -161,6 +162,7 @@ public class OsuLastCommand(bool onlyPassed = false) : CommandBase<Message>
             $"<b>{UserHelper.GetUserProfileUrlWrappedInUsernameString(userResponse.UserExtend!.Id.Value, osuUsernameForLastScores)}</b> (<i>{ruleset.ParseRulesetToGamemode()}</i>)\n\n";
 
         var playmode = (Playmode)lastScores[0].RulesetId!;
+        var beatmapsetIdOfFirstScore = beatmaps[0].BeatmapExtended!.BeatmapsetId!.Value;
         for (var i = 0; i <= lastScores.Length - 1; i++)
         {
             var score = lastScores[i];
@@ -317,6 +319,23 @@ public class OsuLastCommand(bool onlyPassed = false) : CommandBase<Message>
             textToSend += "\n\n";
         }
 
-        await waitMessage.EditAsync(Context.BotClient, textToSend);
+        if (sendCover)
+        {
+            // Get beatmapset cover from cache
+            InputFile cover = await RedisHelper.GetOrCacheBeatmapsetCover(beatmapsetIdOfFirstScore, Context.Redis, _logger);
+
+            try
+            {
+                await Context.BotClient.EditMessageMedia(waitMessage.Chat.Id, waitMessage.Id, new InputMediaPhoto(cover) { Caption = textToSend, ParseMode = Telegram.Bot.Types.Enums.ParseMode.Html });
+            }
+            catch
+            {
+                await waitMessage.EditAsync(Context.BotClient, textToSend);
+            }
+        }
+        else
+        {
+            await waitMessage.EditAsync(Context.BotClient, textToSend);
+        }
     }
 }
