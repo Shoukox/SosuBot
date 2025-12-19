@@ -1,5 +1,3 @@
-using System.Collections.Concurrent;
-using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -10,12 +8,15 @@ using OsuApi.V2.Clients.Scores.HttpIO;
 using OsuApi.V2.Clients.Users.HttpIO;
 using OsuApi.V2.Models;
 using OsuApi.V2.Users.Models;
+using SosuBot.Caching;
 using SosuBot.Database;
 using SosuBot.Extensions;
 using SosuBot.Helpers.Comparers;
 using SosuBot.Helpers.OutputText;
 using SosuBot.Helpers.Types;
 using SosuBot.Helpers.Types.Statistics;
+using System.Collections.Concurrent;
+using System.Text.Json;
 using Telegram.Bot;
 using Telegram.Bot.Types.Enums;
 using Country = SosuBot.Helpers.Country;
@@ -27,21 +28,15 @@ public sealed class ScoresObserverBackgroundService(IServiceProvider serviceProv
     private readonly ITelegramBotClient _botClient = serviceProvider.GetRequiredService<ITelegramBotClient>();
     private readonly BotContext _database = serviceProvider.GetRequiredService<BotContext>();
     private readonly ApiV2 _osuApi = serviceProvider.GetRequiredService<ApiV2>();
+    private readonly RedisCaching _caching = serviceProvider.GetRequiredService<RedisCaching>();
 
     private readonly ILogger<ScoresObserverBackgroundService> _logger =
         serviceProvider.GetRequiredService<ILogger<ScoresObserverBackgroundService>>();
 
     private static readonly SemaphoreSlim Semaphore = new SemaphoreSlim(1, 1);
     public static ConcurrentBag<int> ObservedUsers = new();
-    public static List<DailyStatistics> AllDailyStatistics = new();
 
     private static readonly ScoreEqualityComparer ScoreComparer = new();
-
-    private static readonly string CacheDirectory =
-        Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "cache", "daily_statistics");
-
-    private static readonly string CachePath =
-        Path.Combine(CacheDirectory, "statistics.cache");
 
     private UserStatisticsCacheDatabase _userDatabase = null!; // initialized in ExecuteAsync
     private long _adminTelegramId;
@@ -85,21 +80,27 @@ public sealed class ScoresObserverBackgroundService(IServiceProvider serviceProv
 
     private async Task ObserveScoresGetScores(CancellationToken stoppingToken)
     {
-        await LoadDailyStatistics();
-        await _userDatabase.CacheIfNeeded();
-
         DailyStatistics dailyStatistics;
-        if (AllDailyStatistics.Count > 0 && AllDailyStatistics.Last().DayOfStatistic.Day ==
-            DateTime.UtcNow.ChangeTimezone(Country.Uzbekistan).Day)
+        if (_database.DailyStatistics.Count() > 0 && _database.DailyStatistics.OrderBy(m => m.Id).Last().DayOfStatistic.Day == DateTime.UtcNow.ChangeTimezone(Country.Uzbekistan).Day)
         {
-            dailyStatistics = AllDailyStatistics.Last();
+            var lastDbDailyStats = _database.DailyStatistics.OrderBy(m => m.Id).Last();
+            dailyStatistics = new DailyStatistics(lastDbDailyStats.CountryCode, lastDbDailyStats.DayOfStatistic)
+            {
+                ActiveUsers = lastDbDailyStats.ActiveUsers.Select(m => m.UserJson).ToList(),
+                BeatmapsPlayed = lastDbDailyStats.BeatmapsPlayed,
+                Scores = lastDbDailyStats.Scores.Select(m => m.ScoreJson).ToList(),
+            };
         }
         else
         {
-            dailyStatistics =
-                new DailyStatistics(CountryCode.Uzbekistan, DateTime.UtcNow.ChangeTimezone(Country.Uzbekistan));
-            AllDailyStatistics.Add(dailyStatistics);
+            dailyStatistics = new DailyStatistics(CountryCode.Uzbekistan, DateTime.UtcNow.ChangeTimezone(Country.Uzbekistan));
+            _database.DailyStatistics.Add(new Database.Models.DailyStatistics()
+            {
+                CountryCode = dailyStatistics.CountryCode,
+                DayOfStatistic = dailyStatistics.DayOfStatistic
+            });
         }
+        _database.SaveChanges();
 
         //string cursor = Convert.ToBase64String("{\"id\":5737168425}"u8.ToArray());
         string? getStdScoresCursor = null;
@@ -193,7 +194,7 @@ public sealed class ScoresObserverBackgroundService(IServiceProvider serviceProv
                         for (var i = 0; i <= 3; i++)
                         {
                             var sendText =
-                                await ScoreHelper.GetDailyStatisticsSendText((Playmode)i, dailyStatistics, _osuApi);
+                                await ScoreHelper.GetDailyStatisticsSendText((Playmode)i, dailyStatistics, _osuApi, _caching, _logger);
                             await _botClient.SendMessage(_adminTelegramId, sendText,
                                 ParseMode.Html, linkPreviewOptions: true);
                             await Task.Delay(1000);
@@ -204,15 +205,12 @@ public sealed class ScoresObserverBackgroundService(IServiceProvider serviceProv
                         _logger.LogError(e, "Error while sending final daily statistics");
                     }
 
-                    dailyStatistics = new DailyStatistics(CountryCode.Uzbekistan,
-                        DateTime.UtcNow.ChangeTimezone(Country.Uzbekistan));
-                    AllDailyStatistics.Add(dailyStatistics);
-                }
-
-                if (counter % 20 == 0)
-                {
-                    await SaveDailyStatistics();
-                    _logger.LogInformation($"Saved daily stats");
+                    dailyStatistics = new DailyStatistics(CountryCode.Uzbekistan, DateTime.UtcNow.ChangeTimezone(Country.Uzbekistan));
+                    _database.DailyStatistics.Add(new Database.Models.DailyStatistics()
+                    {
+                        CountryCode = dailyStatistics.CountryCode,
+                        DayOfStatistic = dailyStatistics.DayOfStatistic
+                    });
                 }
 
                 if (getStdScoresResponse != null) getStdScoresCursor = getStdScoresResponse.CursorString;
@@ -227,8 +225,9 @@ public sealed class ScoresObserverBackgroundService(IServiceProvider serviceProv
 
                 int stdScoresCount = getStdScoresResponse?.Scores?.Length ?? 0;
                 int delay = 3000 + 1000 * (1000 / stdScoresCount); //3sec + 1*n seconds
-                int clampedDelay = Math.Clamp(delay, 3000, 60_000);
+                int clampedDelay = Math.Clamp(delay, 3000, 55_000);
                 _logger.LogInformation($"Processed {stdScoresCount} std scores. Next GetScores in {clampedDelay}ms.");
+                _database.SaveChanges();
                 await Task.Delay(clampedDelay);
 
                 counter++;
@@ -386,19 +385,5 @@ public sealed class ScoresObserverBackgroundService(IServiceProvider serviceProv
         {
             Semaphore.Release();
         }
-    }
-
-    private async Task SaveDailyStatistics()
-    {
-        if (!Directory.Exists(CacheDirectory)) Directory.CreateDirectory(CacheDirectory);
-
-        await File.WriteAllTextAsync(CachePath, JsonSerializer.Serialize(AllDailyStatistics));
-    }
-
-    private async Task LoadDailyStatistics()
-    {
-        if (!File.Exists(CachePath)) return;
-
-        AllDailyStatistics = JsonSerializer.Deserialize<List<DailyStatistics>>(await File.ReadAllTextAsync(CachePath))!;
     }
 }

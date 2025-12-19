@@ -10,10 +10,5 @@ namespace SosuBot.Graphics
             MemoryStream imageAsStream = new();
             return Results.File(imageAsStream.ToArray());
         }
-
-        private static async Task<MemoryStream> GenerateOsuCardImage(MemoryStream imageAsStream)
-        {
-            return null;
-        }
     }
 }

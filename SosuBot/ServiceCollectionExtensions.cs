@@ -11,7 +11,7 @@ public static class ServiceCollectionExtensions
         return services.AddHttpClient(name)
             .ConfigureHttpClient(client =>
             {
-                client.Timeout = TimeSpan.FromSeconds(40);
+                client.Timeout = TimeSpan.FromSeconds(60);
                 client.DefaultRequestHeaders.ConnectionClose = true;
             })
             .AddHttpMessageHandler(sp =>

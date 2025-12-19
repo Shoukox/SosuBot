@@ -1,4 +1,5 @@
-﻿using Microsoft.Data.Sqlite;
+﻿using FFmpeg.AutoGen;
+using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -9,17 +10,16 @@ using OsuApi.V2.Clients.Users.HttpIO;
 using OsuApi.V2.Models;
 using OsuApi.V2.Users.Models;
 using SosuBot.Database;
-using SosuBot.Database.Models;
 using SosuBot.Extensions;
 using SosuBot.Helpers;
 using SosuBot.Helpers.OutputText;
 using SosuBot.Helpers.Types;
+using SosuBot.Helpers.Types.Statistics;
 using SosuBot.Localization;
 using SosuBot.Localization.Languages;
 using SosuBot.PerformanceCalculator;
 using SosuBot.Services.BackgroundServices;
 using SosuBot.Services.Handlers.Abstract;
-using System.Net.Mail;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 using Country = SosuBot.Helpers.Country;
@@ -98,10 +98,10 @@ public sealed class CustomCommand : CommandBase<Message>
                 switch (output.Exception?.Code)
                 {
                     case ErrorCode.Locked:
-                    {
-                        await waitMessage.EditAsync(Context.BotClient, "Подожди обработки предыдущего запроса!");
-                        return;
-                    }
+                        {
+                            await waitMessage.EditAsync(Context.BotClient, "Подожди обработки предыдущего запроса!");
+                            return;
+                        }
                 }
 
                 await waitMessage.EditAsync(Context.BotClient, language.error_baseMessage);
@@ -130,7 +130,7 @@ public sealed class CustomCommand : CommandBase<Message>
             var getBestScoresTask = uzOsuStdUsers!.Select(m =>
                 _osuApiV2.Users.GetUserScores(m.User!.Id.Value, ScoreType.Best,
                     new GetUserScoreQueryParameters
-                        { Limit = countBestScoresPerPlayer, Mode = Ruleset.Osu })).ToArray();
+                    { Limit = countBestScoresPerPlayer, Mode = Ruleset.Osu })).ToArray();
             await Task.WhenAll(getBestScoresTask);
 
             var uzBestScores = getBestScoresTask.SelectMany(m => m.Result!.Scores).ToArray();
@@ -159,16 +159,19 @@ public sealed class CustomCommand : CommandBase<Message>
             ILocalization language = new Russian();
             var waitMessage = await Context.Update.ReplyAsync(Context.BotClient, language.waiting);
 
+            var lastDbDailyStats = _dbContext.DailyStatistics.OrderBy(m => m.Id).Last();
+            DailyStatistics dailyStats = new DailyStatistics(lastDbDailyStats.CountryCode, lastDbDailyStats.DayOfStatistic)
+            {
+                ActiveUsers = lastDbDailyStats.ActiveUsers.Select(m => m.UserJson).ToList(),
+                BeatmapsPlayed = lastDbDailyStats.BeatmapsPlayed,
+                Scores = lastDbDailyStats.Scores.Select(m => m.ScoreJson).ToList(),
+            };
             Task<(int newUsers, int newScores, int newBeatmaps)>[] resultTasks =
             [
-                ScoreHelper.UpdateDailyStatisticsFromLast(_osuApiV2, Playmode.Osu,
-                    ScoresObserverBackgroundService.AllDailyStatistics.Last()),
-                ScoreHelper.UpdateDailyStatisticsFromLast(_osuApiV2, Playmode.Taiko,
-                    ScoresObserverBackgroundService.AllDailyStatistics.Last()),
-                ScoreHelper.UpdateDailyStatisticsFromLast(_osuApiV2, Playmode.Catch,
-                    ScoresObserverBackgroundService.AllDailyStatistics.Last()),
-                ScoreHelper.UpdateDailyStatisticsFromLast(_osuApiV2, Playmode.Mania,
-                    ScoresObserverBackgroundService.AllDailyStatistics.Last())
+                ScoreHelper.UpdateDailyStatisticsFromLast(_osuApiV2, Playmode.Osu, dailyStats),
+                ScoreHelper.UpdateDailyStatisticsFromLast(_osuApiV2, Playmode.Taiko, dailyStats),
+                ScoreHelper.UpdateDailyStatisticsFromLast(_osuApiV2, Playmode.Catch, dailyStats),
+                ScoreHelper.UpdateDailyStatisticsFromLast(_osuApiV2, Playmode.Mania, dailyStats)
             ];
 
             await waitMessage.EditAsync(Context.BotClient,
@@ -181,11 +184,11 @@ public sealed class CustomCommand : CommandBase<Message>
         {
             ILocalization language = new Russian();
             var waitMessage = await Context.Update.ReplyAsync(Context.BotClient, language.waiting);
-            var dailyStatistics = ScoresObserverBackgroundService.AllDailyStatistics.Last();
-            var passedStdScores = dailyStatistics.Scores.Where(m => m.ModeInt == (int)Playmode.Osu).ToList();
+            var dailyStatistics = _dbContext.DailyStatistics.OrderBy(m => m.Id).Last();
+            var passedStdScores = dailyStatistics.Scores.Where(m => m.ScoreJson.ModeInt == (int)Playmode.Osu).ToList();
             var removed = dailyStatistics.Scores.RemoveAll(m =>
             {
-                return passedStdScores.Any(std => std.Id == m.Id && std.ModeInt != m.ModeInt && m.ModeInt != 0);
+                return passedStdScores.Any(std => std.Id == m.Id && std.ScoreJson.ModeInt != m.ScoreJson.ModeInt && m.ScoreJson.ModeInt != 0);
             });
             /*
              * 23.10.2025 02:00 UTC => alles bis 23.10.2025 07:00 UZ
@@ -193,7 +196,7 @@ public sealed class CustomCommand : CommandBase<Message>
             var tashkentToday = DateTime.UtcNow.ChangeTimezone(Country.Uzbekistan).Date;
             _logger.LogInformation(tashkentToday.ToString("g"));
             removed += dailyStatistics.Scores.RemoveAll(m =>
-                m.EndedAt!.Value.ChangeTimezone(Country.Uzbekistan) < tashkentToday);
+                m.ScoreJson.EndedAt!.Value.ChangeTimezone(Country.Uzbekistan) < tashkentToday);
             await waitMessage.EditAsync(Context.BotClient, $"Scores removed: {removed}");
         }
         else if (parameters[0] == "test1")
@@ -214,9 +217,10 @@ public sealed class CustomCommand : CommandBase<Message>
         else if (parameters[0] == "fix28112025_distinctscores")
         {
             // this id is raisy
-            int oldCount = ScoresObserverBackgroundService.AllDailyStatistics.Last().Scores.Count;
-            ScoresObserverBackgroundService.AllDailyStatistics.Last().Scores = ScoresObserverBackgroundService.AllDailyStatistics.Last().Scores.DistinctBy(m => m.Id).ToList();
-            await Context.Update.ReplyAsync(Context.BotClient, $"Scores old count: {oldCount}\nScores new count: {ScoresObserverBackgroundService.AllDailyStatistics.Last().Scores.Count}");
+            var lastDbDailyStats = _dbContext.DailyStatistics.OrderBy(m => m.Id).Last();
+            int oldCount = lastDbDailyStats.Scores.Count;
+            lastDbDailyStats.Scores = lastDbDailyStats.Scores.DistinctBy(m => m.Id).ToList();
+            await Context.Update.ReplyAsync(Context.BotClient, $"Scores old count: {oldCount}\nScores new count: {lastDbDailyStats.Scores.Count}");
         }
         else if (parameters[0] == "add-from-sqlite")
         {
@@ -254,7 +258,7 @@ public sealed class CustomCommand : CommandBase<Message>
                 }
                 else
                 {
-                    osuUser = new OsuUser()
+                    osuUser = new Database.Models.OsuUser()
                     {
                         TelegramId = telegramId,
                         OsuUserId = osuUserId,
@@ -306,7 +310,7 @@ public sealed class CustomCommand : CommandBase<Message>
                 }
                 else
                 {
-                    tgChat = new TelegramChat()
+                    tgChat = new Database.Models.TelegramChat()
                     {
                         ChatId = chatId,
                         ChatMembers = parsedChatMembers,
@@ -322,6 +326,33 @@ public sealed class CustomCommand : CommandBase<Message>
 
             await Context.Update.ReplyAsync(Context.BotClient,
                 $"Added osuUsers: {addedOsuUsers}\nAdded telegramChats: {addedTelegramChats}");
+        }
+        else if (parameters[0] == "add-daily-stats-into-postgres19122025")
+        {
+            ILocalization language = new Russian();
+            var waitMessage = await Context.Update.ReplyAsync(Context.BotClient, language.waiting);
+            int oldCount = _dbContext.DailyStatistics.Count();
+
+            var userEntitySet = _dbContext.Set<Database.Models.UserEntity>();
+            var scoreEntitySet = _dbContext.Set<Database.Models.ScoreEntity>();
+            if (_dbContext.DailyStatistics.Count() != 0)
+            {
+                await waitMessage.EditAsync(Context.BotClient, $"The daily stats are not empty. Declining.");
+                return;
+            }
+
+            _dbContext.DailyStatistics.UpdateRange(_dbContext.DailyStatistics.ToList().Select(m => new Database.Models.DailyStatistics()
+            {
+                CountryCode = m.CountryCode,
+                DayOfStatistic = m.DayOfStatistic,
+                ActiveUsers = m.ActiveUsers.Select(u => new Database.Models.UserEntity() { UserJson = u.UserJson }).ToList(),
+                BeatmapsPlayed = m.BeatmapsPlayed,
+                Scores = m.Scores.Select(s => new Database.Models.ScoreEntity() { ScoreJson = s.ScoreJson }).ToList(),
+            }));
+            await _dbContext.SaveChangesAsync();
+            int newCount = _dbContext.DailyStatistics.Count();
+
+            await waitMessage.EditAsync(Context.BotClient, $"Added {newCount - oldCount} new daily stats");
         }
     }
 }
