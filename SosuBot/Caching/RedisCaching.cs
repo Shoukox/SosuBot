@@ -14,7 +14,7 @@ public class RedisCaching(IConnectionMultiplexer mux)
         return JsonSerializer.Deserialize<T>(val!, _jsonOptions);
     }
 
-    public Task<bool> SetAsync<T>(string key, T value, TimeSpan ttl)
+    public Task<bool> SetAsync<T>(string key, T value, TimeSpan? ttl)
     {
         var payload = JsonSerializer.Serialize(value, _jsonOptions);
         return _redis.StringSetAsync(key, payload, ttl);

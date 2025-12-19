@@ -1,42 +1,56 @@
-﻿using SosuBot.Database;
+﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+using Npgsql;
+using SosuBot.Database;
 using SosuBot.Database.Models;
-using SosuBot.Synchronization;
+using System;
 using Telegram.Bot.Types;
 
 namespace SosuBot.Extensions;
 
 public static class BotContextExtensions
 {
-    public static async Task AddOrUpdateTelegramChat(this BotContext database, Message message)
+    public static async Task AddOrUpdateTelegramChat(this BotContext database, Message message, ILogger? logger = null)
     {
-        var semaphoreSlim = BotSynchronization.Instance.GetSemaphoreSlim(message.Chat.Id);
-        await semaphoreSlim.WaitAsync();
+        var chatId = message.Chat.Id;
+        var userId = message.From?.Id;
+        var leftUserId = message.LeftChatMember?.Id;
 
         try
         {
-            if (await database.TelegramChats.FindAsync(message.Chat.Id) is { } chat)
+            var chat = await database.TelegramChats.FindAsync(chatId);
+            if (chat == null)
             {
-                chat.ChatMembers = chat.ChatMembers ?? new List<long>();
-
-                // check whether someone left
-                if (message.LeftChatMember is { } user)
-                    chat.ChatMembers.Remove(user.Id);
-                else if (!chat.ChatMembers!.Contains(message.From!.Id)) chat.ChatMembers.Add(message.From!.Id);
-            }
-            else
-            {
-                var newChat = new TelegramChat
+                await database.AddAsync(new TelegramChat
                 {
-                    ChatId = message.Chat.Id,
-                    ChatMembers = new List<long>(),
+                    ChatId = chatId,
+                    ChatMembers = userId is null ? [] : [userId.Value],
                     LastBeatmapId = null
-                };
-                await database.AddAsync(newChat);
+                });
+
+                return;
+            }
+
+            chat.ChatMembers ??= [];
+            if(leftUserId is not null)
+            {
+                chat.ChatMembers.Remove(leftUserId.Value);
+                return;
+            }
+
+            if(userId is not null && !chat.ChatMembers.Contains(userId.Value))
+            {
+                chat.ChatMembers.Add(userId.Value);
             }
         }
-        finally
+        catch (DbUpdateException dbEx) when (dbEx.InnerException is PostgresException pe && pe.SqlState == PostgresErrorCodes.UniqueViolation)
         {
-            semaphoreSlim.Release();
+            // because of a thread race
+            // do nothing
+        }
+        catch (Exception e)
+        {
+            logger?.LogError(e.ToString());
         }
     }
 }

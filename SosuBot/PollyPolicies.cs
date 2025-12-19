@@ -9,8 +9,6 @@ namespace SosuBot;
 
 public static class PollyPolicies
 {
-    private static Random _jitterer = new();
-
     private static IAsyncPolicy<HttpResponseMessage> GetTransientRetryPolicy(ILogger logger)
     {
         return HttpPolicyExtensions

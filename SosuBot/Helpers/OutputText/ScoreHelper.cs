@@ -1,8 +1,10 @@
-﻿using osu.Game.Rulesets.Scoring;
+﻿using Microsoft.Extensions.Logging;
+using osu.Game.Rulesets.Scoring;
 using OsuApi.V2;
 using OsuApi.V2.Clients.Users.HttpIO;
 using OsuApi.V2.Models;
 using OsuApi.V2.Users.Models;
+using SosuBot.Caching;
 using SosuBot.Extensions;
 using SosuBot.Helpers.Types;
 using SosuBot.Helpers.Types.Statistics;
@@ -145,7 +147,7 @@ public static class ScoreHelper
     }
 
     public static async Task<string> GetDailyStatisticsSendText(Playmode playmode, DailyStatistics dailyStatistics,
-        ApiV2 osuApi)
+        ApiV2 osuApi, RedisCaching redis, ILogger? logger = null)
     {
         ILocalization language = new Russian();
 
@@ -206,18 +208,8 @@ public static class ScoreHelper
         {
             if (count >= 5) break;
 
-            if (!dailyStatistics.CachedBeatmapsFromOsuApi.TryGetValue(us.Key, out var beatmap))
-            {
-                beatmap = (await osuApi.Beatmaps.GetBeatmap(us.Key))!.BeatmapExtended;
-                dailyStatistics.CachedBeatmapsFromOsuApi[us.Key] = beatmap!;
-            }
-
-            if (!dailyStatistics.CachedBeatmapsetsFromOsuApi.TryGetValue(us.Key, out var beatmapsetExtended))
-            {
-                beatmapsetExtended =
-                    await osuApi.Beatmapsets.GetBeatmapset(beatmap!.BeatmapsetId.Value);
-                dailyStatistics.CachedBeatmapsetsFromOsuApi[us.Key] = beatmapsetExtended;
-            }
+            var beatmap = await RedisHelper.GetOrCacheBeatmap(us.Key, osuApi, redis, logger);
+            var beatmapsetExtended = await RedisHelper.GetOrCacheBeatmapset(beatmap.BeatmapsetId!.Value, osuApi, redis, logger);
 
             topMostPlayedBeatmaps +=
                 $"{count + 1}. (<b>{beatmap!.DifficultyRating:N2}⭐️</b>) <a href=\"https://osu.ppy.sh/beatmaps/{beatmap.Id}\">{beatmapsetExtended.Title.EncodeHtml()} [{beatmap.Version.EncodeHtml()}]</a> — <b>{us.Count()} скоров</b>\n";
