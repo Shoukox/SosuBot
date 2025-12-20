@@ -139,9 +139,10 @@ internal class Program
         if (usePostgres)
         {
             builder.Services.AddDbContextPool<BotContext>(options =>
-                options.UseNpgsql(connectionString, (m) => m.MapEnum<Playmode>())
+                options.UseLazyLoadingProxies()
+                    .UseNpgsql(connectionString, (m) => m.MapEnum<Playmode>())
                     .ConfigureWarnings(m => m.Ignore(RelationalEventId.PendingModelChangesWarning)));
-        }
+    }
         else
         {
             builder.Services.AddDbContextPool<BotContext>(options =>

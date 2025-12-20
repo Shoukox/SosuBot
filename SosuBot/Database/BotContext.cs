@@ -21,6 +21,8 @@ public class BotContext : DbContext
     public DbSet<TelegramChat> TelegramChats { get; set; }
     public DbSet<OsuUser> OsuUsers { get; set; }
     public DbSet<DailyStatistics> DailyStatistics { get; set; }
+    public DbSet<UserEntity> UserEntity { get; set; }
+    public DbSet<ScoreEntity> ScoreEntity { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -53,6 +55,14 @@ public class BotContext : DbContext
             .Property(e => e.ScoreJson)
             .HasConversion(scoreConverter)
             .HasColumnType("jsonb");
+
+        // Many-to-many relationships
+        modelBuilder.Entity<DailyStatistics>()
+            .HasMany(m => m.Scores)
+            .WithOne();
+        modelBuilder.Entity<DailyStatistics>()
+            .HasMany(m => m.ActiveUsers)
+            .WithMany();
 
         // Allow datetimes with unspecified time zones
         AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);

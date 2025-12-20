@@ -29,17 +29,28 @@ namespace SosuBot.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "UserEntity",
+                columns: table => new
+                {
+                    UserId = table.Column<int>(type: "integer", nullable: false),
+                    UserJson = table.Column<string>(type: "jsonb", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_UserEntity", x => x.UserId);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "ScoreEntity",
                 columns: table => new
                 {
-                    Id = table.Column<long>(type: "bigint", nullable: false)
-                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    ScoreId = table.Column<long>(type: "bigint", nullable: false),
                     ScoreJson = table.Column<string>(type: "jsonb", nullable: false),
                     DailyStatisticsId = table.Column<int>(type: "integer", nullable: true)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_ScoreEntity", x => x.Id);
+                    table.PrimaryKey("PK_ScoreEntity", x => x.ScoreId);
                     table.ForeignKey(
                         name: "FK_ScoreEntity_DailyStatistics_DailyStatisticsId",
                         column: x => x.DailyStatisticsId,
@@ -48,38 +59,46 @@ namespace SosuBot.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "UserEntity",
+                name: "DailyStatisticsUserEntity",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "integer", nullable: false)
-                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    UserJson = table.Column<string>(type: "jsonb", nullable: false),
-                    DailyStatisticsId = table.Column<int>(type: "integer", nullable: true)
+                    ActiveUsersUserId = table.Column<int>(type: "integer", nullable: false),
+                    DailyStatisticsId = table.Column<int>(type: "integer", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_UserEntity", x => x.Id);
+                    table.PrimaryKey("PK_DailyStatisticsUserEntity", x => new { x.ActiveUsersUserId, x.DailyStatisticsId });
                     table.ForeignKey(
-                        name: "FK_UserEntity_DailyStatistics_DailyStatisticsId",
+                        name: "FK_DailyStatisticsUserEntity_DailyStatistics_DailyStatisticsId",
                         column: x => x.DailyStatisticsId,
                         principalTable: "DailyStatistics",
-                        principalColumn: "Id");
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_DailyStatisticsUserEntity_UserEntity_ActiveUsersUserId",
+                        column: x => x.ActiveUsersUserId,
+                        principalTable: "UserEntity",
+                        principalColumn: "UserId",
+                        onDelete: ReferentialAction.Cascade);
                 });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_DailyStatisticsUserEntity_DailyStatisticsId",
+                table: "DailyStatisticsUserEntity",
+                column: "DailyStatisticsId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_ScoreEntity_DailyStatisticsId",
                 table: "ScoreEntity",
-                column: "DailyStatisticsId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_UserEntity_DailyStatisticsId",
-                table: "UserEntity",
                 column: "DailyStatisticsId");
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.DropTable(
+                name: "DailyStatisticsUserEntity");
+
             migrationBuilder.DropTable(
                 name: "ScoreEntity");
 
