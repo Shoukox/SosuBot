@@ -5,6 +5,7 @@ using OsuApi.V2.Clients.Users.HttpIO;
 using OsuApi.V2.Models;
 using OsuApi.V2.Users.Models;
 using SosuBot.Caching;
+using SosuBot.Database.Models;
 using SosuBot.Extensions;
 using SosuBot.Helpers.Types;
 using SosuBot.Helpers.Types.Statistics;
@@ -152,39 +153,39 @@ public static class ScoreHelper
         ILocalization language = new Russian();
 
         var activePlayers = dailyStatistics.ActiveUsers;
-        var passedScores = dailyStatistics.Scores.Where(m => m.ModeInt == (int)playmode).ToList();
+        var passedScores = dailyStatistics.Scores.Where(m => m.ScoreJson.ModeInt == (int)playmode).ToList();
 
         var usersAndTheirScores = activePlayers.Select(m =>
             {
-                return (m, passedScores.Where(s => s.UserId == m.Id).ToArray());
+                return (m, passedScores.Where(s => s.ScoreJson.UserId == m.UserId).ToArray());
             })
             .Where(m => m.Item2.Length != 0)
             .OrderByDescending(m => m.Item2.Length)
             .ToArray();
 
         var mostPlayedBeatmaps = passedScores
-            .GroupBy(m => m.BeatmapId!.Value)
+            .GroupBy(m => m.ScoreJson.BeatmapId!.Value)
             .OrderByDescending(m => m.Count())
             .ToArray();
 
         var topPpScores = "";
         var count = 0;
-        foreach (var us in usersAndTheirScores.OrderByDescending(pair => pair.Item2.Max(m => m.Pp)))
+        foreach (var us in usersAndTheirScores.OrderByDescending(pair => pair.Item2.Max(m => m.ScoreJson.Pp)))
         {
             if (count >= 5) break;
 
             var modeEmoji = GetPlaymodeEmoji(playmode);
             var scoresOrderedByPp = us.Item2
-                .GroupBy(score => score.BeatmapId)
-                .Select(m => m.MaxBy(s => s.Pp))
-                .OrderByDescending(m => m!.Pp)
-                .Select(m => GetScoreUrlWrappedInString(m!.Id!.Value,
-                    $"{GetFormattedNumConsideringNull(m.Pp, format: "N0")}pp{modeEmoji}"))
+                .GroupBy(score => score.ScoreJson.BeatmapId)
+                .Select(m => m.MaxBy(s => s.ScoreJson.Pp))
+                .OrderByDescending(m => m!.ScoreJson.Pp)
+                .Select(m => GetScoreUrlWrappedInString(m!.ScoreJson.Id!.Value,
+                    $"{GetFormattedNumConsideringNull(m.ScoreJson.Pp, format: "N0")}pp{modeEmoji}"))
                 .ToArray();
 
             var topPpScoresTextForCurrentUser = string.Join(", ", scoresOrderedByPp.Take(3));
             topPpScores +=
-                $"{count + 1}. <b>{UserHelper.GetUserProfileUrlWrappedInUsernameString(us.m.Id.Value, us.m.Username!)}</b> — <i>{topPpScoresTextForCurrentUser}</i>\n";
+                $"{count + 1}. <b>{UserHelper.GetUserProfileUrlWrappedInUsernameString(us.m.UserJson.Id.Value, us.m.UserJson.Username!)}</b> — <i>{topPpScoresTextForCurrentUser}</i>\n";
             count += 1;
         }
 
@@ -196,7 +197,7 @@ public static class ScoreHelper
         {
             if (count >= 5) break;
             topActivePlayers +=
-                $"{count + 1}. <b>{UserHelper.GetUserProfileUrlWrappedInUsernameString(us.m.Id.Value, us.m.Username!)}</b> — {us.Item2.Length} скоров, макс. <i>{GetFormattedNumConsideringNull(us.Item2.Max(m => m.Pp), format: "N0")}pp💪</i>\n";
+                $"{count + 1}. <b>{UserHelper.GetUserProfileUrlWrappedInUsernameString(us.m.UserJson.Id.Value, us.m.UserJson.Username!)}</b> — {us.Item2.Length} скоров, макс. <i>{GetFormattedNumConsideringNull(us.Item2.Max(m => m.ScoreJson.Pp), format: "N0")}pp💪</i>\n";
             count += 1;
         }
 
@@ -220,7 +221,7 @@ public static class ScoreHelper
 
         var activePlayersCount = usersAndTheirScores.Length;
         var passedScoresCount = passedScores.Count;
-        var beatmapsPlayed = usersAndTheirScores.SelectMany(m => m.Item2).DistinctBy(m => m.BeatmapId).Count();
+        var beatmapsPlayed = usersAndTheirScores.SelectMany(m => m.Item2).DistinctBy(m => m.ScoreJson.BeatmapId).Count();
 
         var tashkentNow = dailyStatistics.DayOfStatistic;
         var sendText = language.send_dailyStatistic.Fill([
@@ -269,16 +270,16 @@ public static class ScoreHelper
                 if (s.EndedAt!.Value.ChangeTimezone(Country.Uzbekistan) < tashkentToday) return;
 
                 s.ModeInt = (int)playmode;
-                if (dailyStatistics.ActiveUsers.All(m => m.Id != s.UserId))
+                if (dailyStatistics.ActiveUsers.All(m => m.UserId != s.UserId))
                 {
                     var user = uzOsuStdUsers.Find(u => u.User!.Id == s.UserId)!.User!;
-                    dailyStatistics.ActiveUsers.Add(user);
+                    dailyStatistics.ActiveUsers.Add(new UserEntity() { UserId = user.Id!.Value, UserJson = user });
                     newUsers += 1;
                 }
 
-                if (dailyStatistics.Scores.All(m => m.Id != s.Id))
+                if (dailyStatistics.Scores.All(m => m.ScoreId != s.Id))
                 {
-                    dailyStatistics.Scores.Add(s);
+                    dailyStatistics.Scores.Add(new ScoreEntity() { ScoreId = s.Id!.Value, ScoreJson = s });
                     newScores += 1;
                 }
 

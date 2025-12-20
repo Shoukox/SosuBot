@@ -14,7 +14,7 @@ using SosuBot.Helpers.Types;
 namespace SosuBot.Migrations
 {
     [DbContext(typeof(BotContext))]
-    [Migration("20251218235123_Add_DailyStatistics")]
+    [Migration("20251219162955_Add_DailyStatistics")]
     partial class Add_DailyStatistics
     {
         /// <inheritdoc />
@@ -22,11 +22,29 @@ namespace SosuBot.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "9.0.10")
+                .HasAnnotation("ProductVersion", "9.0.11")
+                .HasAnnotation("Proxies:ChangeTracking", false)
+                .HasAnnotation("Proxies:CheckEquality", false)
+                .HasAnnotation("Proxies:LazyLoading", true)
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.HasPostgresEnum(modelBuilder, "playmode", new[] { "catch", "mania", "osu", "taiko" });
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
+
+            modelBuilder.Entity("DailyStatisticsUserEntity", b =>
+                {
+                    b.Property<int>("ActiveUsersUserId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("DailyStatisticsId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("ActiveUsersUserId", "DailyStatisticsId");
+
+                    b.HasIndex("DailyStatisticsId");
+
+                    b.ToTable("DailyStatisticsUserEntity");
+                });
 
             modelBuilder.Entity("SosuBot.Database.Models.DailyStatistics", b =>
                 {
@@ -104,11 +122,8 @@ namespace SosuBot.Migrations
 
             modelBuilder.Entity("SosuBot.Database.Models.ScoreEntity", b =>
                 {
-                    b.Property<long>("Id")
-                        .ValueGeneratedOnAdd()
+                    b.Property<long>("ScoreId")
                         .HasColumnType("bigint");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
 
                     b.Property<int?>("DailyStatisticsId")
                         .HasColumnType("integer");
@@ -117,7 +132,7 @@ namespace SosuBot.Migrations
                         .IsRequired()
                         .HasColumnType("jsonb");
 
-                    b.HasKey("Id");
+                    b.HasKey("ScoreId");
 
                     b.HasIndex("DailyStatisticsId");
 
@@ -151,24 +166,31 @@ namespace SosuBot.Migrations
 
             modelBuilder.Entity("SosuBot.Database.Models.UserEntity", b =>
                 {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<int?>("DailyStatisticsId")
+                    b.Property<int>("UserId")
                         .HasColumnType("integer");
 
                     b.Property<string>("UserJson")
                         .IsRequired()
                         .HasColumnType("jsonb");
 
-                    b.HasKey("Id");
-
-                    b.HasIndex("DailyStatisticsId");
+                    b.HasKey("UserId");
 
                     b.ToTable("UserEntity");
+                });
+
+            modelBuilder.Entity("DailyStatisticsUserEntity", b =>
+                {
+                    b.HasOne("SosuBot.Database.Models.UserEntity", null)
+                        .WithMany()
+                        .HasForeignKey("ActiveUsersUserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("SosuBot.Database.Models.DailyStatistics", null)
+                        .WithMany()
+                        .HasForeignKey("DailyStatisticsId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("SosuBot.Database.Models.ScoreEntity", b =>
@@ -178,17 +200,8 @@ namespace SosuBot.Migrations
                         .HasForeignKey("DailyStatisticsId");
                 });
 
-            modelBuilder.Entity("SosuBot.Database.Models.UserEntity", b =>
-                {
-                    b.HasOne("SosuBot.Database.Models.DailyStatistics", null)
-                        .WithMany("ActiveUsers")
-                        .HasForeignKey("DailyStatisticsId");
-                });
-
             modelBuilder.Entity("SosuBot.Database.Models.DailyStatistics", b =>
                 {
-                    b.Navigation("ActiveUsers");
-
                     b.Navigation("Scores");
                 });
 #pragma warning restore 612, 618

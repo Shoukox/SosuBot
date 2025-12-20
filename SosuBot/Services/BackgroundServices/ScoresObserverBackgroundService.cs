@@ -10,6 +10,7 @@ using OsuApi.V2.Models;
 using OsuApi.V2.Users.Models;
 using SosuBot.Caching;
 using SosuBot.Database;
+using SosuBot.Database.Models;
 using SosuBot.Extensions;
 using SosuBot.Helpers.Comparers;
 using SosuBot.Helpers.OutputText;
@@ -17,6 +18,7 @@ using SosuBot.Helpers.Types;
 using SosuBot.Helpers.Types.Statistics;
 using System.Collections.Concurrent;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using Telegram.Bot;
 using Telegram.Bot.Types.Enums;
 using Country = SosuBot.Helpers.Country;
@@ -64,10 +66,11 @@ public sealed class ScoresObserverBackgroundService(IServiceProvider serviceProv
                 .TelegramId;
 
             await SetupObserverList();
+            await LoadDailyStatistics();
 
             await Task.WhenAll(
-                ObserveScoresGetScores(stoppingToken),
-                ObserveScores(stoppingToken)
+                ObserveScores(stoppingToken),
+                ObserveScoresGetScores(stoppingToken)
             );
         }
         catch (OperationCanceledException)
@@ -83,24 +86,18 @@ public sealed class ScoresObserverBackgroundService(IServiceProvider serviceProv
         DailyStatistics dailyStatistics;
         if (_database.DailyStatistics.Count() > 0 && _database.DailyStatistics.OrderBy(m => m.Id).Last().DayOfStatistic.Day == DateTime.UtcNow.ChangeTimezone(Country.Uzbekistan).Day)
         {
-            var lastDbDailyStats = _database.DailyStatistics.OrderBy(m => m.Id).Last();
-            dailyStatistics = new DailyStatistics(lastDbDailyStats.CountryCode, lastDbDailyStats.DayOfStatistic)
-            {
-                ActiveUsers = lastDbDailyStats.ActiveUsers.Select(m => m.UserJson).ToList(),
-                BeatmapsPlayed = lastDbDailyStats.BeatmapsPlayed,
-                Scores = lastDbDailyStats.Scores.Select(m => m.ScoreJson).ToList(),
-            };
+            dailyStatistics = _database.DailyStatistics.OrderBy(m => m.Id).Last();
         }
         else
         {
-            dailyStatistics = new DailyStatistics(CountryCode.Uzbekistan, DateTime.UtcNow.ChangeTimezone(Country.Uzbekistan));
-            _database.DailyStatistics.Add(new Database.Models.DailyStatistics()
+            dailyStatistics = new DailyStatistics()
             {
-                CountryCode = dailyStatistics.CountryCode,
-                DayOfStatistic = dailyStatistics.DayOfStatistic
-            });
+                CountryCode = CountryCode.Uzbekistan,
+                DayOfStatistic = DateTime.UtcNow.ChangeTimezone(Country.Uzbekistan)
+            };
+            _database.DailyStatistics.Add(dailyStatistics);
+            _database.SaveChanges();
         }
-        _database.SaveChanges();
 
         //string cursor = Convert.ToBase64String("{\"id\":5737168425}"u8.ToArray());
         string? getStdScoresCursor = null;
@@ -177,10 +174,19 @@ public sealed class ScoresObserverBackgroundService(IServiceProvider serviceProv
                         continue;
                     }
 
-                    dailyStatistics.Scores.Add(score);
+                    dailyStatistics.Scores.Add(new ScoreEntity() { ScoreId = score.Id!.Value, ScoreJson = score });
 
-                    if (!dailyStatistics.ActiveUsers.Any(m => m.Id == userStatistics.User!.Id))
-                        dailyStatistics.ActiveUsers.Add(userStatistics.User!);
+                    if (!dailyStatistics.ActiveUsers.Any(m => m.UserId == userStatistics.User!.Id))
+                    {
+                        if(_database.UserEntity.Find(userStatistics.User!.Id) is { } foundUserEntity)
+                        {
+                            dailyStatistics.ActiveUsers.Add(foundUserEntity);
+                        }
+                        else
+                        {
+                            dailyStatistics.ActiveUsers.Add(new UserEntity() { UserId = userStatistics.User!.Id!.Value, UserJson = userStatistics.User! });
+                        }
+                    }
 
                     if (!dailyStatistics.BeatmapsPlayed.Any(m => m == score.BeatmapId!.Value))
                         dailyStatistics.BeatmapsPlayed.Add(score.BeatmapId!.Value);
@@ -205,12 +211,9 @@ public sealed class ScoresObserverBackgroundService(IServiceProvider serviceProv
                         _logger.LogError(e, "Error while sending final daily statistics");
                     }
 
-                    dailyStatistics = new DailyStatistics(CountryCode.Uzbekistan, DateTime.UtcNow.ChangeTimezone(Country.Uzbekistan));
-                    _database.DailyStatistics.Add(new Database.Models.DailyStatistics()
-                    {
-                        CountryCode = dailyStatistics.CountryCode,
-                        DayOfStatistic = dailyStatistics.DayOfStatistic
-                    });
+                    dailyStatistics = new DailyStatistics() { CountryCode = CountryCode.Uzbekistan, DayOfStatistic = DateTime.UtcNow.ChangeTimezone(Country.Uzbekistan) };
+                    _database.DailyStatistics.Add(dailyStatistics);
+                    _database.SaveChanges();
                 }
 
                 if (getStdScoresResponse != null) getStdScoresCursor = getStdScoresResponse.CursorString;
@@ -223,13 +226,13 @@ public sealed class ScoresObserverBackgroundService(IServiceProvider serviceProv
                     _logger.LogWarning($"GetScores returned 1000+ scores in one of the modes. std={getStdScoresResponse?.Scores?.Length} taiko={getTaikoScoresResponse?.Scores?.Length} fruits={getFruitsScoresResponse?.Scores?.Length} mania={getManiaScoresResponse?.Scores?.Length}");
                 }
 
-                int stdScoresCount = getStdScoresResponse?.Scores?.Length ?? 0;
+                int stdScoresCount = getStdScoresResponse?.Scores?.Length ?? 1;
                 int delay = 3000 + 1000 * (1000 / stdScoresCount); //3sec + 1*n seconds
                 int clampedDelay = Math.Clamp(delay, 3000, 55_000);
                 _logger.LogInformation($"Processed {stdScoresCount} std scores. Next GetScores in {clampedDelay}ms.");
                 _database.SaveChanges();
-                await Task.Delay(clampedDelay);
 
+                await Task.Delay(clampedDelay);
                 counter++;
             }
             catch (HttpRequestException httpRequestException)
@@ -385,5 +388,35 @@ public sealed class ScoresObserverBackgroundService(IServiceProvider serviceProv
         {
             Semaphore.Release();
         }
+    }
+
+    public static List<DailyStatistics> AllDailyStatistics = new();
+
+    private static readonly string CacheDirectory =
+        Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "cache", "daily_statistics");
+
+    private static readonly string CachePath =
+        Path.Combine(CacheDirectory, "statistics.cache");
+
+    private async Task SaveDailyStatistics()
+    {
+        if (!Directory.Exists(CacheDirectory)) Directory.CreateDirectory(CacheDirectory);
+
+        await File.WriteAllTextAsync(CachePath, JsonSerializer.Serialize(AllDailyStatistics));
+    }
+
+    private async Task LoadDailyStatistics()
+    {
+        if (!File.Exists(CachePath)) return;
+
+        var list = JsonSerializer.Deserialize<List<DailyStats>>(await File.ReadAllTextAsync(CachePath));
+        AllDailyStatistics = list!.Select(m => new DailyStatistics()
+        {
+            CountryCode = m.CountryCode,
+            DayOfStatistic = m.DayOfStatistic,
+            ActiveUsers = m.ActiveUsers.Select(m => new UserEntity() { UserId = m.Id!.Value, UserJson = m }).ToList(),
+            Scores = m.Scores.Select(m => new ScoreEntity() { ScoreId = m.Id!.Value, ScoreJson = m }).ToList(),
+            BeatmapsPlayed = m.BeatmapsPlayed
+        }).ToList();
     }
 }

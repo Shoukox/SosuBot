@@ -8,13 +8,13 @@ namespace SosuBot.Database.Models;
 public record DailyStatistics
 {
     [Key]
-    [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
     public int Id { get; set; }
+
     public DateTime DayOfStatistic { get; set; }
     public required string CountryCode { get; set; }
-    public List<UserEntity> ActiveUsers { get; set; } = new();
+    public virtual List<UserEntity> ActiveUsers { get; set; } = new();
     public List<int> BeatmapsPlayed { get; set; } = new();
-    public List<ScoreEntity> Scores { get; set; } = new();
+    public virtual List<ScoreEntity> Scores { get; set; } = new();
 }
 
 
@@ -24,8 +24,8 @@ public record DailyStatistics
 public record UserEntity
 {
     [Key]
-    [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-    public int Id { get; set; }
+    [DatabaseGenerated(DatabaseGeneratedOption.None)]
+    public required int UserId { get; set; }
     public User UserJson { get; set; } = null!;
 }
 
@@ -35,7 +35,7 @@ public record UserEntity
 public record ScoreEntity
 {
     [Key]
-    [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-    public long Id { get; set; }
+    [DatabaseGenerated(DatabaseGeneratedOption.None)]
+    public required long ScoreId { get; set; }
     public Score ScoreJson { get; set; } = null!;
 }

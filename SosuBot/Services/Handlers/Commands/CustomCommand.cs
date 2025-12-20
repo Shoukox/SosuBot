@@ -10,6 +10,7 @@ using OsuApi.V2.Clients.Users.HttpIO;
 using OsuApi.V2.Models;
 using OsuApi.V2.Users.Models;
 using SosuBot.Database;
+using SosuBot.Database.Models;
 using SosuBot.Extensions;
 using SosuBot.Helpers;
 using SosuBot.Helpers.OutputText;
@@ -159,13 +160,7 @@ public sealed class CustomCommand : CommandBase<Message>
             ILocalization language = new Russian();
             var waitMessage = await Context.Update.ReplyAsync(Context.BotClient, language.waiting);
 
-            var lastDbDailyStats = _dbContext.DailyStatistics.OrderBy(m => m.Id).Last();
-            DailyStatistics dailyStats = new DailyStatistics(lastDbDailyStats.CountryCode, lastDbDailyStats.DayOfStatistic)
-            {
-                ActiveUsers = lastDbDailyStats.ActiveUsers.Select(m => m.UserJson).ToList(),
-                BeatmapsPlayed = lastDbDailyStats.BeatmapsPlayed,
-                Scores = lastDbDailyStats.Scores.Select(m => m.ScoreJson).ToList(),
-            };
+            var dailyStats = _dbContext.DailyStatistics.OrderBy(m => m.Id).Last();
             Task<(int newUsers, int newScores, int newBeatmaps)>[] resultTasks =
             [
                 ScoreHelper.UpdateDailyStatisticsFromLast(_osuApiV2, Playmode.Osu, dailyStats),
@@ -188,7 +183,7 @@ public sealed class CustomCommand : CommandBase<Message>
             var passedStdScores = dailyStatistics.Scores.Where(m => m.ScoreJson.ModeInt == (int)Playmode.Osu).ToList();
             var removed = dailyStatistics.Scores.RemoveAll(m =>
             {
-                return passedStdScores.Any(std => std.Id == m.Id && std.ScoreJson.ModeInt != m.ScoreJson.ModeInt && m.ScoreJson.ModeInt != 0);
+                return passedStdScores.Any(std => std.ScoreId == m.ScoreId && std.ScoreJson.ModeInt != m.ScoreJson.ModeInt && m.ScoreJson.ModeInt != 0);
             });
             /*
              * 23.10.2025 02:00 UTC => alles bis 23.10.2025 07:00 UZ
@@ -219,7 +214,7 @@ public sealed class CustomCommand : CommandBase<Message>
             // this id is raisy
             var lastDbDailyStats = _dbContext.DailyStatistics.OrderBy(m => m.Id).Last();
             int oldCount = lastDbDailyStats.Scores.Count;
-            lastDbDailyStats.Scores = lastDbDailyStats.Scores.DistinctBy(m => m.Id).ToList();
+            lastDbDailyStats.Scores = lastDbDailyStats.Scores.DistinctBy(m => m.ScoreId).ToList();
             await Context.Update.ReplyAsync(Context.BotClient, $"Scores old count: {oldCount}\nScores new count: {lastDbDailyStats.Scores.Count}");
         }
         else if (parameters[0] == "add-from-sqlite")
@@ -327,32 +322,61 @@ public sealed class CustomCommand : CommandBase<Message>
             await Context.Update.ReplyAsync(Context.BotClient,
                 $"Added osuUsers: {addedOsuUsers}\nAdded telegramChats: {addedTelegramChats}");
         }
-        else if (parameters[0] == "add-daily-stats-into-postgres19122025")
+        else if (parameters[0] == "replace-daily-stats-into-postgres19122025")
         {
             ILocalization language = new Russian();
             var waitMessage = await Context.Update.ReplyAsync(Context.BotClient, language.waiting);
-            int oldCount = _dbContext.DailyStatistics.Count();
 
-            var userEntitySet = _dbContext.Set<Database.Models.UserEntity>();
-            var scoreEntitySet = _dbContext.Set<Database.Models.ScoreEntity>();
             if (_dbContext.DailyStatistics.Count() != 0)
             {
                 await waitMessage.EditAsync(Context.BotClient, $"The daily stats are not empty. Declining.");
                 return;
             }
 
-            _dbContext.DailyStatistics.UpdateRange(_dbContext.DailyStatistics.ToList().Select(m => new Database.Models.DailyStatistics()
+            _dbContext.UserEntity.ExecuteDelete();
+            _dbContext.ScoreEntity.ExecuteDelete();
+            _dbContext.DailyStatistics.ExecuteDelete();
+            _dbContext.SaveChanges();
+
+            int oldCount = _dbContext.DailyStatistics.Count();
+            var allUsersFromStatistics = ScoresObserverBackgroundService.AllDailyStatistics.SelectMany(m => m.ActiveUsers).DistinctBy(m => m.UserId).ToList();
+            _dbContext.UserEntity.AddRange(allUsersFromStatistics);
+            _dbContext.SaveChanges();
+
+            var allScoresFromStatistics = ScoresObserverBackgroundService.AllDailyStatistics.SelectMany(m => m.Scores).DistinctBy(m => m.ScoreId).ToList();
+            _dbContext.ScoreEntity.AddRange(allScoresFromStatistics);
+            _dbContext.SaveChanges();
+
+            _dbContext.DailyStatistics.AddRange(ScoresObserverBackgroundService.AllDailyStatistics.Select(m => new Database.Models.DailyStatistics()
             {
                 CountryCode = m.CountryCode,
                 DayOfStatistic = m.DayOfStatistic,
-                ActiveUsers = m.ActiveUsers.Select(u => new Database.Models.UserEntity() { UserJson = u.UserJson }).ToList(),
+                ActiveUsers = m.ActiveUsers.Select(u => allUsersFromStatistics.First(m => m.UserId == u.UserId)).ToList(),
                 BeatmapsPlayed = m.BeatmapsPlayed,
-                Scores = m.Scores.Select(s => new Database.Models.ScoreEntity() { ScoreJson = s.ScoreJson }).ToList(),
+                Scores = m.Scores.Select(s => allScoresFromStatistics.First(m => m.ScoreId == s.ScoreId)).ToList(),
             }));
-            await _dbContext.SaveChangesAsync();
+            _dbContext.SaveChanges();
             int newCount = _dbContext.DailyStatistics.Count();
-
             await waitMessage.EditAsync(Context.BotClient, $"Added {newCount - oldCount} new daily stats");
+        }
+        else if (parameters[0] == "fix-daily-stats19122025")
+        {
+            ILocalization language = new Russian();
+            var waitMessage = await Context.Update.ReplyAsync(Context.BotClient, language.waiting);
+
+            var scores = _dbContext.ScoreEntity.ToList();
+            foreach (var score in scores)
+            {
+                score.ScoreId = score.ScoreJson.Id!.Value;
+            }
+
+            var users = _dbContext.UserEntity.ToList();
+            foreach (var user in users)
+            {
+                user.UserId = user.UserJson.Id!.Value;
+            }
+
+            await waitMessage.EditAsync(Context.BotClient, $"Done");
         }
     }
 }

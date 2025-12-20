@@ -19,7 +19,7 @@ namespace SosuBot.Helpers
     {
         public static async Task<InputFile> GetOrCacheBeatmapsetCover(int beatmapsetId, RedisCaching redis, ILogger? logger = null, TimeSpan? timeSpan = null)
         {
-            TimeSpan defaultTimeSpan = TimeSpan.FromHours(4);
+            TimeSpan defaultTimeSpan = TimeSpan.FromHours(24);
 
             string key = $"beatmapsetcover:{beatmapsetId}";
             InputFile cover;
