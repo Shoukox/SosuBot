@@ -26,7 +26,6 @@ public sealed class OsuSetCommand : CommandBase<Message>
     public override async Task ExecuteAsync()
     {
         await BeforeExecuteAsync();
-
         ILocalization language = new Russian();
 
         var msgText = Context.Update.Text!;

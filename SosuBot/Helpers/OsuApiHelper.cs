@@ -2,6 +2,7 @@ using OsuApi.V2;
 using OsuApi.V2.Clients.Rankings.HttpIO;
 using OsuApi.V2.Models;
 using OsuApi.V2.Users.Models;
+using SosuBot.Database.Models;
 using SosuBot.Extensions;
 using SosuBot.Helpers.Types;
 

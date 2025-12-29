@@ -1,5 +1,4 @@
 ﻿using SosuBot.Helpers.OutputText;
-using SosuBot.Synchronization.MessageSpamResistance;
 using Telegram.Bot;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
@@ -11,15 +10,15 @@ public static class TelegramUpdateExtensions
 {
     public static Task<Message> ReplyAsync(this Message message, ITelegramBotClient botClient, string text,
         bool privateAsnwer = false, ParseMode parseMode = ParseMode.Html,
-        InlineKeyboardMarkup? replyMarkup = null, string? splitValue = null)
+        InlineKeyboardMarkup? replyMarkup = null, string? splitValue = null, bool linkPreviewEnabled = false)
     {
         if (splitValue == null)
             return TelegramHelper.SendMessageConsideringTelegramLength(message.Id, message.Chat.Id, botClient, text,
-                parseMode, replyMarkup);
+                parseMode, replyMarkup, linkPreviewEnabled);
 
         return TelegramHelper.SendMessageConsideringTelegramLengthAndSplitValue(message.Id, message.Chat.Id, botClient,
             text,
-            parseMode, replyMarkup, false, splitValue);
+            parseMode, replyMarkup, false, splitValue, linkPreviewEnabled);
     }
 
     public static Task<Message> ReplyPhotoAsync(this Message message, ITelegramBotClient botClient, InputFile photo,
@@ -41,15 +40,15 @@ public static class TelegramUpdateExtensions
     }
 
     public static Task<Message> EditAsync(this Message message, ITelegramBotClient botClient, string text,
-        ParseMode parseMode = ParseMode.Html, InlineKeyboardMarkup? replyMarkup = null, string? splitValue = null)
+        ParseMode parseMode = ParseMode.Html, InlineKeyboardMarkup? replyMarkup = null, string? splitValue = null, bool linkPreviewEnabled = false)
     {
         if (splitValue == null)
             return TelegramHelper.SendMessageConsideringTelegramLength(message.Id, message.Chat.Id, botClient, text,
-                parseMode, replyMarkup, true);
+                parseMode, replyMarkup, true, linkPreviewEnabled);
 
         return TelegramHelper.SendMessageConsideringTelegramLengthAndSplitValue(message.Id, message.Chat.Id, botClient,
             text,
-            parseMode, replyMarkup, true, splitValue);
+            parseMode, replyMarkup, true, splitValue, linkPreviewEnabled);
     }
 
     public static Task AnswerAsync(this CallbackQuery callbackQuery, ITelegramBotClient botClient,
@@ -60,37 +59,16 @@ public static class TelegramUpdateExtensions
 
     public static IEnumerable<string> GetAllLinks(this Message message)
     {
-        if (message.Text == null || message.Entities == null) return [];
-    
+        if ((message.Text == null || message.Entities == null) && message.Caption == null) return [];
+        message.Text ??= message.Caption ?? "";
+        message.Entities ??= message.CaptionEntities ?? [];
+
+
         List<string> links = [];
         foreach (var me in message.Entities.Where(e =>
                      e.Type is MessageEntityType.Url or MessageEntityType.TextLink))
             links.Add(me.Url ?? message.Text.Substring(me.Offset, me.Length));
 
         return links;
-    }
-
-    /// <summary>
-    /// </summary>
-    /// <param name="msg"></param>
-    /// <param name="botClient"></param>
-    /// <returns>True, if is banned</returns>
-    public static async Task<bool> IsUserSpamming(this Message msg, ITelegramBotClient botClient)
-    {
-        var (canSend, sendWarning) = await SpamResistance.Instance.CanSendMessage(msg.From!.Id, msg.Date);
-        if (!canSend)
-        {
-            if (sendWarning)
-            {
-                await Task.Delay(1000);
-                await botClient.SendMessage(msg.Chat.Id,
-                    $"Не спамь!\nТы заблокирован на {SpamResistance.BlockInterval.TotalSeconds} сек.",
-                    ParseMode.Html, msg.MessageId, linkPreviewOptions: false);
-            }
-
-            return true;
-        }
-
-        return false;
     }
 }

@@ -1,4 +1,5 @@
-﻿using SosuBot.PerformanceCalculator.Models;
+﻿using SosuBot.PerformanceCalculator;
+
 
 // ReSharper disable InconsistentNaming
 

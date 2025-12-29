@@ -1,14 +1,15 @@
-﻿using System.Collections.Concurrent;
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using OpenAI.Responses;
 using OsuApi.V2;
 using OsuApi.V2.Clients.Users.HttpIO;
+using SosuBot.Database.Models;
 using SosuBot.Extensions;
 using SosuBot.Helpers;
 using SosuBot.Helpers.Types;
 using SosuBot.Helpers.Types.Statistics;
+using System.Collections.Concurrent;
 
 #pragma warning disable OPENAI001
 
@@ -138,7 +139,7 @@ public sealed class OpenAiService
 
     private readonly ILogger<OpenAiService> _logger;
 
-    private readonly string? _openaiToken = Environment.GetEnvironmentVariable("OpenAIToken")!;
+    private readonly string? _openaiToken = Environment.GetEnvironmentVariable("OPEN_AI_TOKEN")!;
     private readonly ApiV2 _osuApiV2;
 
     /// <summary>
@@ -221,118 +222,118 @@ public sealed class OpenAiService
                     switch (functionCall.FunctionName)
                     {
                         case FunctionNames.GetOsuUser:
-                        {
-                            var userId =
-                                functionCall.FunctionArguments.ToObjectFromJson<Dictionary<string, string>>()![
-                                    "user_id"];
-                            var getUserResponse =
-                                await _osuApiV2.Users.GetUser(userId, new GetUserQueryParameters());
-                            getUserResponse!.UserExtend!.Cover = null;
-                            getUserResponse.UserExtend.CoverUrl = null;
-                            getUserResponse.UserExtend.DefaultGroup = null;
-                            getUserResponse.UserExtend.Groups = null;
-                            getUserResponse.UserExtend.MaxBlocks = null;
-                            getUserResponse.UserExtend.MaxFriends = null;
-                            getUserResponse.UserExtend.ProfileOrder = null;
-                            getUserResponse.UserExtend.UserAchievements = null;
-                            getUserResponse.UserExtend.ReplaysWatchedCounts = null;
-
-                            var functionOutput = JsonConvert.SerializeObject(getUserResponse.UserExtend,
-                                Formatting.None, _jsonSerializerSettings);
-                            inputItems.Add(new FunctionCallOutputResponseItem(functionCall.CallId, functionOutput));
-                            break;
-                        }
-                        case FunctionNames.GetUserScores:
-                        {
-                            var parameters = functionCall.FunctionArguments
-                                .ToObjectFromJson<OpenAiFunctionCallParameters>()!;
-                            var userId = parameters.UserId!.Value;
-                            var scoreType = parameters.ScoreType!;
-                            var mode = ((Playmode)parameters.Mode!).ToRuleset();
-                            var limit = parameters.Limit!.Value;
-
-                            var getUserBestResponse =
-                                await _osuApiV2.Users.GetUserScores(userId, scoreType,
-                                    new GetUserScoreQueryParameters { Mode = mode, Limit = limit });
-                            var scores = getUserBestResponse!.Scores;
-                            Array.ForEach(scores, m =>
                             {
-                                m.Beatmap!.Checksum = null;
-                                m.Beatmap.Failtimes = null;
-                                m.Beatmap.Mode = null;
-                                m.Beatmap.Owners = null;
+                                var userId =
+                                    functionCall.FunctionArguments.ToObjectFromJson<Dictionary<string, string>>()![
+                                        "user_id"];
+                                var getUserResponse =
+                                    await _osuApiV2.Users.GetUser(userId, new GetUserQueryParameters());
+                                getUserResponse!.UserExtend!.Cover = null;
+                                getUserResponse.UserExtend.CoverUrl = null;
+                                getUserResponse.UserExtend.DefaultGroup = null;
+                                getUserResponse.UserExtend.Groups = null;
+                                getUserResponse.UserExtend.MaxBlocks = null;
+                                getUserResponse.UserExtend.MaxFriends = null;
+                                getUserResponse.UserExtend.ProfileOrder = null;
+                                getUserResponse.UserExtend.UserAchievements = null;
+                                getUserResponse.UserExtend.ReplaysWatchedCounts = null;
 
-                                m.Beatmapset!.User = null;
-                                m.Beatmapset.UserId = null;
-                                m.Beatmapset.ArtistUnicode = null;
-                                m.Beatmapset.Availability = null;
-                                m.Beatmapset.Beatmaps = null;
-                                m.Beatmapset.Converts = null;
-                                m.Beatmapset.UserId = null;
-                                m.Beatmapset.CurrentNominations = null;
-                                m.Beatmapset.Description = null;
-                                m.Beatmapset.Covers = null;
-                                m.Beatmapset.Genre = null;
-                                m.Beatmapset.Spotlight = null;
-                                m.Beatmapset.Hype = null;
-                                m.Beatmapset.FavouriteCount = null;
-                                m.Beatmapset.NominationsSummary = null;
-                                m.Beatmapset.PackTags = null;
-                                m.Beatmapset.PreviewUrl = null;
-                                m.Beatmapset.Source = null;
-                                m.Beatmapset.Title = null;
-                                m.Beatmapset.Video = null;
-                                m.Beatmapset.PlayCount = null;
-                                m.Beatmapset.Nsfw = null;
-                                m.Statistics = null;
-                                m.Preserve = null;
-                                m.BestId = null;
-                                m.BuildId = null;
-                                m.ClassicTotalScore = null;
-                                m.EndedAt = null;
-                                m.IsPerfectCombo = null;
-                                m.LegacyPerfect = null;
-                                m.LegacyScoreId = null;
-                                m.LegacyTotalScore = null;
-                                m.MaximumStatistics = null;
-                                m.Mode = null;
-                                m.ModeInt = null;
-                                m.Passed = null;
-                                m.PlaylistItemId = null;
-                                m.StartedAt = null;
-                                m.TotalScore = null;
-                                m.TotalScoreWithoutMods = null;
-                                m.Weight = null;
-                                m.Type = null;
-                                m.UserId = null;
-                                m.User = null;
-                                m.Processed = null;
-                                m.Ranked = null;
-                            });
+                                var functionOutput = JsonConvert.SerializeObject(getUserResponse.UserExtend,
+                                    Formatting.None, _jsonSerializerSettings);
+                                inputItems.Add(new FunctionCallOutputResponseItem(functionCall.CallId, functionOutput));
+                                break;
+                            }
+                        case FunctionNames.GetUserScores:
+                            {
+                                var parameters = functionCall.FunctionArguments
+                                    .ToObjectFromJson<OpenAiFunctionCallParameters>()!;
+                                var userId = parameters.UserId!.Value;
+                                var scoreType = parameters.ScoreType!;
+                                var mode = ((Playmode)parameters.Mode!).ToRuleset();
+                                var limit = parameters.Limit!.Value;
 
-                            var functionOutput = JsonConvert.SerializeObject(scores, _jsonSerializerSettings);
-                            inputItems.Add(new FunctionCallOutputResponseItem(functionCall.CallId, functionOutput));
-                            break;
-                        }
+                                var getUserBestResponse =
+                                    await _osuApiV2.Users.GetUserScores(userId, scoreType,
+                                        new GetUserScoreQueryParameters { Mode = mode, Limit = limit });
+                                var scores = getUserBestResponse!.Scores;
+                                Array.ForEach(scores, m =>
+                                {
+                                    m.Beatmap!.Checksum = null;
+                                    m.Beatmap.Failtimes = null;
+                                    m.Beatmap.Mode = null;
+                                    m.Beatmap.Owners = null;
+
+                                    m.Beatmapset!.User = null;
+                                    m.Beatmapset.UserId = null;
+                                    m.Beatmapset.ArtistUnicode = null;
+                                    m.Beatmapset.Availability = null;
+                                    m.Beatmapset.Beatmaps = null;
+                                    m.Beatmapset.Converts = null;
+                                    m.Beatmapset.UserId = null;
+                                    m.Beatmapset.CurrentNominations = null;
+                                    m.Beatmapset.Description = null;
+                                    m.Beatmapset.Covers = null;
+                                    m.Beatmapset.Genre = null;
+                                    m.Beatmapset.Spotlight = null;
+                                    m.Beatmapset.Hype = null;
+                                    m.Beatmapset.FavouriteCount = null;
+                                    m.Beatmapset.NominationsSummary = null;
+                                    m.Beatmapset.PackTags = null;
+                                    m.Beatmapset.PreviewUrl = null;
+                                    m.Beatmapset.Source = null;
+                                    m.Beatmapset.Title = null;
+                                    m.Beatmapset.Video = null;
+                                    m.Beatmapset.PlayCount = null;
+                                    m.Beatmapset.Nsfw = null;
+                                    m.Statistics = null;
+                                    m.Preserve = null;
+                                    m.BestId = null;
+                                    m.BuildId = null;
+                                    m.ClassicTotalScore = null;
+                                    m.EndedAt = null;
+                                    m.IsPerfectCombo = null;
+                                    m.LegacyPerfect = null;
+                                    m.LegacyScoreId = null;
+                                    m.LegacyTotalScore = null;
+                                    m.MaximumStatistics = null;
+                                    m.Mode = null;
+                                    m.ModeInt = null;
+                                    m.Passed = null;
+                                    m.PlaylistItemId = null;
+                                    m.StartedAt = null;
+                                    m.TotalScore = null;
+                                    m.TotalScoreWithoutMods = null;
+                                    m.Weight = null;
+                                    m.Type = null;
+                                    m.UserId = null;
+                                    m.User = null;
+                                    m.Processed = null;
+                                    m.Ranked = null;
+                                });
+
+                                var functionOutput = JsonConvert.SerializeObject(scores, _jsonSerializerSettings);
+                                inputItems.Add(new FunctionCallOutputResponseItem(functionCall.CallId, functionOutput));
+                                break;
+                            }
                         case FunctionNames.GetCountryRanking:
-                        {
-                            var parameters = functionCall.FunctionArguments
-                                .ToObjectFromJson<OpenAiFunctionCallParameters>()!;
-                            var count = parameters.Count!.Value;
-                            var countryCode = parameters.CountryCode!;
-                            var mode = parameters.Mode!.Value;
+                            {
+                                var parameters = functionCall.FunctionArguments
+                                    .ToObjectFromJson<OpenAiFunctionCallParameters>()!;
+                                var count = parameters.Count!.Value;
+                                var countryCode = parameters.CountryCode!;
+                                var mode = parameters.Mode!.Value;
 
-                            var getUserBestResponse =
-                                await OsuApiHelper.GetUsersFromRanking(_osuApiV2, (Playmode)mode, countryCode, count);
-                            var functionOutput = JsonConvert.SerializeObject(getUserBestResponse, Formatting.None,
-                                _jsonSerializerSettings);
-                            inputItems.Add(new FunctionCallOutputResponseItem(functionCall.CallId, functionOutput));
-                            break;
-                        }
+                                var getUserBestResponse =
+                                    await OsuApiHelper.GetUsersFromRanking(_osuApiV2, (Playmode)mode, countryCode, count);
+                                var functionOutput = JsonConvert.SerializeObject(getUserBestResponse, Formatting.None,
+                                    _jsonSerializerSettings);
+                                inputItems.Add(new FunctionCallOutputResponseItem(functionCall.CallId, functionOutput));
+                                break;
+                            }
                         default:
-                        {
-                            throw new NotImplementedException($"Unknown response item type: {functionCall.Id}");
-                        }
+                            {
+                                throw new NotImplementedException($"Unknown response item type: {functionCall.Id}");
+                            }
                     }
 
                     requiresAction = true;

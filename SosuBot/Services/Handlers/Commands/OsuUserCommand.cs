@@ -2,13 +2,14 @@
 using OsuApi.V2;
 using OsuApi.V2.Clients.Users.HttpIO;
 using OsuApi.V2.Users.Models;
+using SosuBot.Database.Models;
 using SosuBot.Extensions;
 using SosuBot.Helpers;
 using SosuBot.Helpers.OutputText;
-using SosuBot.Helpers.Types;
 using SosuBot.Localization;
 using SosuBot.Localization.Languages;
 using SosuBot.Services.Handlers.Abstract;
+using SosuBot.Services.Synchronization;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.ReplyMarkups;
 
@@ -18,10 +19,14 @@ public class OsuUserCommand(bool includeIdInSearch = false) : CommandBase<Messag
 {
     public static readonly string[] Commands = ["/user", "/u"];
     private ApiV2 _osuApiV2 = null!;
+    private ScoreHelper _scoreHelper = null!;
+    private RateLimiterFactory _rateLimiterFactory = null!;
 
     public override Task BeforeExecuteAsync()
     {
+        _scoreHelper = Context.ServiceProvider.GetRequiredService<ScoreHelper>();
         _osuApiV2 = Context.ServiceProvider.GetRequiredService<ApiV2>();
+        _rateLimiterFactory = Context.ServiceProvider.GetRequiredService<RateLimiterFactory>();
         return Task.CompletedTask;
     }
 
@@ -29,8 +34,12 @@ public class OsuUserCommand(bool includeIdInSearch = false) : CommandBase<Messag
     {
         await BeforeExecuteAsync();
 
-        if (await Context.Update.IsUserSpamming(Context.BotClient))
+        var rateLimiter = _rateLimiterFactory.Get(RateLimiterFactory.RateLimitPolicy.Command);
+        if (!await rateLimiter.IsAllowedAsync($"{Context.Update.From!.Id}"))
+        {
+            await Context.Update.ReplyAsync(Context.BotClient, "Давай не так быстро!");
             return;
+        }
 
         ILocalization language = new Russian();
         var osuUserInDatabase = await Context.Database.OsuUsers.FindAsync(Context.Update.From!.Id);
@@ -126,7 +135,7 @@ public class OsuUserCommand(bool includeIdInSearch = false) : CommandBase<Messag
             $"{UserHelper.GetUserRankText(user.Statistics.GlobalRank)}",
             $"{UserHelper.GetUserRankText(user.Statistics.CountryRank)}",
             $"{UserHelper.CountryCodeToFlag(user.CountryCode ?? "nn")}",
-            $"{ScoreHelper.GetFormattedNumConsideringNull(currentPp)}",
+            $"{_scoreHelper.GetFormattedNumConsideringNull(currentPp)}",
             $"{ppDifferenceText}",
             $"{user.Statistics.HitAccuracy:N2}%",
             $"{user.Statistics.PlayCount:N0}",

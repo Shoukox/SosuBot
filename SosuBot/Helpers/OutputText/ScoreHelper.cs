@@ -1,23 +1,19 @@
-﻿using Microsoft.Extensions.Logging;
-using osu.Game.Rulesets.Scoring;
+﻿using osu.Game.Rulesets.Scoring;
 using OsuApi.V2;
 using OsuApi.V2.Clients.Users.HttpIO;
 using OsuApi.V2.Models;
 using OsuApi.V2.Users.Models;
-using SosuBot.Caching;
 using SosuBot.Database.Models;
 using SosuBot.Extensions;
-using SosuBot.Helpers.Types;
-using SosuBot.Helpers.Types.Statistics;
 using SosuBot.Localization;
 using SosuBot.Localization.Languages;
 using Mod = OsuApi.V2.Models.Mod;
 
 namespace SosuBot.Helpers.OutputText;
 
-public static class ScoreHelper
+public class ScoreHelper(CachingHelper cachingHelper)
 {
-    public static string GetModsText(Mod[] mods)
+    public string GetModsText(Mod[] mods)
     {
         var modsText = "+" + string.Join("", mods.Select(m =>
         {
@@ -29,7 +25,7 @@ public static class ScoreHelper
         return modsText;
     }
 
-    public static string GetFormattedNumConsideringNull(double? num, string defaultValue = "—", string format = "N2", bool round = true)
+    public string GetFormattedNumConsideringNull(double? num, string defaultValue = "—", string format = "N2", bool round = true)
     {
         if (num == null) return defaultValue;
 
@@ -44,7 +40,7 @@ public static class ScoreHelper
         return ppText;
     }
 
-    public static string GetScoreStatisticsText(ScoreStatistics scoreStatistics, Playmode playmode)
+    public string GetScoreStatisticsText(ScoreStatistics scoreStatistics, Playmode playmode)
     {
         var scoreStatisticsText = string.Empty;
         switch (playmode)
@@ -67,7 +63,7 @@ public static class ScoreHelper
         return scoreStatisticsText;
     }
 
-    public static string GetScoreStatisticsText(Dictionary<HitResult, int> scoreStatistics, Playmode playmode)
+    public string GetScoreStatisticsText(Dictionary<HitResult, int> scoreStatistics, Playmode playmode)
     {
         var scoreStatisticsFromOsuApi = new ScoreStatistics();
         scoreStatisticsFromOsuApi.Perfect = scoreStatistics.GetValueOrDefault(HitResult.Perfect, 0);
@@ -87,7 +83,7 @@ public static class ScoreHelper
     /// <param name="playmode"></param>
     /// <returns></returns>
     /// <exception cref="NotImplementedException"></exception>
-    public static string GetPlaymodeEmoji(Playmode playmode)
+    public string GetPlaymodeEmoji(Playmode playmode)
     {
         return playmode switch
         {
@@ -105,7 +101,7 @@ public static class ScoreHelper
     /// <param name="scoreRank">Score rank from API</param>
     /// <param name="passed">Whether the score was passed</param>
     /// <returns></returns>
-    public static string GetScoreRankEmoji(string? scoreRank, bool passed = true)
+    public string GetScoreRankEmoji(string? scoreRank, bool passed = true)
     {
         if (scoreRank == null) return string.Empty;
 
@@ -132,23 +128,23 @@ public static class ScoreHelper
     ///     Replaces X by SS
     /// </summary>
     /// <returns></returns>
-    public static string ParseScoreRank(string scoreRank)
+    public string ParseScoreRank(string scoreRank)
     {
         return scoreRank.Replace("X", "SS");
     }
 
-    public static string GetScoreUrl(long scoreId)
+    public string GetScoreUrl(long scoreId)
     {
         return $"{OsuConstants.BaseScoreUrl}{scoreId}";
     }
 
-    public static string GetScoreUrlWrappedInString(long scoreId, string text)
+    public string GetScoreUrlWrappedInString(long scoreId, string text)
     {
         return $"<a href=\"{GetScoreUrl(scoreId)}\">{text}</a>";
     }
 
-    public static async Task<string> GetDailyStatisticsSendText(Playmode playmode, DailyStatistics dailyStatistics,
-        ApiV2 osuApi, RedisCaching redis, ILogger? logger = null)
+    public async Task<string> GetDailyStatisticsSendText(Playmode playmode, DailyStatistics dailyStatistics,
+        ApiV2 osuApi)
     {
         ILocalization language = new Russian();
 
@@ -209,11 +205,11 @@ public static class ScoreHelper
         {
             if (count >= 5) break;
 
-            var beatmap = await RedisHelper.GetOrCacheBeatmap(us.Key, osuApi, redis, logger);
-            var beatmapsetExtended = await RedisHelper.GetOrCacheBeatmapset(beatmap.BeatmapsetId!.Value, osuApi, redis, logger);
+            var beatmap = await cachingHelper.GetOrCacheBeatmap(us.Key, osuApi);
+            var beatmapsetExtended = await cachingHelper.GetOrCacheBeatmapset(beatmap!.BeatmapsetId!.Value, osuApi);
 
             topMostPlayedBeatmaps +=
-                $"{count + 1}. (<b>{beatmap!.DifficultyRating:N2}⭐️</b>) <a href=\"https://osu.ppy.sh/beatmaps/{beatmap.Id}\">{beatmapsetExtended.Title.EncodeHtml()} [{beatmap.Version.EncodeHtml()}]</a> — <b>{us.Count()} скоров</b>\n";
+                $"{count + 1}. (<b>{beatmap!.DifficultyRating:N2}⭐️</b>) <a href=\"https://osu.ppy.sh/beatmaps/{beatmap.Id}\">{beatmapsetExtended!.Title.EncodeHtml()} [{beatmap.Version.EncodeHtml()}]</a> — <b>{us.Count()} скоров</b>\n";
             count += 1;
         }
 
@@ -237,7 +233,7 @@ public static class ScoreHelper
         return sendText;
     }
 
-    public static async Task<(int newUsers, int newScores, int newBeatmaps)> UpdateDailyStatisticsFromLast(
+    public async Task<(int newUsers, int newScores, int newBeatmaps)> UpdateDailyStatisticsFromLast(
         ApiV2 osuApiV2, Playmode playmode,
         DailyStatistics dailyStatistics)
     {

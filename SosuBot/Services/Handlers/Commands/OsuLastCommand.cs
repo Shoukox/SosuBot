@@ -1,16 +1,11 @@
-using System.Data;
-using System.Globalization;
-using System.Text.RegularExpressions;
 using Humanizer;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using osu.Game.Rulesets.Mods;
 using osu.Game.Rulesets.Scoring;
 using OsuApi.V2;
-using OsuApi.V2.Clients.Beatmaps.HttpIO;
 using OsuApi.V2.Clients.Users.HttpIO;
-using OsuApi.V2.Models;
 using OsuApi.V2.Users.Models;
+using SosuBot.Database.Models;
 using SosuBot.Extensions;
 using SosuBot.Helpers;
 using SosuBot.Helpers.OutputText;
@@ -19,6 +14,10 @@ using SosuBot.Localization;
 using SosuBot.Localization.Languages;
 using SosuBot.PerformanceCalculator;
 using SosuBot.Services.Handlers.Abstract;
+using SosuBot.Services.Synchronization;
+using System.Data;
+using System.Globalization;
+using System.Text.RegularExpressions;
 using Telegram.Bot;
 using Telegram.Bot.Types;
 
@@ -28,16 +27,22 @@ public class OsuLastCommand(bool onlyPassed = false, bool sendCover = false) : C
 {
     public static readonly string[] Commands = ["/last", "/l"];
     private ILogger<OsuLastCommand> _logger = null!;
-    private ILogger<PPCalculator> _loggerPpCalculator = null!;
     private bool _onlyPassed;
     private ApiV2 _osuApiV2 = null!;
+    private ScoreHelper _scoreHelper = null!;
+    private CachingHelper _cachingHelper = null!;
+    private RateLimiterFactory _rateLimiterFactory = null!;
+    private BeatmapsService _beatmapsService = null!;
 
     public override Task BeforeExecuteAsync()
     {
         _onlyPassed = onlyPassed;
         _osuApiV2 = Context.ServiceProvider.GetRequiredService<ApiV2>();
+        _scoreHelper = Context.ServiceProvider.GetRequiredService<ScoreHelper>();
+        _cachingHelper = Context.ServiceProvider.GetRequiredService<CachingHelper>();
+        _rateLimiterFactory = Context.ServiceProvider.GetRequiredService<RateLimiterFactory>();
+        _beatmapsService = Context.ServiceProvider.GetRequiredService<BeatmapsService>();
         _logger = Context.ServiceProvider.GetRequiredService<ILogger<OsuLastCommand>>();
-        _loggerPpCalculator = Context.ServiceProvider.GetRequiredService<ILogger<PPCalculator>>();
         return Task.CompletedTask;
     }
 
@@ -45,8 +50,12 @@ public class OsuLastCommand(bool onlyPassed = false, bool sendCover = false) : C
     {
         await BeforeExecuteAsync();
 
-        if (await Context.Update.IsUserSpamming(Context.BotClient))
+        var rateLimiter = _rateLimiterFactory.Get(RateLimiterFactory.RateLimitPolicy.Command);
+        if (!await rateLimiter.IsAllowedAsync($"{Context.Update.From!.Id}"))
+        {
+            await Context.Update.ReplyAsync(Context.BotClient, "Давай не так быстро!");
             return;
+        }
 
         ILocalization language = new Russian();
         var chatInDatabase = await Context.Database.TelegramChats.FindAsync(Context.Update.Chat.Id);
@@ -100,7 +109,7 @@ public class OsuLastCommand(bool onlyPassed = false, bool sendCover = false) : C
         {
             string parametersJoined = string.Join(" ", parameters);
             string numberAsText = Regex.Match(parametersJoined, @" (\d)").Value;
-            if(!int.TryParse(numberAsText, out limit))
+            if (!int.TryParse(numberAsText, out limit))
             {
                 await waitMessage.EditAsync(Context.BotClient, language.error_baseMessage + "\n/last nickname count\n/last Shoukko 5");
                 return;
@@ -153,24 +162,24 @@ public class OsuLastCommand(bool onlyPassed = false, bool sendCover = false) : C
         }
 
         var lastScores = lastScoresResponse.Scores;
-        GetBeatmapResponse[] beatmaps = lastScores
-            .Select(async score => await _osuApiV2.Beatmaps.GetBeatmap((long)score.Beatmap!.Id))
+        BeatmapExtended[] beatmaps = lastScores
+            .Select(async score => await _cachingHelper.GetOrCacheBeatmap(score.Beatmap!.Id!.Value, _osuApiV2))
             .Select(t => t.Result).ToArray()!;
-        var ppCalculator = new PPCalculator(_loggerPpCalculator);
+        var ppCalculator = new PPCalculator();
 
         var textToSend =
             $"<b>{UserHelper.GetUserProfileUrlWrappedInUsernameString(userResponse.UserExtend!.Id.Value, osuUsernameForLastScores)}</b> (<i>{ruleset.ParseRulesetToGamemode()}</i>)\n\n";
 
         var playmode = (Playmode)lastScores[0].RulesetId!;
-        var beatmapsetIdOfFirstScore = beatmaps[0].BeatmapExtended!.BeatmapsetId!.Value;
+        var beatmapsetIdOfFirstScore = beatmaps[0].BeatmapsetId!.Value;
         for (var i = 0; i <= lastScores.Length - 1; i++)
         {
-            var score = lastScores[i];
-            var beatmap = beatmaps[i].BeatmapExtended!;
+            var score = await _cachingHelper.GetOrCacheScore(lastScores[i].Id!.Value, _osuApiV2);
+            var beatmap = beatmaps[i];
 
             var hitobjectsSum = beatmap.CountCircles + beatmap.CountSliders + beatmap.CountSpinners;
             bool beatmapContainsTooManyHitObjects = hitobjectsSum >= 20000;
-            var mods = score.Mods!;
+            var mods = score!.Mods!;
 
             if (i == 0) chatInDatabase!.LastBeatmapId = beatmap.Id;
 
@@ -182,21 +191,19 @@ public class OsuLastCommand(bool onlyPassed = false, bool sendCover = false) : C
 
             // Get score statistics for fc
             Dictionary<HitResult, int>? scoreStatisticsIfFc = null;
-            if (passed && playmode != Playmode.Mania)
+            if (passed && playmode is not Playmode.Mania and not Playmode.Catch)
             {
                 scoreStatisticsIfFc = new Dictionary<HitResult, int>()
                 {
                     {
                         HitResult.Great,
-                        scoreStatistics.GetValueOrDefault(HitResult.Great) +
-                        playmode == Playmode.Catch ? scoreStatistics.GetValueOrDefault(HitResult.Miss) : 0
+                        scoreStatistics.GetValueOrDefault(HitResult.Great)
                     },
                     { HitResult.Good, scoreStatistics.GetValueOrDefault(HitResult.Good) },
                     { HitResult.Ok, scoreStatistics.GetValueOrDefault(HitResult.Ok) },
                     {
                         HitResult.Meh,
-                        scoreStatistics.GetValueOrDefault(HitResult.Meh) +
-                        playmode != Playmode.Catch ? scoreStatistics.GetValueOrDefault(HitResult.Miss) : 0
+                        scoreStatistics.GetValueOrDefault(HitResult.Meh)
                     },
                     { HitResult.Miss, 0 }
                 };
@@ -206,10 +213,14 @@ public class OsuLastCommand(bool onlyPassed = false, bool sendCover = false) : C
             PPResult? calculatedPp = new PPResult() { Current = null, IfFC = null };
             if (!beatmapContainsTooManyHitObjects)
             {
+                var beatmapFile = await _beatmapsService.DownloadOrCacheBeatmap(beatmap.Id!.Value);
                 calculatedPp = new PPResult
                 {
-                    Current = score.Pp != null ? null : 
-                        await ppCalculator.CalculatePpAsync(beatmap.Id.Value, (double)score.Accuracy!,
+                    Current = score.Pp != null ? null :
+                        await ppCalculator.CalculatePpAsync(
+                             beatmapId: beatmap.Id.Value, 
+                             beatmapFile: beatmapFile,
+                             accuracy: (double)score.Accuracy!,
                              scoreMaxCombo: score.MaxCombo!.Value,
                              passed: passed,
                              scoreMods: scoreMods,
@@ -217,8 +228,10 @@ public class OsuLastCommand(bool onlyPassed = false, bool sendCover = false) : C
                              rulesetId: (int)playmode,
                              cancellationToken: Context.CancellationToken),
 
-                    IfFC = await ppCalculator.CalculatePpAsync(beatmap.Id.Value,
-                             playmode == Playmode.Mania ? 1 : (double)score.Accuracy!,
+                    IfFC = await ppCalculator.CalculatePpAsync(
+                             beatmapId: beatmap.Id.Value,
+                             beatmapFile: beatmapFile,
+                             accuracy: playmode is Playmode.Mania or Playmode.Taiko ? 1 : (double)score.Accuracy!,
                              scoreMaxCombo: null,
                              scoreMods: scoreMods,
                              scoreStatistics: scoreStatisticsIfFc,
@@ -226,8 +239,8 @@ public class OsuLastCommand(bool onlyPassed = false, bool sendCover = false) : C
                              cancellationToken: Context.CancellationToken)
                 };
             }
-            var scoreRank = ScoreHelper.GetScoreRankEmoji(score.Rank!, score.Passed!.Value) +
-                            ScoreHelper.ParseScoreRank(score.Passed!.Value ? score.Rank! : "F");
+            var scoreRank = _scoreHelper.GetScoreRankEmoji(score.Rank!, score.Passed!.Value) +
+                            _scoreHelper.ParseScoreRank(score.Passed!.Value ? score.Rank! : "F");
             var counterText = lastScores.Length == 1 ? "" : $"{i + 1}. ";
             double? scorePp = calculatedPp?.Current?.Pp ?? score.Pp;
             if (scorePp is double.NaN) scorePp = null;
@@ -235,17 +248,17 @@ public class OsuLastCommand(bool onlyPassed = false, bool sendCover = false) : C
             double? scorePpIfFc = calculatedPp?.IfFC?.Pp;
             double? accuracyIfFc = calculatedPp?.IfFC?.CalculatedAccuracy;
             bool scoreModsContainsModIdk = scoreMods.Any(m => m is ModIdk);
-            
+
 
             // Beatmap max combo from pp calculation (or use beatmap.MaxCombo if null)
             int? beatmapMaxCombo = calculatedPp?.IfFC?.BeatmapMaxCombo;
-            if(beatmap.ModeInt == (int)playmode)
+            if (beatmap.ModeInt == (int)playmode)
             {
                 beatmapMaxCombo ??= beatmap.MaxCombo;
             }
 
             // Calculate diff rating
-            double? difficultyRating = ppCalculator.LastDifficultyAttributes?.StarRating;
+            double? difficultyRating = calculatedPp?.IfFC?.DifficultyAttributes.StarRating;
             if (difficultyRating == null)
             {
                 var beatmapAttributesResponse = await _osuApiV2.Beatmaps.GetBeatmapAttributes(beatmap.Id.Value, new() { RulesetId = ((int)playmode).ToString(), Mods = mods });
@@ -268,20 +281,24 @@ public class OsuLastCommand(bool onlyPassed = false, bool sendCover = false) : C
             }
 
             string scorePpText =
-                ScoreHelper.GetFormattedNumConsideringNull(scoreModsContainsModIdk && calculatedPp?.Current != null
+                _scoreHelper.GetFormattedNumConsideringNull(scoreModsContainsModIdk && calculatedPp?.Current != null
                     ? null
                     : scorePp);
 
             string scoreIfFcPpText =
-                $"{ScoreHelper.GetFormattedNumConsideringNull(scoreModsContainsModIdk ? null : scorePpIfFc)}pp if {ScoreHelper.GetFormattedNumConsideringNull(accuracyIfFc * 100, round: false)}% FC";
+                $"{_scoreHelper.GetFormattedNumConsideringNull(scoreModsContainsModIdk ? null : scorePpIfFc)}pp if {_scoreHelper.GetFormattedNumConsideringNull(accuracyIfFc * 100, round: false)}% FC";
 
             var scoreEndedMinutesAgoText =
                 (DateTime.UtcNow - score.EndedAt!.Value).Humanize(
                     culture: CultureInfo.GetCultureInfoByIetfLanguageTag("ru-RU")) + " назад";
 
             // Caclculate completion
-            double? completion = (double)score.CalculateSumOfHitResults() / calculatedPp?.IfFC?.ScoreHitResultsCount * 100.0;
-            if(completion == null)
+            if (playmode == Playmode.Catch)
+            {
+                calculatedPp?.IfFC?.ScoreHitResultsCount -= score.Statistics!.LargeTickHit;
+            }
+            double? completion = (double)score.CalculateSumOfHitResults(playmode) / calculatedPp?.IfFC?.ScoreHitResultsCount * 100.0;
+            if (completion == null)
             {
                 if (passed) completion = 100;
                 else
@@ -290,24 +307,32 @@ public class OsuLastCommand(bool onlyPassed = false, bool sendCover = false) : C
                 }
             }
 
+            string globalRankText = "";
+            if (score.RankGlobal != null && score.RankGlobal is > 0 and <= 10000)
+            {
+                globalRankText = $"<b>Global #{score.RankGlobal}</b>\n";
+            }
+
             textToSend += language.command_last.Fill([
+                $"{globalRankText}",
                 $"{counterText}",
                 $"{scoreRank}",
                 $"{beatmap.Id}",
                 $"{score.Beatmapset?.Title.EncodeHtml()}",
                 $"{beatmap.Version.EncodeHtml()}",
                 $"{beatmap.Status}",
-                $"{ScoreHelper.GetFormattedNumConsideringNull(difficultyRating, format: "N2", round: false)}",
-                $"{ScoreHelper.GetScoreStatisticsText(score.Statistics!, playmode)}",
+                $"{_scoreHelper.GetFormattedNumConsideringNull(difficultyRating, format: "N2", round: false)}",
+                $"{_scoreHelper.GetScoreStatisticsText(score.Statistics!, playmode)}",
                 $"{score.Statistics!.Miss}",
-                $"{ScoreHelper.GetFormattedNumConsideringNull(score.Accuracy * 100, round: false)}",
-                $"{ScoreHelper.GetModsText(mods)}",
+                $"{_scoreHelper.GetFormattedNumConsideringNull(score.Accuracy * 100, round: false)}",
+                $"{_scoreHelper.GetModsText(mods)}",
                 $"{score.MaxCombo}",
-                $"{ScoreHelper.GetFormattedNumConsideringNull(beatmapMaxCombo, format: "F0")}",
+                $"{_scoreHelper.GetFormattedNumConsideringNull(beatmapMaxCombo, format: "F0")}",
                 $"{scorePpText}",
                 $"{scoreIfFcPpText}",
+                $"{_scoreHelper.GetScoreUrlWrappedInString(score.Id!.Value, "link")}",
                 $"{scoreEndedMinutesAgoText}",
-                $"{ScoreHelper.GetFormattedNumConsideringNull(completion, format: "N1")}"
+                $"{_scoreHelper.GetFormattedNumConsideringNull(completion, format: "N1")}"
             ]);
 
             if (scoreModsContainsModIdk)
@@ -322,7 +347,7 @@ public class OsuLastCommand(bool onlyPassed = false, bool sendCover = false) : C
         if (sendCover)
         {
             // Get beatmapset cover from cache
-            InputFile cover = await RedisHelper.GetOrCacheBeatmapsetCover(beatmapsetIdOfFirstScore, Context.Redis, _logger);
+            InputFile cover = await _cachingHelper.GetOrCacheBeatmapsetCover(beatmapsetIdOfFirstScore);
 
             try
             {

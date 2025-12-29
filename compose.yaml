@@ -1,6 +1,8 @@
 ﻿services:
   sosubot-service:
-    build: .
+    build:
+      context: .
+      dockerfile: ./SosuBot/Dockerfile
     restart: unless-stopped
     deploy:
       mode: replicated
@@ -8,7 +10,7 @@
     environment:
       REDIS_HOST: redis-service
       DB_HOST: db-service
-      DB_PORT: "5432"
+      DB_PORT: 5432
       DB_NAME: sosubot
       DB_USER: sosubot
       DB_PASSWORD_FILE: /run/secrets/db-password

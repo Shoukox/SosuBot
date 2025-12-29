@@ -1,5 +1,4 @@
-using SosuBot.Extensions;
-using SosuBot.Helpers.Types;
+using SosuBot.Database.Models;
 using System.Text;
 
 namespace SosuBot.Helpers.OutputText;

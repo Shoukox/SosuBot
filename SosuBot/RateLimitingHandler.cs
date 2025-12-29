@@ -1,7 +1,7 @@
-﻿using System.Net;
-using System.Threading.RateLimiting;
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
+using System.Net;
+using System.Threading.RateLimiting;
 
 namespace SosuBot;
 

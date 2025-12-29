@@ -1,0 +1,20 @@
+﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+
+namespace SosuBot.ScoresObserver.Extensions;
+
+public static class ServiceCollectionExtensions
+{
+    public static IHttpClientBuilder AddCustomHttpClient(this IServiceCollection services, string name,
+        int executionsPerMinute)
+    {
+        return services.AddHttpClient(name)
+            .ConfigureHttpClient(client =>
+            {
+                client.Timeout = TimeSpan.FromSeconds(60);
+                client.DefaultRequestHeaders.ConnectionClose = true;
+            })
+            .AddHttpMessageHandler(sp =>
+                new RateLimitingHandler(sp.GetRequiredService<ILogger<RateLimitingHandler>>(), executionsPerMinute));
+    }
+}

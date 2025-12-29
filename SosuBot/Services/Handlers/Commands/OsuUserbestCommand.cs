@@ -8,6 +8,7 @@ using SosuBot.Helpers.OutputText;
 using SosuBot.Localization;
 using SosuBot.Localization.Languages;
 using SosuBot.Services.Handlers.Abstract;
+using SosuBot.Services.Synchronization;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.ReplyMarkups;
 
@@ -17,10 +18,14 @@ public sealed class OsuUserbestCommand : CommandBase<Message>
 {
     public static readonly string[] Commands = ["/userbest", "/best"];
     private ApiV2 _osuApiV2 = null!;
+    private ScoreHelper _scoreHelper = null!;
+    private RateLimiterFactory _rateLimiterFactory = null!;
 
     public override Task BeforeExecuteAsync()
     {
         _osuApiV2 = Context.ServiceProvider.GetRequiredService<ApiV2>();
+        _rateLimiterFactory = Context.ServiceProvider.GetRequiredService<RateLimiterFactory>();
+        _scoreHelper = Context.ServiceProvider.GetRequiredService<ScoreHelper>();
         return Task.CompletedTask;
     }
 
@@ -28,8 +33,12 @@ public sealed class OsuUserbestCommand : CommandBase<Message>
     {
         await BeforeExecuteAsync();
 
-        if (await Context.Update.IsUserSpamming(Context.BotClient))
+        var rateLimiter = _rateLimiterFactory.Get(RateLimiterFactory.RateLimitPolicy.Command);
+        if (!await rateLimiter.IsAllowedAsync($"{Context.Update.From!.Id}"))
+        {
+            await Context.Update.ReplyAsync(Context.BotClient, "Давай не так быстро!");
             return;
+        }
 
         ILocalization language = new Russian();
         var chatInDatabase = await Context.Database.TelegramChats.FindAsync(Context.Update.Chat.Id);
@@ -80,7 +89,7 @@ public sealed class OsuUserbestCommand : CommandBase<Message>
             osuUsernameForUserbest = userResponse.UserExtend!.Username!;
             osuUserIdForUserbest = userResponse.UserExtend!.Id.Value;
         }
-        
+
         bestScores = (await _osuApiV2.Users.GetUserScores(osuUserIdForUserbest, ScoreType.Best,
             new GetUserScoreQueryParameters { Limit = 5, Mode = ruleset }))!.Scores;
 
@@ -93,26 +102,26 @@ public sealed class OsuUserbestCommand : CommandBase<Message>
         var gamemode = ruleset.ParseRulesetToGamemode();
         var playmode = ruleset.ParseRulesetToPlaymode();
         var textToSend = $"{UserHelper.GetUserProfileUrlWrappedInUsernameString((int)osuUserIdForUserbest, osuUsernameForUserbest)} (<b>{gamemode}</b>)\n\n";
-        
+
         for (var i = 0; i <= bestScores.Length - 1; i++)
         {
             var score = bestScores[i];
             string fcText = " (" + (score.IsPerfectCombo!.Value ? "PFC" : "notPFC") + ")";
-            
+
             textToSend += language.command_userbest.Fill([
                 $"{i + 1}",
-                $"{ScoreHelper.GetScoreRankEmoji(score.Rank)}{ScoreHelper.ParseScoreRank(score.Rank!)}",
+                $"{_scoreHelper.GetScoreRankEmoji(score.Rank)}{_scoreHelper.ParseScoreRank(score.Rank!)}",
                 $"{score.BeatmapId}",
                 $"{score.Beatmapset!.Title.EncodeHtml()}",
                 $"{score.Beatmap!.Version.EncodeHtml()}",
                 $"{score.Beatmapset.Status}",
-                $"{ScoreHelper.GetScoreStatisticsText(score.Statistics!, playmode)}",
+                $"{_scoreHelper.GetScoreStatisticsText(score.Statistics!, playmode)}",
                 $"{score.Statistics!.Miss}",
-                $"{ScoreHelper.GetFormattedNumConsideringNull(score.Accuracy * 100, round: false)}",
-                $"{ScoreHelper.GetModsText(score.Mods!)}",
+                $"{_scoreHelper.GetFormattedNumConsideringNull(score.Accuracy * 100, round: false)}",
+                $"{_scoreHelper.GetModsText(score.Mods!)}",
                 $"{score.MaxCombo}",
                 $"{fcText}",
-                $"{ScoreHelper.GetFormattedNumConsideringNull(score.Pp)}"
+                $"{_scoreHelper.GetFormattedNumConsideringNull(score.Pp)}"
             ]);
         }
 

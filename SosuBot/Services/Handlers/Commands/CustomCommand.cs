@@ -1,5 +1,4 @@
-﻿using FFmpeg.AutoGen;
-using Microsoft.Data.Sqlite;
+﻿using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -15,12 +14,14 @@ using SosuBot.Extensions;
 using SosuBot.Helpers;
 using SosuBot.Helpers.OutputText;
 using SosuBot.Helpers.Types;
-using SosuBot.Helpers.Types.Statistics;
 using SosuBot.Localization;
 using SosuBot.Localization.Languages;
 using SosuBot.PerformanceCalculator;
 using SosuBot.Services.BackgroundServices;
 using SosuBot.Services.Handlers.Abstract;
+using System.Diagnostics;
+using Telegram.Bot;
+using Telegram.Bot.Exceptions;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 using Country = SosuBot.Helpers.Country;
@@ -31,18 +32,18 @@ public sealed class CustomCommand : CommandBase<Message>
 {
     public static readonly string[] Commands = ["/c"];
     private ILogger<CustomCommand> _logger = null!;
-    private ILogger<PPCalculator> _loggerPpCalculator = null!;
     private OpenAiService _openaiService = null!;
     private ApiV2 _osuApiV2 = null!;
-    private BotContext _dbContext = null!;
+    private ScoreHelper _scoreHelper = null!;
+    private BeatmapsService _beatmapsService = null!;
 
     public override Task BeforeExecuteAsync()
     {
         _openaiService = Context.ServiceProvider.GetRequiredService<OpenAiService>();
         _osuApiV2 = Context.ServiceProvider.GetRequiredService<ApiV2>();
-        _dbContext = Context.ServiceProvider.GetRequiredService<BotContext>();
+        _scoreHelper = Context.ServiceProvider.GetRequiredService<ScoreHelper>();
+        _beatmapsService = Context.ServiceProvider.GetRequiredService<BeatmapsService>();
         _logger = Context.ServiceProvider.GetRequiredService<ILogger<CustomCommand>>();
-        _loggerPpCalculator = Context.ServiceProvider.GetRequiredService<ILogger<PPCalculator>>();
         return Task.CompletedTask;
     }
 
@@ -138,7 +139,7 @@ public sealed class CustomCommand : CommandBase<Message>
 
             var bestScoresByMods = uzBestScores
                 .GroupBy(m => string.Join("",
-                    ScoreHelper.GetModsText(m.Mods!.Where(mod =>
+                    _scoreHelper.GetModsText(m.Mods!.Where(mod =>
                         !mod.Acronym!.Equals("CL", StringComparison.InvariantCultureIgnoreCase)).ToArray())))
                 .Select(m => (m.Key, m.MaxBy(s => s.Pp)!)).OrderByDescending(m => m.Item2.Pp).ToArray();
 
@@ -150,7 +151,7 @@ public sealed class CustomCommand : CommandBase<Message>
                         ? ""
                         : "lazer";
                 sendText +=
-                    $"{pair.Key} - max. {ScoreHelper.GetScoreUrlWrappedInString(pair.Item2.Id!.Value, $"{pair.Item2.Pp:N2}pp")}{lazer} by {UserHelper.GetUserProfileUrlWrappedInUsernameString(pair.Item2.UserId!.Value, pair.Item2.User!.Username!)}\n";
+                    $"{pair.Key} - max. {_scoreHelper.GetScoreUrlWrappedInString(pair.Item2.Id!.Value, $"{pair.Item2.Pp:N2}pp")}{lazer} by {UserHelper.GetUserProfileUrlWrappedInUsernameString(pair.Item2.UserId!.Value, pair.Item2.User!.Username!)}\n";
             }
 
             await waitMessage.EditAsync(Context.BotClient, sendText, splitValue: "\n");
@@ -160,13 +161,13 @@ public sealed class CustomCommand : CommandBase<Message>
             ILocalization language = new Russian();
             var waitMessage = await Context.Update.ReplyAsync(Context.BotClient, language.waiting);
 
-            var dailyStats = _dbContext.DailyStatistics.OrderBy(m => m.Id).Last();
+            var dailyStats = Context.Database.DailyStatistics.OrderBy(m => m.Id).Last();
             Task<(int newUsers, int newScores, int newBeatmaps)>[] resultTasks =
             [
-                ScoreHelper.UpdateDailyStatisticsFromLast(_osuApiV2, Playmode.Osu, dailyStats),
-                ScoreHelper.UpdateDailyStatisticsFromLast(_osuApiV2, Playmode.Taiko, dailyStats),
-                ScoreHelper.UpdateDailyStatisticsFromLast(_osuApiV2, Playmode.Catch, dailyStats),
-                ScoreHelper.UpdateDailyStatisticsFromLast(_osuApiV2, Playmode.Mania, dailyStats)
+                _scoreHelper.UpdateDailyStatisticsFromLast(_osuApiV2, Playmode.Osu, dailyStats),
+                _scoreHelper.UpdateDailyStatisticsFromLast(_osuApiV2, Playmode.Taiko, dailyStats),
+                _scoreHelper.UpdateDailyStatisticsFromLast(_osuApiV2, Playmode.Catch, dailyStats),
+                _scoreHelper.UpdateDailyStatisticsFromLast(_osuApiV2, Playmode.Mania, dailyStats)
             ];
 
             await waitMessage.EditAsync(Context.BotClient,
@@ -179,7 +180,7 @@ public sealed class CustomCommand : CommandBase<Message>
         {
             ILocalization language = new Russian();
             var waitMessage = await Context.Update.ReplyAsync(Context.BotClient, language.waiting);
-            var dailyStatistics = _dbContext.DailyStatistics.OrderBy(m => m.Id).Last();
+            var dailyStatistics = Context.Database.DailyStatistics.OrderBy(m => m.Id).Last();
             var passedStdScores = dailyStatistics.Scores.Where(m => m.ScoreJson.ModeInt == (int)Playmode.Osu).ToList();
             var removed = dailyStatistics.Scores.RemoveAll(m =>
             {
@@ -196,23 +197,49 @@ public sealed class CustomCommand : CommandBase<Message>
         }
         else if (parameters[0] == "test1")
         {
-            var ppCalculator = new PPCalculator(_loggerPpCalculator);
-            for (var i = 1; i <= 1000; i++)
+            var ppCalculator = new PPCalculator();
+
+            int beatmapId = 970048;
+            Stopwatch sw = Stopwatch.StartNew();
+
+            int count = 1000;
+            Parallel.For(0, count, m =>
             {
-                var calculatedPp = await ppCalculator.CalculatePpAsync(970048, 0.9889,
+                var beatmapFile = _beatmapsService.DownloadOrCacheBeatmap(beatmapId).Result;
+                var calculatedPp = ppCalculator.CalculatePpAsync(
+                    beatmapId: beatmapId,
+                    beatmapFile: beatmapFile,
+                    accuracy: 0.9889,
                     scoreMaxCombo: 1466,
                     passed: true,
                     scoreMods: [new OsuModClassic()],
                     scoreStatistics: null,
                     rulesetId: (int)Playmode.Osu,
-                    cancellationToken: Context.CancellationToken);
-                await Task.Delay(1000);
-            }
+                    cancellationToken: Context.CancellationToken).Result;
+            });
+            sw.Stop();
+
+            await Context.Update.ReplyAsync(Context.BotClient, $"pp calculation of {count} scores: {sw.ElapsedMilliseconds}ms");
+            //for (var i = 1; i <= 1000; i++)
+            //{
+            //    var beatmapFile = await _beatmapsService.DownloadOrCacheBeatmap(beatmapId);
+            //    var calculatedPp = await ppCalculator.CalculatePpAsync(
+            //        beatmapId: beatmapId, 
+            //        beatmapFile: beatmapFile,
+            //        accuracy: 0.9889,
+            //        scoreMaxCombo: 1466,
+            //        passed: true,
+            //        scoreMods: [new OsuModClassic()],
+            //        scoreStatistics: null,
+            //        rulesetId: (int)Playmode.Osu,
+            //        cancellationToken: Context.CancellationToken);
+            //    await Task.Delay(1000);
+            //}
         }
         else if (parameters[0] == "fix28112025_distinctscores")
         {
             // this id is raisy
-            var lastDbDailyStats = _dbContext.DailyStatistics.OrderBy(m => m.Id).Last();
+            var lastDbDailyStats = Context.Database.DailyStatistics.OrderBy(m => m.Id).Last();
             int oldCount = lastDbDailyStats.Scores.Count;
             lastDbDailyStats.Scores = lastDbDailyStats.Scores.DistinctBy(m => m.ScoreId).ToList();
             await Context.Update.ReplyAsync(Context.BotClient, $"Scores old count: {oldCount}\nScores new count: {lastDbDailyStats.Scores.Count}");
@@ -241,7 +268,7 @@ public sealed class CustomCommand : CommandBase<Message>
                 var catchPp = osuUsersReader.GetDouble(osuUsersReader.GetOrdinal("CatchPPValue"));
                 var maniaPp = osuUsersReader.GetDouble(osuUsersReader.GetOrdinal("ManiaPPValue"));
 
-                if (_dbContext.OsuUsers.FirstOrDefault(m => m.TelegramId == telegramId) is { } osuUser)
+                if (Context.Database.OsuUsers.FirstOrDefault(m => m.TelegramId == telegramId) is { } osuUser)
                 {
                     osuUser.OsuUserId = osuUserId;
                     osuUser.OsuUsername = osuUsername;
@@ -264,11 +291,11 @@ public sealed class CustomCommand : CommandBase<Message>
                         CatchPPValue = catchPp,
                         ManiaPPValue = maniaPp
                     };
-                    _dbContext.OsuUsers.Add(osuUser);
+                    Context.Database.OsuUsers.Add(osuUser);
                     addedOsuUsers += 1;
                 }
 
-                await _dbContext.SaveChangesAsync();
+                await Context.Database.SaveChangesAsync();
             }
 
             await using var telegramChatsCommand = sqlite.CreateCommand();
@@ -297,7 +324,7 @@ public sealed class CustomCommand : CommandBase<Message>
                 if (lastBeatmapId is DBNull || lastBeatmapId.ToString()!.Length == 2) parsedLastBeatmapId = null;
                 else parsedLastBeatmapId = lastBeatmapId is DBNull ? null : Convert.ToInt32(lastBeatmapId);
 
-                if (_dbContext.TelegramChats.FirstOrDefault(m => m.ChatId == chatId) is { } tgChat)
+                if (Context.Database.TelegramChats.FirstOrDefault(m => m.ChatId == chatId) is { } tgChat)
                 {
                     tgChat.ChatMembers = parsedChatMembers;
                     tgChat.ExcludeFromChatstats = parsedExcl;
@@ -312,11 +339,11 @@ public sealed class CustomCommand : CommandBase<Message>
                         ExcludeFromChatstats = parsedExcl,
                         LastBeatmapId = parsedLastBeatmapId
                     };
-                    _dbContext.TelegramChats.Add(tgChat);
+                    Context.Database.TelegramChats.Add(tgChat);
                     addedTelegramChats += 1;
                 }
 
-                await _dbContext.SaveChangesAsync();
+                await Context.Database.SaveChangesAsync();
             }
 
             await Context.Update.ReplyAsync(Context.BotClient,
@@ -327,27 +354,27 @@ public sealed class CustomCommand : CommandBase<Message>
             ILocalization language = new Russian();
             var waitMessage = await Context.Update.ReplyAsync(Context.BotClient, language.waiting);
 
-            if (_dbContext.DailyStatistics.Count() != 0)
+            if (Context.Database.DailyStatistics.Count() != 0)
             {
                 await waitMessage.EditAsync(Context.BotClient, $"The daily stats are not empty. Declining.");
                 return;
             }
 
-            _dbContext.UserEntity.ExecuteDelete();
-            _dbContext.ScoreEntity.ExecuteDelete();
-            _dbContext.DailyStatistics.ExecuteDelete();
-            _dbContext.SaveChanges();
+            Context.Database.UserEntity.ExecuteDelete();
+            Context.Database.ScoreEntity.ExecuteDelete();
+            Context.Database.DailyStatistics.ExecuteDelete();
+            Context.Database.SaveChanges();
 
-            int oldCount = _dbContext.DailyStatistics.Count();
+            int oldCount = Context.Database.DailyStatistics.Count();
             var allUsersFromStatistics = ScoresObserverBackgroundService.AllDailyStatistics.SelectMany(m => m.ActiveUsers).DistinctBy(m => m.UserId).ToList();
-            _dbContext.UserEntity.AddRange(allUsersFromStatistics);
-            _dbContext.SaveChanges();
+            Context.Database.UserEntity.AddRange(allUsersFromStatistics);
+            Context.Database.SaveChanges();
 
             var allScoresFromStatistics = ScoresObserverBackgroundService.AllDailyStatistics.SelectMany(m => m.Scores).DistinctBy(m => m.ScoreId).ToList();
-            _dbContext.ScoreEntity.AddRange(allScoresFromStatistics);
-            _dbContext.SaveChanges();
+            Context.Database.ScoreEntity.AddRange(allScoresFromStatistics);
+            Context.Database.SaveChanges();
 
-            _dbContext.DailyStatistics.AddRange(ScoresObserverBackgroundService.AllDailyStatistics.Select(m => new Database.Models.DailyStatistics()
+            Context.Database.DailyStatistics.AddRange(ScoresObserverBackgroundService.AllDailyStatistics.Select(m => new Database.Models.DailyStatistics()
             {
                 CountryCode = m.CountryCode,
                 DayOfStatistic = m.DayOfStatistic,
@@ -355,8 +382,8 @@ public sealed class CustomCommand : CommandBase<Message>
                 BeatmapsPlayed = m.BeatmapsPlayed,
                 Scores = m.Scores.Select(s => allScoresFromStatistics.First(m => m.ScoreId == s.ScoreId)).ToList(),
             }));
-            _dbContext.SaveChanges();
-            int newCount = _dbContext.DailyStatistics.Count();
+            Context.Database.SaveChanges();
+            int newCount = Context.Database.DailyStatistics.Count();
             await waitMessage.EditAsync(Context.BotClient, $"Added {newCount - oldCount} new daily stats");
         }
         else if (parameters[0] == "fix-daily-stats19122025")
@@ -364,18 +391,66 @@ public sealed class CustomCommand : CommandBase<Message>
             ILocalization language = new Russian();
             var waitMessage = await Context.Update.ReplyAsync(Context.BotClient, language.waiting);
 
-            var scores = _dbContext.ScoreEntity.ToList();
+            var scores = Context.Database.ScoreEntity.ToList();
             foreach (var score in scores)
             {
                 score.ScoreId = score.ScoreJson.Id!.Value;
             }
 
-            var users = _dbContext.UserEntity.ToList();
+            var users = Context.Database.UserEntity.ToList();
             foreach (var user in users)
             {
                 user.UserId = user.UserJson.Id!.Value;
             }
 
+            await waitMessage.EditAsync(Context.BotClient, $"Done");
+        }
+        else if (parameters[0] == "test2912")
+        {
+            long goal = -1001384452437;
+            long from = -1002693455476;
+
+            var chatGoal = Context.Database.TelegramChats.Find(goal);
+            var chatFrom = Context.Database.TelegramChats.Find(from);
+
+            chatGoal!.ChatMembers = chatFrom!.ChatMembers;
+            chatGoal.ExcludeFromChatstats = chatFrom.ExcludeFromChatstats;
+        }
+        else if (parameters[0] == "remove_left_chatmembers")
+        {
+            ILocalization language = new Russian();
+            var waitMessage = await Context.Update.ReplyAsync(Context.BotClient, language.waiting);
+
+            var chats = Context.Database.TelegramChats.Where(m => m.ChatMembers != null && m.ChatId < 0).ToList();
+            var chatsToDelete = new List<TelegramChat>();
+            foreach (var chat in chats)
+            {
+                var usersToDelete = new List<long>();
+                foreach (var member in chat.ChatMembers!)
+                {
+                    try
+                    {
+                        if (await Context.BotClient.GetChatMember(chat.ChatId, member) is { IsInChat: false })
+                        {
+                            usersToDelete.Add(member);
+                        }
+                    }
+                    catch (ApiRequestException ex) when (ex.Message.Contains("chat not found") || ex.Message.Contains("PARTICIPANT_ID_INVALID"))
+                    {
+                        chatsToDelete.Add(chat);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Error");
+                    }
+                    await Task.Delay(500);
+                }
+
+                chat.ChatMembers.RemoveAll(m => usersToDelete.Contains(m));
+            }
+            Context.Database.TelegramChats.RemoveRange(chatsToDelete);
+
+            await Context.Database.SaveChangesAsync();
             await waitMessage.EditAsync(Context.BotClient, $"Done");
         }
     }

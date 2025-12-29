@@ -98,11 +98,22 @@ public sealed class OsuCompareCommand : CommandBase<Message>
             user1.Username!.Length
         }.Max();
 
+        string username1 = user1.Username!;
+        if(username1.Length >= 12)
+        {
+            username1 = username1[..9] + "...";
+        }
+        string username2 = user2.Username!;
+        if (username2.Length >= 12)
+        {
+            username2 = username2[..9] + "...";
+        }
+
         var textToSend = language.command_compare.Fill([
             ruleset.ParseRulesetToGamemode(),
 
-            user1.Username.PadRight(max),
-            user2.Username!,
+            username1.PadRight(max),
+            username2,
 
             ("#" + user1.Statistics.GlobalRank.ReplaceIfNull()).PadRight(max - 1),
             $"#{user2.Statistics.GlobalRank.ReplaceIfNull()}",

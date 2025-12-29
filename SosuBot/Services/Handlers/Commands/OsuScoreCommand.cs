@@ -3,12 +3,14 @@ using OsuApi.V2;
 using OsuApi.V2.Clients.Beatmaps.HttpIO;
 using OsuApi.V2.Clients.Users.HttpIO;
 using OsuApi.V2.Users.Models;
+using SosuBot.Database.Models;
 using SosuBot.Extensions;
+using SosuBot.Helpers;
 using SosuBot.Helpers.OutputText;
-using SosuBot.Helpers.Types;
 using SosuBot.Localization;
 using SosuBot.Localization.Languages;
 using SosuBot.Services.Handlers.Abstract;
+using SosuBot.Services.Synchronization;
 using Telegram.Bot.Types;
 
 namespace SosuBot.Services.Handlers.Commands;
@@ -17,10 +19,16 @@ public sealed class OsuScoreCommand : CommandBase<Message>
 {
     public static readonly string[] Commands = ["/score", "/s"];
     private ApiV2 _osuApiV2 = null!;
+    private ScoreHelper _scoreHelper = null!;
+    private CachingHelper _cachingHelper = null!;
+    private RateLimiterFactory _rateLimiterFactory = null!;
 
     public override Task BeforeExecuteAsync()
     {
         _osuApiV2 = Context.ServiceProvider.GetRequiredService<ApiV2>();
+        _scoreHelper = Context.ServiceProvider.GetRequiredService<ScoreHelper>();
+        _cachingHelper = Context.ServiceProvider.GetRequiredService<CachingHelper>();
+        _rateLimiterFactory = Context.ServiceProvider.GetRequiredService<RateLimiterFactory>();
         return Task.CompletedTask;
     }
 
@@ -28,8 +36,12 @@ public sealed class OsuScoreCommand : CommandBase<Message>
     {
         await BeforeExecuteAsync();
 
-        if (await Context.Update.IsUserSpamming(Context.BotClient))
+        var rateLimiter = _rateLimiterFactory.Get(RateLimiterFactory.RateLimitPolicy.Command);
+        if (!await rateLimiter.IsAllowedAsync($"{Context.Update.From!.Id}"))
+        {
+            await Context.Update.ReplyAsync(Context.BotClient, "Давай не так быстро!");
             return;
+        }
 
         ILocalization language = new Russian();
         var chatInDatabase = await Context.Database.TelegramChats.FindAsync(Context.Update.Chat.Id);
@@ -54,8 +66,8 @@ public sealed class OsuScoreCommand : CommandBase<Message>
             {
                 if (beatmapId is null && beatmapsetId is not null)
                 {
-                    beatmapset = await _osuApiV2.Beatmapsets.GetBeatmapset(beatmapsetId.Value);
-                    beatmapId = beatmapset.Beatmaps![0].Id;
+                    beatmapset = await _cachingHelper.GetOrCacheBeatmapset(beatmapsetId.Value, _osuApiV2);
+                    beatmapId = beatmapset!.Beatmaps![0].Id;
                 }
             }
             else
@@ -99,8 +111,8 @@ public sealed class OsuScoreCommand : CommandBase<Message>
                 {
                     if (beatmapId is null && beatmapsetId is not null)
                     {
-                        beatmapset = await _osuApiV2.Beatmapsets.GetBeatmapset(beatmapsetId.Value);
-                        beatmapId = beatmapset.Beatmaps![0].Id;
+                        beatmapset = await _cachingHelper.GetOrCacheBeatmapset(beatmapsetId.Value, _osuApiV2);
+                        beatmapId = beatmapset!.Beatmaps![0].Id;
                     }
 
                     if (osuUserInDatabase is null)
@@ -130,8 +142,8 @@ public sealed class OsuScoreCommand : CommandBase<Message>
             {
                 if (beatmapId is null && beatmapsetId is not null)
                 {
-                    beatmapset = await _osuApiV2.Beatmapsets.GetBeatmapset(beatmapsetId.Value);
-                    beatmapId = beatmapset.Beatmaps![0].Id;
+                    beatmapset = await _cachingHelper.GetOrCacheBeatmapset(beatmapsetId.Value, _osuApiV2);
+                    beatmapId = beatmapset!.Beatmaps![0].Id;
                 }
 
                 if (parameters[0] == link.Trim())
@@ -185,13 +197,13 @@ public sealed class OsuScoreCommand : CommandBase<Message>
 
         if (scoresResponse is null)
         {
-            await waitMessage.EditAsync(Context.BotClient, language.error_noRecords);
+            await waitMessage.EditAsync(Context.BotClient, language.error_noRecords + $"\nЕсли на карте нет лидерборда, то онлайн скоров на ней нет ни у кого.");
             return;
         }
 
         if (areScoresFromOtherRuleset && scoresResponse.Scores!.Length != 0)
             beatmapPlaymode =
-                (Playmode)(await _osuApiV2.Beatmaps.GetBeatmap(beatmapId.Value))!.BeatmapExtended!.ModeInt!.Value;
+                (Playmode)(await _cachingHelper.GetOrCacheBeatmap(beatmapId.Value, _osuApiV2))!.ModeInt!.Value;
 
         var scores = scoresResponse.Scores!.GroupBy(s => string.Join("", s.Mods!.Select(m => m.Acronym)))
             .Select(m => m.MaxBy(s => s.Pp)!).OrderByDescending(m => m.Pp).ToArray();
@@ -202,9 +214,9 @@ public sealed class OsuScoreCommand : CommandBase<Message>
             return;
         }
 
-        var beatmap = (await _osuApiV2.Beatmaps.GetBeatmap(scores.First().BeatmapId!.Value))!.BeatmapExtended!;
-        if (beatmapset is null) beatmapset = await _osuApiV2.Beatmapsets.GetBeatmapset(beatmap.BeatmapsetId.Value);
-        chatInDatabase!.LastBeatmapId = beatmap.Id;
+        var beatmap = await _cachingHelper.GetOrCacheBeatmap(scores.First().BeatmapId!.Value, _osuApiV2);
+        if (beatmapset is null) beatmapset = await _cachingHelper.GetOrCacheBeatmapset(beatmap!.BeatmapsetId.Value, _osuApiV2);
+        chatInDatabase!.LastBeatmapId = beatmap!.Id;
 
         var textToSend =
             $"{UserHelper.GetUserProfileUrlWrappedInUsernameString(userResponse.UserExtend!.Id.Value, $"<b>{osuUsernameForScore}</b>")}\n\n";
@@ -212,21 +224,21 @@ public sealed class OsuScoreCommand : CommandBase<Message>
         for (var i = 0; i <= scores.Length - 1; i++)
         {
             var score = scores[i];
-            
+
             textToSend += language.command_score.Fill([
-                $"{ScoreHelper.GetScoreRankEmoji(score.Rank)}{ScoreHelper.ParseScoreRank(score.Rank!)}",
+                $"{_scoreHelper.GetScoreRankEmoji(score.Rank)}{_scoreHelper.ParseScoreRank(score.Rank!)}",
                 $"{beatmap.Url}",
-                $"{beatmapset.Title.EncodeHtml()}",
+                $"{beatmapset!.Title.EncodeHtml()}",
                 $"{beatmap.Version.EncodeHtml()}",
                 $"{beatmap.Status}",
-                $"{ScoreHelper.GetScoreStatisticsText(score.Statistics!, currentPlaymode)}",
+                $"{_scoreHelper.GetScoreStatisticsText(score.Statistics!, currentPlaymode)}",
                 $"{score.Statistics!.Miss}",
-                $"{ScoreHelper.GetFormattedNumConsideringNull(score.Accuracy * 100, round: false)}",
-                $"{ScoreHelper.GetModsText(score.Mods!)}",
+                $"{_scoreHelper.GetFormattedNumConsideringNull(score.Accuracy * 100, round: false)}",
+                $"{_scoreHelper.GetModsText(score.Mods!)}",
                 $"{score.MaxCombo}",
                 $"{beatmap.MaxCombo}",
-                $"{ScoreHelper.GetFormattedNumConsideringNull(score.Pp)}",
-                $"({score.EndedAt!.Value:dd.MM.yyyy HH:mm}) {ScoreHelper.GetScoreUrlWrappedInString(score.Id!.Value, "link")}"
+                $"{_scoreHelper.GetFormattedNumConsideringNull(score.Pp)}",
+                $"({score.EndedAt!.Value:dd.MM.yyyy HH:mm}) {_scoreHelper.GetScoreUrlWrappedInString(score.Id!.Value, "link")}"
             ]);
         }
 

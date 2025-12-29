@@ -1,6 +1,5 @@
 ﻿using SosuBot.Database.Models;
 using SosuBot.Extensions;
-using SosuBot.Helpers.Types;
 using SosuBot.Localization;
 using SosuBot.Localization.Languages;
 using SosuBot.Services.Handlers.Abstract;
@@ -11,10 +10,6 @@ namespace SosuBot.Services.Handlers.Commands;
 public sealed class OsuChatstatsCommand : CommandBase<Message>
 {
     public static readonly string[] Commands = ["/chatstats", "/stats"];
-
-    private static readonly IEqualityComparer<OsuUser> OsuUserComparer =
-        EqualityComparer<OsuUser>.Create((u1, u2) => u1?.OsuUserId == u2?.OsuUserId, u => u.GetHashCode());
-
 
     public override async Task ExecuteAsync()
     {
@@ -56,7 +51,7 @@ public sealed class OsuChatstatsCommand : CommandBase<Message>
                 foundChatMembers.Add(foundMember);
         }
 
-        foundChatMembers = foundChatMembers.Distinct(OsuUserComparer).OrderByDescending(m => m.GetPP(playmode)).Take(10)
+        foundChatMembers = foundChatMembers.DistinctBy(m => m.OsuUserId).OrderByDescending(m => m.GetPP(playmode)).Take(10)
             .ToList();
 
         var sendText = language.command_chatstats_title.Fill([playmode.ToGamemode()]);
