@@ -25,7 +25,6 @@ public sealed class MsgCommand : CommandBase<Message>
         await BeforeExecuteAsync();
 
         var osuUserInDatabase = await Context.Database.OsuUsers.FindAsync(Context.Update.From!.Id);
-
         if (osuUserInDatabase is null || !osuUserInDatabase.IsAdmin) return;
 
         var parameters = Context.Update.Text!.GetCommandParameters()!;

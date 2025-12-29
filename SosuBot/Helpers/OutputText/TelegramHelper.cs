@@ -24,20 +24,20 @@ public static class TelegramHelper
 
     private static async Task<Message> SendOrEditMessage(int messageId, long chatId,
         ITelegramBotClient botClient, string text, bool first, bool edit,
-        ParseMode parseMode = ParseMode.Html, InlineKeyboardMarkup? replyMarkup = null)
+        ParseMode parseMode = ParseMode.Html, InlineKeyboardMarkup? replyMarkup = null, bool linkPreviewEnabled = false)
     {
         if (first && edit)
             return await botClient.EditMessageText(chatId, messageId, text, parseMode,
-                linkPreviewOptions: new LinkPreviewOptions { IsDisabled = true }, replyMarkup: replyMarkup);
+                linkPreviewOptions: new LinkPreviewOptions { IsDisabled = !linkPreviewEnabled }, replyMarkup: replyMarkup);
 
         return await botClient.SendMessage(chatId, text, parseMode,
-            linkPreviewOptions: new LinkPreviewOptions { IsDisabled = true }, replyParameters: messageId,
+            linkPreviewOptions: new LinkPreviewOptions { IsDisabled = !linkPreviewEnabled }, replyParameters: messageId,
             replyMarkup: replyMarkup);
     }
 
     public static async Task<Message> SendMessageConsideringTelegramLength(int messageId, long chatId,
         ITelegramBotClient botClient, string text,
-        ParseMode parseMode = ParseMode.Html, InlineKeyboardMarkup? replyMarkup = null, bool edit = false)
+        ParseMode parseMode = ParseMode.Html, InlineKeyboardMarkup? replyMarkup = null, bool edit = false, bool linkPreviewEnabled = false)
     {
         var messagesToBeSent = text.Length / TelegramConstants.MaximumMessageLength +
                                Math.Sign(text.Length % TelegramConstants.MaximumMessageLength);
@@ -52,7 +52,7 @@ public static class TelegramHelper
 
             returnMessage = await SendOrEditMessage(messageId, chatId, botClient, textPart, !sentOrEdited, edit,
                 parseMode,
-                replyMarkup);
+                replyMarkup, linkPreviewEnabled);
             sentOrEdited = true;
         }
 
@@ -62,7 +62,7 @@ public static class TelegramHelper
     public static async Task<Message> SendMessageConsideringTelegramLengthAndSplitValue(int messageId, long chatId,
         ITelegramBotClient botClient, string text,
         ParseMode parseMode = ParseMode.Html, InlineKeyboardMarkup? replyMarkup = null, bool edit = false,
-        string splitValue = "\n\n")
+        string splitValue = "\n\n", bool linkPreviewEnabled = false)
     {
         var splittedText = text.Split(splitValue);
         var currentText = "";
@@ -70,10 +70,10 @@ public static class TelegramHelper
         for (var i = 0; i < splittedText.Length; i++)
         {
             if (i != splittedText.Length - 1 && currentText + splittedText[i] is
-                    { Length: > TelegramConstants.MaximumMessageLength })
+                { Length: > TelegramConstants.MaximumMessageLength })
             {
                 await SendOrEditMessage(messageId, chatId, botClient, currentText, !sentOrEdited, edit, parseMode,
-                    replyMarkup);
+                    replyMarkup, linkPreviewEnabled);
                 currentText = "";
                 sentOrEdited = true;
             }
@@ -82,6 +82,6 @@ public static class TelegramHelper
         }
 
         return await SendOrEditMessage(messageId, chatId, botClient, currentText, !sentOrEdited, edit, parseMode,
-            replyMarkup);
+            replyMarkup, linkPreviewEnabled);
     }
 }

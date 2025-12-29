@@ -1,8 +1,9 @@
-using System.Text.Json;
 using OsuApi.V2;
 using OsuApi.V2.Users.Models;
+using SosuBot.Database.Models;
 using SosuBot.Helpers;
 using SosuBot.Helpers.Types;
+using System.Text.Json;
 
 namespace SosuBot.Services;
 
@@ -128,7 +129,7 @@ public class UserStatisticsCacheDatabase(ApiV2 api, string? usersCachePath = nul
             }
             catch (Exception e)
             {
-                Console.WriteLine(e.Message);   
+                Console.WriteLine(e.Message);
             }
         }
     }

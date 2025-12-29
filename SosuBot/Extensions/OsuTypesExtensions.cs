@@ -6,8 +6,8 @@ using osu.Game.Rulesets.Scoring;
 using osu.Game.Rulesets.Taiko.Mods;
 using OsuApi.V2.Models;
 using OsuApi.V2.Users.Models;
+using SosuBot.Database.Models;
 using SosuBot.Helpers;
-using SosuBot.Helpers.Types;
 using Mod = osu.Game.Rulesets.Mods.Mod;
 
 namespace SosuBot.Extensions;
@@ -80,16 +80,14 @@ public static class OsuTypesExtensions
 
             var modType = foundMod.GetType();
             var osuMod = Activator.CreateInstance(modType) as Mod;
-
-            if (osuMod is ModDoubleTime dtMode && mod.Settings?.SpeedChange != null)
+            if (osuMod is ModRateAdjust rateAdjustMod && mod.Settings?.SpeedChange != null)
             {
-                dtMode.SpeedChange.Value = mod.Settings.SpeedChange.Value;
-                osuMod = dtMode;
+                rateAdjustMod.SpeedChange.Value = mod.Settings.SpeedChange.Value;
+                osuMod = rateAdjustMod;
             }
-            else if (osuMod is ModRandom rdMode && mod.Settings?.Seed != null)
+            else if (osuMod is IHasSeed seedMode && mod.Settings?.Seed != null)
             {
-                rdMode.Seed.Value = mod.Settings.Seed.Value;
-                osuMod = rdMode;
+                seedMode.Seed.Value = mod.Settings.Seed.Value;
             }
 
             osuMods.Add(osuMod!);
@@ -130,14 +128,15 @@ public static class OsuTypesExtensions
         };
     }
 
-    public static int CalculateSumOfHitResults(this Score score)
+    public static int CalculateSumOfHitResults(this Score score, Playmode playmode)
     {
-        return score.Statistics!.Perfect
+        int sum = score.Statistics!.Perfect
                + score.Statistics.Great
                + score.Statistics.Good
                + score.Statistics.Ok
                + score.Statistics.Meh
                + score.Statistics.Miss;
+        return sum;
     }
     public static int CalculateObjectsAmount(this BeatmapExtended beatmapExtended)
     {

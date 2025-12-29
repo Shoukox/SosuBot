@@ -1,4 +1,4 @@
-using SosuBot.Caching;
+using Microsoft.Extensions.Caching.Hybrid;
 using SosuBot.Database;
 using Telegram.Bot;
 
@@ -10,6 +10,6 @@ public interface ICommandContext<TUpdateType> where TUpdateType : class
     public TUpdateType Update { get; }
     public BotContext Database { get; }
     public IServiceProvider ServiceProvider { get; }
-    public RedisCaching Redis { get; }
+    public HybridCache Cache { get; }
     public CancellationToken CancellationToken { get; }
 }

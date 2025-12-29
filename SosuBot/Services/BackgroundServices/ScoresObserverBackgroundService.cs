@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Hybrid;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -8,7 +9,6 @@ using OsuApi.V2.Clients.Scores.HttpIO;
 using OsuApi.V2.Clients.Users.HttpIO;
 using OsuApi.V2.Models;
 using OsuApi.V2.Users.Models;
-using SosuBot.Caching;
 using SosuBot.Database;
 using SosuBot.Database.Models;
 using SosuBot.Extensions;
@@ -18,7 +18,6 @@ using SosuBot.Helpers.Types;
 using SosuBot.Helpers.Types.Statistics;
 using System.Collections.Concurrent;
 using System.Text.Json;
-using System.Text.Json.Serialization;
 using Telegram.Bot;
 using Telegram.Bot.Types.Enums;
 using Country = SosuBot.Helpers.Country;
@@ -27,13 +26,11 @@ namespace SosuBot.Services.BackgroundServices;
 
 public sealed class ScoresObserverBackgroundService(IServiceProvider serviceProvider) : BackgroundService
 {
-    private readonly ITelegramBotClient _botClient = serviceProvider.GetRequiredService<ITelegramBotClient>();
-    private readonly BotContext _database = serviceProvider.GetRequiredService<BotContext>();
-    private readonly ApiV2 _osuApi = serviceProvider.GetRequiredService<ApiV2>();
-    private readonly RedisCaching _caching = serviceProvider.GetRequiredService<RedisCaching>();
-
-    private readonly ILogger<ScoresObserverBackgroundService> _logger =
-        serviceProvider.GetRequiredService<ILogger<ScoresObserverBackgroundService>>();
+    private ITelegramBotClient _botClient = null!;
+    private BotContext _database = null!;
+    private ApiV2 _osuApi = null!;
+    private ScoreHelper _scoreHelper = serviceProvider.GetRequiredService<ScoreHelper>();
+    private ILogger<ScoresObserverBackgroundService> _logger = serviceProvider.GetRequiredService<ILogger<ScoresObserverBackgroundService>>();
 
     private static readonly SemaphoreSlim Semaphore = new SemaphoreSlim(1, 1);
     public static ConcurrentBag<int> ObservedUsers = new();
@@ -57,6 +54,11 @@ public sealed class ScoresObserverBackgroundService(IServiceProvider serviceProv
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
+        using var scope = serviceProvider.CreateScope();
+        _botClient = scope.ServiceProvider.GetRequiredService<ITelegramBotClient>();
+        _database = scope.ServiceProvider.GetRequiredService<BotContext>();
+        _osuApi = scope.ServiceProvider.GetRequiredService<ApiV2>();
+
         _userDatabase = new(_osuApi);
         _logger.LogInformation("Scores observer background service started");
 
@@ -178,7 +180,7 @@ public sealed class ScoresObserverBackgroundService(IServiceProvider serviceProv
 
                     if (!dailyStatistics.ActiveUsers.Any(m => m.UserId == userStatistics.User!.Id))
                     {
-                        if(_database.UserEntity.Find(userStatistics.User!.Id) is { } foundUserEntity)
+                        if (_database.UserEntity.Find(userStatistics.User!.Id) is { } foundUserEntity)
                         {
                             dailyStatistics.ActiveUsers.Add(foundUserEntity);
                         }
@@ -200,7 +202,7 @@ public sealed class ScoresObserverBackgroundService(IServiceProvider serviceProv
                         for (var i = 0; i <= 3; i++)
                         {
                             var sendText =
-                                await ScoreHelper.GetDailyStatisticsSendText((Playmode)i, dailyStatistics, _osuApi, _caching, _logger);
+                                await _scoreHelper.GetDailyStatisticsSendText((Playmode)i, dailyStatistics, _osuApi);
                             await _botClient.SendMessage(_adminTelegramId, sendText,
                                 ParseMode.Html, linkPreviewOptions: true);
                             await Task.Delay(1000);
@@ -226,7 +228,7 @@ public sealed class ScoresObserverBackgroundService(IServiceProvider serviceProv
                     _logger.LogWarning($"GetScores returned 1000+ scores in one of the modes. std={getStdScoresResponse?.Scores?.Length} taiko={getTaikoScoresResponse?.Scores?.Length} fruits={getFruitsScoresResponse?.Scores?.Length} mania={getManiaScoresResponse?.Scores?.Length}");
                 }
 
-                int stdScoresCount = getStdScoresResponse?.Scores?.Length ?? 1;
+                int stdScoresCount = Math.Max(1, getStdScoresResponse?.Scores?.Length ?? 1);
                 int delay = 3000 + 1000 * (1000 / stdScoresCount); //3sec + 1*n seconds
                 int clampedDelay = Math.Clamp(delay, 3000, 55_000);
                 _logger.LogInformation($"Processed {stdScoresCount} std scores. Next GetScores in {clampedDelay}ms.");
@@ -282,7 +284,7 @@ public sealed class ScoresObserverBackgroundService(IServiceProvider serviceProv
                                         int waitMs = 1000 + Random.Shared.Next(500, 1500);
                                         // Send it to the admin
                                         await _botClient.SendMessage(_adminTelegramId,
-                                            $"<b>{score.User?.Username}</b> set a <b>{score.Pp}pp</b> {ScoreHelper.GetScoreUrlWrappedInString(score.Id!.Value, "score!")}",
+                                            $"<b>{score.User?.Username}</b> set a <b>{score.Pp}pp</b> {_scoreHelper.GetScoreUrlWrappedInString(score.Id!.Value, "score!")}",
                                             ParseMode.Html, linkPreviewOptions: true);
                                         await Task.Delay(waitMs);
 
@@ -292,7 +294,7 @@ public sealed class ScoresObserverBackgroundService(IServiceProvider serviceProv
                                         foreach (var chat in chatsToSend)
                                         {
                                             await _botClient.SendMessage(chat.ChatId,
-                                                $"<b>{score.User?.Username}</b> set a <b>{score.Pp}pp</b> {ScoreHelper.GetScoreUrlWrappedInString(score.Id!.Value, "score!")}",
+                                                $"<b>{score.User?.Username}</b> set a <b>{score.Pp}pp</b> {_scoreHelper.GetScoreUrlWrappedInString(score.Id!.Value, "score!")}",
                                                 ParseMode.Html, linkPreviewOptions: true);
                                             await Task.Delay(waitMs);
                                         }

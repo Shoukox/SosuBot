@@ -3,7 +3,6 @@ using Microsoft.Extensions.Logging;
 using Npgsql;
 using SosuBot.Database;
 using SosuBot.Database.Models;
-using System;
 using Telegram.Bot.Types;
 
 namespace SosuBot.Extensions;
@@ -27,20 +26,22 @@ public static class BotContextExtensions
                     ChatMembers = userId is null ? [] : [userId.Value],
                     LastBeatmapId = null
                 });
-
+                await database.SaveChangesAsync();
                 return;
             }
 
             chat.ChatMembers ??= [];
-            if(leftUserId is not null)
+            if (leftUserId is not null)
             {
                 chat.ChatMembers.Remove(leftUserId.Value);
+                await database.SaveChangesAsync();
                 return;
             }
 
-            if(userId is not null && !chat.ChatMembers.Contains(userId.Value))
+            if (userId is not null && !chat.ChatMembers.Contains(userId.Value))
             {
                 chat.ChatMembers.Add(userId.Value);
+                await database.SaveChangesAsync();
             }
         }
         catch (DbUpdateException dbEx) when (dbEx.InnerException is PostgresException pe && pe.SqlState == PostgresErrorCodes.UniqueViolation)

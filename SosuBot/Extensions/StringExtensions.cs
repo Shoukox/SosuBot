@@ -1,6 +1,6 @@
-﻿using System.Web;
-using OsuApi.V2.Models;
-using SosuBot.Helpers.Types;
+﻿using OsuApi.V2.Models;
+using SosuBot.Database.Models;
+using System.Web;
 using Mod = osu.Game.Rulesets.Mods.Mod;
 
 namespace SosuBot.Extensions;
@@ -35,7 +35,7 @@ public static class StringExtensions
         if (text.Length == 0 || text[0] != '/') return null;
         return text.Split(' ', StringSplitOptions.TrimEntries)[1..];
     }
-    
+
     /// <summary>
     ///     Gets all kwargs from a string. Key can only start with a letter
     ///     Examples: mode=osu, mode=1, a=a
@@ -46,13 +46,13 @@ public static class StringExtensions
     {
         if (text.Length == 0 || text[0] != '/') return null;
         return text.Split(' ', StringSplitOptions.TrimEntries)[1..]
-            .Where(m => 
-                m.Split("=") is { } keyvalue 
-                && keyvalue.Length == 2 
-                && keyvalue.All(s => s.Length > 0) 
+            .Where(m =>
+                m.Split("=") is { } keyvalue
+                && keyvalue.Length == 2
+                && keyvalue.All(s => s.Length > 0)
                 && char.IsLetter(keyvalue[0][0])).ToArray();
     }
-    
+
     /// <summary>
     ///     Tries to convert the user's input into a <see cref="Ruleset" /> string
     /// </summary>

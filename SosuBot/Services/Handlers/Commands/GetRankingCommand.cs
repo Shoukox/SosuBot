@@ -1,12 +1,13 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using OsuApi.V2;
+using SosuBot.Database.Models;
 using SosuBot.Extensions;
 using SosuBot.Helpers;
 using SosuBot.Helpers.OutputText;
-using SosuBot.Helpers.Types;
 using SosuBot.Localization;
 using SosuBot.Localization.Languages;
 using SosuBot.Services.Handlers.Abstract;
+using SosuBot.Services.Synchronization;
 using Telegram.Bot.Types;
 
 namespace SosuBot.Services.Handlers.Commands;
@@ -15,10 +16,12 @@ public sealed class GetRankingCommand : CommandBase<Message>
 {
     public static readonly string[] Commands = ["/ranking"];
     private ApiV2 _osuApiV2 = null!;
+    private RateLimiterFactory _rateLimiterFactory = null!;
 
     public override Task BeforeExecuteAsync()
     {
         _osuApiV2 = Context.ServiceProvider.GetRequiredService<ApiV2>();
+        _rateLimiterFactory = Context.ServiceProvider.GetRequiredService<RateLimiterFactory>();
         return Task.CompletedTask;
     }
 
@@ -26,8 +29,12 @@ public sealed class GetRankingCommand : CommandBase<Message>
     {
         await BeforeExecuteAsync();
 
-        if (await Context.Update.IsUserSpamming(Context.BotClient))
+        var rateLimiter = _rateLimiterFactory.Get(RateLimiterFactory.RateLimitPolicy.Command);
+        if (!await rateLimiter.IsAllowedAsync($"{Context.Update.From!.Id}"))
+        {
+            await Context.Update.ReplyAsync(Context.BotClient, "Давай не так быстро!");
             return;
+        }
 
         ILocalization language = new Russian();
         var waitMessage = await Context.Update.ReplyAsync(Context.BotClient, language.waiting);

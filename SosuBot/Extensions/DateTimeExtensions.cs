@@ -18,14 +18,14 @@ public static class DateTimeExtensions
         switch (country)
         {
             case Country.Uzbekistan:
-            {
-                return TimeZoneInfo.ConvertTime(dateTime,
-                    TimeZoneInfo.FindSystemTimeZoneById("West Asia Standard Time"));
-            }
+                {
+                    return TimeZoneInfo.ConvertTime(dateTime,
+                        TimeZoneInfo.FindSystemTimeZoneById("West Asia Standard Time"));
+                }
             default:
-            {
-                throw new NotImplementedException();
-            }
+                {
+                    throw new NotImplementedException();
+                }
         }
     }
 }
