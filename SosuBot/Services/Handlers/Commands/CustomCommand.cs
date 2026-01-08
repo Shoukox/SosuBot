@@ -353,12 +353,6 @@ public sealed class CustomCommand : CommandBase<Message>
             ILocalization language = new Russian();
             var waitMessage = await Context.Update.ReplyAsync(Context.BotClient, language.waiting);
 
-            if (Context.Database.DailyStatistics.Count() != 0)
-            {
-                await waitMessage.EditAsync(Context.BotClient, $"The daily stats are not empty. Declining.");
-                return;
-            }
-
             Context.Database.UserEntity.ExecuteDelete();
             Context.Database.ScoreEntity.ExecuteDelete();
             Context.Database.DailyStatistics.ExecuteDelete();
