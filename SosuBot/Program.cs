@@ -24,8 +24,6 @@ namespace SosuBot;
 
 internal class Program
 {
-    private static ILogger<Program>? _logger;
-
     private static void Main(string[] args)
     {
         Run(args);
@@ -50,10 +48,9 @@ internal class Program
         var loggingFileName = "logs/{Date}.log";
         builder.Logging.AddFile(loggingFileName, LogLevel.Warning);
         builder.Logging.AddConsoleFormatter<CustomConsoleFormatter, CustomConsoleFormatterOptions>();
-        _logger = builder.Services.BuildServiceProvider().GetRequiredService<ILogger<Program>>();
 
         // Policy
-        var pollyPolicies = PollyPolicies.GetCombinedPolicy(_logger);
+        var pollyPolicies = PollyPolicies.GetCombinedPolicy();
 
         // Services
         builder.Services.Configure<BotConfiguration>(builder.Configuration.GetSection(nameof(BotConfiguration)));
@@ -132,18 +129,24 @@ internal class Program
         builder.Services.AddHostedService<ScoresObserverBackgroundService>();
 
         // Database
-        var pwFile = Environment.GetEnvironmentVariable("DB_PASSWORD_FILE")!;
-
-        var dbPassword = File.ReadAllText(pwFile).Trim();
-        var connectionString = string.Format(builder.Configuration.GetConnectionString("Postgres")!, dbPassword);
-
-        _logger.LogInformation($"Using the following connection string: {connectionString}");
+        var connectionString = builder.Configuration.GetConnectionString("Postgres")!;
+        Log($"Using the following connection string: {connectionString}");
         builder.Services.AddDbContextPool<BotContext>(options =>
             options.UseLazyLoadingProxies()
                 .UseNpgsql(connectionString, (m) => m.MapEnum<Playmode>())
                 .ConfigureWarnings(m => m.Ignore(RelationalEventId.PendingModelChangesWarning)));
 
         var app = builder.Build();
+        using (var scope = app.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<BotContext>();
+            db.Database.Migrate();
+        }
         app.Run();
+    }
+
+    private static void Log(string message)
+    {
+        Console.WriteLine($"\x1b[32m[{DateTime.Now:yyyy-MM-dd HH:mm:ss.ffff}][Program] \x1b[37m{message}\x1b[0m");
     }
 }

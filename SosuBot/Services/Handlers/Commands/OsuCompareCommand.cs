@@ -99,7 +99,7 @@ public sealed class OsuCompareCommand : CommandBase<Message>
         }.Max();
 
         string username1 = user1.Username!;
-        if(username1.Length >= 12)
+        if (username1.Length >= 12)
         {
             username1 = username1[..9] + "...";
         }

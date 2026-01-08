@@ -1,8 +1,8 @@
-﻿using System.Net;
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 using Polly;
 using Polly.Contrib.WaitAndRetry;
 using Polly.Extensions.Http;
+using System.Net;
 using ILogger = Microsoft.Extensions.Logging.ILogger;
 
 namespace SosuBot.ScoresObserver;

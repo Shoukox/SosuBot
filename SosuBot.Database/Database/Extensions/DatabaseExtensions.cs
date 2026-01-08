@@ -1,8 +1,8 @@
-﻿using System.Collections;
+﻿using Microsoft.EntityFrameworkCore;
+using SosuBot.Database.Models;
+using System.Collections;
 using System.Data;
 using System.Data.Common;
-using Microsoft.EntityFrameworkCore;
-using SosuBot.Database.Models;
 
 namespace SosuBot.Database.Extensions;
 

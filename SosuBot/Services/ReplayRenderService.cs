@@ -1,5 +1,4 @@
 ﻿using Newtonsoft.Json;
-using osu.Game.Rulesets.Osu.Skinning.Argon;
 using SosuBot.Database.Database.Models;
 using System.Net.Http.Json;
 using System.Net.Mime;

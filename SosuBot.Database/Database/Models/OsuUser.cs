@@ -1,7 +1,6 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using SosuBot.Database.Database.Models;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using SosuBot.Database.Database.Models;
-using SosuBot.Database.Models;
 
 // ReSharper disable InconsistentNaming
 

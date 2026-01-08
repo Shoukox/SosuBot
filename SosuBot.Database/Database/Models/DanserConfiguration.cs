@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace SosuBot.Database.Database.Models
+﻿namespace SosuBot.Database.Database.Models
 {
     public record DanserConfiguration
     {

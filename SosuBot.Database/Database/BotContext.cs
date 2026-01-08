@@ -16,7 +16,7 @@ public class BotContext : DbContext
 {
     public BotContext(DbContextOptions<BotContext> options) : base(options)
     {
-        
+
     }
 
     public DbSet<TelegramChat> TelegramChats { get; set; }
@@ -28,7 +28,7 @@ public class BotContext : DbContext
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
-        
+
         // Init the first admin
         modelBuilder.Entity<OsuUser>().HasData(new OsuUser
         {
