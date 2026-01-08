@@ -81,4 +81,5 @@ secrets:
 
 networks:
   app-network:
+    enable_ipv6: true
     driver: bridge
