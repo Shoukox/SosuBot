@@ -27,8 +27,6 @@
         condition: service_healthy
       redis-service: 
         condition: service_healthy
-      proxy-service:
-        condition: service_started
     networks:
       - app-network
       
@@ -74,43 +72,11 @@
       start_period: 10s
     networks:
       - app-network
-      
-
-  proxy-service:
-    image: nginx
-    volumes:
-      - type: bind
-        source: ./.proxy/nginx.conf
-        target: /etc/nginx/nginx.conf
-        read_only: true
-      - type: bind
-        source: ./.proxy/certs/authenticated_origin_pull_ca.pem
-        target: /etc/ssl/authenticated_origin_pull_ca.pem
-        read_only: true
-      - type: bind
-        source: ./.proxy/certs/shoukko.de-cf.key
-        target: /etc/ssl/shoukko.de-cf.key
-        read_only: true
-      - type: bind
-        source: ./.proxy/certs/shoukko.de-cf.pem
-        target: /etc/ssl/shoukko.de-cf.pem
-        read_only: true
-    ports:
-      - "80:80"
-      - "443:443"
-    networks:
-      - app-network
     
 
 secrets:
   db-password:
-    file: .secrets/db_password
-  redis-password:
-    file: .secrets/redis_password
-    
-
-volumes:
-  db-data:
+    file: .secrets/.db_password
     
 
 networks:

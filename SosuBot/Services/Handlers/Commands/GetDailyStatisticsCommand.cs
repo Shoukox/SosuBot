@@ -1,7 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using osu.Game.Configuration;
 using OsuApi.V2;
 using OsuApi.V2.Models;
 using SosuBot.Extensions;

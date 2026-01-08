@@ -218,7 +218,7 @@ public class OsuLastCommand(bool onlyPassed = false, bool sendCover = false) : C
                 {
                     Current = score.Pp != null ? null :
                         await ppCalculator.CalculatePpAsync(
-                             beatmapId: beatmap.Id.Value, 
+                             beatmapId: beatmap.Id.Value,
                              beatmapFile: beatmapFile,
                              accuracy: (double)score.Accuracy!,
                              scoreMaxCombo: score.MaxCombo!.Value,

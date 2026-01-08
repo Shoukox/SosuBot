@@ -1,15 +1,13 @@
-﻿using Microsoft.Extensions.Logging;
-using Polly;
+﻿using Polly;
 using Polly.Contrib.WaitAndRetry;
 using Polly.Extensions.Http;
 using System.Net;
-using ILogger = Microsoft.Extensions.Logging.ILogger;
 
 namespace SosuBot;
 
 public static class PollyPolicies
 {
-    private static IAsyncPolicy<HttpResponseMessage> GetTransientRetryPolicy(ILogger logger)
+    private static IAsyncPolicy<HttpResponseMessage> GetTransientRetryPolicy()
     {
         return HttpPolicyExtensions
             .HandleTransientHttpError()
@@ -20,25 +18,21 @@ public static class PollyPolicies
                     if (outcome.Exception != null)
                     {
                         // vollständige Exception (inkl. Stack) loggen
-                        logger.LogWarning(outcome.Exception,
-                            "Transient exception (attempt {Attempt}). Waiting {Delay} before retry. Exception: {Message}",
-                            attempt, delay, outcome.Exception.Message);
+                        Log($"Transient exception (attempt {attempt}). Waiting {delay} before retry. Exception: {outcome.Exception}");
                     }
                     else if (outcome.Result != null)
                     {
-                        logger.LogWarning(
-                            "Transient HTTP response (attempt {Attempt}). StatusCode: {StatusCode}. Waiting {Delay} before retry. ReasonPhrase: {Reason}",
-                            attempt, (int)outcome.Result.StatusCode, delay, outcome.Result.ReasonPhrase);
+                        Log($"Transient HTTP response (attempt {attempt}). StatusCode: {(int)outcome.Result.StatusCode}. Waiting {delay} before retry. ReasonPhrase: {outcome.Result.ReasonPhrase}");
                     }
                     else
                     {
-                        logger.LogWarning("Transient error (attempt {Attempt}). Waiting {Delay} before retry.", attempt, delay);
+                        Log($"Transient error (attempt {attempt}). Waiting {delay} before retry.");
                     }
                 });
     }
 
 
-    private static IAsyncPolicy<HttpResponseMessage> GetRetryAfterPolicy(ILogger logger)
+    private static IAsyncPolicy<HttpResponseMessage> GetRetryAfterPolicy()
     {
         return Policy
             .HandleResult<HttpResponseMessage>(r =>
@@ -58,21 +52,26 @@ public static class PollyPolicies
                         return delta > TimeSpan.Zero ? delta : TimeSpan.FromSeconds(1);
                     }
 
-                    logger.LogWarning("Retry-After header is present but has no Delta or Date. Using default delay.");
+                    Log("Retry-After header is present but has no Delta or Date. Using default delay.");
                     return TimeSpan.FromSeconds(10);
                 },
                 (_, timespan, retryCount, _) =>
                 {
-                    logger.LogWarning("Received 429. Retrying after {Delay} (retry {Retry}).", timespan, retryCount);
+                    Log($"Received 429. Retrying after {timespan} (retry {retryCount}).");
                     return Task.CompletedTask;
                 });
     }
 
-    public static IAsyncPolicy<HttpResponseMessage> GetCombinedPolicy(ILogger logger)
+    public static IAsyncPolicy<HttpResponseMessage> GetCombinedPolicy()
     {
-        var transientRetryPolicy = GetTransientRetryPolicy(logger);
-        var retryAfterPolicy = GetRetryAfterPolicy(logger);
+        var transientRetryPolicy = GetTransientRetryPolicy();
+        var retryAfterPolicy = GetRetryAfterPolicy();
 
         return Policy.WrapAsync(transientRetryPolicy, retryAfterPolicy);
+    }
+
+    private static void Log(string message)
+    {
+        Console.WriteLine($"\x1b[32m[{DateTime.Now:yyyy-MM-dd HH:mm:ss.ffff}][{nameof(PollyPolicies)}] \x1b[37m{message}\x1b[0m");
     }
 }

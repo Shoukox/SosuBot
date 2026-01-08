@@ -1,5 +1,4 @@
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 using osu.Game.Rulesets.Mania.Mods;
 using osu.Game.Rulesets.Osu.Mods;
 using osu.Game.Rulesets.Scoring;
@@ -146,7 +145,7 @@ public class OsuCalcManiaCommand : CommandBase<Message>
         var ppCalculator = new PPCalculator();
         var beatmapFile = await _beatmapsService.DownloadOrCacheBeatmap(beatmap.Id!.Value);
         var ppLazer = await ppCalculator.CalculatePpAsync(
-                             beatmapId: beatmap.Id!.Value, 
+                             beatmapId: beatmap.Id!.Value,
                              beatmapFile: beatmapFile,
                              accuracy: null,
                              scoreMaxCombo: beatmap.MaxCombo,
