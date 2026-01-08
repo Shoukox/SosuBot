@@ -158,7 +158,7 @@ public sealed class OpenAiService
 
         if (_openaiToken == null) _openaiToken = openAiConfig.Value.Token;
 
-        DeveloperPrompt = openAiConfig.Value.DeveloperPrompt;
+        DeveloperPrompt = File.ReadAllText("developer-prompt.txt");
         _responseClient = new OpenAIResponseClient(openAiConfig.Value.Model, _openaiToken);
     }
 
