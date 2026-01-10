@@ -300,7 +300,10 @@ public class OsuLastCommand(bool onlyPassed = false, bool sendCover = false) : C
             double? completion = (double)score.CalculateSumOfHitResults(playmode) / calculatedPp?.IfFC?.ScoreHitResultsCount * 100.0;
             if (completion == null)
             {
-                if (passed) completion = 100;
+                if (passed)
+                {
+                    completion = 100;
+                }
                 else
                 {
                     completion = score.MaxCombo / beatmapMaxCombo;
