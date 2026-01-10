@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
+using MongoDB.Bson.Serialization.Serializers;
 using OsuApi.V2;
 using SosuBot.Extensions;
 using SosuBot.Helpers.OutputText;
@@ -82,7 +83,20 @@ public sealed class ReplayRenderCommand : CommandBase<Message>
             var tgfile = await Context.BotClient.GetFile(Context.Update.ReplyToMessage.Document.FileId);
             if (tgfile.FileSize > 300 * 1024)
             {
-                await waitMessage.EditAsync(Context.BotClient, "Рендер доступен только для osu!std");
+                await waitMessage.EditAsync(Context.BotClient, "Этот реплей файл очень большой :(");
+                return;
+            }
+
+            await Context.BotClient.DownloadFile(tgfile, replayStream);
+            replayStream.Position = 0;
+        }
+        else if (Context.Update.Document != null &&
+            Context.Update.Document.FileName![^4..] == ".osr")
+        {
+            var tgfile = await Context.BotClient.GetFile(Context.Update.Document!.FileId);
+            if (tgfile.FileSize > 300 * 1024)
+            {
+                await waitMessage.EditAsync(Context.BotClient, "Этот реплей файл очень большой :(");
                 return;
             }
 
