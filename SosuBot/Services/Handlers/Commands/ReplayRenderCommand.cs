@@ -33,10 +33,10 @@ public sealed class ReplayRenderCommand : CommandBase<Message>
     {
         await BeforeExecuteAsync();
 
-        var rateLimiter = _rateLimiterFactory.Get(RateLimiterFactory.RateLimitPolicy.Command);
+        var rateLimiter = _rateLimiterFactory.Get(RateLimiterFactory.RateLimitPolicy.RenderCommand);
         if (!await rateLimiter.IsAllowedAsync($"{Context.Update.From!.Id}"))
         {
-            await Context.Update.ReplyAsync(Context.BotClient, "Давай не так быстро!");
+            await Context.Update.ReplyAsync(Context.BotClient, "Давай не так быстро! Разрешено максимум 10 запросов за 1 час.");
             return;
         }
 
