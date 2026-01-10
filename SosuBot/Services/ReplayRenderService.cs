@@ -1,4 +1,6 @@
-﻿using Newtonsoft.Json;
+﻿using Castle.Core.Logging;
+using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
 using SosuBot.Database.Database.Models;
 using System.Net.Http.Json;
 using System.Net.Mime;
@@ -10,10 +12,12 @@ namespace SosuBot.Services
     {
         private static readonly HttpClient _httpClient = new() { Timeout = TimeSpan.FromMinutes(10) };
         private readonly Uri _serverUri;
+        private readonly ILogger<ReplayRenderService> _logger;
 
-        public ReplayRenderService(Uri serverUri)
+        public ReplayRenderService(Uri serverUri, ILogger<ReplayRenderService> logger)
         {
             _serverUri = serverUri;
+            _logger = logger;
         }
 
         public Uri ServerUri => _serverUri;
@@ -24,21 +28,29 @@ namespace SosuBot.Services
             string relativePath,
             IDictionary<string, string>? headers = null)
         {
-            using var request = new HttpRequestMessage(method, new Uri(_serverUri, relativePath))
+            try
             {
-                Content = content
-            };
+                using var request = new HttpRequestMessage(method, new Uri(_serverUri, relativePath))
+                {
+                    Content = content
+                };
 
-            if (headers != null)
-            {
-                foreach (var (key, value) in headers)
-                    request.Headers.TryAddWithoutValidation(key, value);
+                if (headers != null)
+                {
+                    foreach (var (key, value) in headers)
+                        request.Headers.TryAddWithoutValidation(key, value);
+                }
+
+                using var response = await _httpClient.SendAsync(request);
+                if (!response.IsSuccessStatusCode) return default;
+
+                return await response.Content.ReadFromJsonAsync<T>();
             }
-
-            using var response = await _httpClient.SendAsync(request);
-            if (!response.IsSuccessStatusCode) return default;
-
-            return await response.Content.ReadFromJsonAsync<T>();
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "ReplayRenderService");
+                return default;
+            }
         }
 
         public async Task<RenderQueuedResponse?> QueueReplay(

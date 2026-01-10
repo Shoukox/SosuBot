@@ -18,6 +18,7 @@ using SosuBot.Services.Handlers;
 using SosuBot.Services.StartupServices;
 using SosuBot.Services.Synchronization;
 using StackExchange.Redis;
+using TagLib.Matroska;
 using Telegram.Bot;
 
 namespace SosuBot;
@@ -35,12 +36,12 @@ internal class Program
 
         // Configuration
         var configurationFileName = "appsettings.json";
-        if (!File.Exists(configurationFileName))
+        if (!System.IO.File.Exists(configurationFileName))
             throw new FileNotFoundException($"{configurationFileName} was not found!", configurationFileName);
 
         // OpenAI configuration
         var openaiConfigurationFileName = "openai-settings.json";
-        if (!File.Exists(openaiConfigurationFileName))
+        if (!System.IO.File.Exists(openaiConfigurationFileName))
             throw new FileNotFoundException($"{openaiConfigurationFileName} was not found!", configurationFileName);
         builder.Configuration.AddJsonFile(openaiConfigurationFileName, false);
 
@@ -82,7 +83,11 @@ internal class Program
         builder.Services.AddSingleton<CachingHelper>();
         builder.Services.AddSingleton<ScoreHelper>();
         builder.Services.AddSingleton<UpdateQueueService>();
-        builder.Services.AddSingleton(new ReplayRenderService(new("https://sosubot.shoukko.de"))); //https://sosubot.shoukko.de http://localhost:5000
+        builder.Services.AddSingleton(serviceProvider =>
+        {
+            var logger = serviceProvider.GetRequiredService<ILogger<ReplayRenderService>>();
+            return new ReplayRenderService(new("https://sosubot.shoukko.de"), logger); //https://sosubot.shoukko.de http://localhost:5000
+        });
         builder.Services.AddSingleton<OpenAiService>();
         builder.Services.AddSingleton<BeatmapsService>();
 
