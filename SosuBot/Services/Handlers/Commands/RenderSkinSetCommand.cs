@@ -69,7 +69,7 @@ public sealed class RenderSkinSetCommand : CommandBase<Message>
         var fileName = Context.Update.ReplyToMessage!.Document.FileName!;
         string asciiSkinName = AnyAscii.Transliteration.Transliterate(fileName);
         asciiSkinName = asciiSkinName.Substring(0, asciiSkinName.Length - 4);
-        asciiSkinName = asciiSkinName.Substring(0, Math.Min(35, asciiSkinName.Length - 1)) + ".osk";
+        asciiSkinName = asciiSkinName.Substring(0, Math.Min(44, asciiSkinName.Length - 1)) + ".osk";
         await _replayRenderService.UploadSkin(replayStream, asciiSkinName);
 
         await waitMessage.EditAsync(Context.BotClient, "Скин успешно загружен и будет использован по умолчанию!");
