@@ -14,8 +14,9 @@ public class OsuSongPreviewCallback : CommandBase<CallbackQuery>
     public override async Task ExecuteAsync()
     {
         var parameters = Context.Update.Data!.Split(' ');
-        var chatId = long.Parse(parameters[0]);
-        var beatmapsetId = int.Parse(parameters[2]);
+        var beatmapsetId = int.Parse(parameters[1]);
+
+        var chatId = Context.Update.Message!.Chat.Id;
 
         var data = await OsuHelper.GetSongPreviewAsync(beatmapsetId);
         if (data == null)

@@ -129,12 +129,12 @@ public sealed class OsuUserbestCommand : CommandBase<Message>
             new InlineKeyboardButton("Previous")
             {
                 CallbackData =
-                    $"{chatInDatabase!.ChatId} userbest previous 0 {(int)playmode} {osuUserIdForUserbest} {osuUsernameForUserbest}"
+                    $"userbest previous 0 {(int)playmode} {osuUserIdForUserbest} {osuUsernameForUserbest}"
             },
             new InlineKeyboardButton("Next")
             {
                 CallbackData =
-                    $"{chatInDatabase.ChatId} userbest next 0 {(int)playmode} {osuUserIdForUserbest} {osuUsernameForUserbest}"
+                    $"userbest next 0 {(int)playmode} {osuUserIdForUserbest} {osuUsernameForUserbest}"
             });
         await waitMessage.EditAsync(Context.BotClient, textToSend, replyMarkup: ik);
     }

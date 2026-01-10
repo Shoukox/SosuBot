@@ -1,11 +1,15 @@
-﻿using osu.Game.Rulesets.Catch.Mods;
+﻿using osu.Game.Overlays.Settings.Sections.Graphics;
+using osu.Game.Rulesets.Catch.Mods;
 using osu.Game.Rulesets.Mania.Mods;
 using osu.Game.Rulesets.Mods;
 using osu.Game.Rulesets.Osu.Mods;
 using osu.Game.Rulesets.Taiko.Mods;
+using Polly;
+using SosuBot.Database.Database.Models;
 using SosuBot.Database.Models;
 using System.Text.RegularExpressions;
 using Telegram.Bot.Types;
+using Telegram.Bot.Types.ReplyMarkups;
 
 namespace SosuBot.Helpers.OutputText;
 
@@ -145,5 +149,63 @@ public static partial class OsuHelper
         };
     }
 
+    public static InlineKeyboardMarkup GetRenderSettingsMarkup(DanserConfiguration config)
+    {
+        string hitErrorMeter = (config.HitErrorMeter ? Emojis.CheckMarkEmoji : "") + "HitErrorMeter";
+        string aimErrorMeter = (config.AimErrorMeter ? Emojis.CheckMarkEmoji : "") + "AimErrorMeter";
+        string hbBar = (config.HPBar ? Emojis.CheckMarkEmoji : "") + "HP Bar";
+        string showPP = (config.ShowPP ? Emojis.CheckMarkEmoji : "") + "Show PP";
+        string hitCounter = (config.HitCounter ? Emojis.CheckMarkEmoji : "") + "Hit Counter";
+        string ignoreFails = (config.IgnoreFailsInReplays ? Emojis.CheckMarkEmoji : "") + "Ignore Fails";
+        string video = (config.Video ? Emojis.CheckMarkEmoji : "") + "Video";
+        string storyboard = (config.Storyboard ? Emojis.CheckMarkEmoji : "") + "Storyboard";
+        string mods = (config.Mods ? Emojis.CheckMarkEmoji : "") + "Mods";
+        string keyOverlay = (config.KeyOverlay ? Emojis.CheckMarkEmoji : "") + "Keys";
+        string combo = (config.Combo ? Emojis.CheckMarkEmoji : "") + "Combo";
+        string leaderboard = (config.Leaderboard ? Emojis.CheckMarkEmoji : "") + "Leaderboard";
+        string strainGraph = (config.StrainGraph ? Emojis.CheckMarkEmoji : "") + "Strain Graph";
+        var ikm = new InlineKeyboardMarkup(
+            [
+                [
+                    InlineKeyboardButton.WithCallbackData($"Общая громкость: {config.GeneralVolume*100:00}%", $"rs general-volume")
+                ],
+                [
+                    InlineKeyboardButton.WithCallbackData($"Музыка: {config.MusicVolume*100:00}%", $"rs music-volume"),
+                    InlineKeyboardButton.WithCallbackData($"Эффекты: {config.SampleVolume*100:00}%", $"rs effects-volume")
+                ],
+                [
+                    InlineKeyboardButton.WithCallbackData($"Skin: {config.SkinName}", $"rs skin 1")
+                ],
+                [
+                    InlineKeyboardButton.WithCallbackData(hitErrorMeter, $"rs hit-error-meter"),
+                    InlineKeyboardButton.WithCallbackData(aimErrorMeter, $"rs aim-error-meter"),
+                ],
+                [
+                    InlineKeyboardButton.WithCallbackData(hbBar, $"rs hp-bar"),
+                    InlineKeyboardButton.WithCallbackData(showPP, $"rs pp"),
+                    InlineKeyboardButton.WithCallbackData(hitCounter, $"rs hit-counter"),
+                ],
+                [
+                    InlineKeyboardButton.WithCallbackData(ignoreFails, $"rs ignore-fails"),
+                    InlineKeyboardButton.WithCallbackData(video, $"rs video"),
+                    InlineKeyboardButton.WithCallbackData(storyboard, $"rs storyboard"),
+                ],
+                [
+                    InlineKeyboardButton.WithCallbackData(mods, $"rs mods"),
+                    InlineKeyboardButton.WithCallbackData(keyOverlay, $"rs key-overlay"),
+                    InlineKeyboardButton.WithCallbackData(combo, $"rs combo"),
+                ],
+                [
+                    InlineKeyboardButton.WithCallbackData(leaderboard, $"rs leaderboard"),
+                    InlineKeyboardButton.WithCallbackData(strainGraph, $"rs strain-graph"),
+                ],
+                [
+                    InlineKeyboardButton.WithCallbackData("Сбросить настройки", $"rs reset-settings"),
+                ],
+            ]
+        );
+
+        return ikm;
+    }
     public static InputFile GetBeatmapCoverPhotoAsInputFile(int beatmapsetId) => new InputFileUrl(new Uri(string.Format(OsuConstants.BeatmapsCover, beatmapsetId.ToString())));
 }

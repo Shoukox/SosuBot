@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using SosuBot.Database;
@@ -13,9 +14,11 @@ using SosuBot.Database.Models;
 namespace SosuBot.Migrations
 {
     [DbContext(typeof(BotContext))]
-    partial class BotContextModelSnapshot : ModelSnapshot
+    [Migration("20260110194045_Add_Leaderboard_StrainGraph_DanserConfiguration")]
+    partial class Add_Leaderboard_StrainGraph_DanserConfiguration
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

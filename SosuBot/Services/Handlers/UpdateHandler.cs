@@ -105,7 +105,7 @@ public class UpdateHandler(
     {
         if (callbackQuery.Data is not { } data) return;
 
-        var command = data.Split(" ")[1];
+        var command = data.Split(" ")[0];
         CommandBase<CallbackQuery> executableCommand = Callbacks.GetValueOrDefault(command, new DummyCallback());
 
         executableCommand.SetContext(

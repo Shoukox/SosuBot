@@ -164,7 +164,7 @@ public sealed class ReplayRenderCommand : CommandBase<Message>
         });
         await waitMessage.EditAsync(Context.BotClient, $"Текущее количество онлайн рендереров: {onlineRenderersCount}\n\nОчередь: {await _replayRenderService.GetWaitqueueLength(renderQueueResponse!.JobId)}\nИщем свободный рендерер...", replyMarkup: ik);
 
-        int timeoutSeconds = 180;
+        int timeoutSeconds = 360;
         DateTime startedWaiting = DateTime.Now;
         RenderJob? jobInfo = null;
 

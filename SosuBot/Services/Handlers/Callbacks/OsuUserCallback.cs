@@ -34,9 +34,10 @@ public class OsuUserCallback : CommandBase<CallbackQuery>
         ILocalization language = new Russian();
 
         var parameters = Context.Update.Data!.Split(' ');
-        var chatId = long.Parse(parameters[0]);
-        var playmode = (Playmode)int.Parse(parameters[2]);
-        var osuUsername = string.Join(' ', parameters[3..]);
+        var playmode = (Playmode)int.Parse(parameters[1]);
+        var osuUsername = string.Join(' ', parameters[2..]);
+
+        var chatId = Context.Update.Message!.Chat.Id;
 
         var user = (await _osuApiV2.Users.GetUser($"@{osuUsername}", new GetUserQueryParameters(),
             playmode.ToRuleset()))!.UserExtend!;
@@ -70,12 +71,12 @@ public class OsuUserCallback : CommandBase<CallbackQuery>
         var ik = new InlineKeyboardMarkup(new InlineKeyboardButton[][]
         {
             [
-                new InlineKeyboardButton("Standard") { CallbackData = $"{chatId} user 0 {user.Username}" },
-                new InlineKeyboardButton("Taiko") { CallbackData = $"{chatId} user 1 {user.Username}" }
+                new InlineKeyboardButton("Standard") { CallbackData = $"user 0 {user.Username}" },
+                new InlineKeyboardButton("Taiko") { CallbackData = $"user 1 {user.Username}" }
             ],
             [
-                new InlineKeyboardButton("Catch") { CallbackData = $"{chatId} user 2 {user.Username}" },
-                new InlineKeyboardButton("Mania") { CallbackData = $"{chatId} user 3 {user.Username}" }
+                new InlineKeyboardButton("Catch") { CallbackData = $"user 2 {user.Username}" },
+                new InlineKeyboardButton("Mania") { CallbackData = $"user 3 {user.Username}" }
             ]
         });
 

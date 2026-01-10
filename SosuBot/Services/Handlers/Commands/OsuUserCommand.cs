@@ -152,13 +152,12 @@ public class OsuUserCommand(bool includeIdInSearch = false) : CommandBase<Messag
         var ik = new InlineKeyboardMarkup(new InlineKeyboardButton[][]
         {
             [
-                new InlineKeyboardButton("Standard")
-                    { CallbackData = $"{Context.Update.Chat.Id} user 0 {user.Username}" },
-                new InlineKeyboardButton("Taiko") { CallbackData = $"{Context.Update.Chat.Id} user 1 {user.Username}" }
+                new InlineKeyboardButton("Standard") { CallbackData = $"user 0 {user.Username}" },
+                new InlineKeyboardButton("Taiko") { CallbackData = $"user 1 {user.Username}" }
             ],
             [
-                new InlineKeyboardButton("Catch") { CallbackData = $"{Context.Update.Chat.Id} user 2 {user.Username}" },
-                new InlineKeyboardButton("Mania") { CallbackData = $"{Context.Update.Chat.Id} user 3 {user.Username}" }
+                new InlineKeyboardButton("Catch") { CallbackData = $"user 2 {user.Username}" },
+                new InlineKeyboardButton("Mania") { CallbackData = $"user 3 {user.Username}" }
             ]
         });
 

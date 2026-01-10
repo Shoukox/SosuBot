@@ -18,7 +18,6 @@ using SosuBot.Services.Handlers;
 using SosuBot.Services.StartupServices;
 using SosuBot.Services.Synchronization;
 using StackExchange.Redis;
-using TagLib.Matroska;
 using Telegram.Bot;
 
 namespace SosuBot;
@@ -36,12 +35,12 @@ internal class Program
 
         // Configuration
         var configurationFileName = "appsettings.json";
-        if (!System.IO.File.Exists(configurationFileName))
+        if (!File.Exists(configurationFileName))
             throw new FileNotFoundException($"{configurationFileName} was not found!", configurationFileName);
 
         // OpenAI configuration
         var openaiConfigurationFileName = "openai-settings.json";
-        if (!System.IO.File.Exists(openaiConfigurationFileName))
+        if (!File.Exists(openaiConfigurationFileName))
             throw new FileNotFoundException($"{openaiConfigurationFileName} was not found!", configurationFileName);
         builder.Configuration.AddJsonFile(openaiConfigurationFileName, false);
 

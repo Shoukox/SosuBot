@@ -11,12 +11,10 @@ namespace SosuBot.Services.Handlers.Callbacks;
 public class RenderStatusCallback() : CommandBase<CallbackQuery>
 {
     public static readonly string Command = "render-status";
-    private ApiV2 _osuApiV2 = null!;
     private ReplayRenderService _replayRenderService = null!;
 
     public override Task BeforeExecuteAsync()
     {
-        _osuApiV2 = Context.ServiceProvider.GetRequiredService<ApiV2>();
         _replayRenderService = Context.ServiceProvider.GetRequiredService<ReplayRenderService>();
         return Task.CompletedTask;
     }
@@ -28,8 +26,9 @@ public class RenderStatusCallback() : CommandBase<CallbackQuery>
         ILocalization language = new Russian();
 
         var parameters = Context.Update.Data!.Split(' ');
-        var chatId = long.Parse(parameters[0]);
-        var jobId = int.Parse(parameters[2]);
+        var jobId = int.Parse(parameters[1]);
+
+        var chatId = Context.Update.Message!.Chat.Id;
 
         var renderJob = await _replayRenderService.GetRenderJobInfo(jobId);
         if (renderJob == null)
