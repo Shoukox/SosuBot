@@ -148,7 +148,7 @@ public sealed class ReplayRenderCommand : CommandBase<Message>
         {
             InlineKeyboardButton.WithCallbackData("Статус", $"{chatInDatabase!.ChatId} render-status {renderQueueResponse!.JobId}")
         });
-        await waitMessage.EditAsync(Context.BotClient, $"Текущее количество онлайн рендереров: {onlineRenderersCount}\nРендер в процессе...", replyMarkup: ik);
+        await waitMessage.EditAsync(Context.BotClient, $"Текущее количество онлайн рендереров: {onlineRenderersCount}\n\nОчередь: {await _replayRenderService.GetWaitqueueLength(renderQueueResponse!.JobId)}\nИщем свободный рендерер...", replyMarkup: ik);
 
         int timeoutSeconds = 150;
         DateTime startedWaiting = DateTime.Now;
@@ -168,19 +168,23 @@ public sealed class ReplayRenderCommand : CommandBase<Message>
                 }
                 else
                 {
-                    await waitMessage.EditAsync(Context.BotClient, $"Текущее количество онлайн рендереров: {onlineRenderersCount}\nРендер в процессе...", replyMarkup: ik);
+                    await waitMessage.EditAsync(Context.BotClient, $"Текущее количество онлайн рендереров: {onlineRenderersCount}\n\nОчередь: {await _replayRenderService.GetWaitqueueLength(jobInfo!.JobId)}\nИщем свободный рендерер...", replyMarkup: ik);
                 }
             }
             jobInfo = await _replayRenderService.GetRenderJobInfo(renderQueueResponse!.JobId);
-            if (jobInfo!.RenderingBy != -1)
+            if (!rendererGotThisJob && jobInfo!.RenderingBy != -1)
             {
                 rendererGotThisJob = true;
+                await Task.Delay(1000 + Random.Shared.Next(500, 1500));
+
+                var currentRenderer = currentOnlineRenderers.First(m => m.RendererId == jobInfo.RenderingBy);
+                await waitMessage.EditAsync(Context.BotClient, $"Текущее количество онлайн рендереров: {onlineRenderersCount}\n\n<b>Рендерер:</b> {currentRenderer.RendererName}\n<b>Видеокарта</b>: {currentRenderer.UsedGPU}\nРендер в процессе...", replyMarkup: ik);
             }
 
             if (rendererGotThisJob && jobInfo!.RenderingBy == -1)
             {
                 rendererGotThisJob = false;
-                await waitMessage.EditAsync(Context.BotClient, $"Текущее количество онлайн рендереров: {onlineRenderersCount}\nИщем нового рендерера... Рендер в процессе...", replyMarkup: ik);
+                await waitMessage.EditAsync(Context.BotClient, $"Текущее количество онлайн рендереров: {onlineRenderersCount}\n\nИщем нового рендерера...", replyMarkup: ik);
             }
 
             if (jobInfo!.IsComplete || jobInfo.IsSuccess) break;

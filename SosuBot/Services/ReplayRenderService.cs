@@ -101,6 +101,17 @@ namespace SosuBot.Services
             return result;
         }
 
+        public async Task<int> GetWaitqueueLength(int jobId)
+        {
+            var result = await MakeRequest<int>(
+                HttpMethod.Get,
+                null,
+                $"render/get-waitqueue-length?job-id={jobId}",
+                null);
+
+            return result;
+        }
+
         public async Task<IEnumerable<string>?> GetAvailableSkins()
         {
             var result = await MakeRequest<IEnumerable<string>>(
@@ -131,6 +142,8 @@ namespace SosuBot.Services
         {
             public int RendererId { get; set; }
             public DateTime LastSeen { get; set; } = DateTime.MinValue;
+            public string RendererName { get; set; } = "undefined";
+            public string UsedGPU { get; set; } = "undefined";
         }
 
         public class RenderJob
