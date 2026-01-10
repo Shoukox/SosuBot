@@ -82,7 +82,7 @@ internal class Program
         builder.Services.AddSingleton<CachingHelper>();
         builder.Services.AddSingleton<ScoreHelper>();
         builder.Services.AddSingleton<UpdateQueueService>();
-        builder.Services.AddSingleton(new ReplayRenderService(new("http://localhost:5000")));
+        builder.Services.AddSingleton(new ReplayRenderService(new("http://localhost:5000"))); //https://sosubot.shoukko.de http://localhost:5000
         builder.Services.AddSingleton<OpenAiService>();
         builder.Services.AddSingleton<BeatmapsService>();
 
