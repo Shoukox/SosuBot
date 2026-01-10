@@ -15,6 +15,7 @@ using SosuBot.Helpers.Comparers;
 using SosuBot.Helpers.OutputText;
 using SosuBot.Helpers.Types;
 using SosuBot.Helpers.Types.Statistics;
+using StackExchange.Redis;
 using System.Collections.Concurrent;
 using System.Text.Json;
 using Telegram.Bot;
@@ -67,7 +68,6 @@ public sealed class ScoresObserverBackgroundService(IServiceProvider serviceProv
                 .TelegramId;
 
             await SetupObserverList();
-            await LoadDailyStatistics();
 
             await Task.WhenAll(
                 ObserveScores(stoppingToken),
@@ -84,6 +84,9 @@ public sealed class ScoresObserverBackgroundService(IServiceProvider serviceProv
 
     private async Task ObserveScoresGetScores(CancellationToken stoppingToken)
     {
+        await LoadDailyStatistics();
+        await _userDatabase.CacheIfNeeded();
+
         DailyStatistics dailyStatistics;
         if (_database.DailyStatistics.Count() > 0 && _database.DailyStatistics.OrderBy(m => m.Id).Last().DayOfStatistic.Day == DateTime.UtcNow.ChangeTimezone(Country.Uzbekistan).Day)
         {
@@ -166,6 +169,8 @@ public sealed class ScoresObserverBackgroundService(IServiceProvider serviceProv
                     return scoreDateIsOk && isUzPlayer;
                 }).ToArray();
 
+                var a = allOsuScores.FirstOrDefault(m => m.UserId == 15319810);
+
                 foreach (var score in uzScores)
                 {
                     var userStatistics = await _userDatabase.GetUserStatistics(score.UserId!.Value);
@@ -175,7 +180,10 @@ public sealed class ScoresObserverBackgroundService(IServiceProvider serviceProv
                         continue;
                     }
 
-                    dailyStatistics.Scores.Add(new ScoreEntity() { ScoreId = score.Id!.Value, ScoreJson = score });
+                    if (!dailyStatistics.Scores.Any(m => m.ScoreId == score.Id!.Value))
+                    {
+                        dailyStatistics.Scores.Add(new ScoreEntity() { ScoreId = score.Id!.Value, ScoreJson = score });
+                    }
 
                     if (!dailyStatistics.ActiveUsers.Any(m => m.UserId == userStatistics.User!.Id))
                     {
@@ -190,7 +198,9 @@ public sealed class ScoresObserverBackgroundService(IServiceProvider serviceProv
                     }
 
                     if (!dailyStatistics.BeatmapsPlayed.Any(m => m == score.BeatmapId!.Value))
+                    {
                         dailyStatistics.BeatmapsPlayed.Add(score.BeatmapId!.Value);
+                    }
                 }
 
                 // New day => send statistics
@@ -231,7 +241,7 @@ public sealed class ScoresObserverBackgroundService(IServiceProvider serviceProv
                 int delay = 3000 + 1000 * (1000 / stdScoresCount); //3sec + 1*n seconds
                 int clampedDelay = Math.Clamp(delay, 3000, 55_000);
                 _logger.LogInformation($"Processed {stdScoresCount} std scores. Next GetScores in {clampedDelay}ms.");
-                _database.SaveChanges();
+                await _database.SaveChangesAsync();
 
                 await Task.Delay(clampedDelay);
                 counter++;

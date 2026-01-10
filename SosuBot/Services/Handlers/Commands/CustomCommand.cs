@@ -446,5 +446,22 @@ public sealed class CustomCommand : CommandBase<Message>
             await Context.Database.SaveChangesAsync();
             await waitMessage.EditAsync(Context.BotClient, $"Done");
         }
+        else if (parameters[0] == "fix_user_entities10012026")
+        {
+            var usersDatabase = new UserStatisticsCacheDatabase(_osuApiV2);
+            foreach (var userEntity in Context.Database.UserEntity)
+            {
+                var ue = (await usersDatabase.GetUserStatistics(userEntity.UserId));
+                if (ue is null)
+                {
+                    Context.Database.UserEntity.Remove(userEntity);
+                }
+                else
+                {
+                    userEntity.UserJson = (await usersDatabase.GetUserStatistics(userEntity.UserId))!.User!;
+                }
+            }
+            await Context.Database.SaveChangesAsync();
+        }
     }
 }
