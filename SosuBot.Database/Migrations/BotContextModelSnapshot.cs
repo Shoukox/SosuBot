@@ -40,7 +40,7 @@ namespace SosuBot.Migrations
 
                     b.HasIndex("DailyStatisticsId");
 
-                    b.ToTable("DailyStatisticsUserEntity", (string)null);
+                    b.ToTable("DailyStatisticsUserEntity");
                 });
 
             modelBuilder.Entity("SosuBot.Database.Models.DailyStatistics", b =>
@@ -64,7 +64,7 @@ namespace SosuBot.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("DailyStatistics", (string)null);
+                    b.ToTable("DailyStatistics");
                 });
 
             modelBuilder.Entity("SosuBot.Database.Models.OsuUser", b =>
@@ -104,7 +104,7 @@ namespace SosuBot.Migrations
 
                     b.HasKey("TelegramId");
 
-                    b.ToTable("OsuUsers", (string)null);
+                    b.ToTable("OsuUsers");
 
                     b.HasData(
                         new
@@ -116,7 +116,7 @@ namespace SosuBot.Migrations
                             OsuMode = Playmode.Osu,
                             OsuUserId = 15319810L,
                             OsuUsername = "Shoukko",
-                            RenderSettings = "{\"Encoder\":\"h264_nvenc\",\"SkinName\":\"default\",\"GeneralVolume\":0.5,\"MusicVolume\":0.5,\"SampleVolume\":0.5,\"HitErrorMeter\":false,\"AimErrorMeter\":false,\"HPBar\":true,\"ShowPP\":false,\"HitCounter\":false,\"IgnoreFailsInReplays\":false,\"Video\":false,\"Storyboard\":false}",
+                            RenderSettings = "{\"VideoWidth\":1280,\"VideoHeight\":720,\"Encoder\":\"h264_nvenc\",\"SkinName\":\"default\",\"GeneralVolume\":0.5,\"MusicVolume\":0.5,\"SampleVolume\":0.5,\"HitErrorMeter\":false,\"AimErrorMeter\":false,\"HPBar\":true,\"ShowPP\":false,\"HitCounter\":false,\"IgnoreFailsInReplays\":false,\"Video\":false,\"Storyboard\":false,\"Mods\":false,\"KeyOverlay\":false,\"Combo\":false,\"Leaderboard\":false,\"StrainGraph\":true}",
                             StdPPValue = 0.0,
                             TaikoPPValue = 0.0
                         });
@@ -138,7 +138,7 @@ namespace SosuBot.Migrations
 
                     b.HasIndex("DailyStatisticsId");
 
-                    b.ToTable("ScoreEntity", (string)null);
+                    b.ToTable("ScoreEntity");
                 });
 
             modelBuilder.Entity("SosuBot.Database.Models.TelegramChat", b =>
@@ -160,7 +160,7 @@ namespace SosuBot.Migrations
 
                     b.HasKey("ChatId");
 
-                    b.ToTable("TelegramChats", (string)null);
+                    b.ToTable("TelegramChats");
                 });
 
             modelBuilder.Entity("SosuBot.Database.Models.UserEntity", b =>
@@ -174,7 +174,7 @@ namespace SosuBot.Migrations
 
                     b.HasKey("UserId");
 
-                    b.ToTable("UserEntity", (string)null);
+                    b.ToTable("UserEntity");
                 });
 
             modelBuilder.Entity("DailyStatisticsUserEntity", b =>

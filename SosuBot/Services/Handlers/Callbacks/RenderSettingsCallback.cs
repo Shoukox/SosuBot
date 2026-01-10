@@ -2,6 +2,7 @@
 using SosuBot.Database.Models;
 using SosuBot.Extensions;
 using SosuBot.Helpers;
+using SosuBot.Helpers.OutputText;
 using SosuBot.Localization;
 using SosuBot.Localization.Languages;
 using SosuBot.Services.Handlers.Abstract;
@@ -34,12 +35,14 @@ public class RenderSettingsCallback() : CommandBase<CallbackQuery>
         ILocalization language = new Russian();
 
         var parameters = Context.Update.Data!.Split(' ');
-        _chatId = long.Parse(parameters[0]);
-        var settingName = parameters[2];
+        var settingName = parameters[1];
+
+        _chatId = Context.Update.Message!.Chat.Id;
+
         string? settingValue = null;
         if (parameters.Length >= 3)
         {
-            settingValue = string.Join(" ", parameters[3..]);
+            settingValue = string.Join(" ", parameters[2..]);
         }
 
         if (_chatId != Context.Update.From.Id)
@@ -73,6 +76,8 @@ public class RenderSettingsCallback() : CommandBase<CallbackQuery>
             "mods" => Mods,
             "key-overlay" => KeyOverlay,
             "combo" => Combo,
+            "leaderboard" => Leaderboard,
+            "strain-graph" => StrainGraph,
             "home" => Home,
             "reset-settings" => ResetSettings,
             // setters
@@ -93,63 +98,7 @@ public class RenderSettingsCallback() : CommandBase<CallbackQuery>
     }
     async Task Home()
     {
-        string hitErrorMeter = (_osuUser.RenderSettings.HitErrorMeter ? Emojis.CheckMarkEmoji : "") + "HitErrorMeter";
-        string aimErrorMeter = (_osuUser.RenderSettings.AimErrorMeter ? Emojis.CheckMarkEmoji : "") + "AimErrorMeter";
-        string hbBar = (_osuUser.RenderSettings.HPBar ? Emojis.CheckMarkEmoji : "") + "HP Bar";
-        string showPP = (_osuUser.RenderSettings.ShowPP ? Emojis.CheckMarkEmoji : "") + "Show PP";
-        string hitCounter = (_osuUser.RenderSettings.HitCounter ? Emojis.CheckMarkEmoji : "") + "Hit Counter";
-        string ignoreFails = (_osuUser.RenderSettings.IgnoreFailsInReplays ? Emojis.CheckMarkEmoji : "") + "Ignore Fails";
-        string video = (_osuUser.RenderSettings.Video ? Emojis.CheckMarkEmoji : "") + "Video";
-        string storyboard = (_osuUser.RenderSettings.Storyboard ? Emojis.CheckMarkEmoji : "") + "Storyboard";
-        string mods = (_osuUser.RenderSettings.Mods ? Emojis.CheckMarkEmoji : "") + "Mods";
-        string keyOverlay = (_osuUser.RenderSettings.KeyOverlay ? Emojis.CheckMarkEmoji : "") + "Keys";
-        string combo = (_osuUser.RenderSettings.Combo ? Emojis.CheckMarkEmoji : "") + "Combo";
-        var ikm = new InlineKeyboardMarkup(
-            new[] {
-                new[]
-                {
-                    InlineKeyboardButton.WithCallbackData($"Общая громкость: {_osuUser.RenderSettings.GeneralVolume*100:00}%", $"{_chatId} rs general-volume")
-                },
-                new[]
-                {
-                    InlineKeyboardButton.WithCallbackData($"Музыка: {_osuUser.RenderSettings.MusicVolume*100:00}%", $"{_chatId} rs music-volume"),
-                    InlineKeyboardButton.WithCallbackData($"Эффекты: {_osuUser.RenderSettings.SampleVolume*100:00}%", $"{_chatId} rs effects-volume")
-                },
-                new[]
-                {
-                    InlineKeyboardButton.WithCallbackData($"Skin: {_osuUser.RenderSettings.SkinName}", $"{_chatId} rs skin 1")
-                },
-                new[]
-                {
-                    InlineKeyboardButton.WithCallbackData(hitErrorMeter, $"{_chatId} rs hit-error-meter"),
-                    InlineKeyboardButton.WithCallbackData(aimErrorMeter, $"{_chatId} rs aim-error-meter"),
-                },
-                new[]
-                {
-                    InlineKeyboardButton.WithCallbackData(hbBar, $"{_chatId} rs hp-bar"),
-                    InlineKeyboardButton.WithCallbackData(showPP, $"{_chatId} rs pp"),
-                    InlineKeyboardButton.WithCallbackData(hitCounter, $"{_chatId} rs hit-counter"),
-                },
-                new[]
-                {
-                    InlineKeyboardButton.WithCallbackData(ignoreFails, $"{_chatId} rs ignore-fails"),
-                    InlineKeyboardButton.WithCallbackData(video, $"{_chatId} rs video"),
-                    InlineKeyboardButton.WithCallbackData(storyboard, $"{_chatId} rs storyboard"),
-                },
-                new[]
-                {
-                    InlineKeyboardButton.WithCallbackData(mods, $"{_chatId} rs mods"),
-                    InlineKeyboardButton.WithCallbackData(keyOverlay, $"{_chatId} rs key-overlay"),
-                    InlineKeyboardButton.WithCallbackData(combo, $"{_chatId} rs combo"),
-                },
-                new[]
-                {
-                    InlineKeyboardButton.WithCallbackData("Сбросить настройки", $"{_chatId} rs reset-settings"),
-                },
-            }
-        );
-
-        await Context.BotClient.EditMessageText(_chatId, Context.Update.Message!.Id, "Настройки рендера", replyMarkup: ikm);
+        await Context.BotClient.EditMessageText(_chatId, Context.Update.Message!.Id, "Настройки рендера", replyMarkup: OsuHelper.GetRenderSettingsMarkup(_osuUser.RenderSettings));
     }
 
     async Task GeneralVolume()
@@ -162,21 +111,21 @@ public class RenderSettingsCallback() : CommandBase<CallbackQuery>
         var ikm = new InlineKeyboardMarkup(
             [
                 [
-                    InlineKeyboardButton.WithCallbackData(percentage[0], $"{_chatId} rs set-general-volume 0.1"),
-                    InlineKeyboardButton.WithCallbackData(percentage[1], $"{_chatId} rs set-general-volume 0.2"),
-                    InlineKeyboardButton.WithCallbackData(percentage[2], $"{_chatId} rs set-general-volume 0.3"),
-                    InlineKeyboardButton.WithCallbackData(percentage[3], $"{_chatId} rs set-general-volume 0.4"),
-                    InlineKeyboardButton.WithCallbackData(percentage[4], $"{_chatId} rs set-general-volume 0.5"),
+                    InlineKeyboardButton.WithCallbackData(percentage[0], $"rs set-general-volume 0.1"),
+                    InlineKeyboardButton.WithCallbackData(percentage[1], $"rs set-general-volume 0.2"),
+                    InlineKeyboardButton.WithCallbackData(percentage[2], $"rs set-general-volume 0.3"),
+                    InlineKeyboardButton.WithCallbackData(percentage[3], $"rs set-general-volume 0.4"),
+                    InlineKeyboardButton.WithCallbackData(percentage[4], $"rs set-general-volume 0.5"),
                 ],
                 [
-                    InlineKeyboardButton.WithCallbackData(percentage[5], $"{_chatId} rs set-general-volume 0.6"),
-                    InlineKeyboardButton.WithCallbackData(percentage[6], $"{_chatId} rs set-general-volume 0.7"),
-                    InlineKeyboardButton.WithCallbackData(percentage[7], $"{_chatId} rs set-general-volume 0.8"),
-                    InlineKeyboardButton.WithCallbackData(percentage[8], $"{_chatId} rs set-general-volume 0.9"),
-                    InlineKeyboardButton.WithCallbackData(percentage[9], $"{_chatId} rs set-general-volume 1.0"),
+                    InlineKeyboardButton.WithCallbackData(percentage[5], $"rs set-general-volume 0.6"),
+                    InlineKeyboardButton.WithCallbackData(percentage[6], $"rs set-general-volume 0.7"),
+                    InlineKeyboardButton.WithCallbackData(percentage[7], $"rs set-general-volume 0.8"),
+                    InlineKeyboardButton.WithCallbackData(percentage[8], $"rs set-general-volume 0.9"),
+                    InlineKeyboardButton.WithCallbackData(percentage[9], $"rs set-general-volume 1.0"),
                 ],
                 [
-                    InlineKeyboardButton.WithCallbackData("Назад", $"{_chatId} rs home"),
+                    InlineKeyboardButton.WithCallbackData("Назад", $"rs home"),
                 ],
             ]
         );
@@ -202,21 +151,21 @@ public class RenderSettingsCallback() : CommandBase<CallbackQuery>
         var ikm = new InlineKeyboardMarkup(
             [
                 [
-                    InlineKeyboardButton.WithCallbackData(percentage[0], $"{_chatId} rs set-music-volume 0.1"),
-                    InlineKeyboardButton.WithCallbackData(percentage[1], $"{_chatId} rs set-music-volume 0.2"),
-                    InlineKeyboardButton.WithCallbackData(percentage[2], $"{_chatId} rs set-music-volume 0.3"),
-                    InlineKeyboardButton.WithCallbackData(percentage[3], $"{_chatId} rs set-music-volume 0.4"),
-                    InlineKeyboardButton.WithCallbackData(percentage[4], $"{_chatId} rs set-music-volume 0.5"),
+                    InlineKeyboardButton.WithCallbackData(percentage[0], $"rs set-music-volume 0.1"),
+                    InlineKeyboardButton.WithCallbackData(percentage[1], $"rs set-music-volume 0.2"),
+                    InlineKeyboardButton.WithCallbackData(percentage[2], $"rs set-music-volume 0.3"),
+                    InlineKeyboardButton.WithCallbackData(percentage[3], $"rs set-music-volume 0.4"),
+                    InlineKeyboardButton.WithCallbackData(percentage[4], $"rs set-music-volume 0.5"),
                 ],
                 [
-                    InlineKeyboardButton.WithCallbackData(percentage[5], $"{_chatId} rs set-music-volume 0.6"),
-                    InlineKeyboardButton.WithCallbackData(percentage[6], $"{_chatId} rs set-music-volume 0.7"),
-                    InlineKeyboardButton.WithCallbackData(percentage[7], $"{_chatId} rs set-music-volume 0.8"),
-                    InlineKeyboardButton.WithCallbackData(percentage[8], $"{_chatId} rs set-music-volume 0.9"),
-                    InlineKeyboardButton.WithCallbackData(percentage[9], $"{_chatId} rs set-music-volume 1.0"),
+                    InlineKeyboardButton.WithCallbackData(percentage[5], $"rs set-music-volume 0.6"),
+                    InlineKeyboardButton.WithCallbackData(percentage[6], $"rs set-music-volume 0.7"),
+                    InlineKeyboardButton.WithCallbackData(percentage[7], $"rs set-music-volume 0.8"),
+                    InlineKeyboardButton.WithCallbackData(percentage[8], $"rs set-music-volume 0.9"),
+                    InlineKeyboardButton.WithCallbackData(percentage[9], $"rs set-music-volume 1.0"),
                 ],
                 [
-                    InlineKeyboardButton.WithCallbackData("Назад", $"{_chatId} rs home"),
+                    InlineKeyboardButton.WithCallbackData("Назад", $"rs home"),
                 ],
             ]
         );
@@ -242,21 +191,21 @@ public class RenderSettingsCallback() : CommandBase<CallbackQuery>
         var ikm = new InlineKeyboardMarkup(
             [
                 [
-                    InlineKeyboardButton.WithCallbackData(percentage[0], $"{_chatId} rs set-effects-volume 0.1"),
-                    InlineKeyboardButton.WithCallbackData(percentage[1], $"{_chatId} rs set-effects-volume 0.2"),
-                    InlineKeyboardButton.WithCallbackData(percentage[2], $"{_chatId} rs set-effects-volume 0.3"),
-                    InlineKeyboardButton.WithCallbackData(percentage[3], $"{_chatId} rs set-effects-volume 0.4"),
-                    InlineKeyboardButton.WithCallbackData(percentage[4], $"{_chatId} rs set-effects-volume 0.5"),
+                    InlineKeyboardButton.WithCallbackData(percentage[0], $"rs set-effects-volume 0.1"),
+                    InlineKeyboardButton.WithCallbackData(percentage[1], $"rs set-effects-volume 0.2"),
+                    InlineKeyboardButton.WithCallbackData(percentage[2], $"rs set-effects-volume 0.3"),
+                    InlineKeyboardButton.WithCallbackData(percentage[3], $"rs set-effects-volume 0.4"),
+                    InlineKeyboardButton.WithCallbackData(percentage[4], $"rs set-effects-volume 0.5"),
                 ],
                 [
-                    InlineKeyboardButton.WithCallbackData(percentage[5], $"{_chatId} rs set-effects-volume 0.6"),
-                    InlineKeyboardButton.WithCallbackData(percentage[6], $"{_chatId} rs set-effects-volume 0.7"),
-                    InlineKeyboardButton.WithCallbackData(percentage[7], $"{_chatId} rs set-effects-volume 0.8"),
-                    InlineKeyboardButton.WithCallbackData(percentage[8], $"{_chatId} rs set-effects-volume 0.9"),
-                    InlineKeyboardButton.WithCallbackData(percentage[9], $"{_chatId} rs set-effects-volume 1.0"),
+                    InlineKeyboardButton.WithCallbackData(percentage[5], $"rs set-effects-volume 0.6"),
+                    InlineKeyboardButton.WithCallbackData(percentage[6], $"rs set-effects-volume 0.7"),
+                    InlineKeyboardButton.WithCallbackData(percentage[7], $"rs set-effects-volume 0.8"),
+                    InlineKeyboardButton.WithCallbackData(percentage[8], $"rs set-effects-volume 0.9"),
+                    InlineKeyboardButton.WithCallbackData(percentage[9], $"rs set-effects-volume 1.0"),
                 ],
                 [
-                    InlineKeyboardButton.WithCallbackData("Назад", $"{_chatId} rs home"),
+                    InlineKeyboardButton.WithCallbackData("Назад", $"rs home"),
                 ],
             ]
         );
@@ -304,14 +253,14 @@ public class RenderSettingsCallback() : CommandBase<CallbackQuery>
         string renderSkinNameNoOsk = _osuUser.RenderSettings.SkinName.EndsWith(".osk") ? _osuUser.RenderSettings.SkinName[..^4] : _osuUser.RenderSettings.SkinName;
         var availableSkinsAsIkm = availableSkins.Select(m => m.EndsWith(".osk") ? m[..^4] : m).Select(m => new InlineKeyboardButton[]
         {
-            InlineKeyboardButton.WithCallbackData(renderSkinNameNoOsk == m ? Emojis.CheckMarkEmoji + m : m, $"{_chatId} rs set-skin {page} {m}")
+            InlineKeyboardButton.WithCallbackData(renderSkinNameNoOsk == m ? Emojis.CheckMarkEmoji + m : m, $"rs set-skin {page} {m}")
         });
 
         var ikm = new InlineKeyboardMarkup(
            [.. availableSkinsAsIkm,
-            [InlineKeyboardButton.WithCallbackData("<", $"{_chatId} rs skin {page-1}"), InlineKeyboardButton.WithCallbackData($"{page}/{totalPages}", $"{_chatId} dummy"), InlineKeyboardButton.WithCallbackData(">", $"{_chatId} rs skin {page+1}")],
-            [InlineKeyboardButton.WithCallbackData("Выбрать свой скин", $"{_chatId} rs set-custom-skin")],
-            [InlineKeyboardButton.WithCallbackData("Назад", $"{_chatId} rs home")]
+            [InlineKeyboardButton.WithCallbackData("<", $"rs skin {page-1}"), InlineKeyboardButton.WithCallbackData($"{page}/{totalPages}", $"dummy"), InlineKeyboardButton.WithCallbackData(">", $"rs skin {page+1}")],
+            [InlineKeyboardButton.WithCallbackData("Выбрать свой скин", $"rs set-custom-skin")],
+            [InlineKeyboardButton.WithCallbackData("Назад", $"rs home")]
            ]
         );
         await Context.BotClient.EditMessageText(_chatId, Context.Update.Message!.Id, "Выбрать скин", replyMarkup: ikm);
@@ -394,6 +343,18 @@ public class RenderSettingsCallback() : CommandBase<CallbackQuery>
     async Task Combo()
     {
         _osuUser.RenderSettings.Combo = !_osuUser.RenderSettings.Combo;
+        await Home();
+    }
+
+    async Task Leaderboard()
+    {
+        _osuUser.RenderSettings.Leaderboard = !_osuUser.RenderSettings.Leaderboard;
+        await Home();
+    }
+
+    async Task StrainGraph()
+    {
+        _osuUser.RenderSettings.StrainGraph = !_osuUser.RenderSettings.StrainGraph;
         await Home();
     }
 }

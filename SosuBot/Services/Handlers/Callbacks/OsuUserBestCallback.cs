@@ -35,16 +35,17 @@ public class OsuUserBestCallback : CommandBase<CallbackQuery>
         ILocalization language = new Russian();
 
         var parameters = Context.Update.Data!.Split(' ');
-        var chatId = long.Parse(parameters[0]);
-        var directionOfPaging = parameters[2];
-        var page = int.Parse(parameters[3]);
-        var playmode = (Playmode)int.Parse(parameters[4]);
-        var osuUserId = long.Parse(parameters[5]);
-        var osuUsername = string.Join(" ", parameters[6..]);
+        var directionOfPaging = parameters[1];
+        var page = int.Parse(parameters[2]);
+        var playmode = (Playmode)int.Parse(parameters[3]);
+        var osuUserId = long.Parse(parameters[4]);
+        var osuUsername = string.Join(" ", parameters[5..]);
+
+        var chatId = Context.Update.Message!.Chat.Id;
 
         Score[] scores;
         GetUserScoresResponse userScoreResponse;
-        int offset;
+        int offset = 0;
 
         if (directionOfPaging == "next")
         {
@@ -53,19 +54,23 @@ public class OsuUserBestCallback : CommandBase<CallbackQuery>
         }
         else if (directionOfPaging == "previous")
         {
-            if (page == 0) return;
+            if (page == 0)
+            {
+                await Context.Update.AnswerAsync(Context.BotClient);
+                return;
+            }
             offset = 5 * (page - 1);
             page -= 1;
-        }
-        else
-        {
-            throw new NotImplementedException();
         }
 
         userScoreResponse = (await _osuApiV2.Users.GetUserScores(osuUserId, ScoreType.Best,
             new GetUserScoreQueryParameters { Mode = playmode.ToRuleset(), Limit = 5, Offset = offset }))!;
         scores = userScoreResponse.Scores;
-        if (scores.Length == 0) return;
+        if (scores.Length == 0)
+        {
+            await Context.Update.AnswerAsync(Context.BotClient);
+            return;
+        }
 
         var textToSend = $"{UserHelper.GetUserProfileUrlWrappedInUsernameString((int)osuUserId, osuUsername)} (<b>{playmode.ToGamemode()}</b>)\n\n";
         var index = page * 5;
@@ -94,9 +99,9 @@ public class OsuUserBestCallback : CommandBase<CallbackQuery>
 
         var ik = new InlineKeyboardMarkup(
             new InlineKeyboardButton("Previous")
-            { CallbackData = $"{chatId} userbest previous {page} {(int)playmode} {osuUserId} {osuUsername}" },
+            { CallbackData = $"userbest previous {page} {(int)playmode} {osuUserId} {osuUsername}" },
             new InlineKeyboardButton("Next")
-            { CallbackData = $"{chatId} userbest next {page} {(int)playmode} {osuUserId} {osuUsername}" });
+            { CallbackData = $"userbest next {page} {(int)playmode} {osuUserId} {osuUsername}" });
 
         try
         {

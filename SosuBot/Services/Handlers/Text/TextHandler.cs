@@ -103,15 +103,15 @@ public sealed class TextHandler : CommandBase<Message>
         {
             [
                 new InlineKeyboardButton("Standard")
-                    { CallbackData = $"{Context.Update.Chat.Id} user 0 {user.Username}" },
+                    { CallbackData = $"user 0 {user.Username}" },
                 new InlineKeyboardButton("Taiko")
-                    { CallbackData = $"{Context.Update.Chat.Id} user 1 {user.Username}" }
+                    { CallbackData = $"user 1 {user.Username}" }
             ],
             [
                 new InlineKeyboardButton("Catch")
-                    { CallbackData = $"{Context.Update.Chat.Id} user 2 {user.Username}" },
+                    { CallbackData = $"user 2 {user.Username}" },
                 new InlineKeyboardButton("Mania")
-                    { CallbackData = $"{Context.Update.Chat.Id} user 3 {user.Username}" }
+                    { CallbackData = $"user 3 {user.Username}" }
             ]
         });
 
@@ -315,7 +315,7 @@ public sealed class TextHandler : CommandBase<Message>
         ]);
 
         var ik = new InlineKeyboardMarkup(new InlineKeyboardButton("Song preview")
-        { CallbackData = $"{Context.Update.Chat.Id} songpreview {beatmapset.Id}" });
+        { CallbackData = $"songpreview {beatmapset.Id}" });
 
         if (beatmapContainsTooManyHitObjects)
             textToSend += "\nВ карте слишком много объектов, пп расчет не будет проведен.";
