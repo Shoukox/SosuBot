@@ -13,6 +13,6 @@ public sealed class HelpCommand : CommandBase<Message>
     public override async Task ExecuteAsync()
     {
         ILocalization language = new Russian();
-        await Context.Update.ReplyAsync(Context.BotClient, language.command_help);
+        await Context.Update.ReplyAsync(Context.BotClient, language.command_help, parseMode: Telegram.Bot.Types.Enums.ParseMode.Html);
     }
 }
