@@ -169,8 +169,6 @@ public sealed class ScoresObserverBackgroundService(IServiceProvider serviceProv
                     return scoreDateIsOk && isUzPlayer;
                 }).ToArray();
 
-                var a = allOsuScores.FirstOrDefault(m => m.UserId == 15319810);
-
                 foreach (var score in uzScores)
                 {
                     var userStatistics = await _userDatabase.GetUserStatistics(score.UserId!.Value);

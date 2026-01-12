@@ -74,7 +74,6 @@ public class OsuLastCommand(bool onlyPassed = false, bool sendCover = false) : C
         var limit = 1;
         string? ruleset = TextHelper.GetPlaymodeFromParameters(parameters, out parameters)?.ToRuleset();
 
-        _logger.LogInformation("[/last] Parsing parameters");
         //l
         if (parameters.Length == 0)
         {
@@ -136,7 +135,6 @@ public class OsuLastCommand(bool onlyPassed = false, bool sendCover = false) : C
                 }
             }
         }
-        _logger.LogInformation("[/last] End of parsing parameters");
 
         // getting osu!player through username
         _logger.LogInformation("[/last] Get user from osu!api");
@@ -169,11 +167,9 @@ public class OsuLastCommand(bool onlyPassed = false, bool sendCover = false) : C
         }
 
         var lastScores = lastScoresResponse.Scores;
-        _logger.LogInformation("[/last] Get or cache beatmap from cache or osu!api");
         BeatmapExtended[] beatmaps = lastScores
             .Select(async score => await _cachingHelper.GetOrCacheBeatmap(score.Beatmap!.Id!.Value, _osuApiV2))
             .Select(t => t.Result).ToArray()!;
-        _logger.LogInformation("[/last] End of get or cache beatmap from cache or osu!api");
         var ppCalculator = new PPCalculator();
 
         var textToSend =
@@ -183,9 +179,7 @@ public class OsuLastCommand(bool onlyPassed = false, bool sendCover = false) : C
         var beatmapsetIdOfFirstScore = beatmaps[0].BeatmapsetId!.Value;
         for (var i = 0; i <= lastScores.Length - 1; i++)
         {
-            _logger.LogInformation("[/last] Get or cache score from cache or osu!api");
             var score = await _cachingHelper.GetOrCacheScore(lastScores[i].Id!.Value, _osuApiV2);
-            _logger.LogInformation("[/last] End of get or cache score from cache or osu!api");
             var beatmap = beatmaps[i];
 
             var hitobjectsSum = beatmap.CountCircles + beatmap.CountSliders + beatmap.CountSpinners;
@@ -201,6 +195,7 @@ public class OsuLastCommand(bool onlyPassed = false, bool sendCover = false) : C
             var scoreMods = mods.ToOsuMods(playmode);
 
             // Get score statistics for fc
+            _logger.LogInformation("[/last] Get score statistics for fc");
             Dictionary<HitResult, int>? scoreStatisticsIfFc = null;
             if (passed && playmode is not Playmode.Mania and not Playmode.Catch)
             {
@@ -219,6 +214,7 @@ public class OsuLastCommand(bool onlyPassed = false, bool sendCover = false) : C
                     { HitResult.Miss, 0 }
                 };
             }
+            _logger.LogInformation("[/last] End of get score statistics for fc");
 
             // Calculate pp
             PPResult? calculatedPp = new PPResult() { Current = null, IfFC = null };
@@ -360,13 +356,10 @@ public class OsuLastCommand(bool onlyPassed = false, bool sendCover = false) : C
             textToSend += "\n\n";
         }
 
-        _logger.LogInformation("[/last] Editing message");
         if (sendCover)
         {
             // Get beatmapset cover from cache
-            _logger.LogInformation("[/last] Get bm cover or cache");
             InputFile cover = await _cachingHelper.GetOrCacheBeatmapsetCover(beatmapsetIdOfFirstScore);
-            _logger.LogInformation("[/last] End of get bm cover or cache");
 
             try
             {
@@ -381,6 +374,5 @@ public class OsuLastCommand(bool onlyPassed = false, bool sendCover = false) : C
         {
             await waitMessage.EditAsync(Context.BotClient, textToSend);
         }
-        _logger.LogInformation("[/last] End of editing message");
     }
 }
