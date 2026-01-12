@@ -21,6 +21,9 @@ public sealed class UpdateHandlerBackgroundService(IServiceProvider serviceProvi
 
         _logger.LogInformation($"Starting {_workersCount} workers to handle updates.");
 
+        ThreadPool.GetAvailableThreads(out int workerThreads, out int completionPortThreads);
+        _logger.LogInformation($"Available worker threads: {workerThreads}, available completion port threads: {completionPortThreads}");
+
         try
         {
             var workers =

@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
+using SosuBot.Database;
 using SosuBot.Extensions;
 using SosuBot.Helpers;
 using SosuBot.Helpers.OutputText;
@@ -15,11 +16,13 @@ public sealed class RenderSettingsCommand : CommandBase<Message>
 {
     public static readonly string[] Commands = ["/settings"];
     private RateLimiterFactory _rateLimiterFactory = null!;
+    private BotContext _database = null!;
 
-    public override Task BeforeExecuteAsync()
+    public override async Task BeforeExecuteAsync()
     {
+        await base.BeforeExecuteAsync();
         _rateLimiterFactory = Context.ServiceProvider.GetRequiredService<RateLimiterFactory>();
-        return Task.CompletedTask;
+        _database = Context.ServiceProvider.GetRequiredService<BotContext>();
     }
 
     public override async Task ExecuteAsync()
@@ -30,8 +33,6 @@ public sealed class RenderSettingsCommand : CommandBase<Message>
             return;
         }
 
-        await BeforeExecuteAsync();
-
         var rateLimiter = _rateLimiterFactory.Get(RateLimiterFactory.RateLimitPolicy.Command);
         if (!await rateLimiter.IsAllowedAsync($"{Context.Update.From!.Id}"))
         {
@@ -41,7 +42,7 @@ public sealed class RenderSettingsCommand : CommandBase<Message>
 
         ILocalization language = new Russian();
 
-        var osuUserInDatabase = await Context.Database.OsuUsers.FindAsync(Context.Update.From!.Id);
+        var osuUserInDatabase = await _database.OsuUsers.FindAsync(Context.Update.From!.Id);
         if (osuUserInDatabase is null)
         {
             await Context.Update.ReplyAsync(Context.BotClient, language.error_userNotSetHimself);

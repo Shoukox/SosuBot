@@ -3,6 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using OsuApi.V2;
 using OsuApi.V2.Models;
+using SosuBot.Database;
 using SosuBot.Extensions;
 using SosuBot.Helpers.OutputText;
 using SosuBot.Localization;
@@ -20,20 +21,20 @@ public sealed class GetDailyStatisticsCommand : CommandBase<Message>
     private ILogger<GetDailyStatisticsCommand> _logger = null!;
     private ScoreHelper _scoreHelper = null!;
     private RateLimiterFactory _rateLimiterFactory = null!;
+    private BotContext _database = null!;
 
-    public override Task BeforeExecuteAsync()
+    public override async Task BeforeExecuteAsync()
     {
+        await base.BeforeExecuteAsync();
         _osuApiV2 = Context.ServiceProvider.GetRequiredService<ApiV2>();
         _scoreHelper = Context.ServiceProvider.GetRequiredService<ScoreHelper>();
         _rateLimiterFactory = Context.ServiceProvider.GetRequiredService<RateLimiterFactory>();
+        _database = Context.ServiceProvider.GetRequiredService<BotContext>();
         _logger = Context.ServiceProvider.GetRequiredService<ILogger<GetDailyStatisticsCommand>>();
-        return Task.CompletedTask;
     }
 
     public override async Task ExecuteAsync()
     {
-        await BeforeExecuteAsync();
-
         var rateLimiter = _rateLimiterFactory.Get(RateLimiterFactory.RateLimitPolicy.Command);
         if (!await rateLimiter.IsAllowedAsync($"{Context.Update.From!.Id}"))
         {
@@ -61,8 +62,8 @@ public sealed class GetDailyStatisticsCommand : CommandBase<Message>
         ruleset ??= parameters[0].ParseToRuleset();
         if (string.IsNullOrEmpty(ruleset)) ruleset = Ruleset.Osu;
 
-        if (Context.Database.DailyStatistics.Count() == 0 ||
-            (Context.Database.DailyStatistics.OrderBy(m => m.Id).Last() is var dailyStats &&
+        if (_database.DailyStatistics.Count() == 0 ||
+            (_database.DailyStatistics.OrderBy(m => m.Id).Last() is var dailyStats &&
              (dailyStats.Scores.Count == 0 || dailyStats.ActiveUsers.Count == 0)))
         {
             await waitMessage.EditAsync(Context.BotClient, language.error_noRecords);

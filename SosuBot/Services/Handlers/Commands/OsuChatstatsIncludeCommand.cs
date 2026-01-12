@@ -1,4 +1,6 @@
-﻿using SosuBot.Extensions;
+﻿using Microsoft.Extensions.DependencyInjection;
+using SosuBot.Database;
+using SosuBot.Extensions;
 using SosuBot.Localization;
 using SosuBot.Localization.Languages;
 using SosuBot.Services.Handlers.Abstract;
@@ -9,8 +11,15 @@ namespace SosuBot.Services.Handlers.Commands;
 
 public sealed class OsuChatstatsIncludeCommand : CommandBase<Message>
 {
+    private BotContext _database = null!;
+
     public static readonly string[] Commands = ["/include"];
 
+    public override async Task BeforeExecuteAsync()
+    {
+        await base.BeforeExecuteAsync();
+        _database = Context.ServiceProvider.GetRequiredService<BotContext>();
+    }
     public override async Task ExecuteAsync()
     {
         if (Context.Update.Chat.Type == Telegram.Bot.Types.Enums.ChatType.Private)
@@ -26,7 +35,7 @@ public sealed class OsuChatstatsIncludeCommand : CommandBase<Message>
         }
 
         ILocalization language = new Russian();
-        var chatInDatabase = await Context.Database.TelegramChats.FindAsync(Context.Update.Chat.Id);
+        var chatInDatabase = await _database.TelegramChats.FindAsync(Context.Update.Chat.Id);
 
         var waitMessage = await Context.Update.ReplyAsync(Context.BotClient, language.waiting);
 
@@ -41,7 +50,7 @@ public sealed class OsuChatstatsIncludeCommand : CommandBase<Message>
         }
 
         var osuUsernameToExclude = parameters[0];
-        var osuUserToExclude = Context.Database.OsuUsers.AsEnumerable().FirstOrDefault(m =>
+        var osuUserToExclude = _database.OsuUsers.AsEnumerable().FirstOrDefault(m =>
             m.OsuUsername.Trim().ToLowerInvariant() == osuUsernameToExclude.Trim().ToLowerInvariant());
         if (osuUserToExclude is null)
         {

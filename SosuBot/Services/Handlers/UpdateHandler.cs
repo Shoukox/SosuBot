@@ -20,8 +20,7 @@ public class UpdateHandler(
     BotContext database,
     IOptions<BotConfiguration> botConfig,
     ILogger<UpdateHandler> logger,
-    IServiceProvider serviceProvider,
-    HybridCache cache) : IUpdateHandler
+    IServiceProvider serviceProvider) : IUpdateHandler
 {
     public static Dictionary<string, CommandBase<Message>> Commands { get; set; } = new();
     public static Dictionary<string, CommandBase<CallbackQuery>> Callbacks { get; set; } = new();
@@ -112,11 +111,10 @@ public class UpdateHandler(
             new CommandContext<CallbackQuery>(
                 botClient,
                 callbackQuery,
-                database,
                 serviceProvider,
-                cache,
                 cancellationToken));
 
+        await executableCommand.BeforeExecuteAsync();
         await executableCommand.ExecuteAsync();
         await database.SaveChangesAsync(cancellationToken);
     }
@@ -130,11 +128,10 @@ public class UpdateHandler(
             new CommandContext<Message>(
                 botClient,
                 msg,
-                database,
                 serviceProvider,
-                cache,
                 cancellationToken));
 
+        await executableCommand.BeforeExecuteAsync();
         await executableCommand.ExecuteAsync();
         await database.SaveChangesAsync(cancellationToken);
     }
@@ -146,11 +143,10 @@ public class UpdateHandler(
             new CommandContext<Message>(
                 botClient,
                 msg,
-                database,
                 serviceProvider,
-                cache,
                 cancellationToken));
 
+        await textHandler.BeforeExecuteAsync();
         await textHandler.ExecuteAsync();
         await database.SaveChangesAsync(cancellationToken);
     }

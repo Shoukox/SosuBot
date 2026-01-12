@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
+using SosuBot.Database;
 using SosuBot.Database.Models;
 using SosuBot.Extensions;
 using SosuBot.Helpers;
@@ -18,20 +19,20 @@ public class RenderSettingsCallback() : CommandBase<CallbackQuery>
 {
     public static readonly string Command = "rs";
     private ReplayRenderService _replayRenderService = null!;
+    private BotContext _database = null!;
 
     private long _chatId;
     private OsuUser _osuUser = null!;
 
-    public override Task BeforeExecuteAsync()
+    public override async Task BeforeExecuteAsync()
     {
+        await base.BeforeExecuteAsync();
         _replayRenderService = Context.ServiceProvider.GetRequiredService<ReplayRenderService>();
-        return Task.CompletedTask;
+        _database = Context.ServiceProvider.GetRequiredService<BotContext>();
     }
 
     public override async Task ExecuteAsync()
     {
-        await BeforeExecuteAsync();
-
         ILocalization language = new Russian();
 
         var parameters = Context.Update.Data!.Split(' ');
@@ -51,7 +52,7 @@ public class RenderSettingsCallback() : CommandBase<CallbackQuery>
             return;
         }
 
-        var osuUser = await Context.Database.OsuUsers.FindAsync(_chatId);
+        var osuUser = await _database.OsuUsers.FindAsync(_chatId);
         if (osuUser == null)
         {
             await Context.Update.AnswerAsync(Context.BotClient, language.error_userNotSetHimself);

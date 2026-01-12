@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using MongoDB.Bson.Serialization.Serializers;
 using OsuApi.V2;
+using SosuBot.Database;
 using SosuBot.Extensions;
 using SosuBot.Helpers.OutputText;
 using SosuBot.Localization;
@@ -21,19 +22,19 @@ public sealed class ReplayRenderCommand : CommandBase<Message>
     private ApiV2 _osuApiV2 = null!;
     private ReplayRenderService _replayRenderService = null!;
     private RateLimiterFactory _rateLimiterFactory = null!;
+    private BotContext _database = null!;
 
-    public override Task BeforeExecuteAsync()
+    public override async Task BeforeExecuteAsync()
     {
+        await base.BeforeExecuteAsync();
         _osuApiV2 = Context.ServiceProvider.GetRequiredService<ApiV2>();
         _replayRenderService = Context.ServiceProvider.GetRequiredService<ReplayRenderService>();
         _rateLimiterFactory = Context.ServiceProvider.GetRequiredService<RateLimiterFactory>();
-        return Task.CompletedTask;
+        _database = Context.ServiceProvider.GetRequiredService<BotContext>();
     }
 
     public override async Task ExecuteAsync()
     {
-        await BeforeExecuteAsync();
-
         var rateLimiter = _rateLimiterFactory.Get(RateLimiterFactory.RateLimitPolicy.RenderCommand);
         if (!await rateLimiter.IsAllowedAsync($"{Context.Update.From!.Id}"))
         {
@@ -41,12 +42,12 @@ public sealed class ReplayRenderCommand : CommandBase<Message>
             return;
         }
 
-        var chatInDatabase = await Context.Database.TelegramChats.FindAsync(Context.Update.Chat.Id);
+        var chatInDatabase = await _database.TelegramChats.FindAsync(Context.Update.Chat.Id);
 
         ILocalization language = new Russian();
         var waitMessage = await Context.Update.ReplyAsync(Context.BotClient, language.waiting);
 
-        var osuUserInDatabase = await Context.Database.OsuUsers.FindAsync(Context.Update.From!.Id);
+        var osuUserInDatabase = await _database.OsuUsers.FindAsync(Context.Update.From!.Id);
         if (osuUserInDatabase is null)
         {
             await waitMessage.EditAsync(Context.BotClient, language.error_userNotSetHimself);

@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using OsuApi.V2;
+using SosuBot.Database;
 using SosuBot.Database.Models;
 using SosuBot.Extensions;
 using SosuBot.Helpers;
@@ -19,22 +20,22 @@ public sealed class OsuChatBeatmapLeaderboardCommand : CommandBase<Message>
     private ScoreHelper _scoreHelper = null!;
     private CachingHelper _cachingHelper = null!;
     private RateLimiterFactory _rateLimiterFactory = null!;
+    private BotContext _database = null!;
 
     private static readonly IEqualityComparer<OsuUser> OsuUserComparer = EqualityComparer<OsuUser>.Create((u1, u2) => u1?.OsuUserId == u2?.OsuUserId, u => u.GetHashCode());
 
-    public override Task BeforeExecuteAsync()
+    public override async Task BeforeExecuteAsync()
     {
+        await base.BeforeExecuteAsync();
         _osuApiV2 = Context.ServiceProvider.GetRequiredService<ApiV2>();
         _scoreHelper = Context.ServiceProvider.GetRequiredService<ScoreHelper>();
         _cachingHelper = Context.ServiceProvider.GetRequiredService<CachingHelper>();
         _rateLimiterFactory = Context.ServiceProvider.GetRequiredService<RateLimiterFactory>();
-        return Task.CompletedTask;
+        _database = Context.ServiceProvider.GetRequiredService<BotContext>();
     }
 
     public override async Task ExecuteAsync()
     {
-        await BeforeExecuteAsync();
-
         var rateLimiter = _rateLimiterFactory.Get(RateLimiterFactory.RateLimitPolicy.Command);
         if (!await rateLimiter.IsAllowedAsync($"{Context.Update.From!.Id}"))
         {
@@ -42,7 +43,7 @@ public sealed class OsuChatBeatmapLeaderboardCommand : CommandBase<Message>
             return;
         }
 
-        var osuUserInDatabase = await Context.Database.OsuUsers.FindAsync(Context.Update.From!.Id);
+        var osuUserInDatabase = await _database.OsuUsers.FindAsync(Context.Update.From!.Id);
         if (osuUserInDatabase is null || !osuUserInDatabase.IsAdmin)
         {
             await Context.Update.ReplyAsync(Context.BotClient, "Пшол вон!");
@@ -50,7 +51,7 @@ public sealed class OsuChatBeatmapLeaderboardCommand : CommandBase<Message>
         }
 
         ILocalization language = new Russian();
-        var chatInDatabase = await Context.Database.TelegramChats.FindAsync(Context.Update.Chat.Id);
+        var chatInDatabase = await _database.TelegramChats.FindAsync(Context.Update.Chat.Id);
         var waitMessage = await Context.Update.ReplyAsync(Context.BotClient, language.waiting);
 
         int? beatmapId = chatInDatabase!.LastBeatmapId;
@@ -85,7 +86,7 @@ public sealed class OsuChatBeatmapLeaderboardCommand : CommandBase<Message>
         chatInDatabase!.ExcludeFromChatstats = chatInDatabase.ExcludeFromChatstats ?? new List<long>();
         foreach (var memberId in chatInDatabase.ChatMembers!)
         {
-            var foundMember = await Context.Database.OsuUsers.FindAsync(memberId);
+            var foundMember = await _database.OsuUsers.FindAsync(memberId);
             if (foundMember != null && !chatInDatabase.ExcludeFromChatstats.Contains(foundMember.OsuUserId))
                 foundChatMembers.Add(foundMember);
         }

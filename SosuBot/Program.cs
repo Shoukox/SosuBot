@@ -56,18 +56,15 @@ internal class Program
         builder.Services.Configure<BotConfiguration>(builder.Configuration.GetSection(nameof(BotConfiguration)));
         builder.Services.Configure<OsuApiV2Configuration>(builder.Configuration.GetSection(nameof(OsuApiV2Configuration)));
         builder.Services.Configure<OpenAiConfiguration>(builder.Configuration.GetSection(nameof(OpenAiConfiguration)));
-        builder.Services
-            .AddCustomHttpClient(nameof(ITelegramBotClient), 32_767)
-            .AddTypedClient<ITelegramBotClient>((httpClient, sp) =>
-            {
-                var options = sp.GetRequiredService<IOptions<BotConfiguration>>();
-                return new TelegramBotClient(options.Value.Token, httpClient);
-            })
-            .AddPolicyHandler(pollyPolicies);
-        builder.Services
-            .AddCustomHttpClient("CustomHttpClient", 300)
-            .AddPolicyHandler(pollyPolicies);
-        ;
+        builder.Services.AddCustomHttpClient(nameof(ITelegramBotClient), 32_767)
+                        .AddTypedClient<ITelegramBotClient>((httpClient, sp) =>
+                        {
+                            var options = sp.GetRequiredService<IOptions<BotConfiguration>>();
+                            return new TelegramBotClient(options.Value.Token, httpClient);
+                        })
+                        .AddPolicyHandler(pollyPolicies);
+        builder.Services.AddCustomHttpClient("CustomHttpClient", 300)
+                        .AddPolicyHandler(pollyPolicies);
 
         var osuApiV2Configuration = builder.Services.BuildServiceProvider()
             .GetRequiredService<IOptions<OsuApiV2Configuration>>().Value;
@@ -92,12 +89,12 @@ internal class Program
 
         // Redis
         var redisHost = Environment.GetEnvironmentVariable("REDIS_HOST") ?? "localhost";
-        int port = 6379;
+        int redisPort = 6379;
         var redisConfigurationOptions = new ConfigurationOptions()
         {
             EndPoints =
                 {
-                    { redisHost, port }
+                    { redisHost, redisPort }
                 },
             KeepAlive = 10,
             AbortOnConnectFail = false,
@@ -105,23 +102,21 @@ internal class Program
         };
         builder.Services.AddStackExchangeRedisCache(options =>
         {
-            options.Configuration = redisConfigurationOptions.ToString();
+            options.ConfigurationOptions = redisConfigurationOptions;
             options.InstanceName = $"SosuBot{Environment.TickCount}:";
         });
         builder.Services.AddHybridCache(options =>
         {
             options.DefaultEntryOptions = new HybridCacheEntryOptions()
             {
-                Flags = HybridCacheEntryFlags.DisableLocalCache,
-                Expiration = TimeSpan.FromMinutes(60)
+                Flags = HybridCacheEntryFlags.DisableLocalCache
             };
         });
-        builder.Services.AddSingleton<IConnectionMultiplexer>(ConnectionMultiplexer.Connect(redisConfigurationOptions));
 
         // Redis RateLimiter
         builder.Services.AddSingleton(provide =>
         {
-            var redis = provide.GetRequiredService<IConnectionMultiplexer>();
+            var redis = ConnectionMultiplexer.Connect(redisConfigurationOptions);
             var logger = provide.GetRequiredService<ILogger<TokenBucketRateLimiter>>();
             return new RateLimiterFactory(redis, logger);
         });

@@ -21,17 +21,15 @@ public class OsuUserBestCallback : CommandBase<CallbackQuery>
     private ApiV2 _osuApiV2 = null!;
     private ScoreHelper _scoreHelper = null!;
 
-    public override Task BeforeExecuteAsync()
+    public override async Task BeforeExecuteAsync()
     {
+        await base.BeforeExecuteAsync();
         _osuApiV2 = Context.ServiceProvider.GetRequiredService<ApiV2>();
         _scoreHelper = Context.ServiceProvider.GetRequiredService<ScoreHelper>();
-        return Task.CompletedTask;
     }
 
     public override async Task ExecuteAsync()
     {
-        await BeforeExecuteAsync();
-
         ILocalization language = new Russian();
 
         var parameters = Context.Update.Data!.Split(' ');

@@ -1,4 +1,6 @@
-﻿using SosuBot.Extensions;
+﻿using Microsoft.Extensions.DependencyInjection;
+using SosuBot.Database;
+using SosuBot.Extensions;
 using SosuBot.Localization;
 using SosuBot.Localization.Languages;
 using SosuBot.Services.Handlers.Abstract;
@@ -8,12 +10,19 @@ namespace SosuBot.Services.Handlers.Commands;
 
 public sealed class OsuModeCommand : CommandBase<Message>
 {
+    private BotContext _database = null!;
+
     public static readonly string[] Commands = ["/mode"];
 
+    public override async Task BeforeExecuteAsync()
+    {
+        await base.BeforeExecuteAsync();
+        _database = Context.ServiceProvider.GetRequiredService<BotContext>();
+    }
     public override async Task ExecuteAsync()
     {
         ILocalization language = new Russian();
-        var osuUserInDatabase = await Context.Database.OsuUsers.FindAsync(Context.Update.From!.Id);
+        var osuUserInDatabase = await _database.OsuUsers.FindAsync(Context.Update.From!.Id);
 
         var msgText = Context.Update.Text!;
         var parameters = msgText.GetCommandParameters()!;

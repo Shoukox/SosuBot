@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using SosuBot.Database;
 using SosuBot.Extensions;
 using SosuBot.Services.Handlers.Abstract;
 using Telegram.Bot;
@@ -12,19 +13,19 @@ namespace SosuBot.Services.Handlers.Commands;
 public sealed class MsgCommand : CommandBase<Message>
 {
     public static readonly string[] Commands = ["/msg"];
+    private BotContext _database = null!;
     private ILogger<MsgCommand> _logger = null!;
 
-    public override Task BeforeExecuteAsync()
+    public override async Task BeforeExecuteAsync()
     {
+        await base.BeforeExecuteAsync();
+        _database = Context.ServiceProvider.GetRequiredService<BotContext>();
         _logger = Context.ServiceProvider.GetRequiredService<ILogger<MsgCommand>>();
-        return Task.CompletedTask;
     }
 
     public override async Task ExecuteAsync()
     {
-        await BeforeExecuteAsync();
-
-        var osuUserInDatabase = await Context.Database.OsuUsers.FindAsync(Context.Update.From!.Id);
+        var osuUserInDatabase = await _database.OsuUsers.FindAsync(Context.Update.From!.Id);
         if (osuUserInDatabase is null || !osuUserInDatabase.IsAdmin) return;
 
         var parameters = Context.Update.Text!.GetCommandParameters()!;
@@ -32,7 +33,7 @@ public sealed class MsgCommand : CommandBase<Message>
         {
             var msg = string.Join(" ", parameters[1..]);
 
-            foreach (var chat in Context.Database.TelegramChats)
+            foreach (var chat in _database.TelegramChats)
                 try
                 {
                     await Task.Delay(500);
@@ -67,7 +68,7 @@ public sealed class MsgCommand : CommandBase<Message>
             if (parameters[1] == "all")
             {
                 var chats = 0;
-                foreach (var chat in Context.Database.TelegramChats)
+                foreach (var chat in _database.TelegramChats)
                     try
                     {
                         await Task.Delay(500);
@@ -85,7 +86,7 @@ public sealed class MsgCommand : CommandBase<Message>
                     }
 
                 await Context.Update.ReplyAsync(Context.BotClient,
-                    $"chats: {chats}/{Context.Database.TelegramChats.Count()}");
+                    $"chats: {chats}/{_database.TelegramChats.Count()}");
             }
         }
         else

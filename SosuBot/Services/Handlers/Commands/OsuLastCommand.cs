@@ -5,6 +5,7 @@ using osu.Game.Rulesets.Scoring;
 using OsuApi.V2;
 using OsuApi.V2.Clients.Users.HttpIO;
 using OsuApi.V2.Users.Models;
+using SosuBot.Database;
 using SosuBot.Database.Models;
 using SosuBot.Extensions;
 using SosuBot.Helpers;
@@ -26,30 +27,30 @@ namespace SosuBot.Services.Handlers.Commands;
 public class OsuLastCommand(bool onlyPassed = false, bool sendCover = false) : CommandBase<Message>
 {
     public static readonly string[] Commands = ["/last", "/l"];
-    private ILogger<OsuLastCommand> _logger = null!;
     private bool _onlyPassed;
     private ApiV2 _osuApiV2 = null!;
     private ScoreHelper _scoreHelper = null!;
     private CachingHelper _cachingHelper = null!;
     private RateLimiterFactory _rateLimiterFactory = null!;
     private BeatmapsService _beatmapsService = null!;
+    private BotContext _database = null!;
+    private ILogger<OsuLastCommand> _logger = null!;
 
-    public override Task BeforeExecuteAsync()
+    public override async Task BeforeExecuteAsync()
     {
+        await base.BeforeExecuteAsync();
         _onlyPassed = onlyPassed;
         _osuApiV2 = Context.ServiceProvider.GetRequiredService<ApiV2>();
         _scoreHelper = Context.ServiceProvider.GetRequiredService<ScoreHelper>();
         _cachingHelper = Context.ServiceProvider.GetRequiredService<CachingHelper>();
         _rateLimiterFactory = Context.ServiceProvider.GetRequiredService<RateLimiterFactory>();
         _beatmapsService = Context.ServiceProvider.GetRequiredService<BeatmapsService>();
+        _database = Context.ServiceProvider.GetRequiredService<BotContext>();
         _logger = Context.ServiceProvider.GetRequiredService<ILogger<OsuLastCommand>>();
-        return Task.CompletedTask;
     }
 
     public override async Task ExecuteAsync()
     {
-        await BeforeExecuteAsync();
-
         var rateLimiter = _rateLimiterFactory.Get(RateLimiterFactory.RateLimitPolicy.Command);
         if (!await rateLimiter.IsAllowedAsync($"{Context.Update.From!.Id}"))
         {
@@ -58,8 +59,8 @@ public class OsuLastCommand(bool onlyPassed = false, bool sendCover = false) : C
         }
 
         ILocalization language = new Russian();
-        var chatInDatabase = await Context.Database.TelegramChats.FindAsync(Context.Update.Chat.Id);
-        var osuUserInDatabase = await Context.Database.OsuUsers.FindAsync(Context.Update.From!.Id);
+        var chatInDatabase = await _database.TelegramChats.FindAsync(Context.Update.Chat.Id);
+        var osuUserInDatabase = await _database.OsuUsers.FindAsync(Context.Update.From!.Id);
 
         var waitMessage = await Context.Update.ReplyAsync(Context.BotClient, language.waiting);
 
@@ -73,6 +74,7 @@ public class OsuLastCommand(bool onlyPassed = false, bool sendCover = false) : C
         var limit = 1;
         string? ruleset = TextHelper.GetPlaymodeFromParameters(parameters, out parameters)?.ToRuleset();
 
+        _logger.LogInformation("[/last] Parsing parameters");
         //l
         if (parameters.Length == 0)
         {
@@ -134,10 +136,13 @@ public class OsuLastCommand(bool onlyPassed = false, bool sendCover = false) : C
                 }
             }
         }
+        _logger.LogInformation("[/last] End of parsing parameters");
 
         // getting osu!player through username
+        _logger.LogInformation("[/last] Get user from osu!api");
         var userResponse =
             await _osuApiV2.Users.GetUser($"@{osuUsernameForLastScores}", new GetUserQueryParameters());
+        _logger.LogInformation("[/last] End of get user from osu!api");
         if (userResponse is null)
         {
             await waitMessage.EditAsync(Context.BotClient,
@@ -150,10 +155,12 @@ public class OsuLastCommand(bool onlyPassed = false, bool sendCover = false) : C
         // if username was entered, then use as ruleset his (this username) standard ruleset.
         ruleset ??= userResponse.UserExtend!.Playmode!;
 
+        _logger.LogInformation("[/last] Get user scores from osu!api");
         var lastScoresResponse = await _osuApiV2.Users.GetUserScores(userResponse.UserExtend!.Id.Value,
             ScoreType.Recent,
             new GetUserScoreQueryParameters
             { IncludeFails = Convert.ToInt32(!_onlyPassed), Limit = limit, Mode = ruleset });
+        _logger.LogInformation("[/last] End of get user scores from osu!api");
         if (lastScoresResponse!.Scores.Length == 0)
         {
             await waitMessage.EditAsync(Context.BotClient,
@@ -162,9 +169,11 @@ public class OsuLastCommand(bool onlyPassed = false, bool sendCover = false) : C
         }
 
         var lastScores = lastScoresResponse.Scores;
+        _logger.LogInformation("[/last] Get or cache beatmap from cache or osu!api");
         BeatmapExtended[] beatmaps = lastScores
             .Select(async score => await _cachingHelper.GetOrCacheBeatmap(score.Beatmap!.Id!.Value, _osuApiV2))
             .Select(t => t.Result).ToArray()!;
+        _logger.LogInformation("[/last] End of get or cache beatmap from cache or osu!api");
         var ppCalculator = new PPCalculator();
 
         var textToSend =
@@ -174,7 +183,9 @@ public class OsuLastCommand(bool onlyPassed = false, bool sendCover = false) : C
         var beatmapsetIdOfFirstScore = beatmaps[0].BeatmapsetId!.Value;
         for (var i = 0; i <= lastScores.Length - 1; i++)
         {
+            _logger.LogInformation("[/last] Get or cache score from cache or osu!api");
             var score = await _cachingHelper.GetOrCacheScore(lastScores[i].Id!.Value, _osuApiV2);
+            _logger.LogInformation("[/last] End of get or cache score from cache or osu!api");
             var beatmap = beatmaps[i];
 
             var hitobjectsSum = beatmap.CountCircles + beatmap.CountSliders + beatmap.CountSpinners;
@@ -214,6 +225,7 @@ public class OsuLastCommand(bool onlyPassed = false, bool sendCover = false) : C
             if (!beatmapContainsTooManyHitObjects)
             {
                 var beatmapFile = await _beatmapsService.DownloadOrCacheBeatmap(beatmap.Id!.Value);
+                _logger.LogInformation("[/last] Calculating pp");
                 calculatedPp = new PPResult
                 {
                     Current = score.Pp != null ? null :
@@ -238,6 +250,7 @@ public class OsuLastCommand(bool onlyPassed = false, bool sendCover = false) : C
                              rulesetId: (int)playmode,
                              cancellationToken: Context.CancellationToken)
                 };
+                _logger.LogInformation("[/last] End of calculating pp");
             }
             var scoreRank = _scoreHelper.GetScoreRankEmoji(score.Rank!, score.Passed!.Value) +
                             _scoreHelper.ParseScoreRank(score.Passed!.Value ? score.Rank! : "F");
@@ -347,10 +360,13 @@ public class OsuLastCommand(bool onlyPassed = false, bool sendCover = false) : C
             textToSend += "\n\n";
         }
 
+        _logger.LogInformation("[/last] Editing message");
         if (sendCover)
         {
             // Get beatmapset cover from cache
+            _logger.LogInformation("[/last] Get bm cover or cache");
             InputFile cover = await _cachingHelper.GetOrCacheBeatmapsetCover(beatmapsetIdOfFirstScore);
+            _logger.LogInformation("[/last] End of get bm cover or cache");
 
             try
             {
@@ -365,5 +381,6 @@ public class OsuLastCommand(bool onlyPassed = false, bool sendCover = false) : C
         {
             await waitMessage.EditAsync(Context.BotClient, textToSend);
         }
+        _logger.LogInformation("[/last] End of editing message");
     }
 }

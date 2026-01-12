@@ -5,6 +5,7 @@ using OsuApi.V2;
 using OsuApi.V2.Clients.Users.HttpIO;
 using OsuApi.V2.Models;
 using OsuApi.V2.Users.Models;
+using SosuBot.Database;
 using SosuBot.Database.Models;
 using SosuBot.Extensions;
 using SosuBot.Helpers;
@@ -21,13 +22,14 @@ namespace SosuBot.Services.Handlers.Text;
 
 public sealed class TextHandler : CommandBase<Message>
 {
-    private ILogger<TextHandler> _logger = null!;
     private BotConfiguration _botConfig = null!;
     private ApiV2 _osuApiV2 = null!;
     private ScoreHelper _scoreHelper = null!;
     private CachingHelper _cachingHelper = null!;
     private RateLimiterFactory _rateLimiterFactory = null!;
     private BeatmapsService _beatmapsService = null!;
+    private BotContext _database = null!;
+    private ILogger<TextHandler> _logger = null!;
 
     public override Task BeforeExecuteAsync()
     {
@@ -36,8 +38,9 @@ public sealed class TextHandler : CommandBase<Message>
         _cachingHelper = Context.ServiceProvider.GetRequiredService<CachingHelper>();
         _rateLimiterFactory = Context.ServiceProvider.GetRequiredService<RateLimiterFactory>();
         _beatmapsService = Context.ServiceProvider.GetRequiredService<BeatmapsService>();
-        _logger = Context.ServiceProvider.GetRequiredService<ILogger<TextHandler>>();
+        _database = Context.ServiceProvider.GetRequiredService<BotContext>();
         _botConfig = Context.ServiceProvider.GetRequiredService<IOptions<BotConfiguration>>().Value;
+        _logger = Context.ServiceProvider.GetRequiredService<ILogger<TextHandler>>();
         return Task.CompletedTask;
     }
 
@@ -76,7 +79,7 @@ public sealed class TextHandler : CommandBase<Message>
         var playmode = user.Playmode!.ParseRulesetToPlaymode();
         double? currentPp = user.Statistics!.Pp;
         var ppDifferenceText =
-            await UserHelper.GetPpDifferenceTextAsync(Context.Database, user, playmode, currentPp);
+            await UserHelper.GetPpDifferenceTextAsync(_database, user, playmode, currentPp);
 
         DateTime.TryParse(user.JoinDate?.Value, out var registerDateTime);
         var textToSend = language.command_user.Fill([
@@ -333,7 +336,7 @@ public sealed class TextHandler : CommandBase<Message>
             await Context.Update.ReplyAsync(Context.BotClient, textToSend, replyMarkup: ik);
         }
 
-        var chatInDatabase = await Context.Database.TelegramChats.FindAsync(Context.Update.Chat.Id);
+        var chatInDatabase = await _database.TelegramChats.FindAsync(Context.Update.Chat.Id);
         chatInDatabase!.LastBeatmapId = beatmapId;
     }
 }

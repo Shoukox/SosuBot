@@ -2,6 +2,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using OsuApi.V2;
 using OsuApi.V2.Clients.Users.HttpIO;
+using SosuBot.Database;
 using SosuBot.Database.Models;
 using SosuBot.Extensions;
 using SosuBot.Helpers.OutputText;
@@ -16,16 +17,17 @@ public sealed class OsuSetCommand : CommandBase<Message>
 {
     public static readonly string[] Commands = ["/set"];
     private ApiV2 _osuApiV2 = null!;
+    private BotContext _database = null!;
 
-    public override Task BeforeExecuteAsync()
+    public override async Task BeforeExecuteAsync()
     {
+        await base.BeforeExecuteAsync();
         _osuApiV2 = Context.ServiceProvider.GetRequiredService<ApiV2>();
-        return Task.CompletedTask;
+        _database = Context.ServiceProvider.GetRequiredService<BotContext>();
     }
 
     public override async Task ExecuteAsync()
     {
-        await BeforeExecuteAsync();
         ILocalization language = new Russian();
 
         var msgText = Context.Update.Text!;
@@ -39,7 +41,7 @@ public sealed class OsuSetCommand : CommandBase<Message>
         }
 
         var osuUserInDatabase =
-            await Context.Database.OsuUsers.FirstOrDefaultAsync(m => m.TelegramId == Context.Update.From!.Id);
+            await _database.OsuUsers.FirstOrDefaultAsync(m => m.TelegramId == Context.Update.From!.Id);
         var response = await _osuApiV2.Users.GetUser($"@{osuUsername}", new GetUserQueryParameters());
         if (response is null)
         {
@@ -61,7 +63,7 @@ public sealed class OsuSetCommand : CommandBase<Message>
             };
             newOsuUser.SetPP(user.Statistics!.Pp!.Value, playmode);
 
-            await Context.Database.OsuUsers.AddAsync(newOsuUser);
+            await _database.OsuUsers.AddAsync(newOsuUser);
             osuUserInDatabase = newOsuUser;
         }
         else

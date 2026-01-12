@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using OsuApi.V2;
 using OsuApi.V2.Clients.Users.HttpIO;
+using SosuBot.Database;
 using SosuBot.Database.Models;
 using SosuBot.Extensions;
 using SosuBot.Helpers;
@@ -19,18 +20,18 @@ public class OsuUserCallback : CommandBase<CallbackQuery>
     public static readonly string Command = "user";
     private ApiV2 _osuApiV2 = null!;
     private ScoreHelper _scoreHelper = null!;
+    private BotContext _database = null!;
 
-    public override Task BeforeExecuteAsync()
+    public override async Task BeforeExecuteAsync()
     {
+        await base.BeforeExecuteAsync();
         _osuApiV2 = Context.ServiceProvider.GetRequiredService<ApiV2>();
         _scoreHelper = Context.ServiceProvider.GetRequiredService<ScoreHelper>();
-        return Task.CompletedTask;
+        _database = Context.ServiceProvider.GetRequiredService<BotContext>();
     }
 
     public override async Task ExecuteAsync()
     {
-        await BeforeExecuteAsync();
-
         ILocalization language = new Russian();
 
         var parameters = Context.Update.Data!.Split(' ');
@@ -43,7 +44,7 @@ public class OsuUserCallback : CommandBase<CallbackQuery>
             playmode.ToRuleset()))!.UserExtend!;
 
         double? currentPp = user.Statistics!.Pp;
-        var ppDifferenceText = await UserHelper.GetPpDifferenceTextAsync(Context.Database, user, playmode, currentPp);
+        var ppDifferenceText = await UserHelper.GetPpDifferenceTextAsync(_database, user, playmode, currentPp);
 
         // should be equal to the variant from OsuUserCommand
         DateTime.TryParse(user.JoinDate?.Value, out var registerDateTime);

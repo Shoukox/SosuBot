@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using OsuApi.V2;
+using SosuBot.Database;
 using SosuBot.Extensions;
 using SosuBot.Localization;
 using SosuBot.Localization.Languages;
@@ -12,17 +13,17 @@ public class RenderStatusCallback() : CommandBase<CallbackQuery>
 {
     public static readonly string Command = "render-status";
     private ReplayRenderService _replayRenderService = null!;
+    private BotContext _database = null!;
 
-    public override Task BeforeExecuteAsync()
+    public override async Task BeforeExecuteAsync()
     {
+        await base.BeforeExecuteAsync();
         _replayRenderService = Context.ServiceProvider.GetRequiredService<ReplayRenderService>();
-        return Task.CompletedTask;
+        _database = Context.ServiceProvider.GetRequiredService<BotContext>();
     }
 
     public override async Task ExecuteAsync()
     {
-        await BeforeExecuteAsync();
-
         ILocalization language = new Russian();
 
         var parameters = Context.Update.Data!.Split(' ');

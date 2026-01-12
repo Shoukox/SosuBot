@@ -3,6 +3,7 @@ using osu.Game.Rulesets.Osu.Mods;
 using osu.Game.Rulesets.Scoring;
 using OsuApi.V2;
 using OsuApi.V2.Users.Models;
+using SosuBot.Database;
 using SosuBot.Database.Models;
 using SosuBot.Extensions;
 using SosuBot.Helpers;
@@ -24,21 +25,21 @@ public class OsuCalcCommand : CommandBase<Message>
     private CachingHelper _cachingHelper = null!;
     private RateLimiterFactory _rateLimiterFactory = null!;
     private BeatmapsService _beatmapsService = null!;
+    private BotContext _database = null!;
 
-    public override Task BeforeExecuteAsync()
+    public override async Task BeforeExecuteAsync()
     {
+        await base.BeforeExecuteAsync();
         _osuApiV2 = Context.ServiceProvider.GetRequiredService<ApiV2>();
         _scoreHelper = Context.ServiceProvider.GetRequiredService<ScoreHelper>();
         _cachingHelper = Context.ServiceProvider.GetRequiredService<CachingHelper>();
         _rateLimiterFactory = Context.ServiceProvider.GetRequiredService<RateLimiterFactory>();
         _beatmapsService = Context.ServiceProvider.GetRequiredService<BeatmapsService>();
-        return Task.CompletedTask;
+        _database = Context.ServiceProvider.GetRequiredService<BotContext>();
     }
 
     public override async Task ExecuteAsync()
     {
-        await BeforeExecuteAsync();
-
         var rateLimiter = _rateLimiterFactory.Get(RateLimiterFactory.RateLimitPolicy.Command);
         if (!await rateLimiter.IsAllowedAsync($"{Context.Update.From!.Id}"))
         {
@@ -47,7 +48,7 @@ public class OsuCalcCommand : CommandBase<Message>
         }
 
         ILocalization language = new Russian();
-        var chatInDatabase = await Context.Database.TelegramChats.FindAsync(Context.Update.Chat.Id);
+        var chatInDatabase = await _database.TelegramChats.FindAsync(Context.Update.Chat.Id);
 
         var waitMessage = await Context.Update.ReplyAsync(Context.BotClient, language.waiting);
 
