@@ -7,19 +7,12 @@ namespace SosuBot.Services.Handlers.Abstract;
 public class CommandContext<TUpdateType>(
     ITelegramBotClient botClient,
     TUpdateType update,
-    BotContext database,
     IServiceProvider serviceProvider,
-    HybridCache cache,
-    CancellationToken cancellationToken)
-    : ICommandContext<TUpdateType>
+    CancellationToken cancellationToken) : ICommandContext<TUpdateType>
     where TUpdateType : class
 {
     public ITelegramBotClient BotClient { get; } = botClient;
     public TUpdateType Update { get; } = update;
-
-    public BotContext Database { get; } = database;
-
     public IServiceProvider ServiceProvider { get; } = serviceProvider;
-    public HybridCache Cache { get; } = cache;
     public CancellationToken CancellationToken { get; } = cancellationToken;
 }

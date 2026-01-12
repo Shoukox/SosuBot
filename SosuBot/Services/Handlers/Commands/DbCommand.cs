@@ -1,4 +1,6 @@
-﻿using SosuBot.Database.Extensions;
+﻿using Microsoft.Extensions.DependencyInjection;
+using SosuBot.Database;
+using SosuBot.Database.Extensions;
 using SosuBot.Extensions;
 using SosuBot.Helpers.OutputText;
 using SosuBot.Services.Handlers.Abstract;
@@ -9,11 +11,18 @@ namespace SosuBot.Services.Handlers.Commands;
 
 public sealed class DbCommand : CommandBase<Message>
 {
+    private BotContext _database = null!;
+
     public static readonly string[] Commands = ["/db"];
 
+    public override async Task BeforeExecuteAsync()
+    {
+        await base.BeforeExecuteAsync();
+        _database = Context.ServiceProvider.GetRequiredService<BotContext>();
+    }
     public override async Task ExecuteAsync()
     {
-        var osuUserInDatabase = await Context.Database.OsuUsers.FindAsync(Context.Update.From!.Id);
+        var osuUserInDatabase = await _database.OsuUsers.FindAsync(Context.Update.From!.Id);
         if (osuUserInDatabase is null || !osuUserInDatabase.IsAdmin)
         {
             await Context.Update.ReplyAsync(Context.BotClient, "Пшол вон!");
@@ -25,9 +34,9 @@ public sealed class DbCommand : CommandBase<Message>
         if (parameters[0] == "count")
         {
             int count;
-            if (parameters[1] == "users") count = Context.Database.OsuUsers.Count();
-            else if (parameters[1] == "chats") count = Context.Database.TelegramChats.Count();
-            else if (parameters[1] == "groups") count = Context.Database.TelegramChats.Count(m => m.ChatId < 0);
+            if (parameters[1] == "users") count = _database.OsuUsers.Count();
+            else if (parameters[1] == "chats") count = _database.TelegramChats.Count();
+            else if (parameters[1] == "groups") count = _database.TelegramChats.Count(m => m.ChatId < 0);
             else throw new NotImplementedException();
 
             await Context.Update.ReplyAsync(Context.BotClient, $"{parameters[1]}: {count}");
@@ -37,12 +46,12 @@ public sealed class DbCommand : CommandBase<Message>
             MemoryStream stream;
             if (parameters[1] == "users")
             {
-                var tableText = Context.Database.OsuUsers.ToReadfriendlyTableString();
+                var tableText = _database.OsuUsers.ToReadfriendlyTableString();
                 stream = new MemoryStream(Encoding.Default.GetBytes(tableText));
             }
             else if (parameters[1] == "chats")
             {
-                var tableText = Context.Database.TelegramChats.ToReadfriendlyTableString();
+                var tableText = _database.TelegramChats.ToReadfriendlyTableString();
                 stream = new MemoryStream(Encoding.Default.GetBytes(tableText));
             }
             else
@@ -55,7 +64,7 @@ public sealed class DbCommand : CommandBase<Message>
         else if (parameters[0] == "query")
         {
             var query = string.Join(" ", parameters[1..]);
-            var response = Context.Database.RawSqlQuery(query);
+            var response = _database.RawSqlQuery(query);
 
             await Context.Update.ReplyDocumentAsync(Context.BotClient,
                 new InputFileStream(TextHelper.TextToStream(TextHelper.GetReadfriendlyTable(response))));

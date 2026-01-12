@@ -18,17 +18,15 @@ public sealed class GetRankingCommand : CommandBase<Message>
     private ApiV2 _osuApiV2 = null!;
     private RateLimiterFactory _rateLimiterFactory = null!;
 
-    public override Task BeforeExecuteAsync()
+    public override async Task BeforeExecuteAsync()
     {
+        await base.BeforeExecuteAsync();
         _osuApiV2 = Context.ServiceProvider.GetRequiredService<ApiV2>();
         _rateLimiterFactory = Context.ServiceProvider.GetRequiredService<RateLimiterFactory>();
-        return Task.CompletedTask;
     }
 
     public override async Task ExecuteAsync()
     {
-        await BeforeExecuteAsync();
-
         var rateLimiter = _rateLimiterFactory.Get(RateLimiterFactory.RateLimitPolicy.Command);
         if (!await rateLimiter.IsAllowedAsync($"{Context.Update.From!.Id}"))
         {

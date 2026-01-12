@@ -8,8 +8,6 @@ public interface ICommandContext<TUpdateType> where TUpdateType : class
 {
     public ITelegramBotClient BotClient { get; }
     public TUpdateType Update { get; }
-    public BotContext Database { get; }
     public IServiceProvider ServiceProvider { get; }
-    public HybridCache Cache { get; }
     public CancellationToken CancellationToken { get; }
 }

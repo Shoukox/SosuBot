@@ -2,6 +2,7 @@
 using OsuApi.V2;
 using OsuApi.V2.Clients.Users.HttpIO;
 using OsuApi.V2.Users.Models;
+using SosuBot.Database;
 using SosuBot.Database.Models;
 using SosuBot.Extensions;
 using SosuBot.Helpers;
@@ -21,19 +22,19 @@ public class OsuUserCommand(bool includeIdInSearch = false) : CommandBase<Messag
     private ApiV2 _osuApiV2 = null!;
     private ScoreHelper _scoreHelper = null!;
     private RateLimiterFactory _rateLimiterFactory = null!;
+    private BotContext _database = null!;
 
-    public override Task BeforeExecuteAsync()
+    public override async Task BeforeExecuteAsync()
     {
+        await base.BeforeExecuteAsync();
         _scoreHelper = Context.ServiceProvider.GetRequiredService<ScoreHelper>();
         _osuApiV2 = Context.ServiceProvider.GetRequiredService<ApiV2>();
         _rateLimiterFactory = Context.ServiceProvider.GetRequiredService<RateLimiterFactory>();
-        return Task.CompletedTask;
+        _database = Context.ServiceProvider.GetRequiredService<BotContext>();
     }
 
     public override async Task ExecuteAsync()
     {
-        await BeforeExecuteAsync();
-
         var rateLimiter = _rateLimiterFactory.Get(RateLimiterFactory.RateLimitPolicy.Command);
         if (!await rateLimiter.IsAllowedAsync($"{Context.Update.From!.Id}"))
         {
@@ -42,7 +43,7 @@ public class OsuUserCommand(bool includeIdInSearch = false) : CommandBase<Messag
         }
 
         ILocalization language = new Russian();
-        var osuUserInDatabase = await Context.Database.OsuUsers.FindAsync(Context.Update.From!.Id);
+        var osuUserInDatabase = await _database.OsuUsers.FindAsync(Context.Update.From!.Id);
         var parameters = Context.Update.Text!.GetCommandParameters()!;
 
         var waitMessage = await Context.Update.ReplyAsync(Context.BotClient, language.waiting);
@@ -124,9 +125,9 @@ public class OsuUserCommand(bool includeIdInSearch = false) : CommandBase<Messag
 
         double? currentPp = user.Statistics!.Pp;
         var ppDifferenceText =
-            await UserHelper.GetPpDifferenceTextAsync(Context.Database, user, playmode, currentPp);
+            await UserHelper.GetPpDifferenceTextAsync(_database, user, playmode, currentPp);
 
-        UserHelper.UpdateOsuUsers(Context.Database, user, playmode);
+        UserHelper.UpdateOsuUsers(_database, user, playmode);
 
         DateTime.TryParse(user.JoinDate?.Value, out var registerDateTime);
         var textToSend = language.command_user.Fill([

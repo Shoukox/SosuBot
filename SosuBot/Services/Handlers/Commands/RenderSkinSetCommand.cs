@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
+using SosuBot.Database;
 using SosuBot.Extensions;
 using SosuBot.Localization;
 using SosuBot.Localization.Languages;
@@ -14,12 +15,14 @@ public sealed class RenderSkinSetCommand : CommandBase<Message>
     public static readonly string[] Commands = ["/setskin"];
     private ReplayRenderService _replayRenderService = null!;
     private RateLimiterFactory _rateLimiterFactory = null!;
+    private BotContext _database = null!;
 
-    public override Task BeforeExecuteAsync()
+    public override async Task BeforeExecuteAsync()
     {
+        await base.BeforeExecuteAsync();
         _replayRenderService = Context.ServiceProvider.GetRequiredService<ReplayRenderService>();
         _rateLimiterFactory = Context.ServiceProvider.GetRequiredService<RateLimiterFactory>();
-        return Task.CompletedTask;
+        _database = Context.ServiceProvider.GetRequiredService<BotContext>();
     }
 
     public override async Task ExecuteAsync()
@@ -37,7 +40,6 @@ public sealed class RenderSkinSetCommand : CommandBase<Message>
             return;
         }
 
-        await BeforeExecuteAsync();
         var rateLimiter = _rateLimiterFactory.Get(RateLimiterFactory.RateLimitPolicy.Command);
         if (!await rateLimiter.IsAllowedAsync($"{Context.Update.From!.Id}"))
         {
@@ -48,14 +50,14 @@ public sealed class RenderSkinSetCommand : CommandBase<Message>
         ILocalization language = new Russian();
         var waitMessage = await Context.Update.ReplyAsync(Context.BotClient, language.waiting);
 
-        var osuUserInDatabase = await Context.Database.OsuUsers.FindAsync(Context.Update.From!.Id);
+        var osuUserInDatabase = await _database.OsuUsers.FindAsync(Context.Update.From!.Id);
         if (osuUserInDatabase is null)
         {
             await waitMessage.EditAsync(Context.BotClient, language.error_userNotSetHimself);
             return;
         }
 
-        var chatInDatabase = await Context.Database.TelegramChats.FindAsync(Context.Update.Chat.Id);
+        var chatInDatabase = await _database.TelegramChats.FindAsync(Context.Update.Chat.Id);
 
 
         // Fake 500ms wait

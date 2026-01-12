@@ -5,8 +5,7 @@ namespace SosuBot;
 
 public static class ServiceCollectionExtensions
 {
-    public static IHttpClientBuilder AddCustomHttpClient(this IServiceCollection services, string name,
-        int executionsPerMinute)
+    public static IHttpClientBuilder AddCustomHttpClient(this IServiceCollection services, string name, int executionsPerMinute)
     {
         return services.AddHttpClient(name)
             .ConfigureHttpClient(client =>
@@ -14,7 +13,6 @@ public static class ServiceCollectionExtensions
                 client.Timeout = TimeSpan.FromSeconds(60);
                 client.DefaultRequestHeaders.ConnectionClose = true;
             })
-            .AddHttpMessageHandler(sp =>
-                new RateLimitingHandler(sp.GetRequiredService<ILogger<RateLimitingHandler>>(), executionsPerMinute));
+            .AddHttpMessageHandler(sp => new RateLimitingHandler(sp.GetRequiredService<ILogger<RateLimitingHandler>>(), executionsPerMinute));
     }
 }

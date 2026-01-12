@@ -1,4 +1,6 @@
-﻿using SosuBot.Database.Models;
+﻿using Microsoft.Extensions.DependencyInjection;
+using SosuBot.Database;
+using SosuBot.Database.Models;
 using SosuBot.Extensions;
 using SosuBot.Localization;
 using SosuBot.Localization.Languages;
@@ -9,8 +11,15 @@ namespace SosuBot.Services.Handlers.Commands;
 
 public sealed class OsuChatstatsCommand : CommandBase<Message>
 {
+    private BotContext _database = null!;
+
     public static readonly string[] Commands = ["/chatstats", "/stats"];
 
+    public override async Task BeforeExecuteAsync()
+    {
+        await base.BeforeExecuteAsync();
+        _database = Context.ServiceProvider.GetRequiredService<BotContext>();
+    }
     public override async Task ExecuteAsync()
     {
         if (Context.Update.Chat.Type == Telegram.Bot.Types.Enums.ChatType.Private)
@@ -20,7 +29,7 @@ public sealed class OsuChatstatsCommand : CommandBase<Message>
         }
 
         ILocalization language = new Russian();
-        var chatInDatabase = await Context.Database.TelegramChats.FindAsync(Context.Update.Chat.Id);
+        var chatInDatabase = await _database.TelegramChats.FindAsync(Context.Update.Chat.Id);
 
         var parameters = Context.Update.Text!.GetCommandParameters()!;
 
@@ -46,7 +55,7 @@ public sealed class OsuChatstatsCommand : CommandBase<Message>
         chatInDatabase!.ExcludeFromChatstats = chatInDatabase.ExcludeFromChatstats ?? new List<long>();
         foreach (var memberId in chatInDatabase.ChatMembers!)
         {
-            var foundMember = await Context.Database.OsuUsers.FindAsync(memberId);
+            var foundMember = await _database.OsuUsers.FindAsync(memberId);
             if (foundMember != null && !chatInDatabase.ExcludeFromChatstats.Contains(foundMember.OsuUserId))
                 foundChatMembers.Add(foundMember);
         }

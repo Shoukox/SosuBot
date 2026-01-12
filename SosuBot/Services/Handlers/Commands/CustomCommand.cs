@@ -8,6 +8,7 @@ using OsuApi.V2;
 using OsuApi.V2.Clients.Users.HttpIO;
 using OsuApi.V2.Models;
 using OsuApi.V2.Users.Models;
+using SosuBot.Database;
 using SosuBot.Database.Models;
 using SosuBot.Extensions;
 using SosuBot.Helpers;
@@ -30,27 +31,27 @@ namespace SosuBot.Services.Handlers.Commands;
 public sealed class CustomCommand : CommandBase<Message>
 {
     public static readonly string[] Commands = ["/c"];
-    private ILogger<CustomCommand> _logger = null!;
     private OpenAiService _openaiService = null!;
     private ApiV2 _osuApiV2 = null!;
     private ScoreHelper _scoreHelper = null!;
     private BeatmapsService _beatmapsService = null!;
+    private BotContext _database = null!;
+    private ILogger<CustomCommand> _logger = null!;
 
-    public override Task BeforeExecuteAsync()
+    public override async Task BeforeExecuteAsync()
     {
+        await base.BeforeExecuteAsync();
         _openaiService = Context.ServiceProvider.GetRequiredService<OpenAiService>();
         _osuApiV2 = Context.ServiceProvider.GetRequiredService<ApiV2>();
         _scoreHelper = Context.ServiceProvider.GetRequiredService<ScoreHelper>();
         _beatmapsService = Context.ServiceProvider.GetRequiredService<BeatmapsService>();
+        _database = Context.ServiceProvider.GetRequiredService<BotContext>();
         _logger = Context.ServiceProvider.GetRequiredService<ILogger<CustomCommand>>();
-        return Task.CompletedTask;
     }
 
     public override async Task ExecuteAsync()
     {
-        await BeforeExecuteAsync();
-
-        var osuUserInDatabase = await Context.Database.OsuUsers.FindAsync(Context.Update.From!.Id);
+        var osuUserInDatabase = await _database.OsuUsers.FindAsync(Context.Update.From!.Id);
         if (osuUserInDatabase is null || !osuUserInDatabase.IsAdmin)
         {
             await Context.Update.ReplyAsync(Context.BotClient, "Пшол вон!");
@@ -75,7 +76,7 @@ public sealed class CustomCommand : CommandBase<Message>
         }
         else if (parameters[0] == "getuser")
         {
-            var osuUserInReply = await Context.Database.OsuUsers.FindAsync(Context.Update.ReplyToMessage!.From!.Id);
+            var osuUserInReply = await _database.OsuUsers.FindAsync(Context.Update.ReplyToMessage!.From!.Id);
 
             var result = JsonConvert.SerializeObject(osuUserInReply,
                 Formatting.Indented,
@@ -160,7 +161,7 @@ public sealed class CustomCommand : CommandBase<Message>
             ILocalization language = new Russian();
             var waitMessage = await Context.Update.ReplyAsync(Context.BotClient, language.waiting);
 
-            var dailyStats = Context.Database.DailyStatistics.OrderBy(m => m.Id).Last();
+            var dailyStats = _database.DailyStatistics.OrderBy(m => m.Id).Last();
             Task<(int newUsers, int newScores, int newBeatmaps)>[] resultTasks =
             [
                 _scoreHelper.UpdateDailyStatisticsFromLast(_osuApiV2, Playmode.Osu, dailyStats),
@@ -179,7 +180,7 @@ public sealed class CustomCommand : CommandBase<Message>
         {
             ILocalization language = new Russian();
             var waitMessage = await Context.Update.ReplyAsync(Context.BotClient, language.waiting);
-            var dailyStatistics = Context.Database.DailyStatistics.OrderBy(m => m.Id).Last();
+            var dailyStatistics = _database.DailyStatistics.OrderBy(m => m.Id).Last();
             var passedStdScores = dailyStatistics.Scores.Where(m => m.ScoreJson.ModeInt == (int)Playmode.Osu).ToList();
             var removed = dailyStatistics.Scores.RemoveAll(m =>
             {
@@ -238,7 +239,7 @@ public sealed class CustomCommand : CommandBase<Message>
         else if (parameters[0] == "fix28112025_distinctscores")
         {
             // this id is raisy
-            var lastDbDailyStats = Context.Database.DailyStatistics.OrderBy(m => m.Id).Last();
+            var lastDbDailyStats = _database.DailyStatistics.OrderBy(m => m.Id).Last();
             int oldCount = lastDbDailyStats.Scores.Count;
             lastDbDailyStats.Scores = lastDbDailyStats.Scores.DistinctBy(m => m.ScoreId).ToList();
             await Context.Update.ReplyAsync(Context.BotClient, $"Scores old count: {oldCount}\nScores new count: {lastDbDailyStats.Scores.Count}");
@@ -267,7 +268,7 @@ public sealed class CustomCommand : CommandBase<Message>
                 var catchPp = osuUsersReader.GetDouble(osuUsersReader.GetOrdinal("CatchPPValue"));
                 var maniaPp = osuUsersReader.GetDouble(osuUsersReader.GetOrdinal("ManiaPPValue"));
 
-                if (Context.Database.OsuUsers.FirstOrDefault(m => m.TelegramId == telegramId) is { } osuUser)
+                if (_database.OsuUsers.FirstOrDefault(m => m.TelegramId == telegramId) is { } osuUser)
                 {
                     osuUser.OsuUserId = osuUserId;
                     osuUser.OsuUsername = osuUsername;
@@ -290,11 +291,11 @@ public sealed class CustomCommand : CommandBase<Message>
                         CatchPPValue = catchPp,
                         ManiaPPValue = maniaPp
                     };
-                    Context.Database.OsuUsers.Add(osuUser);
+                    _database.OsuUsers.Add(osuUser);
                     addedOsuUsers += 1;
                 }
 
-                await Context.Database.SaveChangesAsync();
+                await _database.SaveChangesAsync();
             }
 
             await using var telegramChatsCommand = sqlite.CreateCommand();
@@ -323,7 +324,7 @@ public sealed class CustomCommand : CommandBase<Message>
                 if (lastBeatmapId is DBNull || lastBeatmapId.ToString()!.Length == 2) parsedLastBeatmapId = null;
                 else parsedLastBeatmapId = lastBeatmapId is DBNull ? null : Convert.ToInt32(lastBeatmapId);
 
-                if (Context.Database.TelegramChats.FirstOrDefault(m => m.ChatId == chatId) is { } tgChat)
+                if (_database.TelegramChats.FirstOrDefault(m => m.ChatId == chatId) is { } tgChat)
                 {
                     tgChat.ChatMembers = parsedChatMembers;
                     tgChat.ExcludeFromChatstats = parsedExcl;
@@ -338,11 +339,11 @@ public sealed class CustomCommand : CommandBase<Message>
                         ExcludeFromChatstats = parsedExcl,
                         LastBeatmapId = parsedLastBeatmapId
                     };
-                    Context.Database.TelegramChats.Add(tgChat);
+                    _database.TelegramChats.Add(tgChat);
                     addedTelegramChats += 1;
                 }
 
-                await Context.Database.SaveChangesAsync();
+                await _database.SaveChangesAsync();
             }
 
             await Context.Update.ReplyAsync(Context.BotClient,
@@ -353,21 +354,21 @@ public sealed class CustomCommand : CommandBase<Message>
             ILocalization language = new Russian();
             var waitMessage = await Context.Update.ReplyAsync(Context.BotClient, language.waiting);
 
-            Context.Database.UserEntity.ExecuteDelete();
-            Context.Database.ScoreEntity.ExecuteDelete();
-            Context.Database.DailyStatistics.ExecuteDelete();
-            Context.Database.SaveChanges();
+            _database.UserEntity.ExecuteDelete();
+            _database.ScoreEntity.ExecuteDelete();
+            _database.DailyStatistics.ExecuteDelete();
+            _database.SaveChanges();
 
-            int oldCount = Context.Database.DailyStatistics.Count();
+            int oldCount = _database.DailyStatistics.Count();
             var allUsersFromStatistics = ScoresObserverBackgroundService.AllDailyStatistics.SelectMany(m => m.ActiveUsers).DistinctBy(m => m.UserId).ToList();
-            Context.Database.UserEntity.AddRange(allUsersFromStatistics);
-            Context.Database.SaveChanges();
+            _database.UserEntity.AddRange(allUsersFromStatistics);
+            _database.SaveChanges();
 
             var allScoresFromStatistics = ScoresObserverBackgroundService.AllDailyStatistics.SelectMany(m => m.Scores).DistinctBy(m => m.ScoreId).ToList();
-            Context.Database.ScoreEntity.AddRange(allScoresFromStatistics);
-            Context.Database.SaveChanges();
+            _database.ScoreEntity.AddRange(allScoresFromStatistics);
+            _database.SaveChanges();
 
-            Context.Database.DailyStatistics.AddRange(ScoresObserverBackgroundService.AllDailyStatistics.Select(m => new Database.Models.DailyStatistics()
+            _database.DailyStatistics.AddRange(ScoresObserverBackgroundService.AllDailyStatistics.Select(m => new Database.Models.DailyStatistics()
             {
                 CountryCode = m.CountryCode,
                 DayOfStatistic = m.DayOfStatistic,
@@ -375,8 +376,8 @@ public sealed class CustomCommand : CommandBase<Message>
                 BeatmapsPlayed = m.BeatmapsPlayed,
                 Scores = m.Scores.Select(s => allScoresFromStatistics.First(m => m.ScoreId == s.ScoreId)).ToList(),
             }));
-            Context.Database.SaveChanges();
-            int newCount = Context.Database.DailyStatistics.Count();
+            _database.SaveChanges();
+            int newCount = _database.DailyStatistics.Count();
             await waitMessage.EditAsync(Context.BotClient, $"Added {newCount - oldCount} new daily stats");
         }
         else if (parameters[0] == "fix-daily-stats19122025")
@@ -384,13 +385,13 @@ public sealed class CustomCommand : CommandBase<Message>
             ILocalization language = new Russian();
             var waitMessage = await Context.Update.ReplyAsync(Context.BotClient, language.waiting);
 
-            var scores = Context.Database.ScoreEntity.ToList();
+            var scores = _database.ScoreEntity.ToList();
             foreach (var score in scores)
             {
                 score.ScoreId = score.ScoreJson.Id!.Value;
             }
 
-            var users = Context.Database.UserEntity.ToList();
+            var users = _database.UserEntity.ToList();
             foreach (var user in users)
             {
                 user.UserId = user.UserJson.Id!.Value;
@@ -403,8 +404,8 @@ public sealed class CustomCommand : CommandBase<Message>
             long goal = -1001384452437;
             long from = -1002693455476;
 
-            var chatGoal = Context.Database.TelegramChats.Find(goal);
-            var chatFrom = Context.Database.TelegramChats.Find(from);
+            var chatGoal = _database.TelegramChats.Find(goal);
+            var chatFrom = _database.TelegramChats.Find(from);
 
             chatGoal!.ChatMembers = chatFrom!.ChatMembers;
             chatGoal.ExcludeFromChatstats = chatFrom.ExcludeFromChatstats;
@@ -414,7 +415,7 @@ public sealed class CustomCommand : CommandBase<Message>
             ILocalization language = new Russian();
             var waitMessage = await Context.Update.ReplyAsync(Context.BotClient, language.waiting);
 
-            var chats = Context.Database.TelegramChats.Where(m => m.ChatMembers != null && m.ChatId < 0).ToList();
+            var chats = _database.TelegramChats.Where(m => m.ChatMembers != null && m.ChatId < 0).ToList();
             var chatsToDelete = new List<TelegramChat>();
             foreach (var chat in chats)
             {
@@ -441,27 +442,27 @@ public sealed class CustomCommand : CommandBase<Message>
 
                 chat.ChatMembers.RemoveAll(m => usersToDelete.Contains(m));
             }
-            Context.Database.TelegramChats.RemoveRange(chatsToDelete);
+            _database.TelegramChats.RemoveRange(chatsToDelete);
 
-            await Context.Database.SaveChangesAsync();
+            await _database.SaveChangesAsync();
             await waitMessage.EditAsync(Context.BotClient, $"Done");
         }
         else if (parameters[0] == "fix_user_entities10012026")
         {
             var usersDatabase = new UserStatisticsCacheDatabase(_osuApiV2);
-            foreach (var userEntity in Context.Database.UserEntity)
+            foreach (var userEntity in _database.UserEntity)
             {
                 var ue = (await usersDatabase.GetUserStatistics(userEntity.UserId));
                 if (ue is null)
                 {
-                    Context.Database.UserEntity.Remove(userEntity);
+                    _database.UserEntity.Remove(userEntity);
                 }
                 else
                 {
                     userEntity.UserJson = (await usersDatabase.GetUserStatistics(userEntity.UserId))!.User!;
                 }
             }
-            await Context.Database.SaveChangesAsync();
+            await _database.SaveChangesAsync();
         }
     }
 }

@@ -2,6 +2,7 @@
 using OsuApi.V2;
 using OsuApi.V2.Clients.Users.HttpIO;
 using OsuApi.V2.Models;
+using SosuBot.Database;
 using SosuBot.Extensions;
 using SosuBot.Localization;
 using SosuBot.Localization.Languages;
@@ -14,19 +15,19 @@ public sealed class OsuCompareCommand : CommandBase<Message>
 {
     public static readonly string[] Commands = ["/compare", "/cmp"];
     private ApiV2 _osuApiV2 = null!;
+    private BotContext _database = null!;
 
-    public override Task BeforeExecuteAsync()
+    public override async Task BeforeExecuteAsync()
     {
+        await base.BeforeExecuteAsync();
         _osuApiV2 = Context.ServiceProvider.GetRequiredService<ApiV2>();
-        return Task.CompletedTask;
+        _database = Context.ServiceProvider.GetRequiredService<BotContext>();
     }
 
     public override async Task ExecuteAsync()
     {
-        await BeforeExecuteAsync();
-
         ILocalization language = new Russian();
-        var osuUserInDatabase = await Context.Database.OsuUsers.FindAsync(Context.Update.From!.Id);
+        var osuUserInDatabase = await _database.OsuUsers.FindAsync(Context.Update.From!.Id);
 
         var waitMessage = await Context.Update.ReplyAsync(Context.BotClient, language.waiting);
 
