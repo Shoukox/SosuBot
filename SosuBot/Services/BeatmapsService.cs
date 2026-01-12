@@ -39,14 +39,14 @@ namespace SosuBot.Services
             }
             else
             {
-                downloadResult = await DownloadBeatmapViaSyui(beatmapId);
-                if (downloadResult.Success) _logger.LogInformation($"Got beatmap cache for {beatmapId} from syui");
+                downloadResult = await DownloadBeatmapViaOsu(beatmapId);
+                if (downloadResult.Success) _logger.LogInformation($"Got beatmap cache for {beatmapId} from osu");
             }
 
             if (!downloadResult.Success)
             {
-                downloadResult = await DownloadBeatmapViaOsu(beatmapId);
-                if (downloadResult.Success) _logger.LogInformation($"Got beatmap cache for {beatmapId} from osu");
+                downloadResult = await DownloadBeatmapViaSyui(beatmapId);
+                if (downloadResult.Success) _logger.LogInformation($"Got beatmap cache for {beatmapId} from syui");
             }
 
             if (!downloadResult.Success)
