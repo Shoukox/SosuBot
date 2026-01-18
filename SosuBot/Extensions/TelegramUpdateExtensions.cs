@@ -81,6 +81,7 @@ public static class TelegramUpdateExtensions
             Console.WriteLine(tgfile.FilePath);
             using var fs = new FileStream(tgfile.FilePath!, FileMode.Open, FileAccess.Read);
             await fs.CopyToAsync(stream);
+            return;
         }
         await botClient.DownloadFile(tgfile, stream);
     }
