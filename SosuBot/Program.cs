@@ -76,7 +76,7 @@ internal class Program
         builder.Services.AddSingleton(serviceProvider =>
         {
             var logger = serviceProvider.GetRequiredService<ILogger<ReplayRenderService>>();
-            return new ReplayRenderService(new("https://sosubot.shoukko.de"), logger); //https://sosubot.shoukko.de http://localhost:5000
+            return new ReplayRenderService(new("http://[2a03:4000:6:417a:1::109]:5000"), logger); //http://[2a03:4000:6:417a:1::109]:5000 http://localhost:5000
         });
         builder.Services.AddSingleton<OpenAiService>();
         builder.Services.AddSingleton<BeatmapsService>();

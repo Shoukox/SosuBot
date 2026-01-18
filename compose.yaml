@@ -22,6 +22,7 @@
       - "5000"
     volumes:
       - ./cache:/app/cache
+      - /var/telegram-data:/var/telegram-data
     depends_on:
       db-service:
         condition: service_healthy
