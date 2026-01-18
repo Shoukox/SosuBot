@@ -45,12 +45,11 @@ public sealed class ReplayRenderCommand : CommandBase<Message>
         var chatInDatabase = await _database.TelegramChats.FindAsync(Context.Update.Chat.Id);
 
         ILocalization language = new Russian();
-        var waitMessage = await Context.Update.ReplyAsync(Context.BotClient, language.waiting);
 
         var osuUserInDatabase = await _database.OsuUsers.FindAsync(Context.Update.From!.Id);
         if (osuUserInDatabase is null)
         {
-            await waitMessage.EditAsync(Context.BotClient, language.error_userNotSetHimself);
+            await Context.Update.ReplyAsync(Context.BotClient, language.error_userNotSetHimself);
             return;
         }
 
@@ -64,14 +63,14 @@ public sealed class ReplayRenderCommand : CommandBase<Message>
         }
         catch (HttpRequestException ex) when (ex.InnerException is SocketException socketException && socketException.ErrorCode == 10061)
         {
-            await waitMessage.EditAsync(Context.BotClient, "Кажется, сервер сейчас не запущен. Попробуй в другой раз");
+            await Context.Update.ReplyAsync(Context.BotClient, "Кажется, сервер сейчас не запущен. Попробуй в другой раз");
             return;
         }
 
         int onlineRenderersCount = onlineRenderers!.Length;
         if (onlineRenderers == null || onlineRenderers.Length == 0)
         {
-            await waitMessage.EditAsync(Context.BotClient, "Нету ни одного доступного рендерера для рендера реплеев. Попробуй в другой раз");
+            await Context.Update.ReplyAsync(Context.BotClient, "Нету ни одного доступного рендерера для рендера реплеев. Попробуй в другой раз");
             return;
         }
 
@@ -84,11 +83,11 @@ public sealed class ReplayRenderCommand : CommandBase<Message>
             var tgfile = await Context.BotClient.GetFile(Context.Update.ReplyToMessage.Document.FileId);
             if (tgfile.FileSize > 300 * 1024)
             {
-                await waitMessage.EditAsync(Context.BotClient, "Этот реплей файл очень большой :(");
+                await Context.Update.ReplyAsync(Context.BotClient, "Этот реплей файл очень большой :(");
                 return;
             }
 
-            await Context.BotClient.DownloadFile(tgfile, replayStream);
+            await Context.BotClient.DownloadFileConsideringLocalServer(tgfile, replayStream);
             replayStream.Position = 0;
         }
         else if (Context.Update.Document != null &&
@@ -97,11 +96,11 @@ public sealed class ReplayRenderCommand : CommandBase<Message>
             var tgfile = await Context.BotClient.GetFile(Context.Update.Document!.FileId);
             if (tgfile.FileSize > 300 * 1024)
             {
-                await waitMessage.EditAsync(Context.BotClient, "Этот реплей файл очень большой :(");
+                await Context.Update.ReplyAsync(Context.BotClient, "Этот реплей файл очень большой :(");
                 return;
             }
 
-            await Context.BotClient.DownloadFile(tgfile, replayStream);
+            await Context.BotClient.DownloadFileConsideringLocalServer(tgfile, replayStream);
             replayStream.Position = 0;
         }
         else if (parameters.Length > 0 && OsuHelper.ParseOsuScoreLink([parameters[0]], out var scoreId) is { } scoreLink && scoreId != null)
@@ -109,12 +108,12 @@ public sealed class ReplayRenderCommand : CommandBase<Message>
             var score = await _osuApiV2.Scores.GetScore(scoreId.Value);
             if (score is null)
             {
-                await waitMessage.EditAsync(Context.BotClient, $"<a href=\"{scoreLink}\">Скор</a> не найден");
+                await Context.Update.ReplyAsync(Context.BotClient, $"<a href=\"{scoreLink}\">Скор</a> не найден");
                 return;
             }
             if (!score.HasReplay!.Value)
             {
-                await waitMessage.EditAsync(Context.BotClient, $"<a href=\"{scoreLink}\">Скор</a> не имеет реплея");
+                await Context.Update.ReplyAsync(Context.BotClient, $"<a href=\"{scoreLink}\">Скор</a> не имеет реплея");
                 return;
             }
 
@@ -125,12 +124,12 @@ public sealed class ReplayRenderCommand : CommandBase<Message>
             var score = await _osuApiV2.Scores.GetScore(scoreId.Value);
             if (score is null)
             {
-                await waitMessage.EditAsync(Context.BotClient, $"<a href=\"{scoreLinkFromReply}\">Скор</a> не найден");
+                await Context.Update.ReplyAsync(Context.BotClient, $"<a href=\"{scoreLinkFromReply}\">Скор</a> не найден");
                 return;
             }
             if (!score.HasReplay!.Value)
             {
-                await waitMessage.EditAsync(Context.BotClient, $"<a href=\"{scoreLinkFromReply}\">Скор</a> не имеет реплея");
+                await Context.Update.ReplyAsync(Context.BotClient, $"<a href=\"{scoreLinkFromReply}\">Скор</a> не имеет реплея");
                 return;
             }
 
@@ -138,7 +137,7 @@ public sealed class ReplayRenderCommand : CommandBase<Message>
         }
         else
         {
-            await waitMessage.EditAsync(Context.BotClient, "Используй эту команду на реплей файл или на скор с реплеем.\nЛибо укажи ссылку на скор после команды.");
+            await Context.Update.ReplyAsync(Context.BotClient, "Используй эту команду на реплей файл или на скор с реплеем.\nЛибо укажи ссылку на скор после команды.");
             return;
         }
 
@@ -151,7 +150,7 @@ public sealed class ReplayRenderCommand : CommandBase<Message>
         var replayInfo = OsuParsers.Decoders.ReplayDecoder.Decode(copyStream);
         if (replayInfo.Ruleset != OsuParsers.Enums.Ruleset.Standard)
         {
-            await waitMessage.EditAsync(Context.BotClient, "Рендер доступен только для osu!std");
+            await Context.Update.ReplyAsync(Context.BotClient, "Рендер доступен только для osu!std");
             return;
         }
 
@@ -163,7 +162,7 @@ public sealed class ReplayRenderCommand : CommandBase<Message>
         {
             InlineKeyboardButton.WithCallbackData("Статус", $"render-status {renderQueueResponse!.JobId}")
         });
-        await waitMessage.EditAsync(Context.BotClient, $"Текущее количество онлайн рендереров: {onlineRenderersCount}\n\nОчередь: {await _replayRenderService.GetWaitqueueLength(renderQueueResponse!.JobId)}\nИщем свободный рендерер...", replyMarkup: ik);
+        var message = await Context.Update.ReplyAsync(Context.BotClient, $"Текущее количество онлайн рендереров: {onlineRenderersCount}\n\nОчередь: {await _replayRenderService.GetWaitqueueLength(renderQueueResponse!.JobId)}\nИщем свободный рендерер...", replyMarkup: ik);
 
         int timeoutSeconds = 600;
         DateTime startedWaiting = DateTime.Now;
@@ -178,13 +177,13 @@ public sealed class ReplayRenderCommand : CommandBase<Message>
                 onlineRenderersCount = currentOnlineRenderers!.Length;
                 if (onlineRenderersCount == 0)
                 {
-                    await waitMessage.EditAsync(Context.BotClient, $"Сейчас свободных рендереров не осталось, попробуй позже :(");
+                    await message.EditAsync(Context.BotClient, $"Сейчас свободных рендереров не осталось, попробуй позже :(");
                     return;
                 }
                 else
                 {
                     await Task.Delay(3000 + Random.Shared.Next(500, 1500));
-                    await waitMessage.EditAsync(Context.BotClient, $"Текущее количество онлайн рендереров: {onlineRenderersCount}\n\nОчередь: {await _replayRenderService.GetWaitqueueLength(jobInfo!.JobId)}\nИщем свободный рендерер...", replyMarkup: ik);
+                    await message.EditAsync(Context.BotClient, $"Текущее количество онлайн рендереров: {onlineRenderersCount}\n\nОчередь: {await _replayRenderService.GetWaitqueueLength(jobInfo!.JobId)}\nИщем свободный рендерер...", replyMarkup: ik);
                 }
             }
             jobInfo = await _replayRenderService.GetRenderJobInfo(renderQueueResponse!.JobId);
@@ -195,20 +194,20 @@ public sealed class ReplayRenderCommand : CommandBase<Message>
 
                 var currentRenderer = currentOnlineRenderers.First(m => m.RendererId == jobInfo.RenderingBy);
                 await Task.Delay(1000 + Random.Shared.Next(500, 1500));
-                await waitMessage.EditAsync(Context.BotClient, $"Текущее количество онлайн рендереров: {onlineRenderersCount}\n\n<b>Рендерер:</b> {currentRenderer.RendererName}\n<b>Видеокарта</b>: {currentRenderer.UsedGPU}\nРендер в процессе...", replyMarkup: ik);
+                await message.EditAsync(Context.BotClient, $"Текущее количество онлайн рендереров: {onlineRenderersCount}\n\n<b>Рендерер:</b> {currentRenderer.RendererName}\n<b>Видеокарта</b>: {currentRenderer.UsedGPU}\nРендер в процессе...", replyMarkup: ik);
             }
 
             if (rendererGotThisJob && jobInfo!.RenderingBy == -1)
             {
                 rendererGotThisJob = false;
                 await Task.Delay(1000 + Random.Shared.Next(500, 1500));
-                await waitMessage.EditAsync(Context.BotClient, $"Текущее количество онлайн рендереров: {onlineRenderersCount}\n\nИщем нового рендерера...", replyMarkup: ik);
+                await message.EditAsync(Context.BotClient, $"Текущее количество онлайн рендереров: {onlineRenderersCount}\n\nИщем нового рендерера...", replyMarkup: ik);
             }
 
             if (rendererGotThisJob && DateTime.Now - startedWaiting >= TimeSpan.FromSeconds(timeoutSeconds))
             {
                 await Task.Delay(1000 + Random.Shared.Next(500, 1500));
-                await waitMessage.EditAsync(Context.BotClient, $"Таймаут. Рендеринг не был завершен за {timeoutSeconds} секунд, повторите попытку.", linkPreviewEnabled: true);
+                await message.EditAsync(Context.BotClient, $"Таймаут. Рендеринг не был завершен за {timeoutSeconds} секунд, повторите попытку.", linkPreviewEnabled: true);
                 return;
             }
 
@@ -219,15 +218,15 @@ public sealed class ReplayRenderCommand : CommandBase<Message>
         {
             if (jobInfo.FailureReason == "ruleset")
             {
-                await waitMessage.EditAsync(Context.BotClient, "Рендер доступен только для osu!std");
+                await message.EditAsync(Context.BotClient, "Рендер доступен только для osu!std");
                 return;
             }
             else
             {
-                await waitMessage.EditAsync(Context.BotClient, $"Ошибка рендера.\n{jobInfo.FailureReason}");
+                await message.EditAsync(Context.BotClient, $"Ошибка рендера.\n{jobInfo.FailureReason}");
                 return;
             }
         }
-        await waitMessage.EditAsync(Context.BotClient, $"Рендер завершен.\n<a href=\"{jobInfo!.VideoUri}\">Ссылка на видео</a>", linkPreviewEnabled: true);
+        await message.EditAsync(Context.BotClient, $"Рендер завершен.\n<a href=\"{jobInfo!.VideoUri}\">Ссылка на видео</a>", linkPreviewEnabled: true);
     }
 }

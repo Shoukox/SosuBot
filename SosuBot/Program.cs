@@ -7,6 +7,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using OsuApi.V2;
+using SosuBot.Configuration;
 using SosuBot.Database;
 using SosuBot.Database.Models;
 using SosuBot.Helpers;
@@ -38,12 +39,6 @@ internal class Program
         if (!File.Exists(configurationFileName))
             throw new FileNotFoundException($"{configurationFileName} was not found!", configurationFileName);
 
-        // OpenAI configuration
-        var openaiConfigurationFileName = "openai-settings.json";
-        if (!File.Exists(openaiConfigurationFileName))
-            throw new FileNotFoundException($"{openaiConfigurationFileName} was not found!", configurationFileName);
-        builder.Configuration.AddJsonFile(openaiConfigurationFileName, false);
-
         // Logging
         var loggingFileName = "logs/{Date}.log";
         builder.Logging.AddFile(loggingFileName, LogLevel.Warning);
@@ -60,17 +55,16 @@ internal class Program
                         .AddTypedClient<ITelegramBotClient>((httpClient, sp) =>
                         {
                             var options = sp.GetRequiredService<IOptions<BotConfiguration>>();
-                            return new TelegramBotClient(options.Value.Token, httpClient);
+                            var telegramOptions = new TelegramBotClientOptions(options.Value.Token, baseUrl: "http://[2a03:4000:6:417a:1::108]:8081");
+                            return new TelegramBotClient(telegramOptions, httpClient);
                         })
                         .AddPolicyHandler(pollyPolicies);
         builder.Services.AddCustomHttpClient("CustomHttpClient", 300)
                         .AddPolicyHandler(pollyPolicies);
 
-        var osuApiV2Configuration = builder.Services.BuildServiceProvider()
-            .GetRequiredService<IOptions<OsuApiV2Configuration>>().Value;
         builder.Services.AddSingleton(provider =>
         {
-            var config = osuApiV2Configuration;
+            var config = builder.Configuration.GetSection(nameof(OsuApiV2Configuration)).Get<OsuApiV2Configuration>()!;
             var httpClient = provider.GetRequiredService<IHttpClientFactory>().CreateClient("CustomHttpClient");
             var logger = provider.GetRequiredService<ILogger<ApiV2>>();
             return new ApiV2(config.ClientId, config.ClientSecret, httpClient, logger);

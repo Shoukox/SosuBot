@@ -151,8 +151,9 @@ public static partial class OsuHelper
 
     public static InlineKeyboardMarkup GetRenderSettingsMarkup(DanserConfiguration config)
     {
-        string hitErrorMeter = (config.HitErrorMeter ? Emojis.CheckMarkEmoji : "") + "HitErrorMeter";
-        string aimErrorMeter = (config.AimErrorMeter ? Emojis.CheckMarkEmoji : "") + "AimErrorMeter";
+        string hitErrorMeter = (config.HitErrorMeter ? Emojis.CheckMarkEmoji : "") + "UR Bar";
+        string aimErrorMeter = (config.AimErrorMeter ? Emojis.CheckMarkEmoji : "") + "Aim Error Circle";
+        string motionBlur = (config.MotionBlur ? Emojis.CheckMarkEmoji : "") + "Motion Blur";
         string hbBar = (config.HPBar ? Emojis.CheckMarkEmoji : "") + "HP Bar";
         string showPP = (config.ShowPP ? Emojis.CheckMarkEmoji : "") + "Show PP";
         string hitCounter = (config.HitCounter ? Emojis.CheckMarkEmoji : "") + "Hit Counter";
@@ -174,11 +175,15 @@ public static partial class OsuHelper
                     InlineKeyboardButton.WithCallbackData($"Эффекты: {config.SampleVolume*100:00}%", $"rs effects-volume")
                 ],
                 [
+                    InlineKeyboardButton.WithCallbackData($"Background: {config.BackgroundDim*100:00}%", $"rs background")
+                ],
+                [
                     InlineKeyboardButton.WithCallbackData($"Skin: {config.SkinName}", $"rs skin 1")
                 ],
                 [
                     InlineKeyboardButton.WithCallbackData(hitErrorMeter, $"rs hit-error-meter"),
                     InlineKeyboardButton.WithCallbackData(aimErrorMeter, $"rs aim-error-meter"),
+                    InlineKeyboardButton.WithCallbackData(motionBlur, $"rs motion-blur"),
                 ],
                 [
                     InlineKeyboardButton.WithCallbackData(hbBar, $"rs hp-bar"),

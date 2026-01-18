@@ -72,7 +72,11 @@ public sealed class CustomCommand : CommandBase<Message>
         }
         else if (parameters[0] == "test")
         {
-            await Context.Update.ReplyAsync(Context.BotClient, new string('a', (int)Math.Pow(2, 14)));
+            string path = @"C:\Users\shach\Desktop\ClientRenderer\ClientRenderer\bin\Debug\net10.0\danser\videos\1864ab68a3efbc2bbd5d6cccd631add2.mp4";
+            var fileInfo = new FileInfo(path);
+            _logger.LogInformation($"Uploading a {fileInfo.Length / 1024 / 1024}mb video file...");
+            using var fs = new FileStream(path, FileMode.Open, FileAccess.Read);
+            await Context.BotClient.SendVideo(Context.Update.Chat.Id, new InputFileStream(fs));
         }
         else if (parameters[0] == "getuser")
         {

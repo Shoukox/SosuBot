@@ -4,6 +4,7 @@ using Newtonsoft.Json;
 using OpenAI.Responses;
 using OsuApi.V2;
 using OsuApi.V2.Clients.Users.HttpIO;
+using SosuBot.Configuration;
 using SosuBot.Database.Models;
 using SosuBot.Extensions;
 using SosuBot.Helpers;
