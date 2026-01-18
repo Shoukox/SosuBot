@@ -71,4 +71,17 @@ public static class TelegramUpdateExtensions
 
         return links;
     }
+
+    public static async Task DownloadFileConsideringLocalServer(this ITelegramBotClient botClient, TGFile tgfile, Stream stream) 
+    {
+        if (botClient.LocalBotServer)
+        {
+            //tgfile.FilePath = string.Join('/', tgfile.FilePath!.Split('/')[4..]);
+            Console.WriteLine();
+            Console.WriteLine(tgfile.FilePath);
+            using var fs = new FileStream(tgfile.FilePath!, FileMode.Open, FileAccess.Read);
+            await fs.CopyToAsync(stream);
+        }
+        await botClient.DownloadFile(tgfile, stream);
+    }
 }

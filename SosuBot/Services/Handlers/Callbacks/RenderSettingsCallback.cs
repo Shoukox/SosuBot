@@ -64,10 +64,12 @@ public class RenderSettingsCallback() : CommandBase<CallbackQuery>
         {
             "general-volume" => GeneralVolume,
             "music-volume" => MusicVolume,
+            "background" => BackgroundDim,
             "effects-volume" => EffectsVolume,
             "skin" => () => Skin(settingValue),
             "hit-error-meter" => HitErrorMeter,
             "aim-error-meter" => AimErrorMeter,
+            "motion-blur" => MotionBlur,
             "hp-bar" => HpBar,
             "pp" => ShowPP,
             "hit-counter" => HitCounter,
@@ -85,7 +87,8 @@ public class RenderSettingsCallback() : CommandBase<CallbackQuery>
             "set-general-volume" => () => SetGeneralVolume(settingValue),
             "set-music-volume" => () => SetMusicVolume(settingValue),
             "set-effects-volume" => () => SetEffectsVolume(settingValue),
-            "set-skin" => () => SetSkin(settingValue),
+            "set-background" => () => SetBackgroundDim(settingValue),
+            "ss" => () => SetSkin(settingValue),
             "set-custom-skin" => () => SetCustomSkin(settingValue),
             _ => () => Task.CompletedTask
         };
@@ -221,6 +224,59 @@ public class RenderSettingsCallback() : CommandBase<CallbackQuery>
         await EffectsVolume();
     }
 
+    async Task BackgroundDim()
+    {
+        double usersBackgroundDim = _osuUser.RenderSettings.BackgroundDim;
+        string[] percentage = Enumerable.Range(1, 20).Select(m => $"{m * 5}%").ToArray();
+        int index = (int)Math.Round(usersBackgroundDim / 0.05) - 1;
+        percentage[index] = Emojis.CheckMarkEmoji + percentage[index];
+
+        var ikm = new InlineKeyboardMarkup(
+            [
+                [
+                    InlineKeyboardButton.WithCallbackData(percentage[0], $"rs set-background 0.05"),
+                    InlineKeyboardButton.WithCallbackData(percentage[1], $"rs set-background 0.10"),
+                    InlineKeyboardButton.WithCallbackData(percentage[2], $"rs set-background 0.15"),
+                    InlineKeyboardButton.WithCallbackData(percentage[3], $"rs set-background 0.20"),
+                    InlineKeyboardButton.WithCallbackData(percentage[4], $"rs set-background 0.25"),
+                ],
+                [
+                    InlineKeyboardButton.WithCallbackData(percentage[5], $"rs set-background 0.30"),
+                    InlineKeyboardButton.WithCallbackData(percentage[6], $"rs set-background 0.35"),
+                    InlineKeyboardButton.WithCallbackData(percentage[7], $"rs set-background 0.40"),
+                    InlineKeyboardButton.WithCallbackData(percentage[8], $"rs set-background 0.45"),
+                    InlineKeyboardButton.WithCallbackData(percentage[9], $"rs set-background 0.50"),
+                ],
+                [
+                    InlineKeyboardButton.WithCallbackData(percentage[10], $"rs set-background 0.55"),
+                    InlineKeyboardButton.WithCallbackData(percentage[11], $"rs set-background 0.60"),
+                    InlineKeyboardButton.WithCallbackData(percentage[12], $"rs set-background 0.65"),
+                    InlineKeyboardButton.WithCallbackData(percentage[13], $"rs set-background 0.70"),
+                    InlineKeyboardButton.WithCallbackData(percentage[14], $"rs set-background 0.75"),
+                ],
+                [
+                    InlineKeyboardButton.WithCallbackData(percentage[15], $"rs set-background 0.80"),
+                    InlineKeyboardButton.WithCallbackData(percentage[16], $"rs set-background 0.85"),
+                    InlineKeyboardButton.WithCallbackData(percentage[17], $"rs set-background 0.90"),
+                    InlineKeyboardButton.WithCallbackData(percentage[18], $"rs set-background 0.95"),
+                    InlineKeyboardButton.WithCallbackData(percentage[19], $"rs set-background 1.0"),
+                ],
+                [
+                    InlineKeyboardButton.WithCallbackData("Назад", $"rs home"),
+                ],
+            ]
+        );
+        await Context.BotClient.EditMessageText(_chatId, Context.Update.Message!.Id, "Затемнение экрана", replyMarkup: ikm);
+    }
+
+    async Task SetBackgroundDim(string? settingValue)
+    {
+        if (settingValue is null) throw new NullReferenceException();
+
+        _osuUser.RenderSettings.BackgroundDim = double.Parse(settingValue, CultureInfo.InvariantCulture);
+        await BackgroundDim();
+    }
+
     async Task Skin(string? settingValue)
     {
         if (settingValue is null) throw new NullReferenceException();
@@ -244,7 +300,7 @@ public class RenderSettingsCallback() : CommandBase<CallbackQuery>
 
         availableSkins.Add("default");
         int totalPages = (int)Math.Ceiling(availableSkins.Count / 7.0);
-        availableSkins = availableSkins.Skip((page - 1) * 7).Take(page * 7).ToList();
+        availableSkins = availableSkins.Skip((page - 1) * 7).Take(7).ToList();
         if (availableSkins.ToList().Count == 0)
         {
             await Context.Update.AnswerAsync(Context.BotClient);
@@ -254,7 +310,7 @@ public class RenderSettingsCallback() : CommandBase<CallbackQuery>
         string renderSkinNameNoOsk = _osuUser.RenderSettings.SkinName.EndsWith(".osk") ? _osuUser.RenderSettings.SkinName[..^4] : _osuUser.RenderSettings.SkinName;
         var availableSkinsAsIkm = availableSkins.Select(m => m.EndsWith(".osk") ? m[..^4] : m).Select(m => new InlineKeyboardButton[]
         {
-            InlineKeyboardButton.WithCallbackData(renderSkinNameNoOsk == m ? Emojis.CheckMarkEmoji + m : m, $"rs set-skin {page} {m}")
+            InlineKeyboardButton.WithCallbackData(renderSkinNameNoOsk == m ? Emojis.CheckMarkEmoji + m : m, $"rs ss {m}")
         });
 
         var ikm = new InlineKeyboardMarkup(
@@ -272,8 +328,11 @@ public class RenderSettingsCallback() : CommandBase<CallbackQuery>
         if (settingValue is null) throw new NullReferenceException();
 
         string[] splittedSettingValue = settingValue.Split(' ');
-        _osuUser.RenderSettings.SkinName = string.Join(' ', splittedSettingValue[1..]) + ".osk";
-        await Skin(splittedSettingValue[0]);
+        _osuUser.RenderSettings.SkinName = settingValue + ".osk";
+
+        int.TryParse(Context.Update.Message!.ReplyMarkup!.InlineKeyboard.First(m => m.Any(m => m.Text is "<")).First().CallbackData!.Split(' ').Last(), out int pageBefore);
+        int currentPage = pageBefore + 1;
+        await Skin(currentPage.ToString());
     }
 
     async Task SetCustomSkin(string? settingData)
@@ -290,6 +349,12 @@ public class RenderSettingsCallback() : CommandBase<CallbackQuery>
     async Task AimErrorMeter()
     {
         _osuUser.RenderSettings.AimErrorMeter = !_osuUser.RenderSettings.AimErrorMeter;
+        await Home();
+    }
+
+    async Task MotionBlur()
+    {
+        _osuUser.RenderSettings.MotionBlur = !_osuUser.RenderSettings.MotionBlur;
         await Home();
     }
 

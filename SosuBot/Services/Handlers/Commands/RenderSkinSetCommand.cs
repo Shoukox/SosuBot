@@ -5,6 +5,7 @@ using SosuBot.Localization;
 using SosuBot.Localization.Languages;
 using SosuBot.Services.Handlers.Abstract;
 using SosuBot.Services.Synchronization;
+using System.Text.RegularExpressions;
 using Telegram.Bot;
 using Telegram.Bot.Types;
 
@@ -34,11 +35,11 @@ public sealed class RenderSkinSetCommand : CommandBase<Message>
             return;
         }
 
-        if (Context.Update.ReplyToMessage?.Document.FileSize >= 20971520)
-        {
-            await Context.Update.ReplyAsync(Context.BotClient, "Из-за ограничений телеграма размер скина должен быть меньше 20мб");
-            return;
-        }
+        //if (Context.Update.ReplyToMessage?.Document.FileSize >= 20971520)
+        //{
+        //    await Context.Update.ReplyAsync(Context.BotClient, "Из-за ограничений телеграма размер скина должен быть меньше 20мб");
+        //    return;
+        //}
 
         var rateLimiter = _rateLimiterFactory.Get(RateLimiterFactory.RateLimitPolicy.Command);
         if (!await rateLimiter.IsAllowedAsync($"{Context.Update.From!.Id}"))
@@ -63,16 +64,19 @@ public sealed class RenderSkinSetCommand : CommandBase<Message>
         // Fake 500ms wait
         await Task.Delay(500);
 
-        Stream replayStream = new MemoryStream();
+
+        Stream skinStream = new MemoryStream();
         var tgfile = await Context.BotClient.GetFile(Context.Update.ReplyToMessage!.Document.FileId);
-        await Context.BotClient.DownloadFile(tgfile, replayStream);
-        replayStream.Position = 0;
+        await Context.BotClient.DownloadFileConsideringLocalServer(tgfile, skinStream);
+        skinStream.Position = 0;
 
         var fileName = Context.Update.ReplyToMessage!.Document.FileName!;
+        fileName = Regex.Replace(fileName, @"\s+", " ");
+
         string asciiSkinName = AnyAscii.Transliteration.Transliterate(fileName);
         asciiSkinName = asciiSkinName.Substring(0, asciiSkinName.Length - 4);
-        asciiSkinName = asciiSkinName.Substring(0, Math.Min(44, asciiSkinName.Length - 1)) + ".osk";
-        await _replayRenderService.UploadSkin(replayStream, asciiSkinName);
+        asciiSkinName = asciiSkinName.Substring(0, Math.Min(53, asciiSkinName.Length - 1)) + ".osk";
+        await _replayRenderService.UploadSkin(skinStream, asciiSkinName);
 
         await waitMessage.EditAsync(Context.BotClient, "Скин успешно загружен и будет использован по умолчанию!");
         osuUserInDatabase.RenderSettings.SkinName = asciiSkinName;

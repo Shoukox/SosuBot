@@ -21,6 +21,9 @@ public class ConfigureBotService(IServiceProvider serviceProvider) : IHostedServ
 
     public async Task StartAsync(CancellationToken cancellationToken)
     {
+        //await _botClient.LogOut();
+        //_logger.LogInformation("Successfully logged out");
+
         await _botClient.SetMyCommands(botCommands, cancellationToken: CancellationToken.None);
         _logger.LogInformation("Successfully set bot commands");
 

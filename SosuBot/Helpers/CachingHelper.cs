@@ -68,7 +68,7 @@ namespace SosuBot.Helpers
                     key,
                     async token =>
                     {
-                        logger?.LogInformation($"Getting beatmap infos ({beatmapsetId}) via osuApi");
+                        logger?.LogInformation($"Getting beatmapset infos ({beatmapsetId}) via osuApi");
                         var response = await osuApiV2.Beatmapsets.GetBeatmapset(beatmapsetId);
                         return response ?? throw new InvalidOperationException($"Beatmapset {beatmapsetId} not found.");
                     },
