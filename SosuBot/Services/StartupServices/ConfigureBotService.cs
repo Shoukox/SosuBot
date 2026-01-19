@@ -1,10 +1,10 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using SosuBot.Services.Handlers;
-using SosuBot.Services.Handlers.Abstract;
-using SosuBot.Services.Handlers.Callbacks;
-using SosuBot.Services.Handlers.Commands;
+using SosuBot.TelegramHandlers;
+using SosuBot.TelegramHandlers.Abstract;
+using SosuBot.TelegramHandlers.Callbacks;
+using SosuBot.TelegramHandlers.Commands;
 using Telegram.Bot;
 using Telegram.Bot.Types;
 

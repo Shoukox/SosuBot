@@ -1,4 +1,5 @@
-﻿using SosuBot.Helpers.OutputText;
+﻿using OpenAI.Images;
+using SosuBot.Helpers.OutputText;
 using Telegram.Bot;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
@@ -77,6 +78,12 @@ public static class TelegramUpdateExtensions
         if (botClient.LocalBotServer)
         {
             //tgfile.FilePath = string.Join('/', tgfile.FilePath!.Split('/')[4..]);
+            string filePath = tgfile.FilePath!;
+            if (Environment.OSVersion.Platform is PlatformID.Win32NT)
+            {
+                filePath = Path.Combine(AppContext.BaseDirectory, "replay.osr");
+            }
+
             Console.WriteLine();
             Console.WriteLine(tgfile.FilePath);
             using var fs = new FileStream(tgfile.FilePath!, FileMode.Open, FileAccess.Read);

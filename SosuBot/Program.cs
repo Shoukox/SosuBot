@@ -15,11 +15,11 @@ using SosuBot.Helpers.OutputText;
 using SosuBot.Logging;
 using SosuBot.Services;
 using SosuBot.Services.BackgroundServices;
-using SosuBot.Services.Handlers;
 using SosuBot.Services.StartupServices;
 using SosuBot.Services.Synchronization;
 using StackExchange.Redis;
 using Telegram.Bot;
+using SosuBot.TelegramHandlers;
 
 namespace SosuBot;
 
@@ -48,14 +48,17 @@ internal class Program
         var pollyPolicies = PollyPolicies.GetCombinedPolicy();
 
         // Services
-        builder.Services.Configure<BotConfiguration>(builder.Configuration.GetSection(nameof(BotConfiguration)));
+        var botConfig = builder.Configuration.GetSection(nameof(BotConfiguration));
+        var renderConfig = builder.Configuration.GetSection(nameof(RenderConfiguration));
+        builder.Services.Configure<BotConfiguration>(botConfig);
         builder.Services.Configure<OsuApiV2Configuration>(builder.Configuration.GetSection(nameof(OsuApiV2Configuration)));
         builder.Services.Configure<OpenAiConfiguration>(builder.Configuration.GetSection(nameof(OpenAiConfiguration)));
+        builder.Services.Configure<RenderConfiguration>(renderConfig);
         builder.Services.AddCustomHttpClient(nameof(ITelegramBotClient), 32_767)
                         .AddTypedClient<ITelegramBotClient>((httpClient, sp) =>
                         {
                             var options = sp.GetRequiredService<IOptions<BotConfiguration>>();
-                            var telegramOptions = new TelegramBotClientOptions(options.Value.Token, baseUrl: "http://[2a03:4000:6:417a:1::108]:8081");
+                            var telegramOptions = new TelegramBotClientOptions(options.Value.Token, baseUrl: botConfig[nameof(BotConfiguration.ApiServerUrl)]);
                             return new TelegramBotClient(telegramOptions, httpClient);
                         })
                         .AddPolicyHandler(pollyPolicies);
@@ -76,7 +79,7 @@ internal class Program
         builder.Services.AddSingleton(serviceProvider =>
         {
             var logger = serviceProvider.GetRequiredService<ILogger<ReplayRenderService>>();
-            return new ReplayRenderService(new("http://[2a03:4000:6:417a:1::109]:5000"), logger); //http://[2a03:4000:6:417a:1::109]:5000 http://localhost:5000
+            return new ReplayRenderService(new(renderConfig[nameof(RenderConfiguration.RenderUrl)]!), logger);
         });
         builder.Services.AddSingleton<OpenAiService>();
         builder.Services.AddSingleton<BeatmapsService>();
