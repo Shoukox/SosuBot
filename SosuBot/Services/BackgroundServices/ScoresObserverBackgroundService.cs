@@ -15,7 +15,6 @@ using SosuBot.Helpers.Comparers;
 using SosuBot.Helpers.OutputText;
 using SosuBot.Helpers.Types;
 using SosuBot.Helpers.Types.Statistics;
-using StackExchange.Redis;
 using System.Collections.Concurrent;
 using System.Text.Json;
 using Telegram.Bot;

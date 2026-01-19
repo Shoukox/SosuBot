@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using SosuBot.Configuration;
 using SosuBot.Database;
 using SosuBot.Extensions;
 using SosuBot.TelegramHandlers.Abstract;

@@ -8,8 +8,8 @@ using SosuBot.Helpers.OutputText;
 using SosuBot.Localization;
 using SosuBot.Localization.Languages;
 using SosuBot.Services.Synchronization;
-using Telegram.Bot.Types;
 using SosuBot.TelegramHandlers.Abstract;
+using Telegram.Bot.Types;
 
 namespace SosuBot.TelegramHandlers.Commands;
 

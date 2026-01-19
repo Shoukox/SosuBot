@@ -5,6 +5,7 @@ using OsuApi.V2;
 using OsuApi.V2.Clients.Users.HttpIO;
 using OsuApi.V2.Models;
 using OsuApi.V2.Users.Models;
+using SosuBot.Configuration;
 using SosuBot.Database;
 using SosuBot.Database.Models;
 using SosuBot.Extensions;
@@ -13,11 +14,11 @@ using SosuBot.Helpers.OutputText;
 using SosuBot.Localization;
 using SosuBot.Localization.Languages;
 using SosuBot.PerformanceCalculator;
+using SosuBot.Services;
 using SosuBot.Services.Synchronization;
+using SosuBot.TelegramHandlers.Abstract;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.ReplyMarkups;
-using SosuBot.TelegramHandlers.Abstract;
-using SosuBot.Services;
 
 namespace SosuBot.TelegramHandlers.Text;
 

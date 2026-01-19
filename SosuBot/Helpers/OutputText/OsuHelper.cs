@@ -1,10 +1,8 @@
-﻿using osu.Game.Overlays.Settings.Sections.Graphics;
-using osu.Game.Rulesets.Catch.Mods;
+﻿using osu.Game.Rulesets.Catch.Mods;
 using osu.Game.Rulesets.Mania.Mods;
 using osu.Game.Rulesets.Mods;
 using osu.Game.Rulesets.Osu.Mods;
 using osu.Game.Rulesets.Taiko.Mods;
-using Polly;
 using SosuBot.Database.Database.Models;
 using SosuBot.Database.Models;
 using System.Text.RegularExpressions;

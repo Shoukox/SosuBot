@@ -1,5 +1,4 @@
-﻿using OpenAI.Images;
-using SosuBot.Helpers.OutputText;
+﻿using SosuBot.Helpers.OutputText;
 using Telegram.Bot;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
@@ -73,7 +72,7 @@ public static class TelegramUpdateExtensions
         return links;
     }
 
-    public static async Task DownloadFileConsideringLocalServer(this ITelegramBotClient botClient, TGFile tgfile, Stream stream) 
+    public static async Task DownloadFileConsideringLocalServer(this ITelegramBotClient botClient, TGFile tgfile, Stream stream)
     {
         if (botClient.LocalBotServer)
         {

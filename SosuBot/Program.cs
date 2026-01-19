@@ -17,9 +17,9 @@ using SosuBot.Services;
 using SosuBot.Services.BackgroundServices;
 using SosuBot.Services.StartupServices;
 using SosuBot.Services.Synchronization;
+using SosuBot.TelegramHandlers;
 using StackExchange.Redis;
 using Telegram.Bot;
-using SosuBot.TelegramHandlers;
 
 namespace SosuBot;
 

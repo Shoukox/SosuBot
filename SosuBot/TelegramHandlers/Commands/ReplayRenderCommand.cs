@@ -1,19 +1,18 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
-using MongoDB.Bson.Serialization.Serializers;
 using OsuApi.V2;
 using SosuBot.Database;
 using SosuBot.Extensions;
 using SosuBot.Helpers.OutputText;
 using SosuBot.Localization;
 using SosuBot.Localization.Languages;
+using SosuBot.Services;
 using SosuBot.Services.Synchronization;
+using SosuBot.TelegramHandlers.Abstract;
 using System.Net.Sockets;
 using Telegram.Bot;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.ReplyMarkups;
 using static SosuBot.Services.ReplayRenderService;
-using SosuBot.TelegramHandlers.Abstract;
-using SosuBot.Services;
 
 namespace SosuBot.TelegramHandlers.Commands;
 
@@ -157,7 +156,7 @@ public sealed class ReplayRenderCommand : CommandBase<Message>
 
         // Queue replay
         renderQueueResponse = await _replayRenderService.QueueReplay(replayStream, osuUserInDatabase.RenderSettings);
-        if(renderQueueResponse is null)
+        if (renderQueueResponse is null)
         {
             await Context.Update.ReplyAsync(Context.BotClient, "Вероятно, твой выбранный скин не был найден на сервере - выбери другой.");
             return;
