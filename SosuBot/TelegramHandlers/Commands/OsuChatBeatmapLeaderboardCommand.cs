@@ -1,5 +1,5 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
-using OsuApi.V2;
+using OsuApi.BanchoV2;
 using SosuBot.Database;
 using SosuBot.Database.Models;
 using SosuBot.Extensions;
@@ -16,7 +16,7 @@ namespace SosuBot.TelegramHandlers.Commands;
 public sealed class OsuChatBeatmapLeaderboardCommand : CommandBase<Message>
 {
     public static readonly string[] Commands = ["/beatmap_leaderboard", "/bl"];
-    private ApiV2 _osuApiV2 = null!;
+    private BanchoApiV2 _osuApiV2 = null!;
     private ScoreHelper _scoreHelper = null!;
     private CachingHelper _cachingHelper = null!;
     private RateLimiterFactory _rateLimiterFactory = null!;
@@ -27,7 +27,7 @@ public sealed class OsuChatBeatmapLeaderboardCommand : CommandBase<Message>
     public override async Task BeforeExecuteAsync()
     {
         await base.BeforeExecuteAsync();
-        _osuApiV2 = Context.ServiceProvider.GetRequiredService<ApiV2>();
+        _osuApiV2 = Context.ServiceProvider.GetRequiredService<BanchoApiV2>();
         _scoreHelper = Context.ServiceProvider.GetRequiredService<ScoreHelper>();
         _cachingHelper = Context.ServiceProvider.GetRequiredService<CachingHelper>();
         _rateLimiterFactory = Context.ServiceProvider.GetRequiredService<RateLimiterFactory>();
@@ -102,7 +102,7 @@ public sealed class OsuChatBeatmapLeaderboardCommand : CommandBase<Message>
         Playmode playmode = (Playmode)(beatmap.ModeInt ?? 0);
         string ruleset = playmode.ToRuleset();
         string sendMessage = "";
-        List<OsuApi.V2.Models.Score> foundScores = new();
+        List<OsuApi.BanchoV2.Models.Score> foundScores = new();
         foreach (var osuUser in foundChatMembers)
         {
             var scores = await _osuApiV2.Beatmaps.GetUserBeatmapScore(beatmapId.Value, osuUser.OsuUserId, new() { Mode = ruleset });

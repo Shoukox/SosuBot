@@ -4,7 +4,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using OsuApi.V2;
+using OsuApi.BanchoV2;
 using SosuBot.Database;
 using SosuBot.Database.Models;
 using SosuBot.ScoresObserver;
@@ -26,13 +26,13 @@ var pollyPolicies = PollyPolicies.GetCombinedPolicy(logger);
 
 // Services
 builder.Services.Configure<OsuApiV2Configuration>(builder.Configuration.GetSection(nameof(OsuApiV2Configuration)));
-builder.Services.AddCustomHttpClient(nameof(ApiV2), 300).AddPolicyHandler(pollyPolicies);
-builder.Services.AddSingleton<ApiV2>(provider =>
+builder.Services.AddCustomHttpClient(nameof(BanchoApiV2), 300).AddPolicyHandler(pollyPolicies);
+builder.Services.AddSingleton<BanchoApiV2>(provider =>
 {
     var config = builder.Configuration.Get<OsuApiV2Configuration>()!;
-    var httpClient = provider.GetRequiredService<IHttpClientFactory>().CreateClient(nameof(ApiV2));
-    var logger = provider.GetRequiredService<ILogger<ApiV2>>();
-    return new ApiV2(config.ClientId, config.ClientSecret, httpClient, logger);
+    var httpClient = provider.GetRequiredService<IHttpClientFactory>().CreateClient(nameof(BanchoApiV2));
+    var logger = provider.GetRequiredService<ILogger<BanchoApiV2>>();
+    return new BanchoApiV2(config.ClientId, config.ClientSecret, httpClient);
 });
 builder.Services.AddHostedService<ScoresObserverBackgroundService>();
 

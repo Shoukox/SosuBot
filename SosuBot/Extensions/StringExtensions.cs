@@ -1,4 +1,4 @@
-﻿using OsuApi.V2.Models;
+﻿using OsuApi.BanchoV2.Models;
 using SosuBot.Database.Models;
 using System.Web;
 using Mod = osu.Game.Rulesets.Mods.Mod;

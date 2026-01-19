@@ -1,8 +1,8 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
-using OsuApi.V2.Models;
-using OsuApi.V2.Users.Models;
+using OsuApi.BanchoV2.Models;
+using OsuApi.BanchoV2.Users.Models;
 using SosuBot.Database.Database.Models;
 using SosuBot.Database.Models;
 using System.Text.Json;

@@ -1,4 +1,4 @@
-using OsuApi.V2.Models;
+using OsuApi.BanchoV2.Models;
 
 namespace SosuBot.Helpers.Comparers;
 

@@ -1,6 +1,6 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
-using OsuApi.V2;
-using OsuApi.V2.Clients.Users.HttpIO;
+using OsuApi.BanchoV2;
+using OsuApi.BanchoV2.Clients.Users.HttpIO;
 using SosuBot.Database;
 using SosuBot.Database.Models;
 using SosuBot.Extensions;
@@ -18,14 +18,14 @@ namespace SosuBot.TelegramHandlers.Callbacks;
 public class OsuUserCallback : CommandBase<CallbackQuery>
 {
     public static readonly string Command = "user";
-    private ApiV2 _osuApiV2 = null!;
+    private BanchoApiV2 _osuApiV2 = null!;
     private ScoreHelper _scoreHelper = null!;
     private BotContext _database = null!;
 
     public override async Task BeforeExecuteAsync()
     {
         await base.BeforeExecuteAsync();
-        _osuApiV2 = Context.ServiceProvider.GetRequiredService<ApiV2>();
+        _osuApiV2 = Context.ServiceProvider.GetRequiredService<BanchoApiV2>();
         _scoreHelper = Context.ServiceProvider.GetRequiredService<ScoreHelper>();
         _database = Context.ServiceProvider.GetRequiredService<BotContext>();
     }

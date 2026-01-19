@@ -1,7 +1,7 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
-using OsuApi.V2;
-using OsuApi.V2.Clients.Users.HttpIO;
-using OsuApi.V2.Users.Models;
+using OsuApi.BanchoV2;
+using OsuApi.BanchoV2.Clients.Users.HttpIO;
+using OsuApi.BanchoV2.Users.Models;
 using SosuBot.Database;
 using SosuBot.Database.Models;
 using SosuBot.Extensions;
@@ -19,7 +19,7 @@ namespace SosuBot.TelegramHandlers.Commands;
 public class OsuUserCommand(bool includeIdInSearch = false) : CommandBase<Message>
 {
     public static readonly string[] Commands = ["/user", "/u"];
-    private ApiV2 _osuApiV2 = null!;
+    private BanchoApiV2 _osuApiV2 = null!;
     private ScoreHelper _scoreHelper = null!;
     private RateLimiterFactory _rateLimiterFactory = null!;
     private BotContext _database = null!;
@@ -28,7 +28,7 @@ public class OsuUserCommand(bool includeIdInSearch = false) : CommandBase<Messag
     {
         await base.BeforeExecuteAsync();
         _scoreHelper = Context.ServiceProvider.GetRequiredService<ScoreHelper>();
-        _osuApiV2 = Context.ServiceProvider.GetRequiredService<ApiV2>();
+        _osuApiV2 = Context.ServiceProvider.GetRequiredService<BanchoApiV2>();
         _rateLimiterFactory = Context.ServiceProvider.GetRequiredService<RateLimiterFactory>();
         _database = Context.ServiceProvider.GetRequiredService<BotContext>();
     }
@@ -130,6 +130,8 @@ public class OsuUserCommand(bool includeIdInSearch = false) : CommandBase<Messag
         UserHelper.UpdateOsuUsers(_database, user, playmode);
 
         DateTime.TryParse(user.JoinDate?.Value, out var registerDateTime);
+
+        int achievementsCount = user.UserAchievements?.Length ?? 0;
         var textToSend = language.command_user.Fill([
             $"{playmode.ToGamemode()}",
             $"{UserHelper.GetUserProfileUrlWrappedInUsernameString(user.Id.Value, user.Username!)}",
@@ -142,8 +144,8 @@ public class OsuUserCommand(bool includeIdInSearch = false) : CommandBase<Messag
             $"{user.Statistics.PlayCount:N0}",
             $"{user.Statistics.PlayTime / 3600}",
             $"{registerDateTime:dd.MM.yyyy HH:mm:ss}",
-            $"{user.UserAchievements?.Length ?? 0}",
-            $"{OsuConstants.TotalAchievementsCount}",
+            $"{achievementsCount}",
+            $"{OsuConstants.TotalAchievementsCount} ({(double)achievementsCount / OsuConstants.TotalAchievementsCount * 100:00.00}%)",
             $"{user.Statistics.GradeCounts!.SSH}",
             $"{user.Statistics.GradeCounts!.SH}",
             $"{user.Statistics.GradeCounts!.SS}",

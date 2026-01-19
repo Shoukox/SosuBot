@@ -4,8 +4,8 @@ using osu.Game.Rulesets.Mods;
 using osu.Game.Rulesets.Osu.Mods;
 using osu.Game.Rulesets.Scoring;
 using osu.Game.Rulesets.Taiko.Mods;
-using OsuApi.V2.Models;
-using OsuApi.V2.Users.Models;
+using OsuApi.BanchoV2.Models;
+using OsuApi.BanchoV2.Users.Models;
 using SosuBot.Database.Models;
 using SosuBot.Helpers;
 using Mod = osu.Game.Rulesets.Mods.Mod;
@@ -49,7 +49,7 @@ public static class OsuTypesExtensions
         .Select(t => (Mod)Activator.CreateInstance(t)!)
         .ToArray();
 
-    public static Mod[] ToOsuMods(this OsuApi.V2.Models.Mod[] mods, Playmode playmode)
+    public static Mod[] ToOsuMods(this OsuApi.BanchoV2.Models.Mod[] mods, Playmode playmode)
     {
         var osuMods = new List<Mod>();
         foreach (var mod in mods)

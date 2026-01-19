@@ -1,5 +1,5 @@
-﻿using OsuApi.V2.Models;
-using OsuApi.V2.Users.Models;
+﻿using OsuApi.BanchoV2.Models;
+using OsuApi.BanchoV2.Users.Models;
 
 namespace SosuBot.ScoresObserver.Models
 {

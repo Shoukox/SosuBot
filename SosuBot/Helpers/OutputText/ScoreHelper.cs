@@ -1,13 +1,13 @@
 ﻿using osu.Game.Rulesets.Scoring;
-using OsuApi.V2;
-using OsuApi.V2.Clients.Users.HttpIO;
-using OsuApi.V2.Models;
-using OsuApi.V2.Users.Models;
+using OsuApi.BanchoV2;
+using OsuApi.BanchoV2.Clients.Users.HttpIO;
+using OsuApi.BanchoV2.Models;
+using OsuApi.BanchoV2.Users.Models;
 using SosuBot.Database.Models;
 using SosuBot.Extensions;
 using SosuBot.Localization;
 using SosuBot.Localization.Languages;
-using Mod = OsuApi.V2.Models.Mod;
+using Mod = OsuApi.BanchoV2.Models.Mod;
 
 namespace SosuBot.Helpers.OutputText;
 
@@ -144,7 +144,7 @@ public class ScoreHelper(CachingHelper cachingHelper)
     }
 
     public async Task<string> GetDailyStatisticsSendText(Playmode playmode, DailyStatistics dailyStatistics,
-        ApiV2 osuApi)
+        BanchoApiV2 osuApi)
     {
         ILocalization language = new Russian();
 
@@ -234,7 +234,7 @@ public class ScoreHelper(CachingHelper cachingHelper)
     }
 
     public async Task<(int newUsers, int newScores, int newBeatmaps)> UpdateDailyStatisticsFromLast(
-        ApiV2 osuApiV2, Playmode playmode,
+        BanchoApiV2 osuApiV2, Playmode playmode,
         DailyStatistics dailyStatistics)
     {
         var uzOsuStdUsers = await OsuApiHelper.GetUsersFromRanking(osuApiV2, count: null, playmode: playmode);

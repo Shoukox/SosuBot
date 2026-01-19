@@ -4,10 +4,10 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using osu.Game.Rulesets.Osu.Mods;
-using OsuApi.V2;
-using OsuApi.V2.Clients.Users.HttpIO;
-using OsuApi.V2.Models;
-using OsuApi.V2.Users.Models;
+using OsuApi.BanchoV2;
+using OsuApi.BanchoV2.Clients.Users.HttpIO;
+using OsuApi.BanchoV2.Models;
+using OsuApi.BanchoV2.Users.Models;
 using SosuBot.Database;
 using SosuBot.Database.Models;
 using SosuBot.Extensions;
@@ -33,7 +33,7 @@ public sealed class CustomCommand : CommandBase<Message>
 {
     public static readonly string[] Commands = ["/c"];
     private OpenAiService _openaiService = null!;
-    private ApiV2 _osuApiV2 = null!;
+    private BanchoApiV2 _osuApiV2 = null!;
     private ScoreHelper _scoreHelper = null!;
     private BeatmapsService _beatmapsService = null!;
     private BotContext _database = null!;
@@ -43,7 +43,7 @@ public sealed class CustomCommand : CommandBase<Message>
     {
         await base.BeforeExecuteAsync();
         _openaiService = Context.ServiceProvider.GetRequiredService<OpenAiService>();
-        _osuApiV2 = Context.ServiceProvider.GetRequiredService<ApiV2>();
+        _osuApiV2 = Context.ServiceProvider.GetRequiredService<BanchoApiV2>();
         _scoreHelper = Context.ServiceProvider.GetRequiredService<ScoreHelper>();
         _beatmapsService = Context.ServiceProvider.GetRequiredService<BeatmapsService>();
         _database = Context.ServiceProvider.GetRequiredService<BotContext>();

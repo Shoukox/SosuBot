@@ -1,9 +1,9 @@
 ﻿using Microsoft.Extensions.Caching.Hybrid;
 using Microsoft.Extensions.Logging;
 using OsuApi;
-using OsuApi.V2;
-using OsuApi.V2.Models;
-using OsuApi.V2.Users.Models;
+using OsuApi.BanchoV2;
+using OsuApi.BanchoV2.Models;
+using OsuApi.BanchoV2.Users.Models;
 using SosuBot.Helpers.OutputText;
 using Telegram.Bot.Types;
 
@@ -32,7 +32,7 @@ namespace SosuBot.Helpers
 
         public async Task<BeatmapExtended?> GetOrCacheBeatmap(int beatmapId, Api api)
         {
-            ApiV2 osuApiV2 = (ApiV2)api;
+            BanchoApiV2 osuApiV2 = (BanchoApiV2)api;
 
             string key = $"beatmap:{beatmapId}";
 
@@ -57,7 +57,7 @@ namespace SosuBot.Helpers
 
         public async Task<BeatmapsetExtended?> GetOrCacheBeatmapset(int beatmapsetId, Api api)
         {
-            ApiV2 osuApiV2 = (ApiV2)api;
+            BanchoApiV2 osuApiV2 = (BanchoApiV2)api;
 
             string key = $"beatmapset:{beatmapsetId}";
 
@@ -83,7 +83,7 @@ namespace SosuBot.Helpers
 
         public async Task<Score?> GetOrCacheScore(long scoreId, Api api)
         {
-            ApiV2 osuApiV2 = (ApiV2)api;
+            BanchoApiV2 osuApiV2 = (BanchoApiV2)api;
 
             string key = $"score:{scoreId}";
 

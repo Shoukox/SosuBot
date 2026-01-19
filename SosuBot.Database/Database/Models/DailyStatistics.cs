@@ -1,5 +1,5 @@
-﻿using OsuApi.V2.Models;
-using OsuApi.V2.Users.Models;
+﻿using OsuApi.BanchoV2.Models;
+using OsuApi.BanchoV2.Users.Models;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 

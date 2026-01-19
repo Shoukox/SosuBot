@@ -1,7 +1,7 @@
-using OsuApi.V2;
-using OsuApi.V2.Clients.Rankings.HttpIO;
-using OsuApi.V2.Models;
-using OsuApi.V2.Users.Models;
+using OsuApi.BanchoV2;
+using OsuApi.BanchoV2.Clients.Rankings.HttpIO;
+using OsuApi.BanchoV2.Models;
+using OsuApi.BanchoV2.Users.Models;
 using SosuBot.Database.Models;
 using SosuBot.Extensions;
 using SosuBot.Helpers.Types;
@@ -19,7 +19,7 @@ public static class OsuApiHelper
     /// <param name="count">How much players to return. If null, return the whole ranking</param>
     /// <param name="token">Cancellation token</param>
     /// <returns></returns>
-    public static async Task<List<UserStatistics>?> GetUsersFromRanking(ApiV2 api, Playmode playmode = Playmode.Osu,
+    public static async Task<List<UserStatistics>?> GetUsersFromRanking(BanchoApiV2 api, Playmode playmode = Playmode.Osu,
         string? countryCode = "uz",
         int? count = null, CancellationToken token = default)
     {

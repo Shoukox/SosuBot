@@ -1,5 +1,5 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
-using OsuApi.V2;
+using OsuApi.BanchoV2;
 using SosuBot.Database;
 using SosuBot.Extensions;
 using SosuBot.Helpers.OutputText;
@@ -19,7 +19,7 @@ namespace SosuBot.TelegramHandlers.Commands;
 public sealed class ReplayRenderCommand : CommandBase<Message>
 {
     public static readonly string[] Commands = ["/render"];
-    private ApiV2 _osuApiV2 = null!;
+    private BanchoApiV2 _osuApiV2 = null!;
     private ReplayRenderService _replayRenderService = null!;
     private RateLimiterFactory _rateLimiterFactory = null!;
     private BotContext _database = null!;
@@ -27,7 +27,7 @@ public sealed class ReplayRenderCommand : CommandBase<Message>
     public override async Task BeforeExecuteAsync()
     {
         await base.BeforeExecuteAsync();
-        _osuApiV2 = Context.ServiceProvider.GetRequiredService<ApiV2>();
+        _osuApiV2 = Context.ServiceProvider.GetRequiredService<BanchoApiV2>();
         _replayRenderService = Context.ServiceProvider.GetRequiredService<ReplayRenderService>();
         _rateLimiterFactory = Context.ServiceProvider.GetRequiredService<RateLimiterFactory>();
         _database = Context.ServiceProvider.GetRequiredService<BotContext>();

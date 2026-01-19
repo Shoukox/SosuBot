@@ -56,6 +56,7 @@ public class ConfigureBotService(IServiceProvider serviceProvider) : IHostedServ
         RegisterCommand<OsuChatBeatmapLeaderboardCommand>(OsuChatBeatmapLeaderboardCommand.Commands);
         RegisterCommand<OsuCalcCommand>(OsuCalcCommand.Commands);
         RegisterCommand<OsuCalcManiaCommand>(OsuCalcManiaCommand.Commands);
+        RegisterCommand<OsuUpdateCommand>(OsuUpdateCommand.Commands);
 
         // Register callbacks
         RegisterCallback<OsuUserCallback>(OsuUserCallback.Command);

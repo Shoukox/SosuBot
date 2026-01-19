@@ -2,12 +2,12 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using OsuApi.V2;
-using OsuApi.V2.Clients.Rankings.HttpIO;
-using OsuApi.V2.Clients.Scores.HttpIO;
-using OsuApi.V2.Clients.Users.HttpIO;
-using OsuApi.V2.Models;
-using OsuApi.V2.Users.Models;
+using OsuApi.BanchoV2;
+using OsuApi.BanchoV2.Clients.Rankings.HttpIO;
+using OsuApi.BanchoV2.Clients.Scores.HttpIO;
+using OsuApi.BanchoV2.Clients.Users.HttpIO;
+using OsuApi.BanchoV2.Models;
+using OsuApi.BanchoV2.Users.Models;
 using SosuBot.Database;
 using SosuBot.Database.Models;
 using SosuBot.Extensions;
@@ -27,7 +27,7 @@ public sealed class ScoresObserverBackgroundService(IServiceProvider serviceProv
 {
     private ITelegramBotClient _botClient = null!;
     private BotContext _database = null!;
-    private ApiV2 _osuApi = null!;
+    private BanchoApiV2 _osuApi = null!;
     private ScoreHelper _scoreHelper = serviceProvider.GetRequiredService<ScoreHelper>();
     private ILogger<ScoresObserverBackgroundService> _logger = serviceProvider.GetRequiredService<ILogger<ScoresObserverBackgroundService>>();
 
@@ -56,7 +56,7 @@ public sealed class ScoresObserverBackgroundService(IServiceProvider serviceProv
         using var scope = serviceProvider.CreateScope();
         _botClient = scope.ServiceProvider.GetRequiredService<ITelegramBotClient>();
         _database = scope.ServiceProvider.GetRequiredService<BotContext>();
-        _osuApi = scope.ServiceProvider.GetRequiredService<ApiV2>();
+        _osuApi = scope.ServiceProvider.GetRequiredService<BanchoApiV2>();
 
         _userDatabase = new(_osuApi);
         _logger.LogInformation("Scores observer background service started");

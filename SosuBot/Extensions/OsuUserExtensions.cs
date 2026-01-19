@@ -1,4 +1,4 @@
-﻿using OsuApi.V2.Users.Models;
+﻿using OsuApi.BanchoV2.Users.Models;
 using SosuBot.Database.Models;
 
 namespace SosuBot.Extensions;
