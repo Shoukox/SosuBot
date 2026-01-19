@@ -6,7 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using OsuApi.V2;
+using OsuApi.BanchoV2;
 using SosuBot.Configuration;
 using SosuBot.Database;
 using SosuBot.Database.Models;
@@ -69,8 +69,8 @@ internal class Program
         {
             var config = builder.Configuration.GetSection(nameof(OsuApiV2Configuration)).Get<OsuApiV2Configuration>()!;
             var httpClient = provider.GetRequiredService<IHttpClientFactory>().CreateClient("CustomHttpClient");
-            var logger = provider.GetRequiredService<ILogger<ApiV2>>();
-            return new ApiV2(config.ClientId, config.ClientSecret, httpClient, logger);
+            var logger = provider.GetRequiredService<ILogger<BanchoApiV2>>();
+            return new BanchoApiV2(config.ClientId, config.ClientSecret, httpClient);
         });
 
         builder.Services.AddSingleton<CachingHelper>();

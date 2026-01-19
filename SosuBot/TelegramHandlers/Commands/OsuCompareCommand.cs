@@ -1,7 +1,7 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
-using OsuApi.V2;
-using OsuApi.V2.Clients.Users.HttpIO;
-using OsuApi.V2.Models;
+using OsuApi.BanchoV2;
+using OsuApi.BanchoV2.Clients.Users.HttpIO;
+using OsuApi.BanchoV2.Models;
 using SosuBot.Database;
 using SosuBot.Extensions;
 using SosuBot.Localization;
@@ -14,13 +14,13 @@ namespace SosuBot.TelegramHandlers.Commands;
 public sealed class OsuCompareCommand : CommandBase<Message>
 {
     public static readonly string[] Commands = ["/compare", "/cmp"];
-    private ApiV2 _osuApiV2 = null!;
+    private BanchoApiV2 _osuApiV2 = null!;
     private BotContext _database = null!;
 
     public override async Task BeforeExecuteAsync()
     {
         await base.BeforeExecuteAsync();
-        _osuApiV2 = Context.ServiceProvider.GetRequiredService<ApiV2>();
+        _osuApiV2 = Context.ServiceProvider.GetRequiredService<BanchoApiV2>();
         _database = Context.ServiceProvider.GetRequiredService<BotContext>();
     }
 

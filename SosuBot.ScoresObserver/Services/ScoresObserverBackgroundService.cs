@@ -2,12 +2,12 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using OsuApi.V2;
-using OsuApi.V2.Clients.Rankings.HttpIO;
-using OsuApi.V2.Clients.Scores.HttpIO;
-using OsuApi.V2.Clients.Users.HttpIO;
-using OsuApi.V2.Models;
-using OsuApi.V2.Users.Models;
+using OsuApi.BanchoV2;
+using OsuApi.BanchoV2.Clients.Rankings.HttpIO;
+using OsuApi.BanchoV2.Clients.Scores.HttpIO;
+using OsuApi.BanchoV2.Clients.Users.HttpIO;
+using OsuApi.BanchoV2.Models;
+using OsuApi.BanchoV2.Users.Models;
 using SosuBot.Database;
 using SosuBot.Database.Models;
 using SosuBot.ScoresObserver.Comparers;
@@ -22,7 +22,7 @@ namespace SosuBot.ScoresObserver.Services;
 public sealed class ScoresObserverBackgroundService(IServiceProvider serviceProvider) : BackgroundService
 {
     private readonly BotContext _database = serviceProvider.GetRequiredService<BotContext>();
-    private readonly ApiV2 _osuApi = serviceProvider.GetRequiredService<ApiV2>();
+    private readonly BanchoApiV2 _osuApi = serviceProvider.GetRequiredService<BanchoApiV2>();
 
     private readonly ILogger<ScoresObserverBackgroundService> _logger =
         serviceProvider.GetRequiredService<ILogger<ScoresObserverBackgroundService>>();

@@ -36,11 +36,11 @@ public sealed class RenderSkinSetCommand : CommandBase<Message>
             return;
         }
 
-        //if (Context.Update.ReplyToMessage?.Document.FileSize >= 20971520)
-        //{
-        //    await Context.Update.ReplyAsync(Context.BotClient, "Из-за ограничений телеграма размер скина должен быть меньше 20мб");
-        //    return;
-        //}
+        if (Context.Update.ReplyToMessage?.Document.FileSize >= 157286400)
+        {
+            await Context.Update.ReplyAsync(Context.BotClient, "Скины не больше 150мб!");
+            return;
+        }
 
         var rateLimiter = _rateLimiterFactory.Get(RateLimiterFactory.RateLimitPolicy.Command);
         if (!await rateLimiter.IsAllowedAsync($"{Context.Update.From!.Id}"))
@@ -77,7 +77,12 @@ public sealed class RenderSkinSetCommand : CommandBase<Message>
         string asciiSkinName = AnyAscii.Transliteration.Transliterate(fileName);
         asciiSkinName = asciiSkinName.Substring(0, asciiSkinName.Length - 4);
         asciiSkinName = asciiSkinName.Substring(0, Math.Min(53, asciiSkinName.Length)) + ".osk";
-        await _replayRenderService.UploadSkin(skinStream, asciiSkinName);
+        var skinUploadResponse = await _replayRenderService.UploadSkin(skinStream, asciiSkinName);
+        if(skinUploadResponse is null)
+        {
+            await waitMessage.EditAsync(Context.BotClient, "Ошибка загрузки скина. Возможно, скин весит слишком много.\nПожалуйста, сообщи создателю об ошибке.");
+            return;
+        }
 
         await waitMessage.EditAsync(Context.BotClient, "Скин успешно загружен и будет использован по умолчанию!");
         osuUserInDatabase.RenderSettings.SkinName = asciiSkinName;

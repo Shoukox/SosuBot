@@ -1,4 +1,4 @@
-using OsuApi.V2.Users.Models;
+using OsuApi.BanchoV2.Users.Models;
 
 namespace SosuBot.Helpers.Types.Statistics;
 

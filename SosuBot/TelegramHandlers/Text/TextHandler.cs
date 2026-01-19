@@ -1,10 +1,10 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using OsuApi.V2;
-using OsuApi.V2.Clients.Users.HttpIO;
-using OsuApi.V2.Models;
-using OsuApi.V2.Users.Models;
+using OsuApi.BanchoV2;
+using OsuApi.BanchoV2.Clients.Users.HttpIO;
+using OsuApi.BanchoV2.Models;
+using OsuApi.BanchoV2.Users.Models;
 using SosuBot.Configuration;
 using SosuBot.Database;
 using SosuBot.Database.Models;
@@ -25,7 +25,7 @@ namespace SosuBot.TelegramHandlers.Text;
 public sealed class TextHandler : CommandBase<Message>
 {
     private BotConfiguration _botConfig = null!;
-    private ApiV2 _osuApiV2 = null!;
+    private BanchoApiV2 _osuApiV2 = null!;
     private ScoreHelper _scoreHelper = null!;
     private CachingHelper _cachingHelper = null!;
     private RateLimiterFactory _rateLimiterFactory = null!;
@@ -35,7 +35,7 @@ public sealed class TextHandler : CommandBase<Message>
 
     public override Task BeforeExecuteAsync()
     {
-        _osuApiV2 = Context.ServiceProvider.GetRequiredService<ApiV2>();
+        _osuApiV2 = Context.ServiceProvider.GetRequiredService<BanchoApiV2>();
         _scoreHelper = Context.ServiceProvider.GetRequiredService<ScoreHelper>();
         _cachingHelper = Context.ServiceProvider.GetRequiredService<CachingHelper>();
         _rateLimiterFactory = Context.ServiceProvider.GetRequiredService<RateLimiterFactory>();

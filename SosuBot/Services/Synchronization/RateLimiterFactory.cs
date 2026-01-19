@@ -15,7 +15,10 @@ namespace SosuBot.Services.Synchronization
                     new TokenBucketRateLimiter(redis, logger, 5, 1.0), // 5 per 1 second
 
                 [RateLimitPolicy.RenderCommand] =
-                    new TokenBucketRateLimiter(redis, logger, 10, 10.0 / 3600.0) // 10 per 1 hour
+                    new TokenBucketRateLimiter(redis, logger, 10, 10.0 / 3600.0), // 10 per 1 hour
+
+                [RateLimitPolicy.UpdateCommand] =
+                    new TokenBucketRateLimiter(redis, logger, 5, 5 / (3600.0 * 24)) // 1 per 1 day
             };
         }
 
@@ -25,7 +28,8 @@ namespace SosuBot.Services.Synchronization
         public enum RateLimitPolicy
         {
             Command,
-            RenderCommand
+            RenderCommand,
+            UpdateCommand
         }
     }
 }

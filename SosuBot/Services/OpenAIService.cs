@@ -2,8 +2,8 @@
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using OpenAI.Responses;
-using OsuApi.V2;
-using OsuApi.V2.Clients.Users.HttpIO;
+using OsuApi.BanchoV2;
+using OsuApi.BanchoV2.Clients.Users.HttpIO;
 using SosuBot.Configuration;
 using SosuBot.Database.Models;
 using SosuBot.Extensions;
@@ -141,7 +141,7 @@ public sealed class OpenAiService
     private readonly ILogger<OpenAiService> _logger;
 
     private readonly string? _openaiToken = Environment.GetEnvironmentVariable("OPEN_AI_TOKEN")!;
-    private readonly ApiV2 _osuApiV2;
+    private readonly BanchoApiV2 _osuApiV2;
 
     /// <summary>
     ///     Thread-safe dictionary that tracks the processing state for each user to prevent concurrent requests.
@@ -152,7 +152,7 @@ public sealed class OpenAiService
 
     private OpenAIResponseClient _responseClient;
 
-    public OpenAiService(ApiV2 osuApiV2, ILogger<OpenAiService> logger, IOptions<OpenAiConfiguration> openAiConfig)
+    public OpenAiService(BanchoApiV2 osuApiV2, ILogger<OpenAiService> logger, IOptions<OpenAiConfiguration> openAiConfig)
     {
         _logger = logger;
         _osuApiV2 = osuApiV2;

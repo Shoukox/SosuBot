@@ -1,5 +1,5 @@
-using OsuApi.V2;
-using OsuApi.V2.Users.Models;
+using OsuApi.BanchoV2;
+using OsuApi.BanchoV2.Users.Models;
 using SosuBot.Database.Models;
 using SosuBot.Helpers;
 using SosuBot.Helpers.Types;
@@ -13,13 +13,13 @@ namespace SosuBot.Services;
 /// </summary>
 /// <param name="api"></param>
 /// <param name="usersCachePath"></param>
-public class UserStatisticsCacheDatabase(ApiV2 api, string? usersCachePath = null)
+public class UserStatisticsCacheDatabase(BanchoApiV2 api, string? usersCachePath = null)
 {
     public const int CachingDays = 1;
 
     private readonly SemaphoreSlim _semaphoreSlim = new(1, 1);
 
-    public ApiV2 Api { get; } = api;
+    public BanchoApiV2 Api { get; } = api;
 
     private string UsersCachePath { get; } =
         usersCachePath ?? Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "cache", "users");

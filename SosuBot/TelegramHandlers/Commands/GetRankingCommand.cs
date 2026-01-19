@@ -1,5 +1,5 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
-using OsuApi.V2;
+using OsuApi.BanchoV2;
 using SosuBot.Database.Models;
 using SosuBot.Extensions;
 using SosuBot.Helpers;
@@ -15,13 +15,13 @@ namespace SosuBot.TelegramHandlers.Commands;
 public sealed class GetRankingCommand : CommandBase<Message>
 {
     public static readonly string[] Commands = ["/ranking"];
-    private ApiV2 _osuApiV2 = null!;
+    private BanchoApiV2 _osuApiV2 = null!;
     private RateLimiterFactory _rateLimiterFactory = null!;
 
     public override async Task BeforeExecuteAsync()
     {
         await base.BeforeExecuteAsync();
-        _osuApiV2 = Context.ServiceProvider.GetRequiredService<ApiV2>();
+        _osuApiV2 = Context.ServiceProvider.GetRequiredService<BanchoApiV2>();
         _rateLimiterFactory = Context.ServiceProvider.GetRequiredService<RateLimiterFactory>();
     }
 

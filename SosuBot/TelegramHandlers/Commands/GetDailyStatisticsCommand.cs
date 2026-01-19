@@ -1,8 +1,8 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using OsuApi.V2;
-using OsuApi.V2.Models;
+using OsuApi.BanchoV2;
+using OsuApi.BanchoV2.Models;
 using SosuBot.Database;
 using SosuBot.Extensions;
 using SosuBot.Helpers.OutputText;
@@ -17,7 +17,7 @@ namespace SosuBot.TelegramHandlers.Commands;
 public sealed class GetDailyStatisticsCommand : CommandBase<Message>
 {
     public static readonly string[] Commands = ["/get", "/daily_stats"];
-    private ApiV2 _osuApiV2 = null!;
+    private BanchoApiV2 _osuApiV2 = null!;
     private ILogger<GetDailyStatisticsCommand> _logger = null!;
     private ScoreHelper _scoreHelper = null!;
     private RateLimiterFactory _rateLimiterFactory = null!;
@@ -26,7 +26,7 @@ public sealed class GetDailyStatisticsCommand : CommandBase<Message>
     public override async Task BeforeExecuteAsync()
     {
         await base.BeforeExecuteAsync();
-        _osuApiV2 = Context.ServiceProvider.GetRequiredService<ApiV2>();
+        _osuApiV2 = Context.ServiceProvider.GetRequiredService<BanchoApiV2>();
         _scoreHelper = Context.ServiceProvider.GetRequiredService<ScoreHelper>();
         _rateLimiterFactory = Context.ServiceProvider.GetRequiredService<RateLimiterFactory>();
         _database = Context.ServiceProvider.GetRequiredService<BotContext>();
