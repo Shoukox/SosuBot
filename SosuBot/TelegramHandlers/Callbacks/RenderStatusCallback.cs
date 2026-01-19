@@ -1,5 +1,4 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
-using OsuApi.V2;
 using SosuBot.Database;
 using SosuBot.Extensions;
 using SosuBot.Localization;

@@ -1,5 +1,4 @@
-﻿using Castle.Core.Logging;
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using SosuBot.Database.Database.Models;
 using System.Net.Http.Json;

@@ -1,14 +1,12 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using SosuBot.Database;
 using SosuBot.Extensions;
-using SosuBot.Helpers;
 using SosuBot.Helpers.OutputText;
 using SosuBot.Localization;
 using SosuBot.Localization.Languages;
 using SosuBot.Services.Synchronization;
-using Telegram.Bot.Types;
-using Telegram.Bot.Types.ReplyMarkups;
 using SosuBot.TelegramHandlers.Abstract;
+using Telegram.Bot.Types;
 
 namespace SosuBot.TelegramHandlers.Commands;
 

@@ -1,5 +1,3 @@
-using Microsoft.Extensions.Caching.Hybrid;
-using SosuBot.Database;
 using Telegram.Bot;
 
 namespace SosuBot.TelegramHandlers.Abstract;

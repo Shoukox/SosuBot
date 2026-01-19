@@ -10,9 +10,9 @@ using SosuBot.Helpers.OutputText;
 using SosuBot.Localization;
 using SosuBot.Localization.Languages;
 using SosuBot.Services.Synchronization;
+using SosuBot.TelegramHandlers.Abstract;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.ReplyMarkups;
-using SosuBot.TelegramHandlers.Abstract;
 
 namespace SosuBot.TelegramHandlers.Commands;
 
