@@ -233,6 +233,13 @@ public sealed class ReplayRenderCommand : CommandBase<Message>
                 return;
             }
         }
-        await message.EditAsync(Context.BotClient, $"Рендер завершен.\n<a href=\"{jobInfo!.VideoUri}\">Ссылка на видео</a>", linkPreviewEnabled: true);
+
+        string watchUrl = jobInfo!.VideoUri.Replace("/videos/", "/watch/");
+        if (watchUrl.EndsWith(".mp4"))
+        {
+            watchUrl = watchUrl[..^4];
+        }
+
+        await message.EditAsync(Context.BotClient, $"Рендер завершен.\n<a href=\"{watchUrl}\">Ссылка на видео</a>", linkPreviewEnabled: true);
     }
 }
