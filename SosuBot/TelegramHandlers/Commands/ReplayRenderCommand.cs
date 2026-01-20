@@ -177,8 +177,11 @@ public sealed class ReplayRenderCommand : CommandBase<Message>
                 }
                 else
                 {
-                    await Task.Delay(3000 + Random.Shared.Next(500, 1500));
-                    await message.EditAsync(Context.BotClient, $"Текущее количество онлайн рендереров: {onlineRenderersCount}\n\nОчередь: {await _replayRenderService.GetWaitqueueLength(jobInfo!.JobId)}\nИщем свободный рендерер...", replyMarkup: ik);
+                    if (!rendererGotThisJob)
+                    {
+                        await Task.Delay(3000 + Random.Shared.Next(500, 1500));
+                        await message.EditAsync(Context.BotClient, $"Текущее количество онлайн рендереров: {onlineRenderersCount}\n\nОчередь: {await _replayRenderService.GetWaitqueueLength(jobInfo!.JobId)}\nИщем свободный рендерер...", replyMarkup: ik);
+                    }
                 }
             }
             jobInfo = await _replayRenderService.GetRenderJobInfo(renderQueueResponse!.JobId);
