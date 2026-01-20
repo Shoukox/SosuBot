@@ -63,6 +63,9 @@ public sealed class OsuUpdateCommand : CommandBase<Message>
 
         if (uzbekPlayer)
         {
+            sendMessage += $"- Бот отслеживает твои скоры с {userScores.MinBy(m => m.ScoreJson.EndedAt)!.ScoreJson.EndedAt:dd.MM.yyyy HH:mm:ss}\n";
+            sendMessage += $"- С тех пор бот знает о {userScores.Count} твоих скорах (все моды)";
+
             var newestScore = userScores.MaxBy(m => m.ScoreJson.EndedAt);
             if (newestScore?.ScoreJson.EndedAt != null)
             {
