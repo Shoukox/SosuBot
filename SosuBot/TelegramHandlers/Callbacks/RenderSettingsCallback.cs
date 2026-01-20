@@ -82,6 +82,7 @@ public class RenderSettingsCallback() : CommandBase<CallbackQuery>
             "combo" => Combo,
             "leaderboard" => Leaderboard,
             "strain-graph" => StrainGraph,
+            "experimental-renderer" => ExperimentalRenderer,
             "home" => Home,
             "reset-settings" => ResetSettings,
             // setters
@@ -422,6 +423,12 @@ public class RenderSettingsCallback() : CommandBase<CallbackQuery>
     async Task StrainGraph()
     {
         _osuUser.RenderSettings.StrainGraph = !_osuUser.RenderSettings.StrainGraph;
+        await Home();
+    }
+
+    async Task ExperimentalRenderer()
+    {
+        _osuUser.RenderSettings.UseExperimentalRenderer = !_osuUser.RenderSettings.UseExperimentalRenderer;
         await Home();
     }
 }

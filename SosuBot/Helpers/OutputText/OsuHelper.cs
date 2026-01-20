@@ -163,6 +163,7 @@ public static partial class OsuHelper
         string combo = (config.Combo ? Emojis.CheckMarkEmoji : "") + "Combo";
         string leaderboard = (config.Leaderboard ? Emojis.CheckMarkEmoji : "") + "Leaderboard";
         string strainGraph = (config.StrainGraph ? Emojis.CheckMarkEmoji : "") + "Strain Graph";
+        string useExperimentalRenderer = (config.UseExperimentalRenderer ? Emojis.CheckMarkEmoji : "") + "Use Experimental Renderer";
         var ikm = new InlineKeyboardMarkup(
             [
                 [
@@ -201,6 +202,9 @@ public static partial class OsuHelper
                 [
                     InlineKeyboardButton.WithCallbackData(leaderboard, $"rs leaderboard"),
                     InlineKeyboardButton.WithCallbackData(strainGraph, $"rs strain-graph"),
+                ],
+                [
+                    InlineKeyboardButton.WithCallbackData(useExperimentalRenderer, $"rs experimental-renderer"),
                 ],
                 [
                     InlineKeyboardButton.WithCallbackData("Сбросить настройки", $"rs reset-settings"),

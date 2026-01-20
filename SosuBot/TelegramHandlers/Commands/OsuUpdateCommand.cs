@@ -1,7 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Hybrid;
 using Microsoft.Extensions.DependencyInjection;
 using OsuApi.BanchoV2;
-using OsuApi.BanchoV2.Models;
 using OsuApi.BanchoV2.Users.Models;
 using SosuBot.Database;
 using SosuBot.Extensions;
@@ -9,7 +9,6 @@ using SosuBot.Helpers;
 using SosuBot.Helpers.OutputText;
 using SosuBot.Localization;
 using SosuBot.Localization.Languages;
-using SosuBot.Services.BackgroundServices;
 using SosuBot.Services.Synchronization;
 using SosuBot.TelegramHandlers.Abstract;
 using Telegram.Bot.Types;
@@ -23,6 +22,7 @@ public sealed class OsuUpdateCommand : CommandBase<Message>
     private RateLimiterFactory _rateLimiterFactory = null!;
     private ScoreHelper _scoreHelper = null!;
     private BotContext _database = null!;
+    private HybridCache _cache = null!;
 
     public override async Task BeforeExecuteAsync()
     {
@@ -31,6 +31,7 @@ public sealed class OsuUpdateCommand : CommandBase<Message>
         _rateLimiterFactory = Context.ServiceProvider.GetRequiredService<RateLimiterFactory>();
         _scoreHelper = Context.ServiceProvider.GetRequiredService<ScoreHelper>();
         _database = Context.ServiceProvider.GetRequiredService<BotContext>();
+        _cache = Context.ServiceProvider.GetRequiredService<HybridCache>();
     }
     public override async Task ExecuteAsync()
     {
@@ -55,11 +56,18 @@ public sealed class OsuUpdateCommand : CommandBase<Message>
         // Fake 500ms wait
         await Task.Delay(500);
 
-        var userScores = _database.ScoreEntity.Where(m => m.ScoreJson.UserId == osuUserInDatabase!.OsuUserId).ToList();
+        string cacheKey = $"osuinfo:{osuUserInDatabase.OsuUserId}";
+        if (await _cache.GetOrCreateAsync<string>(cacheKey, null!, new() { Flags = HybridCacheEntryFlags.DisableUnderlyingData}) is { } sendMessage)
+        {
+            await waitMessage.EditAsync(Context.BotClient, sendMessage);
+            return;
+        }
 
+        var userScores = _database.ScoreEntity.Where(m => m.ScoreJson.UserId == osuUserInDatabase!.OsuUserId).ToList();
         bool uzbekPlayer = userScores.Count > 0;
 
-        string sendMessage = $"Последняя информация о <b>{UserHelper.GetUserProfileUrlWrappedInUsernameString((int)osuUserInDatabase.OsuUserId, osuUserInDatabase.OsuUsername)}</b>\n\n";
+        sendMessage = $"Последняя информация о <b>{UserHelper.GetUserProfileUrlWrappedInUsernameString((int)osuUserInDatabase.OsuUserId, osuUserInDatabase.OsuUsername)}</b>\n" +
+            $"Последнее обновление этой статистики: {DateTime.UtcNow.ChangeTimezone(Helpers.Country.Uzbekistan)} по тшк.\n\n";
 
         if (uzbekPlayer)
         {
@@ -94,6 +102,8 @@ public sealed class OsuUpdateCommand : CommandBase<Message>
                     $"{lastBestScores[i].EndedAt:dd.MM.yyyy HH:mm:ss}\n";
             }
         }
+
+        await _cache.SetAsync(cacheKey, sendMessage, new() { Expiration = TimeSpan.FromHours(2) });
 
         await waitMessage.EditAsync(Context.BotClient, sendMessage);
     }
