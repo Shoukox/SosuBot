@@ -24,5 +24,6 @@
         public bool Leaderboard { get; set; } = false;
         public bool StrainGraph { get; set; } = true;
         public bool MotionBlur { get; set; } = false;
+        public bool UseExperimentalRenderer { get; set; } = false;
     }
 }

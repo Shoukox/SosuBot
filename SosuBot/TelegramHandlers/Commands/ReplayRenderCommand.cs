@@ -77,15 +77,11 @@ public sealed class ReplayRenderCommand : CommandBase<Message>
         var parameters = Context.Update.Text!.GetCommandParameters()!.ToArray();
         RenderQueuedResponse? renderQueueResponse = null;
         Stream replayStream = new MemoryStream();
+
         if (Context.Update.ReplyToMessage?.Document != null &&
             Context.Update.ReplyToMessage?.Document.FileName![^4..] == ".osr")
         {
             var tgfile = await Context.BotClient.GetFile(Context.Update.ReplyToMessage.Document.FileId);
-            if (tgfile.FileSize > 300 * 1024)
-            {
-                await Context.Update.ReplyAsync(Context.BotClient, "Этот реплей файл очень большой :(");
-                return;
-            }
 
             await Context.BotClient.DownloadFileConsideringLocalServer(tgfile, replayStream);
             replayStream.Position = 0;
@@ -94,11 +90,6 @@ public sealed class ReplayRenderCommand : CommandBase<Message>
             Context.Update.Document.FileName![^4..] == ".osr")
         {
             var tgfile = await Context.BotClient.GetFile(Context.Update.Document!.FileId);
-            if (tgfile.FileSize > 300 * 1024)
-            {
-                await Context.Update.ReplyAsync(Context.BotClient, "Этот реплей файл очень большой :(");
-                return;
-            }
 
             await Context.BotClient.DownloadFileConsideringLocalServer(tgfile, replayStream);
             replayStream.Position = 0;
@@ -150,8 +141,7 @@ public sealed class ReplayRenderCommand : CommandBase<Message>
         var replayInfo = OsuParsers.Decoders.ReplayDecoder.Decode(copyStream);
         if (replayInfo.Ruleset != OsuParsers.Enums.Ruleset.Standard)
         {
-            await Context.Update.ReplyAsync(Context.BotClient, "Рендер доступен только для osu!std");
-            return;
+            osuUserInDatabase.RenderSettings.UseExperimentalRenderer = true;
         }
 
         // Queue replay
