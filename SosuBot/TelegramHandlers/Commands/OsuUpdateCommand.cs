@@ -56,10 +56,6 @@ public sealed class OsuUpdateCommand : CommandBase<Message>
         await Task.Delay(500);
 
         var userScores = _database.ScoreEntity.Where(m => m.ScoreJson.UserId == osuUserInDatabase!.OsuUserId).ToList();
-        foreach (var score in userScores)
-        {
-            Console.WriteLine($"{score.ScoreId} {score.ScoreJson.UserId} {score.ScoreJson.EndedAt}");
-        }
 
         bool uzbekPlayer = userScores.Count > 0;
 
@@ -73,7 +69,8 @@ public sealed class OsuUpdateCommand : CommandBase<Message>
                 sendMessage += $"- Твой последний скор был сделан {newestScore.ScoreJson.EndedAt:dd.MM.yyyy HH:mm:ss} - <a href=\"{OsuConstants.BaseScoreUrl}{newestScore.ScoreId}\">ссылка на скор</a>\n";
             }
 
-            sendMessage += $"- За этот месяц ты поставил {userScores.Count} скоров\n";
+            var monthUserScores = userScores.Where(m => m.ScoreJson.EndedAt > DateTime.UtcNow.Date.AddDays(-DateTime.UtcNow.Date.Day + 1)).ToArray();
+            sendMessage += $"- За этот месяц ты поставил {monthUserScores.Length} скоров\n";
         }
 
         string playerRuleset = osuUserInDatabase.OsuMode.ToRuleset();
@@ -90,7 +87,8 @@ public sealed class OsuUpdateCommand : CommandBase<Message>
             for (int i = 0; i < newTopPlays; i++)
             {
                 sendMessage += $"#{userBestScores.Scores.IndexOf(lastBestScores[i]) + 1} - " +
-                    $"{_scoreHelper.GetScoreUrlWrappedInString(osuUserInDatabase.OsuUserId, $"{_scoreHelper.GetFormattedNumConsideringNull(lastBestScores[i].Pp, format: "N0")}pp")}\n";
+                    $"{_scoreHelper.GetScoreUrlWrappedInString(osuUserInDatabase.OsuUserId, $"{_scoreHelper.GetFormattedNumConsideringNull(lastBestScores[i].Pp, format: "N0")}pp")} - " +
+                    $"{lastBestScores[i].EndedAt:dd.MM.yyyy HH:mm:ss}\n";
             }
         }
 
