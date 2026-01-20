@@ -56,6 +56,11 @@ public sealed class OsuUpdateCommand : CommandBase<Message>
         await Task.Delay(500);
 
         var userScores = _database.ScoreEntity.Where(m => m.ScoreJson.UserId == osuUserInDatabase!.OsuUserId).ToList();
+        foreach (var score in userScores)
+        {
+            Console.WriteLine($"{score.ScoreId} {score.ScoreJson.UserId} {score.ScoreJson.EndedAt}");
+        }
+
         bool uzbekPlayer = userScores.Count > 0;
 
         string sendMessage = $"Последняя информация о <b>{UserHelper.GetUserProfileUrlWrappedInUsernameString((int)osuUserInDatabase.OsuUserId, osuUserInDatabase.OsuUsername)}</b>\n\n";
@@ -73,7 +78,7 @@ public sealed class OsuUpdateCommand : CommandBase<Message>
 
         string playerRuleset = osuUserInDatabase.OsuMode.ToRuleset();
         var userBestScores = await _osuApiV2.Users.GetUserScores(osuUserInDatabase.OsuUserId, ScoreType.Best, new() { Limit = 200, Mode = playerRuleset });
-        var timeSortedUserBestScores = userBestScores!.Scores.Where(m => m.EndedAt > DateTime.Today.AddDays(-DateTime.Today.Day + 1)).ToArray();
+        var timeSortedUserBestScores = userBestScores!.Scores.Where(m => m.EndedAt > DateTime.UtcNow.Date.AddDays(-DateTime.UtcNow.Date.Day + 1)).ToArray();
         sendMessage += $"- За этот месяц ты поставил {timeSortedUserBestScores.Length} новых топ плеев (<i>{playerRuleset.ParseRulesetToGamemode()}</i>)\n";
         sendMessage += $"- Подробнее: https://ameobea.me/osutrack/user/{osuUserInDatabase!.OsuUsername}\n\n";
 
@@ -82,7 +87,7 @@ public sealed class OsuUpdateCommand : CommandBase<Message>
         if (newTopPlays > 0)
         {
             sendMessage += $"{newTopPlays} твоих последних новых топ скоров:\n";
-            for (int i = 0; i<newTopPlays; i++)
+            for (int i = 0; i < newTopPlays; i++)
             {
                 sendMessage += $"#{userBestScores.Scores.IndexOf(lastBestScores[i]) + 1} - " +
                     $"{_scoreHelper.GetScoreUrlWrappedInString(osuUserInDatabase.OsuUserId, $"{_scoreHelper.GetFormattedNumConsideringNull(lastBestScores[i].Pp, format: "N0")}pp")}\n";
