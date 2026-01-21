@@ -77,35 +77,35 @@ public sealed class OsuUpdateCommand : CommandBase<Message>
 
         if (uzbekPlayer)
         {
-            sendMessage += $"- Бот отслеживает твои скоры с {userScores.MinBy(m => m.ScoreJson.EndedAt)!.ScoreJson.EndedAt:dd.MM.yyyy HH:mm:ss}\n";
-            sendMessage += $"- С тех пор бот знает о {userScores.Count} твоих скорах (все моды)\n";
+            sendMessage += $"- <b>Бот</b> отслеживает твои скоры с <b><u>{userScores.MinBy(m => m.ScoreJson.EndedAt)!.ScoreJson.EndedAt!.Value.ChangeTimezone(Helpers.Country.Uzbekistan):dd.MM.yyyy HH:mm:ss}</u></b> по тшк.\n";
+            sendMessage += $"- <b>С тех пор</b> бот знает о <b><u>{userScores.Count}</u></b> твоих скорах (все моды)\n";
 
             var newestScore = userScores.MaxBy(m => m.ScoreJson.EndedAt);
             if (newestScore?.ScoreJson.EndedAt != null)
             {
-                sendMessage += $"- Твой последний скор был сделан {newestScore.ScoreJson.EndedAt:dd.MM.yyyy HH:mm:ss} - <a href=\"{OsuConstants.BaseScoreUrl}{newestScore.ScoreId}\">ссылка на скор</a>\n";
+                sendMessage += $"- <a href=\"{OsuConstants.BaseScoreUrl}{newestScore.ScoreId}\"><b>Твой последний скор</b></a> был сделан <b><u>{newestScore.ScoreJson.EndedAt!.Value.ChangeTimezone(Helpers.Country.Uzbekistan):dd.MM.yyyy HH:mm:ss}</u></b> по тшк.\n";
             }
 
             var monthUserScores = userScores.Where(m => m.ScoreJson.EndedAt > DateTime.UtcNow.Date.AddDays(-DateTime.UtcNow.Date.Day + 1)).ToArray();
-            sendMessage += $"- За этот месяц ты поставил {monthUserScores.Length} скоров\n";
+            sendMessage += $"- <b>За этот месяц</b> ты поставил <b><u>{monthUserScores.Length}</u></b> скоров\n";
         }
 
         string playerRuleset = osuUserInDatabase.OsuMode.ToRuleset();
         var userBestScores = await _osuApiV2.Users.GetUserScores(osuUserInDatabase.OsuUserId, ScoreType.Best, new() { Limit = 200, Mode = playerRuleset });
         var timeSortedUserBestScores = userBestScores!.Scores.Where(m => m.EndedAt > DateTime.UtcNow.Date.AddDays(-DateTime.UtcNow.Date.Day + 1)).ToArray();
-        sendMessage += $"- За этот месяц ты поставил {timeSortedUserBestScores.Length} новых топ плеев (<i>{playerRuleset.ParseRulesetToGamemode()}</i>)\n";
-        sendMessage += $"- Подробнее: https://ameobea.me/osutrack/user/{osuUserInDatabase!.OsuUsername}\n\n";
+        sendMessage += $"- <b>За этот месяц</b> ты поставил <b><u>{timeSortedUserBestScores.Length}</u></b> новых топ плеев (<i>{playerRuleset.ParseRulesetToGamemode()}</i>)\n";
+        sendMessage += $"- <b>Подробная статистика:</b> <a href=\"https://ameobea.me/osutrack/user/{osuUserInDatabase!.OsuUsername}\">ссылка</a>\n\n";
 
         var lastBestScores = userBestScores!.Scores.OrderByDescending(m => m.EndedAt).ToArray();
         int newTopPlays = Math.Min(5, lastBestScores.Length);
         if (newTopPlays > 0)
         {
-            sendMessage += $"{newTopPlays} твоих последних новых топ скоров:\n";
+            sendMessage += $"<b>{newTopPlays} твоих последних новых топ скоров:</b>\n";
             for (int i = 0; i < newTopPlays; i++)
             {
-                sendMessage += $"#{userBestScores.Scores.IndexOf(lastBestScores[i]) + 1} - " +
+                sendMessage += $"<b>#{userBestScores.Scores.IndexOf(lastBestScores[i]) + 1}</b> - " +
                     $"{_scoreHelper.GetScoreUrlWrappedInString(osuUserInDatabase.OsuUserId, $"{_scoreHelper.GetFormattedNumConsideringNull(lastBestScores[i].Pp, format: "N0")}pp")} - " +
-                    $"{lastBestScores[i].EndedAt:dd.MM.yyyy HH:mm:ss}\n";
+                    $"{lastBestScores[i].EndedAt!.Value.ChangeTimezone(Helpers.Country.Uzbekistan):dd.MM.yyyy HH:mm:ss} по тшк.\n";
             }
         }
 
