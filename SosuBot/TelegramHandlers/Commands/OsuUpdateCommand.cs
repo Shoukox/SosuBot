@@ -55,6 +55,12 @@ public sealed class OsuUpdateCommand : CommandBase<Message>
 
         // Fake 500ms wait
         await Task.Delay(500);
+        var parameters = Context.Update.Text!.GetCommandParameters()!;
+        if (parameters.Length != 0)
+        {
+            await waitMessage.EditAsync(Context.BotClient, language.error_argsLength + "\nРазрешено только /info");
+            return;
+        }
 
         string cacheKey = $"osuinfo:{osuUserInDatabase.OsuUserId}";
         if (await _cache.GetOrCreateAsync<string>(cacheKey, null!, new() { Flags = HybridCacheEntryFlags.DisableUnderlyingData}) is { } sendMessage)
