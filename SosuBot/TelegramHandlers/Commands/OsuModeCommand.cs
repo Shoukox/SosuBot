@@ -1,8 +1,6 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using SosuBot.Database;
 using SosuBot.Extensions;
-using SosuBot.Localization;
-using SosuBot.Localization.Languages;
 using SosuBot.TelegramHandlers.Abstract;
 using Telegram.Bot.Types;
 
@@ -21,7 +19,7 @@ public sealed class OsuModeCommand : CommandBase<Message>
     }
     public override async Task ExecuteAsync()
     {
-        ILocalization language = new Russian();
+        var language = Context.GetLocalization();
         var osuUserInDatabase = await _database.OsuUsers.FindAsync(Context.Update.From!.Id);
 
         var msgText = Context.Update.Text!;
@@ -54,7 +52,10 @@ public sealed class OsuModeCommand : CommandBase<Message>
 
         osuUserInDatabase.OsuMode = osuMode.ParseRulesetToPlaymode();
 
-        var sendText = language.command_setMode.Fill([osuUserInDatabase.OsuMode.ToGamemode()]);
+        var sendText = LocalizationMessageHelper.CommandSetMode(language, osuUserInDatabase.OsuMode.ToGamemode());
         await Context.Update.ReplyAsync(Context.BotClient, sendText);
     }
 }
+
+
+

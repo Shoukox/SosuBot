@@ -5,6 +5,7 @@ using osu.Game.Rulesets.Osu.Mods;
 using osu.Game.Rulesets.Taiko.Mods;
 using SosuBot.Database.Database.Models;
 using SosuBot.Database.Models;
+using SosuBot.Localization;
 using System.Text.RegularExpressions;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.ReplyMarkups;
@@ -147,37 +148,43 @@ public static partial class OsuHelper
         };
     }
 
-    public static InlineKeyboardMarkup GetRenderSettingsMarkup(DanserConfiguration config)
+    public static InlineKeyboardMarkup GetRenderSettingsMarkup(DanserConfiguration config, ILocalization language)
     {
-        string hitErrorMeter = (config.HitErrorMeter ? Emojis.CheckMarkEmoji : "") + "UR Bar";
-        string aimErrorMeter = (config.AimErrorMeter ? Emojis.CheckMarkEmoji : "") + "Aim Error Circle";
-        string motionBlur = (config.MotionBlur ? Emojis.CheckMarkEmoji : "") + "Motion Blur";
-        string hbBar = (config.HPBar ? Emojis.CheckMarkEmoji : "") + "HP Bar";
-        string showPP = (config.ShowPP ? Emojis.CheckMarkEmoji : "") + "Show PP";
-        string hitCounter = (config.HitCounter ? Emojis.CheckMarkEmoji : "") + "Hit Counter";
-        string ignoreFails = (config.IgnoreFailsInReplays ? Emojis.CheckMarkEmoji : "") + "Ignore Fails";
-        string video = (config.Video ? Emojis.CheckMarkEmoji : "") + "Video";
-        string storyboard = (config.Storyboard ? Emojis.CheckMarkEmoji : "") + "Storyboard";
-        string mods = (config.Mods ? Emojis.CheckMarkEmoji : "") + "Mods";
-        string keyOverlay = (config.KeyOverlay ? Emojis.CheckMarkEmoji : "") + "Keys";
-        string combo = (config.Combo ? Emojis.CheckMarkEmoji : "") + "Combo";
-        string leaderboard = (config.Leaderboard ? Emojis.CheckMarkEmoji : "") + "Leaderboard";
-        string strainGraph = (config.StrainGraph ? Emojis.CheckMarkEmoji : "") + "Strain Graph";
-        string useExperimentalRenderer = (config.UseExperimentalRenderer ? Emojis.CheckMarkEmoji : "") + "Use Experimental Renderer";
+        string generalVolume = language.render_menu_generalVolume;
+        string musicVolume = language.render_menu_music;
+        string sampleVolume = language.render_menu_effects;
+        string backgroundDim = language.render_menu_background;
+        string skinName = language.render_menu_skin;
+        string hitErrorMeter = (config.HitErrorMeter ? Emojis.CheckMarkEmoji : "") + language.render_menu_urBar;
+        string aimErrorMeter = (config.AimErrorMeter ? Emojis.CheckMarkEmoji : "") + language.render_menu_aimErrorCircle;
+        string motionBlur = (config.MotionBlur ? Emojis.CheckMarkEmoji : "") + language.render_menu_motionBlur;
+        string hbBar = (config.HPBar ? Emojis.CheckMarkEmoji : "") + language.render_menu_hpBar;
+        string showPP = (config.ShowPP ? Emojis.CheckMarkEmoji : "") + language.render_menu_showPp;
+        string hitCounter = (config.HitCounter ? Emojis.CheckMarkEmoji : "") + language.render_menu_hitCounter;
+        string ignoreFails = (config.IgnoreFailsInReplays ? Emojis.CheckMarkEmoji : "") + language.render_menu_ignoreFails;
+        string video = (config.Video ? Emojis.CheckMarkEmoji : "") + language.render_menu_video;
+        string storyboard = (config.Storyboard ? Emojis.CheckMarkEmoji : "") + language.render_menu_storyboard;
+        string mods = (config.Mods ? Emojis.CheckMarkEmoji : "") + language.render_menu_mods;
+        string keyOverlay = (config.KeyOverlay ? Emojis.CheckMarkEmoji : "") + language.render_menu_keys;
+        string combo = (config.Combo ? Emojis.CheckMarkEmoji : "") + language.render_menu_combo;
+        string leaderboard = (config.Leaderboard ? Emojis.CheckMarkEmoji : "") + language.render_menu_leaderboard;
+        string strainGraph = (config.StrainGraph ? Emojis.CheckMarkEmoji : "") + language.render_menu_strainGraph;
+        string useExperimentalRenderer = (config.UseExperimentalRenderer ? Emojis.CheckMarkEmoji : "") + language.render_menu_useExperimentalRenderer;
+        string resetSettings = language.render_menu_resetSettings;
         var ikm = new InlineKeyboardMarkup(
             [
                 [
-                    InlineKeyboardButton.WithCallbackData($"Общая громкость: {config.GeneralVolume*100:00}%", $"rs general-volume")
+                    InlineKeyboardButton.WithCallbackData($"{generalVolume}: {config.GeneralVolume*100:00}%", $"rs general-volume")
                 ],
                 [
-                    InlineKeyboardButton.WithCallbackData($"Музыка: {config.MusicVolume*100:00}%", $"rs music-volume"),
-                    InlineKeyboardButton.WithCallbackData($"Эффекты: {config.SampleVolume*100:00}%", $"rs effects-volume")
+                    InlineKeyboardButton.WithCallbackData($"{musicVolume}: {config.MusicVolume*100:00}%", $"rs music-volume"),
+                    InlineKeyboardButton.WithCallbackData($"{sampleVolume}: {config.SampleVolume*100:00}%", $"rs effects-volume")
                 ],
                 [
-                    InlineKeyboardButton.WithCallbackData($"Background: {config.BackgroundDim*100:00}%", $"rs background")
+                    InlineKeyboardButton.WithCallbackData($"{backgroundDim}: {config.BackgroundDim*100:00}%", $"rs background")
                 ],
                 [
-                    InlineKeyboardButton.WithCallbackData($"Skin: {config.SkinName}", $"rs skin 1")
+                    InlineKeyboardButton.WithCallbackData($"{skinName}: {config.SkinName}", $"rs skin 1")
                 ],
                 [
                     InlineKeyboardButton.WithCallbackData(hitErrorMeter, $"rs hit-error-meter"),
@@ -207,7 +214,7 @@ public static partial class OsuHelper
                     InlineKeyboardButton.WithCallbackData(useExperimentalRenderer, $"rs experimental-renderer"),
                 ],
                 [
-                    InlineKeyboardButton.WithCallbackData("Сбросить настройки", $"rs reset-settings"),
+                    InlineKeyboardButton.WithCallbackData(resetSettings, $"rs reset-settings"),
                 ],
             ]
         );

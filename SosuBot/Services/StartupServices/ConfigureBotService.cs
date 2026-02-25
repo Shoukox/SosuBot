@@ -24,7 +24,7 @@ public class ConfigureBotService(IServiceProvider serviceProvider) : IHostedServ
         //await _botClient.LogOut();
         //_logger.LogInformation("Successfully logged out");
 
-        await _botClient.SetMyCommands(botCommands, cancellationToken: CancellationToken.None);
+        await _botClient.SetMyCommands(botCommands, cancellationToken: cancellationToken);
         _logger.LogInformation("Successfully set bot commands");
 
         // Register commands
@@ -66,19 +66,19 @@ public class ConfigureBotService(IServiceProvider serviceProvider) : IHostedServ
         RegisterCallback<RenderSettingsCallback>(RenderSettingsCallback.Command);
     }
 
-    void RegisterCommand<T>(IEnumerable<string> commands) where T : CommandBase<Message>, new()
+    void RegisterCommand<T>(IEnumerable<string> commands) where T : CommandBase<Message>
     {
         foreach (var cmd in commands)
-            UpdateHandler.Commands[cmd] = new T();
+            UpdateHandler.Commands[cmd] = () => ActivatorUtilities.CreateInstance<T>(serviceProvider);
     }
     void RegisterCommandWithParameters(IEnumerable<string> commands, Func<CommandBase<Message>> factory)
     {
         foreach (var cmd in commands)
-            UpdateHandler.Commands[cmd] = factory();
+            UpdateHandler.Commands[cmd] = factory;
     }
-    void RegisterCallback<T>(string callbackData) where T : CommandBase<CallbackQuery>, new()
+    void RegisterCallback<T>(string callbackData) where T : CommandBase<CallbackQuery>
     {
-        UpdateHandler.Callbacks[callbackData] = new T();
+        UpdateHandler.Callbacks[callbackData] = () => ActivatorUtilities.CreateInstance<T>(serviceProvider);
     }
 
     public Task StopAsync(CancellationToken cancellationToken)

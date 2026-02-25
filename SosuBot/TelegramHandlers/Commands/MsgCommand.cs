@@ -25,6 +25,7 @@ public sealed class MsgCommand : CommandBase<Message>
 
     public override async Task ExecuteAsync()
     {
+        var language = Context.GetLocalization();
         var osuUserInDatabase = await _database.OsuUsers.FindAsync(Context.Update.From!.Id);
         if (osuUserInDatabase is null || !osuUserInDatabase.IsAdmin) return;
 
@@ -86,12 +87,13 @@ public sealed class MsgCommand : CommandBase<Message>
                     }
 
                 await Context.Update.ReplyAsync(Context.BotClient,
-                    $"chats: {chats}/{_database.TelegramChats.Count()}");
+                    LocalizationMessageHelper.AdminChatsSummary(language, $"{chats}", $"{_database.TelegramChats.Count()}"));
             }
         }
         else
         {
-            await Context.Update.ReplyAsync(Context.BotClient, "Неизвестная команда");
+            await Context.Update.ReplyAsync(Context.BotClient, language.admin_unknownCommand);
         }
     }
 }
+

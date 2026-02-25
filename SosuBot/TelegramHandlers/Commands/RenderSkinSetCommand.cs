@@ -1,8 +1,6 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using SosuBot.Database;
 using SosuBot.Extensions;
-using SosuBot.Localization;
-using SosuBot.Localization.Languages;
 using SosuBot.Services;
 using SosuBot.Services.Synchronization;
 using SosuBot.TelegramHandlers.Abstract;
@@ -29,27 +27,28 @@ public sealed class RenderSkinSetCommand : CommandBase<Message>
 
     public override async Task ExecuteAsync()
     {
+        var language = Context.GetLocalization();
         if (Context.Update.ReplyToMessage == null || Context.Update.ReplyToMessage.Document == null ||
             Context.Update.ReplyToMessage?.Document.FileName![^4..] != ".osk")
         {
-            await Context.Update.ReplyAsync(Context.BotClient, "Эту команду нужно использовать ответом на файл скина");
+            await Context.Update.ReplyAsync(Context.BotClient, language.render_skin_replyToOskFile);
             return;
         }
 
         if (Context.Update.ReplyToMessage?.Document.FileSize >= 157286400)
         {
-            await Context.Update.ReplyAsync(Context.BotClient, "Скины не больше 150мб!");
+            await Context.Update.ReplyAsync(Context.BotClient, language.render_skin_maxSize);
             return;
         }
 
         var rateLimiter = _rateLimiterFactory.Get(RateLimiterFactory.RateLimitPolicy.Command);
         if (!await rateLimiter.IsAllowedAsync($"{Context.Update.From!.Id}"))
         {
-            await Context.Update.ReplyAsync(Context.BotClient, "Давай не так быстро!");
+            await Context.Update.ReplyAsync(Context.BotClient, language.common_rateLimitSlowDown);
             return;
         }
 
-        ILocalization language = new Russian();
+
         var waitMessage = await Context.Update.ReplyAsync(Context.BotClient, language.waiting);
 
         var osuUserInDatabase = await _database.OsuUsers.FindAsync(Context.Update.From!.Id);
@@ -78,13 +77,16 @@ public sealed class RenderSkinSetCommand : CommandBase<Message>
         asciiSkinName = asciiSkinName.Substring(0, asciiSkinName.Length - 4);
         asciiSkinName = asciiSkinName.Substring(0, Math.Min(53, asciiSkinName.Length)) + ".osk";
         var skinUploadResponse = await _replayRenderService.UploadSkin(skinStream, asciiSkinName);
-        if(skinUploadResponse is null)
+        if (skinUploadResponse is null)
         {
-            await waitMessage.EditAsync(Context.BotClient, "Ошибка загрузки скина. Возможно, скин весит слишком много.\nПожалуйста, сообщи создателю об ошибке.");
+            await waitMessage.EditAsync(Context.BotClient, language.render_skin_uploadError);
             return;
         }
 
-        await waitMessage.EditAsync(Context.BotClient, "Скин успешно загружен и будет использован по умолчанию!");
+        await waitMessage.EditAsync(Context.BotClient, language.render_skin_uploadSuccess);
         osuUserInDatabase.RenderSettings.SkinName = asciiSkinName;
     }
 }
+
+
+

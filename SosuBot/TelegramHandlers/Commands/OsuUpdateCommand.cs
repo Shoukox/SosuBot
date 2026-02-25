@@ -1,14 +1,10 @@
-﻿using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Caching.Hybrid;
+﻿using Microsoft.Extensions.Caching.Hybrid;
 using Microsoft.Extensions.DependencyInjection;
 using OsuApi.BanchoV2;
 using OsuApi.BanchoV2.Users.Models;
 using SosuBot.Database;
 using SosuBot.Extensions;
 using SosuBot.Helpers;
-using SosuBot.Helpers.OutputText;
-using SosuBot.Localization;
-using SosuBot.Localization.Languages;
 using SosuBot.Services.Synchronization;
 using SosuBot.TelegramHandlers.Abstract;
 using Telegram.Bot.Types;
@@ -35,14 +31,13 @@ public sealed class OsuUpdateCommand : CommandBase<Message>
     }
     public override async Task ExecuteAsync()
     {
+        var language = Context.GetLocalization();
         var rateLimiter = _rateLimiterFactory.Get(RateLimiterFactory.RateLimitPolicy.UpdateCommand);
         if (!await rateLimiter.IsAllowedAsync($"{Context.Update.From!.Id}"))
         {
-            await Context.Update.ReplyAsync(Context.BotClient, "Эту команду можно применять макс. 5 раз за 24 часа. Подожди немного.");
+            await Context.Update.ReplyAsync(Context.BotClient, language.update_rateLimit);
             return;
         }
-
-        ILocalization language = new Russian();
         var waitMessage = await Context.Update.ReplyAsync(Context.BotClient, language.waiting);
 
         var osuUserInDatabase = await _database.OsuUsers.FindAsync(Context.Update.From!.Id);
@@ -58,12 +53,12 @@ public sealed class OsuUpdateCommand : CommandBase<Message>
         var parameters = Context.Update.Text!.GetCommandParameters()!;
         if (parameters.Length != 0)
         {
-            await waitMessage.EditAsync(Context.BotClient, language.error_argsLength + "\nРазрешено только /info");
+            await waitMessage.EditAsync(Context.BotClient, language.error_argsLength + $"\n{language.update_onlyInfoAllowed}");
             return;
         }
 
         string cacheKey = $"osuinfo:{osuUserInDatabase.OsuUserId}";
-        if (await _cache.GetOrCreateAsync<string>(cacheKey, null!, new() { Flags = HybridCacheEntryFlags.DisableUnderlyingData}) is { } sendMessage)
+        if (await _cache.GetOrCreateAsync<string>(cacheKey, null!, new() { Flags = HybridCacheEntryFlags.DisableUnderlyingData }) is { } sendMessage)
         {
             await waitMessage.EditAsync(Context.BotClient, sendMessage);
             return;
@@ -114,3 +109,4 @@ public sealed class OsuUpdateCommand : CommandBase<Message>
         await waitMessage.EditAsync(Context.BotClient, sendMessage);
     }
 }
+

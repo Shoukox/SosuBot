@@ -4,8 +4,6 @@ using OsuApi.BanchoV2.Clients.Users.HttpIO;
 using OsuApi.BanchoV2.Models;
 using SosuBot.Database;
 using SosuBot.Extensions;
-using SosuBot.Localization;
-using SosuBot.Localization.Languages;
 using SosuBot.TelegramHandlers.Abstract;
 using Telegram.Bot.Types;
 
@@ -26,7 +24,7 @@ public sealed class OsuCompareCommand : CommandBase<Message>
 
     public override async Task ExecuteAsync()
     {
-        ILocalization language = new Russian();
+        var language = Context.GetLocalization();
         var osuUserInDatabase = await _database.OsuUsers.FindAsync(Context.Update.From!.Id);
 
         var waitMessage = await Context.Update.ReplyAsync(Context.BotClient, language.waiting);
@@ -74,13 +72,13 @@ public sealed class OsuCompareCommand : CommandBase<Message>
 
         if (getUser1Response == null)
         {
-            await waitMessage.EditAsync(Context.BotClient, language.error_specificUserNotFound.Fill([user1IdAsString]));
+            await waitMessage.EditAsync(Context.BotClient, LocalizationMessageHelper.ErrorSpecificUserNotFound(language, user1IdAsString));
             return;
         }
 
         if (getUser2Response == null)
         {
-            await waitMessage.EditAsync(Context.BotClient, language.error_specificUserNotFound.Fill([user2IdAsString]));
+            await waitMessage.EditAsync(Context.BotClient, LocalizationMessageHelper.ErrorSpecificUserNotFound(language, user2IdAsString));
             return;
         }
 
@@ -110,7 +108,7 @@ public sealed class OsuCompareCommand : CommandBase<Message>
             username2 = username2[..9] + "...";
         }
 
-        var textToSend = language.command_compare.Fill([
+        var textToSend = LocalizationMessageHelper.CommandCompare(language,
             ruleset.ParseRulesetToGamemode(),
 
             username1.PadRight(max),
@@ -130,7 +128,10 @@ public sealed class OsuCompareCommand : CommandBase<Message>
 
             $"{(user1.Statistics.PlayTime!.Value / 3600 + "h").PadRight(max)}",
             $"{user2.Statistics.PlayTime!.Value / 3600}h"
-        ]);
+        );
         await waitMessage.EditAsync(Context.BotClient, textToSend);
     }
 }
+
+
+

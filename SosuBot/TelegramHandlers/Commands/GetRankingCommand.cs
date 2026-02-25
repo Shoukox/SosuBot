@@ -3,9 +3,6 @@ using OsuApi.BanchoV2;
 using SosuBot.Database.Models;
 using SosuBot.Extensions;
 using SosuBot.Helpers;
-using SosuBot.Helpers.OutputText;
-using SosuBot.Localization;
-using SosuBot.Localization.Languages;
 using SosuBot.Services.Synchronization;
 using SosuBot.TelegramHandlers.Abstract;
 using Telegram.Bot.Types;
@@ -28,13 +25,12 @@ public sealed class GetRankingCommand : CommandBase<Message>
     public override async Task ExecuteAsync()
     {
         var rateLimiter = _rateLimiterFactory.Get(RateLimiterFactory.RateLimitPolicy.Command);
+        var language = Context.GetLocalization();
         if (!await rateLimiter.IsAllowedAsync($"{Context.Update.From!.Id}"))
         {
-            await Context.Update.ReplyAsync(Context.BotClient, "Давай не так быстро!");
+            await Context.Update.ReplyAsync(Context.BotClient, language.common_rateLimitSlowDown);
             return;
         }
-
-        ILocalization language = new Russian();
         var waitMessage = await Context.Update.ReplyAsync(Context.BotClient, language.waiting);
 
         // Fake 500ms wait
@@ -58,9 +54,10 @@ public sealed class GetRankingCommand : CommandBase<Message>
                 $"{i + 1}. {UserHelper.GetUserProfileUrlWrappedInUsernameString(users[i].User!.Id.Value, users[i].User!.Username!)} - <b>{users[i].Pp:N2}pp💪</b>\n";
 
         var flagEmoji = countryCode == null ? "🌍" : UserHelper.CountryCodeToFlag(countryCode);
-        var sendText = $"Топ игроков в {flagEmoji}:\n\n" +
-                       rankingText;
+        var sendText = LocalizationMessageHelper.CommandRankingTitle(language, $"{flagEmoji}") + rankingText;
 
         await waitMessage.EditAsync(Context.BotClient, sendText);
     }
 }
+
+

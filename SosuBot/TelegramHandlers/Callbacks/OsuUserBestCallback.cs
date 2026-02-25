@@ -5,9 +5,6 @@ using OsuApi.BanchoV2.Models;
 using OsuApi.BanchoV2.Users.Models;
 using SosuBot.Database.Models;
 using SosuBot.Extensions;
-using SosuBot.Helpers.OutputText;
-using SosuBot.Localization;
-using SosuBot.Localization.Languages;
 using SosuBot.TelegramHandlers.Abstract;
 using Telegram.Bot.Exceptions;
 using Telegram.Bot.Types;
@@ -30,7 +27,7 @@ public class OsuUserBestCallback : CommandBase<CallbackQuery>
 
     public override async Task ExecuteAsync()
     {
-        ILocalization language = new Russian();
+        var language = Context.GetLocalization();
 
         var parameters = Context.Update.Data!.Split(' ');
         var directionOfPaging = parameters[1];
@@ -77,7 +74,7 @@ public class OsuUserBestCallback : CommandBase<CallbackQuery>
             // should be equal to the variant from OsuUserbestCommand
             string fcText = " (" + (score.IsPerfectCombo!.Value ? "PFC" : "notPFC") + ")";
 
-            textToSend += language.command_userbest.Fill([
+            textToSend += LocalizationMessageHelper.CommandUserBest(language,
                 $"{index + 1}",
                 $"{_scoreHelper.GetScoreRankEmoji(score.Rank)}{_scoreHelper.ParseScoreRank(score.Rank!)}",
                 $"{score.BeatmapId}",
@@ -86,12 +83,12 @@ public class OsuUserBestCallback : CommandBase<CallbackQuery>
                 $"{score.Beatmapset.Status}",
                 $"{_scoreHelper.GetScoreStatisticsText(score.Statistics!, playmode)}",
                 $"{score.Statistics!.Miss}",
-                $"{_scoreHelper.GetFormattedNumConsideringNull(score.Accuracy * 100, round:false)}",
+                $"{_scoreHelper.GetFormattedNumConsideringNull(score.Accuracy * 100, round: false)}",
                 $"{_scoreHelper.GetModsText(score.Mods!)}",
                 $"{score.MaxCombo}",
                 $"{fcText}",
                 $"{_scoreHelper.GetFormattedNumConsideringNull(score.Pp)}"
-            ]);
+            );
             index += 1;
         }
 
@@ -111,3 +108,6 @@ public class OsuUserBestCallback : CommandBase<CallbackQuery>
         }
     }
 }
+
+
+

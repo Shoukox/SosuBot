@@ -3,6 +3,7 @@ using OsuApi.BanchoV2.Users.Models;
 using SosuBot.Database;
 using SosuBot.Database.Models;
 using SosuBot.Extensions;
+using Telegram.Bot.Types.ReplyMarkups;
 
 namespace SosuBot.Helpers.OutputText;
 
@@ -58,5 +59,20 @@ public static class UserHelper
     public static string GetUserProfileUrlWrappedInUsernameString(int userId, string username)
     {
         return $"<a href=\"{GetUserProfileUrl(userId)}\">{username}</a>";
+    }
+
+    public static InlineKeyboardMarkup BuildUserModeKeyboard(string username)
+    {
+        return new InlineKeyboardMarkup(new InlineKeyboardButton[][]
+        {
+            [
+                new InlineKeyboardButton("Standard") { CallbackData = $"user 0 {username}" },
+                new InlineKeyboardButton("Taiko") { CallbackData = $"user 1 {username}" }
+            ],
+            [
+                new InlineKeyboardButton("Catch") { CallbackData = $"user 2 {username}" },
+                new InlineKeyboardButton("Mania") { CallbackData = $"user 3 {username}" }
+            ]
+        });
     }
 }

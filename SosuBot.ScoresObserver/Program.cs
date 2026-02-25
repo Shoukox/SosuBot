@@ -11,6 +11,7 @@ using SosuBot.ScoresObserver;
 using SosuBot.ScoresObserver.Extensions;
 using SosuBot.ScoresObserver.Logging;
 using SosuBot.ScoresObserver.Services;
+using Telegram.Bot;
 
 var builder = Host.CreateApplicationBuilder(args);
 
@@ -34,6 +35,12 @@ builder.Services.AddSingleton<BanchoApiV2>(provider =>
     var logger = provider.GetRequiredService<ILogger<BanchoApiV2>>();
     return new BanchoApiV2(config.ClientId, config.ClientSecret, httpClient);
 });
+var botToken = Environment.GetEnvironmentVariable("TELEGRAM_BOT_TOKEN")
+               ?? builder.Configuration["Bot:Token"];
+if (string.IsNullOrWhiteSpace(botToken))
+    throw new InvalidOperationException("Telegram bot token is missing. Set TELEGRAM_BOT_TOKEN or Bot:Token in config.");
+
+builder.Services.AddSingleton<ITelegramBotClient>(_ => new TelegramBotClient(botToken));
 builder.Services.AddHostedService<ScoresObserverBackgroundService>();
 
 // Database

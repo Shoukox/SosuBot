@@ -11,7 +11,6 @@ using SosuBot.Configuration;
 using SosuBot.Database;
 using SosuBot.Database.Models;
 using SosuBot.Helpers;
-using SosuBot.Helpers.OutputText;
 using SosuBot.Logging;
 using SosuBot.Services;
 using SosuBot.Services.BackgroundServices;
@@ -122,7 +121,8 @@ internal class Program
         builder.Services.AddHostedService<ConfigureBotService>();
         builder.Services.AddHostedService<PollingBackgroundService>();
         builder.Services.AddHostedService<UpdateHandlerBackgroundService>();
-        builder.Services.AddHostedService<ScoresObserverBackgroundService>();
+        // Moved to dedicated SosuBot.ScoresObserver service for horizontal scaling.
+        // builder.Services.AddHostedService<ScoresObserverBackgroundService>();
 
         // Database
         var connectionString = builder.Configuration.GetConnectionString("Postgres")!;

@@ -12,7 +12,6 @@ using SosuBot.Database;
 using SosuBot.Database.Models;
 using SosuBot.Extensions;
 using SosuBot.Helpers;
-using SosuBot.Helpers.OutputText;
 using SosuBot.Helpers.Types;
 using SosuBot.Localization;
 using SosuBot.Localization.Languages;
@@ -471,3 +470,4 @@ public sealed class CustomCommand : CommandBase<Message>
         }
     }
 }
+

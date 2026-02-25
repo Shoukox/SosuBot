@@ -1,8 +1,6 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using SosuBot.Database;
 using SosuBot.Extensions;
-using SosuBot.Localization;
-using SosuBot.Localization.Languages;
 using SosuBot.TelegramHandlers.Abstract;
 using Telegram.Bot;
 using Telegram.Bot.Types;
@@ -22,19 +20,18 @@ public sealed class OsuChatstatsIncludeCommand : CommandBase<Message>
     }
     public override async Task ExecuteAsync()
     {
+        var language = Context.GetLocalization();
         if (Context.Update.Chat.Type == Telegram.Bot.Types.Enums.ChatType.Private)
         {
-            await Context.Update.ReplyAsync(Context.BotClient, "Только для групп.");
+            await Context.Update.ReplyAsync(Context.BotClient, language.group_onlyForGroups);
             return;
         }
         var chatAdmins = await Context.BotClient.GetChatAdministrators(Context.Update.Chat.Id);
         if (!chatAdmins.Any(m => m.User.Id == Context.Update.From?.Id))
         {
-            await Context.Update.ReplyAsync(Context.BotClient, "Только для админов.");
+            await Context.Update.ReplyAsync(Context.BotClient, language.group_onlyForAdmins);
             return;
         }
-
-        ILocalization language = new Russian();
         var chatInDatabase = await _database.TelegramChats.FindAsync(Context.Update.Chat.Id);
 
         var waitMessage = await Context.Update.ReplyAsync(Context.BotClient, language.waiting);
@@ -66,7 +63,9 @@ public sealed class OsuChatstatsIncludeCommand : CommandBase<Message>
         }
 
         chatInDatabase.ExcludeFromChatstats.Remove(osuUserToExclude.OsuUserId);
-        var sendText = language.command_included.Fill([osuUsernameToExclude]);
+        var sendText = LocalizationMessageHelper.ChatstatsIncluded(language, osuUsernameToExclude);
         await waitMessage.EditAsync(Context.BotClient, sendText);
     }
 }
+
+

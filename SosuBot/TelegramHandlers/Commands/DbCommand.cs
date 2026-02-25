@@ -2,7 +2,6 @@
 using SosuBot.Database;
 using SosuBot.Database.Extensions;
 using SosuBot.Extensions;
-using SosuBot.Helpers.OutputText;
 using SosuBot.TelegramHandlers.Abstract;
 using System.Text;
 using Telegram.Bot.Types;
@@ -22,10 +21,11 @@ public sealed class DbCommand : CommandBase<Message>
     }
     public override async Task ExecuteAsync()
     {
+        var language = Context.GetLocalization();
         var osuUserInDatabase = await _database.OsuUsers.FindAsync(Context.Update.From!.Id);
         if (osuUserInDatabase is null || !osuUserInDatabase.IsAdmin)
         {
-            await Context.Update.ReplyAsync(Context.BotClient, "Пшол вон!");
+            await Context.Update.ReplyAsync(Context.BotClient, language.admin_accessDenied);
             return;
         }
 
@@ -39,7 +39,7 @@ public sealed class DbCommand : CommandBase<Message>
             else if (parameters[1] == "groups") count = _database.TelegramChats.Count(m => m.ChatId < 0);
             else throw new NotImplementedException();
 
-            await Context.Update.ReplyAsync(Context.BotClient, $"{parameters[1]}: {count}");
+            await Context.Update.ReplyAsync(Context.BotClient, LocalizationMessageHelper.AdminCountFormat(language, parameters[1], $"{count}"));
         }
         else if (parameters[0] == "astext")
         {
@@ -75,3 +75,4 @@ public sealed class DbCommand : CommandBase<Message>
         }
     }
 }
+

@@ -1,10 +1,7 @@
-﻿using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.Extensions.DependencyInjection;
 using OsuApi.BanchoV2;
 using SosuBot.Database;
 using SosuBot.Extensions;
-using SosuBot.Localization;
-using SosuBot.Localization.Languages;
 using SosuBot.Services.BackgroundServices;
 using SosuBot.Services.Synchronization;
 using SosuBot.TelegramHandlers.Abstract;
@@ -28,14 +25,15 @@ public sealed class TrackCommand : CommandBase<Message>
     }
     public override async Task ExecuteAsync()
     {
+        var language = Context.GetLocalization();
         var rateLimiter = _rateLimiterFactory.Get(RateLimiterFactory.RateLimitPolicy.Command);
         if (!await rateLimiter.IsAllowedAsync($"{Context.Update.From!.Id}"))
         {
-            await Context.Update.ReplyAsync(Context.BotClient, "Давай не так быстро!");
+            await Context.Update.ReplyAsync(Context.BotClient, language.common_rateLimitSlowDown);
             return;
         }
 
-        ILocalization language = new Russian();
+
         var chatInDatabase = await _database.TelegramChats.FindAsync(Context.Update.Chat.Id);
 
         var waitMessage = await Context.Update.ReplyAsync(Context.BotClient, language.waiting);
@@ -46,7 +44,7 @@ public sealed class TrackCommand : CommandBase<Message>
         var parameters = Context.Update.Text!.GetCommandParameters()!;
         if (parameters.Length == 0)
         {
-            await waitMessage.EditAsync(Context.BotClient, language.error_argsLength + "\n/track [user1..3]\n/track rm");
+            await waitMessage.EditAsync(Context.BotClient, language.error_argsLength + $"\n{language.track_usage}");
             return;
         }
 
@@ -65,14 +63,14 @@ public sealed class TrackCommand : CommandBase<Message>
 
                 await ScoresObserverBackgroundService.RemovePlayersFromObserverList(usersToRemoveFromObservedList);
             }
-            await waitMessage.EditAsync(Context.BotClient, $"Лист был очищен.");
+            await waitMessage.EditAsync(Context.BotClient, language.track_cleared);
             return;
         }
 
         int maxArgsCount = 3;
         if (parameters.Length > maxArgsCount)
         {
-            await waitMessage.EditAsync(Context.BotClient, language.error_argsLength + $"\nДопустимо макс. {maxArgsCount} игрока на группу");
+            await waitMessage.EditAsync(Context.BotClient, language.error_argsLength + "\n" + LocalizationMessageHelper.TrackMaxPlayersPerGroup(language, $"{maxArgsCount}"));
             return;
         }
 
@@ -94,6 +92,10 @@ public sealed class TrackCommand : CommandBase<Message>
         await ScoresObserverBackgroundService.AddPlayersToObserverList(trackedPlayers.ToArray());
 
         chatInDatabase!.TrackedPlayers = trackedPlayers.ToList();
-        await waitMessage.EditAsync(Context.BotClient, $"Теперь в этой группе отслеживаются новые топ скоры (из топ50) следующих игроков:\n{string.Join(", ", nicknames)}");
+        await waitMessage.EditAsync(Context.BotClient, LocalizationMessageHelper.TrackNowTrackingPlayers(language, $"{string.Join(", ", nicknames)}"));
     }
 }
+
+
+
+
