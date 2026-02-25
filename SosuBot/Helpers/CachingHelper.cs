@@ -4,7 +4,6 @@ using OsuApi;
 using OsuApi.BanchoV2;
 using OsuApi.BanchoV2.Models;
 using OsuApi.BanchoV2.Users.Models;
-using SosuBot.Helpers.OutputText;
 using Telegram.Bot.Types;
 
 namespace SosuBot.Helpers

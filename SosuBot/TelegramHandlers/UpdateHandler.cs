@@ -1,4 +1,4 @@
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using SosuBot.Configuration;
@@ -22,38 +22,20 @@ public class UpdateHandler(
     ILogger<UpdateHandler> logger,
     IServiceProvider serviceProvider) : IUpdateHandler
 {
-    public static Dictionary<string, CommandBase<Message>> Commands { get; set; } = new();
-    public static Dictionary<string, CommandBase<CallbackQuery>> Callbacks { get; set; } = new();
+    public static Dictionary<string, Func<CommandBase<Message>>> Commands { get; set; } = new();
+    public static Dictionary<string, Func<CommandBase<CallbackQuery>>> Callbacks { get; set; } = new();
 
-    private Update? _currentUpdate;
-
-    public async Task HandleErrorAsync(ITelegramBotClient botClient, Exception exception, HandleErrorSource source,
+    public Task HandleErrorAsync(ITelegramBotClient botClient, Exception exception, HandleErrorSource source,
         CancellationToken cancellationToken)
     {
-        logger.LogError("HandleError: {Exception}", exception);
-
-        // if a text-command message
-        if (_currentUpdate!.Message is { Text: string } msg && msg.Text!.IsCommand())
-        {
-            var userId = (await database.OsuUsers.FirstAsync(u => u.IsAdmin, cancellationToken)).TelegramId;
-            var errorText =
-                $"Произошла ошибка.\n" +
-                $"Пожалуйста, сообщите о ней <a href=\"tg://user?id={userId}\">создателю</a> (@Shoukkoo)";
-            await msg.ReplyAsync(botClient, errorText);
-        }
-        // if a callback query
-        else if (_currentUpdate!.CallbackQuery is { Data: string } callbackQuery)
-        {
-            await callbackQuery.AnswerAsync(botClient);
-        }
+        logger.LogError(exception, "HandleError (source: {Source})", source);
+        return Task.CompletedTask;
     }
 
     public async Task HandleUpdateAsync(ITelegramBotClient botClient, Update update,
         CancellationToken cancellationToken)
     {
-        _currentUpdate = update;
         cancellationToken.ThrowIfCancellationRequested();
-
 
         var eventHandler = update switch
         {
@@ -68,7 +50,30 @@ public class UpdateHandler(
         }
         catch (Exception e)
         {
-            await HandleErrorAsync(botClient, e, HandleErrorSource.HandleUpdateError, cancellationToken);
+            await HandleErrorForUpdateAsync(botClient, update, e, HandleErrorSource.HandleUpdateError, cancellationToken);
+        }
+    }
+
+    private async Task HandleErrorForUpdateAsync(ITelegramBotClient botClient, Update update, Exception exception,
+        HandleErrorSource source, CancellationToken cancellationToken)
+    {
+        logger.LogError(exception, "HandleError (source: {Source})", source);
+
+        // if a text-command message
+        if (update.Message is { Text: string } msg && msg.Text.IsCommand())
+        {
+            var admin = await database.OsuUsers.FirstOrDefaultAsync(u => u.IsAdmin, cancellationToken);
+            if (admin is null) return;
+
+            var errorText =
+                $"Произошла ошибка.\n" +
+                $"Пожалуйста, сообщите о ней <a href=\"tg://user?id={admin.TelegramId}\">создателю</a> (@Shoukkoo)";
+            await msg.ReplyAsync(botClient, errorText);
+        }
+        // if a callback query
+        else if (update.CallbackQuery is { Data: string } callbackQuery)
+        {
+            await callbackQuery.AnswerAsync(botClient);
         }
     }
 
@@ -105,7 +110,8 @@ public class UpdateHandler(
         if (callbackQuery.Data is not { } data) return;
 
         var command = data.Split(" ")[0];
-        CommandBase<CallbackQuery> executableCommand = Callbacks.GetValueOrDefault(command, new DummyCallback());
+        var callbackFactory = Callbacks.GetValueOrDefault(command, () => new DummyCallback());
+        CommandBase<CallbackQuery> executableCommand = callbackFactory();
 
         executableCommand.SetContext(
             new CommandContext<CallbackQuery>(
@@ -122,7 +128,8 @@ public class UpdateHandler(
     private async Task OnCommand(ITelegramBotClient botClient, Message msg, CancellationToken cancellationToken)
     {
         var command = msg.Text!.GetCommand().RemoveUsernamePostfix(botConfig.Value.Username);
-        CommandBase<Message> executableCommand = Commands.GetValueOrDefault(command, new DummyCommand());
+        var commandFactory = Commands.GetValueOrDefault(command, () => new DummyCommand());
+        CommandBase<Message> executableCommand = commandFactory();
 
         executableCommand.SetContext(
             new CommandContext<Message>(
@@ -156,3 +163,4 @@ public class UpdateHandler(
         return Task.CompletedTask;
     }
 }
+

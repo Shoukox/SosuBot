@@ -5,9 +5,6 @@ using OsuApi.BanchoV2.Models;
 using OsuApi.BanchoV2.Users.Models;
 using SosuBot.Database;
 using SosuBot.Extensions;
-using SosuBot.Helpers.OutputText;
-using SosuBot.Localization;
-using SosuBot.Localization.Languages;
 using SosuBot.Services.Synchronization;
 using SosuBot.TelegramHandlers.Abstract;
 using Telegram.Bot.Types;
@@ -34,14 +31,15 @@ public sealed class OsuUserbestCommand : CommandBase<Message>
 
     public override async Task ExecuteAsync()
     {
+        var language = Context.GetLocalization();
         var rateLimiter = _rateLimiterFactory.Get(RateLimiterFactory.RateLimitPolicy.Command);
         if (!await rateLimiter.IsAllowedAsync($"{Context.Update.From!.Id}"))
         {
-            await Context.Update.ReplyAsync(Context.BotClient, "Давай не так быстро!");
+            await Context.Update.ReplyAsync(Context.BotClient, language.common_rateLimitSlowDown);
             return;
         }
 
-        ILocalization language = new Russian();
+
         var chatInDatabase = await _database.TelegramChats.FindAsync(Context.Update.Chat.Id);
         var osuUserInDatabase = await _database.OsuUsers.FindAsync(Context.Update.From!.Id);
 
@@ -81,7 +79,7 @@ public sealed class OsuUserbestCommand : CommandBase<Message>
             if (userResponse is null)
             {
                 await waitMessage.EditAsync(Context.BotClient,
-                    language.error_specificUserNotFound.Fill([parameters[0]]) + "\n\n" +
+                    LocalizationMessageHelper.ErrorSpecificUserNotFound(language, parameters[0]) + "\n\n" +
                     language.error_hintReplaceSpaces);
                 return;
             }
@@ -109,7 +107,7 @@ public sealed class OsuUserbestCommand : CommandBase<Message>
             var score = bestScores[i];
             string fcText = " (" + (score.IsPerfectCombo!.Value ? "PFC" : "notPFC") + ")";
 
-            textToSend += language.command_userbest.Fill([
+            textToSend += LocalizationMessageHelper.CommandUserBest(language,
                 $"{i + 1}",
                 $"{_scoreHelper.GetScoreRankEmoji(score.Rank)}{_scoreHelper.ParseScoreRank(score.Rank!)}",
                 $"{score.BeatmapId}",
@@ -123,7 +121,7 @@ public sealed class OsuUserbestCommand : CommandBase<Message>
                 $"{score.MaxCombo}",
                 $"{fcText}",
                 $"{_scoreHelper.GetFormattedNumConsideringNull(score.Pp)}"
-            ]);
+            );
         }
 
         var ik = new InlineKeyboardMarkup(
@@ -140,3 +138,7 @@ public sealed class OsuUserbestCommand : CommandBase<Message>
         await waitMessage.EditAsync(Context.BotClient, textToSend, replyMarkup: ik);
     }
 }
+
+
+
+

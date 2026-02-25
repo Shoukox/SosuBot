@@ -2,9 +2,6 @@
 using OsuApi.BanchoV2;
 using SosuBot.Database;
 using SosuBot.Extensions;
-using SosuBot.Helpers.OutputText;
-using SosuBot.Localization;
-using SosuBot.Localization.Languages;
 using SosuBot.Services;
 using SosuBot.Services.Synchronization;
 using SosuBot.TelegramHandlers.Abstract;
@@ -35,16 +32,15 @@ public sealed class ReplayRenderCommand : CommandBase<Message>
 
     public override async Task ExecuteAsync()
     {
+        var language = Context.GetLocalization();
         var rateLimiter = _rateLimiterFactory.Get(RateLimiterFactory.RateLimitPolicy.RenderCommand);
         if (!await rateLimiter.IsAllowedAsync($"{Context.Update.From!.Id}"))
         {
-            await Context.Update.ReplyAsync(Context.BotClient, "Давай не так быстро! Разрешено максимум 10 запросов за 1 час.");
+            await Context.Update.ReplyAsync(Context.BotClient, language.replayRender_rateLimit);
             return;
         }
 
         var chatInDatabase = await _database.TelegramChats.FindAsync(Context.Update.Chat.Id);
-
-        ILocalization language = new Russian();
 
         var osuUserInDatabase = await _database.OsuUsers.FindAsync(Context.Update.From!.Id);
         if (osuUserInDatabase is null)
@@ -63,14 +59,14 @@ public sealed class ReplayRenderCommand : CommandBase<Message>
         }
         catch (HttpRequestException ex) when (ex.InnerException is SocketException socketException && socketException.ErrorCode == 10061)
         {
-            await Context.Update.ReplyAsync(Context.BotClient, "Кажется, сервер сейчас не запущен. Попробуй в другой раз");
+            await Context.Update.ReplyAsync(Context.BotClient, language.replayRender_serverDown);
             return;
         }
 
         int onlineRenderersCount = onlineRenderers!.Length;
         if (onlineRenderers == null || onlineRenderers.Length == 0)
         {
-            await Context.Update.ReplyAsync(Context.BotClient, "Нету ни одного доступного рендерера для рендера реплеев. Попробуй в другой раз");
+            await Context.Update.ReplyAsync(Context.BotClient, language.replayRender_noRenderers);
             return;
         }
 
@@ -99,12 +95,12 @@ public sealed class ReplayRenderCommand : CommandBase<Message>
             var score = await _osuApiV2.Scores.GetScore(scoreId.Value);
             if (score is null)
             {
-                await Context.Update.ReplyAsync(Context.BotClient, $"<a href=\"{scoreLink}\">Скор</a> не найден");
+                await Context.Update.ReplyAsync(Context.BotClient, LocalizationMessageHelper.ReplayScoreNotFound(language, $"{scoreLink}"));
                 return;
             }
             if (!score.HasReplay!.Value)
             {
-                await Context.Update.ReplyAsync(Context.BotClient, $"<a href=\"{scoreLink}\">Скор</a> не имеет реплея");
+                await Context.Update.ReplyAsync(Context.BotClient, LocalizationMessageHelper.ReplayScoreHasNoReplay(language, $"{scoreLink}"));
                 return;
             }
 
@@ -115,12 +111,12 @@ public sealed class ReplayRenderCommand : CommandBase<Message>
             var score = await _osuApiV2.Scores.GetScore(scoreId.Value);
             if (score is null)
             {
-                await Context.Update.ReplyAsync(Context.BotClient, $"<a href=\"{scoreLinkFromReply}\">Скор</a> не найден");
+                await Context.Update.ReplyAsync(Context.BotClient, LocalizationMessageHelper.ReplayScoreNotFound(language, $"{scoreLinkFromReply}"));
                 return;
             }
             if (!score.HasReplay!.Value)
             {
-                await Context.Update.ReplyAsync(Context.BotClient, $"<a href=\"{scoreLinkFromReply}\">Скор</a> не имеет реплея");
+                await Context.Update.ReplyAsync(Context.BotClient, LocalizationMessageHelper.ReplayScoreHasNoReplay(language, $"{scoreLinkFromReply}"));
                 return;
             }
 
@@ -128,7 +124,7 @@ public sealed class ReplayRenderCommand : CommandBase<Message>
         }
         else
         {
-            await Context.Update.ReplyAsync(Context.BotClient, "Используй эту команду на реплей файл или на скор с реплеем.\nЛибо укажи ссылку на скор после команды.");
+            await Context.Update.ReplyAsync(Context.BotClient, language.replayRender_usage);
             return;
         }
 
@@ -148,16 +144,16 @@ public sealed class ReplayRenderCommand : CommandBase<Message>
         renderQueueResponse = await _replayRenderService.QueueReplay(replayStream, osuUserInDatabase.RenderSettings);
         if (renderQueueResponse is null)
         {
-            await Context.Update.ReplyAsync(Context.BotClient, "Вероятно, твой выбранный скин не был найден на сервере - выбери другой.");
+            await Context.Update.ReplyAsync(Context.BotClient, language.replayRender_skinNotFound);
             return;
         }
         replayStream.Close();
 
         var ik = new InlineKeyboardMarkup(new[]
         {
-            InlineKeyboardButton.WithCallbackData("Статус", $"render-status {renderQueueResponse!.JobId}")
+            InlineKeyboardButton.WithCallbackData(language.replayRender_statusButton, $"render-status {renderQueueResponse!.JobId}")
         });
-        var message = await Context.Update.ReplyAsync(Context.BotClient, $"Текущее количество онлайн рендереров: {onlineRenderersCount}\n\nОчередь: {await _replayRenderService.GetWaitqueueLength(renderQueueResponse!.JobId)}\nИщем свободный рендерер...", replyMarkup: ik);
+        var message = await Context.Update.ReplyAsync(Context.BotClient, LocalizationMessageHelper.ReplayOnlineQueueSearching(language, $"{onlineRenderersCount}", $"{await _replayRenderService.GetWaitqueueLength(renderQueueResponse!.JobId)}"), replyMarkup: ik);
 
         int timeoutSeconds = 600;
         DateTime startedWaiting = DateTime.Now;
@@ -172,7 +168,7 @@ public sealed class ReplayRenderCommand : CommandBase<Message>
                 onlineRenderersCount = currentOnlineRenderers!.Length;
                 if (onlineRenderersCount == 0)
                 {
-                    await message.EditAsync(Context.BotClient, $"Сейчас свободных рендереров не осталось, попробуй позже :(");
+                    await message.EditAsync(Context.BotClient, language.replayRender_noRenderersLeft);
                     return;
                 }
                 else
@@ -180,7 +176,7 @@ public sealed class ReplayRenderCommand : CommandBase<Message>
                     if (!rendererGotThisJob)
                     {
                         await Task.Delay(3000 + Random.Shared.Next(500, 1500));
-                        await message.EditAsync(Context.BotClient, $"Текущее количество онлайн рендереров: {onlineRenderersCount}\n\nОчередь: {await _replayRenderService.GetWaitqueueLength(jobInfo!.JobId)}\nИщем свободный рендерер...", replyMarkup: ik);
+                        await message.EditAsync(Context.BotClient, LocalizationMessageHelper.ReplayOnlineQueueSearchingAgain(language, $"{onlineRenderersCount}", $"{await _replayRenderService.GetWaitqueueLength(jobInfo!.JobId)}"), replyMarkup: ik);
                     }
                 }
             }
@@ -192,20 +188,20 @@ public sealed class ReplayRenderCommand : CommandBase<Message>
 
                 var currentRenderer = currentOnlineRenderers.First(m => m.RendererId == jobInfo.RenderingBy);
                 await Task.Delay(1000 + Random.Shared.Next(500, 1500));
-                await message.EditAsync(Context.BotClient, $"Текущее количество онлайн рендереров: {onlineRenderersCount}\n\n<b>Рендерер:</b> {currentRenderer.RendererName}\n<b>Видеокарта</b>: {currentRenderer.UsedGPU}\nРендер в процессе...", replyMarkup: ik);
+                await message.EditAsync(Context.BotClient, LocalizationMessageHelper.ReplayRendererInProcess(language, $"{onlineRenderersCount}", currentRenderer.RendererName, currentRenderer.UsedGPU), replyMarkup: ik);
             }
 
             if (rendererGotThisJob && jobInfo!.RenderingBy == -1)
             {
                 rendererGotThisJob = false;
                 await Task.Delay(1000 + Random.Shared.Next(500, 1500));
-                await message.EditAsync(Context.BotClient, $"Текущее количество онлайн рендереров: {onlineRenderersCount}\n\nИщем нового рендерера...", replyMarkup: ik);
+                await message.EditAsync(Context.BotClient, LocalizationMessageHelper.ReplaySearchingNewRenderer(language, $"{onlineRenderersCount}"), replyMarkup: ik);
             }
 
             if (rendererGotThisJob && DateTime.Now - startedWaiting >= TimeSpan.FromSeconds(timeoutSeconds))
             {
                 await Task.Delay(1000 + Random.Shared.Next(500, 1500));
-                await message.EditAsync(Context.BotClient, $"Таймаут. Рендеринг не был завершен за {timeoutSeconds} секунд, повторите попытку.", linkPreviewEnabled: true);
+                await message.EditAsync(Context.BotClient, LocalizationMessageHelper.ReplayTimeout(language, $"{timeoutSeconds}"), linkPreviewEnabled: true);
                 return;
             }
 
@@ -216,12 +212,12 @@ public sealed class ReplayRenderCommand : CommandBase<Message>
         {
             if (jobInfo.FailureReason == "ruleset")
             {
-                await message.EditAsync(Context.BotClient, "Рендер доступен только для osu!std");
+                await message.EditAsync(Context.BotClient, language.replayRender_onlyOsuStd);
                 return;
             }
             else
             {
-                await message.EditAsync(Context.BotClient, $"Ошибка рендера.\n{jobInfo.FailureReason}");
+                await message.EditAsync(Context.BotClient, LocalizationMessageHelper.ReplayErrorWithReason(language, jobInfo.FailureReason));
                 return;
             }
         }
@@ -232,6 +228,9 @@ public sealed class ReplayRenderCommand : CommandBase<Message>
             watchUrl = watchUrl[..^4];
         }
 
-        await message.EditAsync(Context.BotClient, $"Рендер завершен.\n<a href=\"{watchUrl}\">Ссылка на видео</a>", linkPreviewEnabled: true);
+        await message.EditAsync(Context.BotClient, LocalizationMessageHelper.ReplayFinishedWithLink(language, $"{watchUrl}"), linkPreviewEnabled: true);
     }
 }
+
+
+

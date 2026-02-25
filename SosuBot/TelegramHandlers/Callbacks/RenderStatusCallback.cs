@@ -1,8 +1,6 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using SosuBot.Database;
 using SosuBot.Extensions;
-using SosuBot.Localization;
-using SosuBot.Localization.Languages;
 using SosuBot.Services;
 using SosuBot.TelegramHandlers.Abstract;
 using Telegram.Bot.Types;
@@ -24,7 +22,7 @@ public class RenderStatusCallback() : CommandBase<CallbackQuery>
 
     public override async Task ExecuteAsync()
     {
-        ILocalization language = new Russian();
+        var language = Context.GetLocalization();
 
         var parameters = Context.Update.Data!.Split(' ');
         var jobId = int.Parse(parameters[1]);
@@ -34,7 +32,7 @@ public class RenderStatusCallback() : CommandBase<CallbackQuery>
         var renderJob = await _replayRenderService.GetRenderJobInfo(jobId);
         if (renderJob == null)
         {
-            await Context.Update.AnswerAsync(Context.BotClient, "Запрос на рендер не найден в базе данных", showAlert: true);
+            await Context.Update.AnswerAsync(Context.BotClient, language.callback_renderRequestNotFound, showAlert: true);
             return;
         }
 
@@ -43,25 +41,27 @@ public class RenderStatusCallback() : CommandBase<CallbackQuery>
         {
             if (renderJob.ProgressPercent == -2)
             {
-                renderProgressText = $"Рендерер загружает реплей...";
+                renderProgressText = language.callback_rendererUploadingReplay;
             }
             else if (renderJob.ProgressPercent == -1)
             {
-                renderProgressText = $"Рендерер загружает карту...";
+                renderProgressText = language.callback_rendererUploadingBeatmap;
             }
         }
         else if (renderJob.ProgressPercent == 0)
         {
-            renderProgressText = "Инициализация. Ждем свободного рендерера...";
+            renderProgressText = language.callback_rendererInitializing;
         }
         else if (renderJob.ProgressPercent is > 0 and <= 0.95)
         {
-            renderProgressText = $"Рендер завершен на {renderJob.ProgressPercent:P0}";
+            renderProgressText = LocalizationMessageHelper.CallbackRenderFinishedPercent(language, $"{renderJob.ProgressPercent:P0}");
         }
         else
         {
-            renderProgressText = $"Рендерер загружает видео...";
+            renderProgressText = language.callback_rendererUploadingVideo;
         }
         await Context.Update.AnswerAsync(Context.BotClient, renderProgressText, showAlert: true);
     }
 }
+
+

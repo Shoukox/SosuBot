@@ -6,13 +6,9 @@ using SosuBot.Database;
 using SosuBot.Database.Models;
 using SosuBot.Extensions;
 using SosuBot.Helpers;
-using SosuBot.Helpers.OutputText;
-using SosuBot.Localization;
-using SosuBot.Localization.Languages;
 using SosuBot.Services.Synchronization;
 using SosuBot.TelegramHandlers.Abstract;
 using Telegram.Bot.Types;
-using Telegram.Bot.Types.ReplyMarkups;
 
 namespace SosuBot.TelegramHandlers.Commands;
 
@@ -35,14 +31,15 @@ public class OsuUserCommand(bool includeIdInSearch = false) : CommandBase<Messag
 
     public override async Task ExecuteAsync()
     {
+        var language = Context.GetLocalization();
         var rateLimiter = _rateLimiterFactory.Get(RateLimiterFactory.RateLimitPolicy.Command);
         if (!await rateLimiter.IsAllowedAsync($"{Context.Update.From!.Id}"))
         {
-            await Context.Update.ReplyAsync(Context.BotClient, "Давай не так быстро!");
+            await Context.Update.ReplyAsync(Context.BotClient, language.common_rateLimitSlowDown);
             return;
         }
 
-        ILocalization language = new Russian();
+
         var osuUserInDatabase = await _database.OsuUsers.FindAsync(Context.Update.From!.Id);
         var parameters = Context.Update.Text!.GetCommandParameters()!;
 
@@ -129,41 +126,22 @@ public class OsuUserCommand(bool includeIdInSearch = false) : CommandBase<Messag
 
         UserHelper.UpdateOsuUsers(_database, user, playmode);
 
-        DateTime.TryParse(user.JoinDate?.Value, out var registerDateTime);
-
         int achievementsCount = user.UserAchievements?.Length ?? 0;
-        var textToSend = language.command_user.Fill([
-            $"{playmode.ToGamemode()}",
-            $"{UserHelper.GetUserProfileUrlWrappedInUsernameString(user.Id.Value, user.Username!)}",
-            $"{UserHelper.GetUserRankText(user.Statistics.GlobalRank)}",
-            $"{UserHelper.GetUserRankText(user.Statistics.CountryRank)}",
-            $"{UserHelper.CountryCodeToFlag(user.CountryCode ?? "nn")}",
-            $"{_scoreHelper.GetFormattedNumConsideringNull(currentPp)}",
-            $"{ppDifferenceText}",
-            $"{user.Statistics.HitAccuracy:N2}%",
-            $"{user.Statistics.PlayCount:N0}",
-            $"{user.Statistics.PlayTime / 3600}",
-            $"{registerDateTime:dd.MM.yyyy HH:mm:ss}",
-            $"{achievementsCount}",
-            $"{OsuConstants.TotalAchievementsCount} ({(double)achievementsCount / OsuConstants.TotalAchievementsCount * 100:00.00}%)",
-            $"{user.Statistics.GradeCounts!.SSH}",
-            $"{user.Statistics.GradeCounts!.SH}",
-            $"{user.Statistics.GradeCounts!.SS}",
-            $"{user.Statistics.GradeCounts!.S}",
-            $"{user.Statistics.GradeCounts!.A}"
-        ]);
-        var ik = new InlineKeyboardMarkup(new InlineKeyboardButton[][]
-        {
-            [
-                new InlineKeyboardButton("Standard") { CallbackData = $"user 0 {user.Username}" },
-                new InlineKeyboardButton("Taiko") { CallbackData = $"user 1 {user.Username}" }
-            ],
-            [
-                new InlineKeyboardButton("Catch") { CallbackData = $"user 2 {user.Username}" },
-                new InlineKeyboardButton("Mania") { CallbackData = $"user 3 {user.Username}" }
-            ]
-        });
+        var achievementsTotalText = $"{OsuConstants.TotalAchievementsCount} ({(double)achievementsCount / OsuConstants.TotalAchievementsCount * 100:00.00}%)";
 
-        await waitMessage.EditAsync(Context.BotClient, textToSend, replyMarkup: ik);
+        var textToSend = LocalizationMessageHelper.UserProfileText(
+            language,
+            _scoreHelper,
+            user,
+            playmode,
+            currentPp,
+            ppDifferenceText,
+            achievementsTotalText);
+
+        await waitMessage.EditAsync(Context.BotClient, textToSend, replyMarkup: UserHelper.BuildUserModeKeyboard(user.Username!));
     }
 }
+
+
+
+

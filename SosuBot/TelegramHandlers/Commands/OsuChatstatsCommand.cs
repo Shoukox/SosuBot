@@ -2,8 +2,6 @@
 using SosuBot.Database;
 using SosuBot.Database.Models;
 using SosuBot.Extensions;
-using SosuBot.Localization;
-using SosuBot.Localization.Languages;
 using SosuBot.TelegramHandlers.Abstract;
 using Telegram.Bot.Types;
 
@@ -22,13 +20,12 @@ public sealed class OsuChatstatsCommand : CommandBase<Message>
     }
     public override async Task ExecuteAsync()
     {
+        var language = Context.GetLocalization();
         if (Context.Update.Chat.Type == Telegram.Bot.Types.Enums.ChatType.Private)
         {
-            await Context.Update.ReplyAsync(Context.BotClient, "Только для групп.");
+            await Context.Update.ReplyAsync(Context.BotClient, language.group_onlyForGroups);
             return;
         }
-
-        ILocalization language = new Russian();
         var chatInDatabase = await _database.TelegramChats.FindAsync(Context.Update.Chat.Id);
 
         var parameters = Context.Update.Text!.GetCommandParameters()!;
@@ -63,16 +60,16 @@ public sealed class OsuChatstatsCommand : CommandBase<Message>
         foundChatMembers = foundChatMembers.DistinctBy(m => m.OsuUserId).OrderByDescending(m => m.GetPP(playmode)).Take(10)
             .ToList();
 
-        var sendText = language.command_chatstats_title.Fill([playmode.ToGamemode()]);
+        var sendText = LocalizationMessageHelper.ChatstatsTitle(language, playmode.ToGamemode());
 
         var i = 1;
         foreach (var chatMember in foundChatMembers)
         {
-            sendText += language.command_chatstats_row.Fill([
+            sendText += LocalizationMessageHelper.ChatstatsRow(language,
                 $"{i}",
                 $"{chatMember.OsuUsername}",
                 $"{chatMember.GetPP(playmode):N2}"
-            ]);
+            );
             i += 1;
         }
 
@@ -80,3 +77,5 @@ public sealed class OsuChatstatsCommand : CommandBase<Message>
         await waitMessage.EditAsync(Context.BotClient, sendText);
     }
 }
+
+

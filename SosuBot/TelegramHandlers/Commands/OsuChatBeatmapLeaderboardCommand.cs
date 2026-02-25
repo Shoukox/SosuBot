@@ -4,9 +4,6 @@ using SosuBot.Database;
 using SosuBot.Database.Models;
 using SosuBot.Extensions;
 using SosuBot.Helpers;
-using SosuBot.Helpers.OutputText;
-using SosuBot.Localization;
-using SosuBot.Localization.Languages;
 using SosuBot.Services.Synchronization;
 using SosuBot.TelegramHandlers.Abstract;
 using Telegram.Bot.Types;
@@ -36,21 +33,22 @@ public sealed class OsuChatBeatmapLeaderboardCommand : CommandBase<Message>
 
     public override async Task ExecuteAsync()
     {
+        var language = Context.GetLocalization();
         var rateLimiter = _rateLimiterFactory.Get(RateLimiterFactory.RateLimitPolicy.Command);
         if (!await rateLimiter.IsAllowedAsync($"{Context.Update.From!.Id}"))
         {
-            await Context.Update.ReplyAsync(Context.BotClient, "Давай не так быстро!");
+            await Context.Update.ReplyAsync(Context.BotClient, language.common_rateLimitSlowDown);
             return;
         }
 
         var osuUserInDatabase = await _database.OsuUsers.FindAsync(Context.Update.From!.Id);
         if (osuUserInDatabase is null || !osuUserInDatabase.IsAdmin)
         {
-            await Context.Update.ReplyAsync(Context.BotClient, "Пшол вон!");
+            await Context.Update.ReplyAsync(Context.BotClient, language.beatmapLeaderboard_adminOnly);
             return;
         }
 
-        ILocalization language = new Russian();
+
         var chatInDatabase = await _database.TelegramChats.FindAsync(Context.Update.Chat.Id);
         var waitMessage = await Context.Update.ReplyAsync(Context.BotClient, language.waiting);
 
@@ -71,14 +69,14 @@ public sealed class OsuChatBeatmapLeaderboardCommand : CommandBase<Message>
 
         if (beatmapId == null)
         {
-            await waitMessage.EditAsync(Context.BotClient, language.error_baseMessage + "\nБот не смог найти последнюю карту в чате");
+            await waitMessage.EditAsync(Context.BotClient, language.error_baseMessage + "\n" + language.beatmapLeaderboard_lastBeatmapNotFound);
             return;
         }
 
         var beatmap = await _cachingHelper.GetOrCacheBeatmap(beatmapId!.Value, _osuApiV2);
         if (beatmap == null)
         {
-            await waitMessage.EditAsync(Context.BotClient, "Не удалось получить информацию о карте.");
+            await waitMessage.EditAsync(Context.BotClient, language.beatmapLeaderboard_failedBeatmapInfo);
             return;
         }
 
@@ -97,7 +95,10 @@ public sealed class OsuChatBeatmapLeaderboardCommand : CommandBase<Message>
 
         int delayPerUser = 1000; // 1 second per user
         int delay = delayPerUser * foundChatMembers.Count;
-        await waitMessage.EditAsync(Context.BotClient, $"Найдено {foundChatMembers.Count} игроков в чате...\nПроверяем скоры каждого на карте.\n\nЭто займет примерно {delay / 1000f:N0}сек...");
+        await waitMessage.EditAsync(Context.BotClient, LocalizationMessageHelper.BeatmapLeaderboardProgress(language,
+            $"{foundChatMembers.Count}",
+            $"{delay / 1000f:N0}"
+        ));
 
         Playmode playmode = (Playmode)(beatmap.ModeInt ?? 0);
         string ruleset = playmode.ToRuleset();
@@ -123,10 +124,14 @@ public sealed class OsuChatBeatmapLeaderboardCommand : CommandBase<Message>
 
         if (foundScores.Count == 0)
         {
-            sendMessage = "На этой карте нет скоров от игроков из этого чата.";
+            sendMessage = language.beatmapLeaderboard_noScoresFromChat;
         }
 
         await Task.Delay(delayPerUser);
         await waitMessage.EditAsync(Context.BotClient, sendMessage);
     }
 }
+
+
+
+

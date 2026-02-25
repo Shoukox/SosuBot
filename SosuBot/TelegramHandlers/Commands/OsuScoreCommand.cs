@@ -7,9 +7,6 @@ using SosuBot.Database;
 using SosuBot.Database.Models;
 using SosuBot.Extensions;
 using SosuBot.Helpers;
-using SosuBot.Helpers.OutputText;
-using SosuBot.Localization;
-using SosuBot.Localization.Languages;
 using SosuBot.Services.Synchronization;
 using SosuBot.TelegramHandlers.Abstract;
 using Telegram.Bot.Types;
@@ -37,14 +34,15 @@ public sealed class OsuScoreCommand : CommandBase<Message>
 
     public override async Task ExecuteAsync()
     {
+        var language = Context.GetLocalization();
         var rateLimiter = _rateLimiterFactory.Get(RateLimiterFactory.RateLimitPolicy.Command);
         if (!await rateLimiter.IsAllowedAsync($"{Context.Update.From!.Id}"))
         {
-            await Context.Update.ReplyAsync(Context.BotClient, "Давай не так быстро!");
+            await Context.Update.ReplyAsync(Context.BotClient, language.common_rateLimitSlowDown);
             return;
         }
 
-        ILocalization language = new Russian();
+
         var chatInDatabase = await _database.TelegramChats.FindAsync(Context.Update.Chat.Id);
         var osuUserInDatabase = await _database.OsuUsers.FindAsync(Context.Update.From!.Id);
 
@@ -198,7 +196,7 @@ public sealed class OsuScoreCommand : CommandBase<Message>
 
         if (scoresResponse is null)
         {
-            await waitMessage.EditAsync(Context.BotClient, language.error_noRecords + $"\nЕсли на карте нет лидерборда, то онлайн скоров на ней нет ни у кого.");
+            await waitMessage.EditAsync(Context.BotClient, language.error_noRecords + $"\n{language.score_noLeaderboardNoOnlineScores}");
             return;
         }
 
@@ -226,7 +224,7 @@ public sealed class OsuScoreCommand : CommandBase<Message>
         {
             var score = scores[i];
 
-            textToSend += language.command_score.Fill([
+            textToSend += LocalizationMessageHelper.CommandScore(language,
                 $"{_scoreHelper.GetScoreRankEmoji(score.Rank)}{_scoreHelper.ParseScoreRank(score.Rank!)}",
                 $"{beatmap.Url}",
                 $"{beatmapset!.Title.EncodeHtml()}",
@@ -240,9 +238,13 @@ public sealed class OsuScoreCommand : CommandBase<Message>
                 $"{beatmap.MaxCombo}",
                 $"{_scoreHelper.GetFormattedNumConsideringNull(score.Pp)}",
                 $"({score.EndedAt!.Value:dd.MM.yyyy HH:mm}) {_scoreHelper.GetScoreUrlWrappedInString(score.Id!.Value, "link")}"
-            ]);
+            );
         }
 
         await waitMessage.EditAsync(Context.BotClient, textToSend, splitValue: "\n\n");
     }
 }
+
+
+
+

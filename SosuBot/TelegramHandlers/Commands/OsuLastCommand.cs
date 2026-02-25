@@ -1,4 +1,4 @@
-using Humanizer;
+﻿using Humanizer;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using osu.Game.Rulesets.Scoring;
@@ -9,10 +9,7 @@ using SosuBot.Database;
 using SosuBot.Database.Models;
 using SosuBot.Extensions;
 using SosuBot.Helpers;
-using SosuBot.Helpers.OutputText;
 using SosuBot.Helpers.Types;
-using SosuBot.Localization;
-using SosuBot.Localization.Languages;
 using SosuBot.PerformanceCalculator;
 using SosuBot.Services;
 using SosuBot.Services.Synchronization;
@@ -52,14 +49,13 @@ public class OsuLastCommand(bool onlyPassed = false, bool sendCover = false) : C
 
     public override async Task ExecuteAsync()
     {
+        var language = Context.GetLocalization();
         var rateLimiter = _rateLimiterFactory.Get(RateLimiterFactory.RateLimitPolicy.Command);
         if (!await rateLimiter.IsAllowedAsync($"{Context.Update.From!.Id}"))
         {
-            await Context.Update.ReplyAsync(Context.BotClient, "Давай не так быстро!");
+            await Context.Update.ReplyAsync(Context.BotClient, language.common_rateLimitSlowDown);
             return;
         }
-
-        ILocalization language = new Russian();
         var chatInDatabase = await _database.TelegramChats.FindAsync(Context.Update.Chat.Id);
         var osuUserInDatabase = await _database.OsuUsers.FindAsync(Context.Update.From!.Id);
 
@@ -113,7 +109,7 @@ public class OsuLastCommand(bool onlyPassed = false, bool sendCover = false) : C
             string numberAsText = Regex.Match(parametersJoined, @" (\d)").Value;
             if (!int.TryParse(numberAsText, out limit))
             {
-                await waitMessage.EditAsync(Context.BotClient, language.error_baseMessage + "\n/last nickname count\n/last Shoukko 5");
+                await waitMessage.EditAsync(Context.BotClient, language.error_baseMessage + $"\n{language.last_usage}");
                 return;
             }
             osuUsernameForLastScores = Regex.Match(parametersJoined, @"(\S{3,})").Value;
@@ -163,7 +159,7 @@ public class OsuLastCommand(bool onlyPassed = false, bool sendCover = false) : C
         if (lastScoresResponse!.Scores.Length == 0)
         {
             await waitMessage.EditAsync(Context.BotClient,
-                language.error_noPreviousScores.Fill([ruleset.ParseRulesetToGamemode()]));
+                LocalizationMessageHelper.ErrorNoPreviousScores(language, ruleset.ParseRulesetToGamemode()));
             return;
         }
 
@@ -326,7 +322,7 @@ public class OsuLastCommand(bool onlyPassed = false, bool sendCover = false) : C
                 globalRankText = $"<b>Global #{score.RankGlobal}</b>\n";
             }
 
-            textToSend += language.command_last.Fill([
+            textToSend += LocalizationMessageHelper.CommandLast(language,
                 $"{globalRankText}",
                 $"{counterText}",
                 $"{scoreRank}",
@@ -346,13 +342,13 @@ public class OsuLastCommand(bool onlyPassed = false, bool sendCover = false) : C
                 $"{_scoreHelper.GetScoreUrlWrappedInString(score.Id!.Value, "link")}",
                 $"{scoreEndedMinutesAgoText}",
                 $"{_scoreHelper.GetFormattedNumConsideringNull(completion, format: "N1")}"
-            ]);
+            );
 
             if (scoreModsContainsModIdk)
-                textToSend += "\nВ скоре присутствуют неизвестные боту моды, расчет пп невозможен.";
+                textToSend += $"\n{language.last_unknownModsNoPp}";
 
             if (beatmapContainsTooManyHitObjects)
-                textToSend += "\nВ карте слишком много объектов, доступная информация будет ограничена.";
+                textToSend += $"\n{language.last_tooManyObjectsLimitedInfo}";
 
             textToSend += "\n\n";
         }
@@ -377,3 +373,5 @@ public class OsuLastCommand(bool onlyPassed = false, bool sendCover = false) : C
         }
     }
 }
+
+

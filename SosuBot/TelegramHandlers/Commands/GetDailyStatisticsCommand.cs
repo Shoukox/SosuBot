@@ -1,13 +1,9 @@
-﻿using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using OsuApi.BanchoV2;
 using OsuApi.BanchoV2.Models;
 using SosuBot.Database;
 using SosuBot.Extensions;
-using SosuBot.Helpers.OutputText;
-using SosuBot.Localization;
-using SosuBot.Localization.Languages;
 using SosuBot.Services.Synchronization;
 using SosuBot.TelegramHandlers.Abstract;
 using Telegram.Bot.Types;
@@ -36,13 +32,12 @@ public sealed class GetDailyStatisticsCommand : CommandBase<Message>
     public override async Task ExecuteAsync()
     {
         var rateLimiter = _rateLimiterFactory.Get(RateLimiterFactory.RateLimitPolicy.Command);
+        var language = Context.GetLocalization();
         if (!await rateLimiter.IsAllowedAsync($"{Context.Update.From!.Id}"))
         {
-            await Context.Update.ReplyAsync(Context.BotClient, "Давай не так быстро!");
+            await Context.Update.ReplyAsync(Context.BotClient, language.common_rateLimitSlowDown);
             return;
         }
-
-        ILocalization language = new Russian();
         var waitMessage = await Context.Update.ReplyAsync(Context.BotClient, language.waiting);
 
         // Fake 500ms wait
@@ -53,7 +48,7 @@ public sealed class GetDailyStatisticsCommand : CommandBase<Message>
         string sendText;
         if (parameters.Length == 0)
         {
-            sendText = language.error_argsLength + "\n/daily_stats osu/catch/taiko/mania";
+            sendText = language.error_argsLength + $"\n{language.command_dailyStats_usage}";
             await waitMessage.EditAsync(Context.BotClient, sendText);
             return;
         }
@@ -77,3 +72,4 @@ public sealed class GetDailyStatisticsCommand : CommandBase<Message>
         await waitMessage.EditAsync(Context.BotClient, sendText);
     }
 }
+

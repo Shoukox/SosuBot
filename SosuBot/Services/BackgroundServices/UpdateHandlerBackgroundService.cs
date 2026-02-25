@@ -28,7 +28,7 @@ public sealed class UpdateHandlerBackgroundService(IServiceProvider serviceProvi
         {
             var workers =
                 Enumerable.Range(0, _workersCount)
-                    .Select(_ => Task.Run(() => HandleUpdateWorker(CancellationToken.None)));
+                    .Select(_ => Task.Run(() => HandleUpdateWorker(stoppingToken), stoppingToken));
 
             await Task.WhenAll(workers);
         }
@@ -46,7 +46,7 @@ public sealed class UpdateHandlerBackgroundService(IServiceProvider serviceProvi
         {
             try
             {
-                var update = await _updateQueue.DequeueUpdateAsync(CancellationToken.None);
+                var update = await _updateQueue.DequeueUpdateAsync(stoppingToken);
                 _logger.LogInformation("Worker dequeueing an update.");
 
                 await using var scope = serviceProvider.CreateAsyncScope();
@@ -55,11 +55,11 @@ public sealed class UpdateHandlerBackgroundService(IServiceProvider serviceProvi
 
                 try
                 {
-                    await updateHandler.HandleUpdateAsync(bot, update, CancellationToken.None);
+                    await updateHandler.HandleUpdateAsync(bot, update, stoppingToken);
                 }
                 catch (Exception ex)
                 {
-                    await updateHandler.HandleErrorAsync(bot, ex, HandleErrorSource.HandleUpdateError, CancellationToken.None);
+                    await updateHandler.HandleErrorAsync(bot, ex, HandleErrorSource.HandleUpdateError, stoppingToken);
                 }
             }
             catch (Exception ex)

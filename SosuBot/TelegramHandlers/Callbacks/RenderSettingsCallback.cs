@@ -3,9 +3,6 @@ using SosuBot.Database;
 using SosuBot.Database.Models;
 using SosuBot.Extensions;
 using SosuBot.Helpers;
-using SosuBot.Helpers.OutputText;
-using SosuBot.Localization;
-using SosuBot.Localization.Languages;
 using SosuBot.Services;
 using SosuBot.TelegramHandlers.Abstract;
 using System.Globalization;
@@ -34,7 +31,7 @@ public class RenderSettingsCallback() : CommandBase<CallbackQuery>
 
     public override async Task ExecuteAsync()
     {
-        ILocalization language = new Russian();
+        var language = Context.GetLocalization();
 
         var parameters = Context.Update.Data!.Split(' ');
         var settingName = parameters[1];
@@ -104,7 +101,8 @@ public class RenderSettingsCallback() : CommandBase<CallbackQuery>
     }
     async Task Home()
     {
-        await Context.BotClient.EditMessageText(_chatId, Context.Update.Message!.Id, "Настройки рендера", replyMarkup: OsuHelper.GetRenderSettingsMarkup(_osuUser.RenderSettings));
+        var language = Context.GetLocalization();
+        await Context.BotClient.EditMessageText(_chatId, Context.Update.Message!.Id, language.render_settings_title, replyMarkup: OsuHelper.GetRenderSettingsMarkup(_osuUser.RenderSettings, language));
     }
 
     async Task GeneralVolume()
@@ -131,12 +129,12 @@ public class RenderSettingsCallback() : CommandBase<CallbackQuery>
                     InlineKeyboardButton.WithCallbackData(percentage[9], $"rs set-general-volume 1.0"),
                 ],
                 [
-                    InlineKeyboardButton.WithCallbackData("Назад", $"rs home"),
+                    InlineKeyboardButton.WithCallbackData(Context.GetLocalization().common_back, $"rs home"),
                 ],
             ]
         );
 
-        await Context.BotClient.EditMessageText(_chatId, Context.Update.Message!.Id, "Общая громкость", replyMarkup: ikm);
+        await Context.BotClient.EditMessageText(_chatId, Context.Update.Message!.Id, Context.GetLocalization().render_settings_generalVolume, replyMarkup: ikm);
     }
 
     async Task SetGeneralVolume(string? settingValue)
@@ -171,12 +169,12 @@ public class RenderSettingsCallback() : CommandBase<CallbackQuery>
                     InlineKeyboardButton.WithCallbackData(percentage[9], $"rs set-music-volume 1.0"),
                 ],
                 [
-                    InlineKeyboardButton.WithCallbackData("Назад", $"rs home"),
+                    InlineKeyboardButton.WithCallbackData(Context.GetLocalization().common_back, $"rs home"),
                 ],
             ]
         );
 
-        await Context.BotClient.EditMessageText(_chatId, Context.Update.Message!.Id, "Громкость музыки", replyMarkup: ikm);
+        await Context.BotClient.EditMessageText(_chatId, Context.Update.Message!.Id, Context.GetLocalization().render_settings_musicVolume, replyMarkup: ikm);
     }
 
     async Task SetMusicVolume(string? settingValue)
@@ -211,11 +209,11 @@ public class RenderSettingsCallback() : CommandBase<CallbackQuery>
                     InlineKeyboardButton.WithCallbackData(percentage[9], $"rs set-effects-volume 1.0"),
                 ],
                 [
-                    InlineKeyboardButton.WithCallbackData("Назад", $"rs home"),
+                    InlineKeyboardButton.WithCallbackData(Context.GetLocalization().common_back, $"rs home"),
                 ],
             ]
         );
-        await Context.BotClient.EditMessageText(_chatId, Context.Update.Message!.Id, "Громкость эффектов", replyMarkup: ikm);
+        await Context.BotClient.EditMessageText(_chatId, Context.Update.Message!.Id, Context.GetLocalization().render_settings_effectsVolume, replyMarkup: ikm);
     }
 
     async Task SetEffectsVolume(string? settingValue)
@@ -264,11 +262,11 @@ public class RenderSettingsCallback() : CommandBase<CallbackQuery>
                     InlineKeyboardButton.WithCallbackData(percentage[19], $"rs set-background 1.0"),
                 ],
                 [
-                    InlineKeyboardButton.WithCallbackData("Назад", $"rs home"),
+                    InlineKeyboardButton.WithCallbackData(Context.GetLocalization().common_back, $"rs home"),
                 ],
             ]
         );
-        await Context.BotClient.EditMessageText(_chatId, Context.Update.Message!.Id, "Затемнение экрана", replyMarkup: ikm);
+        await Context.BotClient.EditMessageText(_chatId, Context.Update.Message!.Id, Context.GetLocalization().render_settings_backgroundDim, replyMarkup: ikm);
     }
 
     async Task SetBackgroundDim(string? settingValue)
@@ -296,7 +294,7 @@ public class RenderSettingsCallback() : CommandBase<CallbackQuery>
         }
         catch (HttpRequestException ex) when (ex.InnerException is SocketException socketException && socketException.ErrorCode == 10061)
         {
-            await Context.Update.AnswerAsync(Context.BotClient, "Сервер бота оффлайн. Для кастомного скина используй /setskin");
+            await Context.Update.AnswerAsync(Context.BotClient, Context.GetLocalization().render_settings_serverOfflineUseSetSkin);
             return;
         }
 
@@ -318,11 +316,11 @@ public class RenderSettingsCallback() : CommandBase<CallbackQuery>
         var ikm = new InlineKeyboardMarkup(
            [.. availableSkinsAsIkm,
             [InlineKeyboardButton.WithCallbackData("<", $"rs skin {page-1}"), InlineKeyboardButton.WithCallbackData($"{page}/{totalPages}", $"dummy"), InlineKeyboardButton.WithCallbackData(">", $"rs skin {page+1}")],
-            [InlineKeyboardButton.WithCallbackData("Выбрать свой скин", $"rs set-custom-skin")],
-            [InlineKeyboardButton.WithCallbackData("Назад", $"rs home")]
+            [InlineKeyboardButton.WithCallbackData(Context.GetLocalization().render_settings_pickCustomSkin, $"rs set-custom-skin")],
+            [InlineKeyboardButton.WithCallbackData(Context.GetLocalization().common_back, $"rs home")]
            ]
         );
-        await Context.BotClient.EditMessageText(_chatId, Context.Update.Message!.Id, "Выбрать скин", replyMarkup: ikm);
+        await Context.BotClient.EditMessageText(_chatId, Context.Update.Message!.Id, Context.GetLocalization().render_settings_pickSkin, replyMarkup: ikm);
     }
 
     async Task SetSkin(string? settingValue)
@@ -339,7 +337,7 @@ public class RenderSettingsCallback() : CommandBase<CallbackQuery>
 
     async Task SetCustomSkin(string? settingData)
     {
-        await Context.Update.AnswerAsync(Context.BotClient, "Используйте /setskin");
+        await Context.Update.AnswerAsync(Context.BotClient, Context.GetLocalization().render_settings_useSetSkin);
     }
 
     async Task HitErrorMeter()
@@ -432,3 +430,6 @@ public class RenderSettingsCallback() : CommandBase<CallbackQuery>
         await Home();
     }
 }
+
+
+

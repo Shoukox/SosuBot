@@ -5,9 +5,6 @@ using OsuApi.BanchoV2.Clients.Users.HttpIO;
 using SosuBot.Database;
 using SosuBot.Database.Models;
 using SosuBot.Extensions;
-using SosuBot.Helpers.OutputText;
-using SosuBot.Localization;
-using SosuBot.Localization.Languages;
 using SosuBot.TelegramHandlers.Abstract;
 using Telegram.Bot.Types;
 
@@ -28,7 +25,7 @@ public sealed class OsuSetCommand : CommandBase<Message>
 
     public override async Task ExecuteAsync()
     {
-        ILocalization language = new Russian();
+        var language = Context.GetLocalization();
 
         var msgText = Context.Update.Text!;
         var parameters = msgText.GetCommandParameters()!;
@@ -71,10 +68,13 @@ public sealed class OsuSetCommand : CommandBase<Message>
             osuUserInDatabase.Update(user, playmode);
         }
 
-        var sendText = language.command_set.Fill([
+        var sendText = LocalizationMessageHelper.CommandSet(language,
             $"{UserHelper.GetUserProfileUrlWrappedInUsernameString(user.Id.Value, user.Username!)}",
             $"{osuUserInDatabase.GetPP(playmode):N2}", osuUserInDatabase.OsuMode.ToGamemode()
-        ]);
+        );
         await Context.Update.ReplyAsync(Context.BotClient, sendText);
     }
 }
+
+
+

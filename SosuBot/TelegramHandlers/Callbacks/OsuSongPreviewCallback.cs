@@ -1,5 +1,4 @@
 ﻿using SosuBot.Extensions;
-using SosuBot.Helpers.OutputText;
 using SosuBot.TelegramHandlers.Abstract;
 using Telegram.Bot;
 using Telegram.Bot.Types;
@@ -13,6 +12,7 @@ public class OsuSongPreviewCallback : CommandBase<CallbackQuery>
 
     public override async Task ExecuteAsync()
     {
+        var language = Context.GetLocalization();
         var parameters = Context.Update.Data!.Split(' ');
         var beatmapsetId = int.Parse(parameters[1]);
 
@@ -21,16 +21,18 @@ public class OsuSongPreviewCallback : CommandBase<CallbackQuery>
         var data = await OsuHelper.GetSongPreviewAsync(beatmapsetId);
         if (data == null)
         {
-            await Context.Update.AnswerAsync(Context.BotClient, text: "Song preview was not found");
+            await Context.Update.AnswerAsync(Context.BotClient, text: language.callback_songPreviewNotFound);
             return;
         }
 
         using var ms = new MemoryStream(data);
         await Context.BotClient.SendAudio(chatId, new InputFileStream(ms, $"{beatmapsetId}.mp3"),
-            "Запрос от: " + TelegramHelper.GetUserUrlWrappedInString(Context.Update.From.Id,
-                TelegramHelper.GetUserFullName(Context.Update.From)), replyParameters: Context.Update.Message!.Id,
+            LocalizationMessageHelper.CallbackSongPreviewRequestedBy(language,
+                TelegramHelper.GetUserUrlWrappedInString(Context.Update.From.Id, TelegramHelper.GetUserFullName(Context.Update.From))
+            ), replyParameters: Context.Update.Message!.Id,
             parseMode: ParseMode.Html);
 
         await Context.Update.AnswerAsync(Context.BotClient);
     }
 }
+

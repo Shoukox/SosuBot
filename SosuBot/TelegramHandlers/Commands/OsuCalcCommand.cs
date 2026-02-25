@@ -1,4 +1,4 @@
-using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.Extensions.DependencyInjection;
 using osu.Game.Rulesets.Osu.Mods;
 using osu.Game.Rulesets.Scoring;
 using OsuApi.BanchoV2;
@@ -7,9 +7,6 @@ using SosuBot.Database;
 using SosuBot.Database.Models;
 using SosuBot.Extensions;
 using SosuBot.Helpers;
-using SosuBot.Helpers.OutputText;
-using SosuBot.Localization;
-using SosuBot.Localization.Languages;
 using SosuBot.PerformanceCalculator;
 using SosuBot.Services;
 using SosuBot.Services.Synchronization;
@@ -41,14 +38,13 @@ public class OsuCalcCommand : CommandBase<Message>
 
     public override async Task ExecuteAsync()
     {
+        var language = Context.GetLocalization();
         var rateLimiter = _rateLimiterFactory.Get(RateLimiterFactory.RateLimitPolicy.Command);
         if (!await rateLimiter.IsAllowedAsync($"{Context.Update.From!.Id}"))
         {
-            await Context.Update.ReplyAsync(Context.BotClient, "Давай не так быстро!");
+            await Context.Update.ReplyAsync(Context.BotClient, language.common_rateLimitSlowDown);
             return;
         }
-
-        ILocalization language = new Russian();
         var chatInDatabase = await _database.TelegramChats.FindAsync(Context.Update.Chat.Id);
 
         var waitMessage = await Context.Update.ReplyAsync(Context.BotClient, language.waiting);
@@ -97,14 +93,14 @@ public class OsuCalcCommand : CommandBase<Message>
         var beatmap = getBeatmapResponse;
         if (beatmap.ModeInt != (int)Playmode.Osu)
         {
-            await waitMessage.EditAsync(Context.BotClient, $"Эта команда поддерживает только {Playmode.Osu.ToGamemode()} карты");
+            await waitMessage.EditAsync(Context.BotClient, LocalizationMessageHelper.CalcOnlySupportsModeMaps(language, $"{Playmode.Osu.ToGamemode()}"));
             return;
         }
         var hitobjectsSum = beatmap.CountCircles + beatmap.CountSliders + beatmap.CountSpinners;
         bool beatmapContainsTooManyHitObjects = hitobjectsSum >= 20000;
         if (beatmapContainsTooManyHitObjects)
         {
-            await waitMessage.EditAsync(Context.BotClient, language.error_baseMessage + "\nВ карте слишком много объектов.");
+            await waitMessage.EditAsync(Context.BotClient, language.error_baseMessage + $"\n{language.calc_tooManyObjects}");
             return;
         }
 
@@ -122,13 +118,13 @@ public class OsuCalcCommand : CommandBase<Message>
         Dictionary<HitResult, int> scoreStatistics = beatmap.GetMaximumStatistics();
         if (!int.TryParse(parameters[0], out int okCount) || !int.TryParse(parameters[1], out int mehCount) || !int.TryParse(parameters[2], out int missCount))
         {
-            await waitMessage.EditAsync(Context.BotClient, language.error_baseMessage + "\n/calc x100 x50 xMiss [mods]\nПервые три параметра - цифры. Моды (HDDT) - опциональны");
+            await waitMessage.EditAsync(Context.BotClient, language.error_baseMessage + $"\n{language.calc_std_usage}");
             return;
         }
 
         if (okCount < 0 || mehCount < 0 || missCount < 0 || okCount + mehCount + missCount > scoreStatistics[HitResult.Great])
         {
-            await waitMessage.EditAsync(Context.BotClient, language.error_baseMessage + "\nНекорректная статистика скора");
+            await waitMessage.EditAsync(Context.BotClient, language.error_baseMessage + $"\n{language.calc_invalidScoreStats}");
             return;
         }
 
@@ -179,3 +175,5 @@ public class OsuCalcCommand : CommandBase<Message>
         await waitMessage.EditAsync(Context.BotClient, textToSend);
     }
 }
+
+
