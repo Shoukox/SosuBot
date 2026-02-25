@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using SosuBot.Database;
@@ -13,9 +14,11 @@ using SosuBot.Database.Models;
 namespace SosuBot.Migrations
 {
     [DbContext(typeof(BotContext))]
-    partial class BotContextModelSnapshot : ModelSnapshot
+    [Migration("20260225214705_Change_DailyStatistics_DayOfStatistic_ToDateTimeOffset")]
+    partial class Change_DailyStatistics_DayOfStatistic_ToDateTimeOffset
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -59,8 +62,8 @@ namespace SosuBot.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<DateTime>("DayOfStatistic")
-                        .HasColumnType("timestamp without time zone");
+                    b.Property<DateTimeOffset>("DayOfStatistic")
+                        .HasColumnType("timestamp with time zone");
 
                     b.HasKey("Id");
 

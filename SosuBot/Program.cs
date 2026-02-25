@@ -121,8 +121,7 @@ internal class Program
         builder.Services.AddHostedService<ConfigureBotService>();
         builder.Services.AddHostedService<PollingBackgroundService>();
         builder.Services.AddHostedService<UpdateHandlerBackgroundService>();
-        // Moved to dedicated SosuBot.ScoresObserver service for horizontal scaling.
-        // builder.Services.AddHostedService<ScoresObserverBackgroundService>();
+        builder.Services.AddHostedService<ScoresObserverBackgroundService>();
 
         // Database
         var connectionString = builder.Configuration.GetConnectionString("Postgres")!;

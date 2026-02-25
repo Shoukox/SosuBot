@@ -1,5 +1,4 @@
-﻿using Humanizer;
-using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using osu.Game.Rulesets.Scoring;
 using OsuApi.BanchoV2;
@@ -24,7 +23,7 @@ namespace SosuBot.TelegramHandlers.Commands;
 
 public class OsuLastCommand(bool onlyPassed = false, bool sendCover = false) : CommandBase<Message>
 {
-    public static readonly string[] Commands = ["/last"];
+    public static readonly string[] Commands = ["/ll"];
     private bool _onlyPassed;
     private BanchoApiV2 _osuApiV2 = null!;
     private ScoreHelper _scoreHelper = null!;
@@ -247,7 +246,9 @@ public class OsuLastCommand(bool onlyPassed = false, bool sendCover = false) : C
             }
             var scoreRank = _scoreHelper.GetScoreRankEmoji(score.Rank!, score.Passed!.Value) +
                             _scoreHelper.ParseScoreRank(score.Passed!.Value ? score.Rank! : "F");
-            var counterText = lastScores.Length == 1 ? "" : $"{i + 1}. ";
+            bool lastScoresContainsOnlyOneScore = lastScores.Length == 1;
+            string counterText = lastScoresContainsOnlyOneScore ? "" : $"{i + 1}. ";
+            string optionalNewLine = lastScoresContainsOnlyOneScore ? "\n" : "";
             double? scorePp = calculatedPp?.Current?.Pp ?? score.Pp;
             if (scorePp is double.NaN) scorePp = null;
 
@@ -294,9 +295,7 @@ public class OsuLastCommand(bool onlyPassed = false, bool sendCover = false) : C
             string scoreIfFcPpText =
                 $"{_scoreHelper.GetFormattedNumConsideringNull(scoreModsContainsModIdk ? null : scorePpIfFc)}pp if {_scoreHelper.GetFormattedNumConsideringNull(accuracyIfFc * 100, round: false)}% FC";
 
-            var scoreEndedMinutesAgoText =
-                (DateTime.UtcNow - score.EndedAt!.Value).Humanize(
-                    culture: CultureInfo.GetCultureInfoByIetfLanguageTag("ru-RU")) + " назад";
+            var scoreEndedMinutesAgoText = LocalizationMessageHelper.LastScoreEndedAgo(language, score.EndedAt!.Value);
 
             // Caclculate completion
             if (playmode == Playmode.Catch)
@@ -334,6 +333,7 @@ public class OsuLastCommand(bool onlyPassed = false, bool sendCover = false) : C
                 $"{_scoreHelper.GetScoreStatisticsText(score.Statistics!, playmode)}",
                 $"{score.Statistics!.Miss}",
                 $"{_scoreHelper.GetFormattedNumConsideringNull(score.Accuracy * 100, round: false)}",
+                optionalNewLine,
                 $"{_scoreHelper.GetModsText(mods)}",
                 $"{score.MaxCombo}",
                 $"{_scoreHelper.GetFormattedNumConsideringNull(beatmapMaxCombo, format: "F0")}",

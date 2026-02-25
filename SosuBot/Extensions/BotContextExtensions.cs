@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging;
 using Npgsql;
 using SosuBot.Database;
 using SosuBot.Database.Models;
+using SosuBot.Localization;
 using Telegram.Bot.Types;
 
 namespace SosuBot.Extensions;
@@ -14,6 +15,13 @@ public static class BotContextExtensions
         var chatId = message.Chat.Id;
         var userId = message.From?.Id;
         var leftUserId = message.LeftChatMember?.Id;
+        var telegramLanguageCode = message.From?.LanguageCode;
+        var defaultLanguage = telegramLanguageCode switch
+        {
+            var code when !string.IsNullOrWhiteSpace(code) && code.StartsWith(Language.English, StringComparison.OrdinalIgnoreCase) => Language.English,
+            var code when !string.IsNullOrWhiteSpace(code) && code.StartsWith(Language.German, StringComparison.OrdinalIgnoreCase) => Language.German,
+            _ => Language.Russian
+        };
 
         try
         {
@@ -24,13 +32,17 @@ public static class BotContextExtensions
                 {
                     ChatId = chatId,
                     ChatMembers = userId is null ? [] : [userId.Value],
-                    LastBeatmapId = null
+                    LastBeatmapId = null,
+                    LanguageCode = defaultLanguage
                 });
                 await database.SaveChangesAsync();
                 return;
             }
 
             chat.ChatMembers ??= [];
+            if (string.IsNullOrWhiteSpace(chat.LanguageCode))
+                chat.LanguageCode = defaultLanguage;
+
             if (leftUserId is not null)
             {
                 chat.ChatMembers.Remove(leftUserId.Value);

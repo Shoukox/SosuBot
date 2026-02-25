@@ -11,5 +11,6 @@ public record TelegramChat
     public List<long>? ChatMembers { get; set; }
     public List<long>? ExcludeFromChatstats { get; set; }
     public int? LastBeatmapId { get; set; }
+    public string LanguageCode { get; set; } = "ru";
     public List<int>? TrackedPlayers { get; set; }
 }

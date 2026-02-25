@@ -1,16 +1,20 @@
 namespace SosuBot.Localization.Languages;
 
-public struct English : ILocalization
+public sealed class English : ILocalization
 {
     public string settings => "Settings:";
     public string settings_language_changedSuccessfully => "Language has been changed to English.";
     public string settings_language_ru => "Русский";
     public string settings_language_en => "English";
+    public string settings_language_de => "Deutsch";
 
     public string command_start =>
         $"A helper bot for osu! players\n" +
-        $"/help - get the full list of commands.\n\n" +
+        $"/help - get the full list of commands.\n" +
+        $"Use /lang to change bot language.\n\n" +
         $"If you find bugs or have feature suggestions, contact the creator: @Shoukkoo";
+
+    public string command_lang => "Choose bot language:";
 
     public string command_help =>
         $"<blockquote expandable>Commands:\n" +
@@ -43,7 +47,7 @@ public struct English : ILocalization
 
     public string command_last =>
         "{GlobalRank}🎵{}<b>({})</b> <a href=\"https://osu.ppy.sh/beatmaps/{}\">{} [{}]</a> <b>({}; {}⭐️)</b>\n" +
-        "{}/{}❌ - <b><i>{}</i></b>%🎯\n" +
+        "{}/{}❌ - <b><i>{}</i></b>%🎯{OptionalNewLine}\n" +
         "<b>➕{}</b> <i><b>{}x/{}x</b></i> <b><u>{}pp💪</u></b>\n" +
         "(<b><u>{}</u></b>) {link}\n" +
         "{} | {}% passed";
@@ -129,6 +133,9 @@ public struct English : ILocalization
         "{}\n" +
         "<b>🎯 Top-5 played maps:</b>\n" +
         "{}";
+    public string daily_stats_count_scores => "scores";
+    public string daily_stats_max_pp => "max.";
+    public string daily_stats_tashkent_time => "(Tashkent time)";
 
     public string waiting => "Please wait a bit...";
 
@@ -205,6 +212,7 @@ public struct English : ILocalization
     public string last_usage => "/last nickname count\n/last Shoukko 5";
     public string last_unknownModsNoPp => "Score contains mods unknown to the bot; pp calculation is unavailable.";
     public string last_tooManyObjectsLimitedInfo => "Beatmap has too many objects; available info will be limited.";
+    public string last_humanizerCulture => "en-US";
 
     public string group_onlyForGroups => "Only for groups.";
     public string group_onlyForAdmins => "Only for admins.";

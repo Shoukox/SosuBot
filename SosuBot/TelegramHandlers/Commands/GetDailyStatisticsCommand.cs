@@ -67,7 +67,7 @@ public sealed class GetDailyStatisticsCommand : CommandBase<Message>
 
         var playmode = ruleset.ParseRulesetToPlaymode();
 
-        sendText = await _scoreHelper.GetDailyStatisticsSendText(playmode, dailyStats, _osuApiV2);
+        sendText = await _scoreHelper.GetDailyStatisticsSendText(playmode, dailyStats, _osuApiV2, language);
 
         await waitMessage.EditAsync(Context.BotClient, sendText);
     }

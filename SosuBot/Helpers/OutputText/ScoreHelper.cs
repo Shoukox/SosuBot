@@ -144,9 +144,9 @@ public class ScoreHelper(CachingHelper cachingHelper)
     }
 
     public async Task<string> GetDailyStatisticsSendText(Playmode playmode, DailyStatistics dailyStatistics,
-        BanchoApiV2 osuApi)
+        BanchoApiV2 osuApi, ILocalization? language = null)
     {
-        ILocalization language = new Russian();
+        language ??= new Russian();
 
         var activePlayers = dailyStatistics.ActiveUsers;
         var passedScores = dailyStatistics.Scores.Where(m => m.ScoreJson.ModeInt == (int)playmode).ToList();
@@ -193,7 +193,7 @@ public class ScoreHelper(CachingHelper cachingHelper)
         {
             if (count >= 5) break;
             topActivePlayers +=
-                $"{count + 1}. <b>{UserHelper.GetUserProfileUrlWrappedInUsernameString(us.m.UserJson.Id.Value, us.m.UserJson.Username!)}</b> — {us.Item2.Length} скоров, макс. <i>{GetFormattedNumConsideringNull(us.Item2.Max(m => m.ScoreJson.Pp), format: "N0")}pp💪</i>\n";
+                $"{count + 1}. <b>{UserHelper.GetUserProfileUrlWrappedInUsernameString(us.m.UserJson.Id.Value, us.m.UserJson.Username!)}</b> — {us.Item2.Length} {language.daily_stats_count_scores}, {language.daily_stats_max_pp} <i>{GetFormattedNumConsideringNull(us.Item2.Max(m => m.ScoreJson.Pp), format: "N0")}pp💪</i>\n";
             count += 1;
         }
 
@@ -209,7 +209,7 @@ public class ScoreHelper(CachingHelper cachingHelper)
             var beatmapsetExtended = await cachingHelper.GetOrCacheBeatmapset(beatmap!.BeatmapsetId!.Value, osuApi);
 
             topMostPlayedBeatmaps +=
-                $"{count + 1}. (<b>{beatmap!.DifficultyRating:N2}⭐️</b>) <a href=\"https://osu.ppy.sh/beatmaps/{beatmap.Id}\">{beatmapsetExtended!.Title.EncodeHtml()} [{beatmap.Version.EncodeHtml()}]</a> — <b>{us.Count()} скоров</b>\n";
+                $"{count + 1}. (<b>{beatmap!.DifficultyRating:N2}⭐️</b>) <a href=\"https://osu.ppy.sh/beatmaps/{beatmap.Id}\">{beatmapsetExtended!.Title.EncodeHtml()} [{beatmap.Version.EncodeHtml()}]</a> — <b>{us.Count()} {language.daily_stats_count_scores}</b>\n";
             count += 1;
         }
 
@@ -221,7 +221,7 @@ public class ScoreHelper(CachingHelper cachingHelper)
 
         var tashkentNow = dailyStatistics.DayOfStatistic;
         var sendText = language.send_dailyStatistic.Fill([
-            $"{tashkentNow:dd.MM.yyyy HH:mm} (по тшк.)",
+            $"{tashkentNow:dd.MM.yyyy HH:mm} {language.daily_stats_tashkent_time}",
             $"{activePlayersCount}",
             $"{passedScoresCount}",
             $"{beatmapsPlayed}",
