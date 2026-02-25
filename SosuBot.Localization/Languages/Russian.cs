@@ -1,16 +1,20 @@
 ﻿namespace SosuBot.Localization.Languages;
 
-public struct Russian : ILocalization
+public sealed class Russian : ILocalization
 {
     public string settings => "Настройки:";
     public string settings_language_changedSuccessfully => "Язык успешно изменен на русский.";
     public string settings_language_ru => "Русский";
     public string settings_language_en => "English";
+    public string settings_language_de => "Deutsch";
 
     public string command_start =>
         $"Бот-помощник для игроков osu!\n" +
-        $"/help - для получения списка всех комманд.\n\n" +
+        $"/help - для получения списка всех комманд.\n" +
+        $"Для смены языка бота используй /lang\n\n" +
         $"Если вы найдете какие-либо проблемы или предложения по расширению функционала бота, пишите моему создателю - @Shoukkoo";
+
+    public string command_lang => "Выбери язык бота:";
 
     public string command_help =>
         $"<blockquote expandable>Команды:\n" +
@@ -43,7 +47,7 @@ public struct Russian : ILocalization
 
     public string command_last =>
         "{GlobalRank}🎵{}<b>({})</b> <a href=\"https://osu.ppy.sh/beatmaps/{}\">{} [{}]</a> <b>({}; {}⭐️)</b>\n" +
-        "{}/{}❌ - <b><i>{}</i></b>%🎯\n" +
+        "{}/{}❌ - <b><i>{}</i></b>%🎯{OptionalNewLine}\n" +
         "<b>➕{}</b> <i><b>{}x/{}x</b></i> <b><u>{}pp💪</u></b>\n" +
         "(<b><u>{}</u></b>) {link}\n" +
         "{} | {}% пройдено";
@@ -129,6 +133,9 @@ public struct Russian : ILocalization
         "{}\n" +
         "<b>🎯 Топ-5 сыгранных карт:</b>\n" +
         "{}";
+    public string daily_stats_count_scores => "скоров";
+    public string daily_stats_max_pp => "макс.";
+    public string daily_stats_tashkent_time => "(по тшк.)";
 
     public string waiting => "Подожди немного...";
 
@@ -205,6 +212,7 @@ public struct Russian : ILocalization
     public string last_usage => "/last nickname count\n/last Shoukko 5";
     public string last_unknownModsNoPp => "В скоре присутствуют неизвестные боту моды, расчет пп невозможен.";
     public string last_tooManyObjectsLimitedInfo => "В карте слишком много объектов, доступная информация будет ограничена.";
+    public string last_humanizerCulture => "ru-RU";
 
     public string group_onlyForGroups => "Только для групп.";
     public string group_onlyForAdmins => "Только для админов.";

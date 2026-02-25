@@ -1,4 +1,6 @@
-﻿using SosuBot.Localization;
+﻿using Microsoft.Extensions.DependencyInjection;
+using SosuBot.Database;
+using SosuBot.Localization;
 using SosuBot.Localization.Languages;
 using Telegram.Bot.Types;
 
@@ -6,19 +8,31 @@ namespace SosuBot.TelegramHandlers.Abstract;
 
 public static class LocalizationExtensions
 {
+    private static readonly ILocalization EnglishLocalization = new English();
+    private static readonly ILocalization GermanLocalization = new Deutsch();
+    private static readonly ILocalization RussianLocalization = new Russian();
+
     public static ILocalization GetLocalization<TUpdateType>(this ICommandContext<TUpdateType> context) where TUpdateType : class
     {
-        var languageCode = context.Update switch
+        var database = context.ServiceProvider.GetRequiredService<BotContext>();
+
+        var chatId = context.Update switch
         {
-            Message message => message.From?.LanguageCode,
-            CallbackQuery callbackQuery => callbackQuery.From?.LanguageCode,
+            Message message => message.Chat.Id,
+            CallbackQuery callbackQuery => callbackQuery.Message?.Chat.Id,
             _ => null
         };
 
-        if (!string.IsNullOrWhiteSpace(languageCode) && languageCode.StartsWith(Language.English, StringComparison.OrdinalIgnoreCase))
-            return new English();
+        if (chatId is null)
+            return RussianLocalization;
 
-        return new Russian();
+        var chat = database.TelegramChats.Find(chatId.Value);
+        if (chat?.LanguageCode?.StartsWith(Language.English, StringComparison.OrdinalIgnoreCase) == true)
+            return EnglishLocalization;
+
+        if (chat?.LanguageCode?.StartsWith(Language.German, StringComparison.OrdinalIgnoreCase) == true)
+            return GermanLocalization;
+
+        return RussianLocalization;
     }
 }
-

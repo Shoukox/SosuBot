@@ -1,7 +1,9 @@
+using Humanizer;
 using OsuApi.BanchoV2.Users.Models;
 using SosuBot.Database.Models;
 using SosuBot.Extensions;
 using SosuBot.Localization;
+using System.Globalization;
 
 namespace SosuBot.Helpers.OutputText;
 
@@ -99,6 +101,12 @@ public static class LocalizationMessageHelper
 
     public static string SendMapInfo(ILocalization language, params string[] values)
         => language.send_mapInfo.Fill(values);
+
+    public static string LastScoreEndedAgo(ILocalization language, DateTime endedAtUtc)
+    {
+        var culture = CultureInfo.GetCultureInfoByIetfLanguageTag(language.last_humanizerCulture);
+        return endedAtUtc.Humanize(dateToCompareAgainst: DateTime.UtcNow, culture: culture);
+    }
 
     public static string UserProfileText(
         ILocalization language,

@@ -5,6 +5,7 @@ namespace SosuBot.Localization;
 public interface ILocalization
 {
     public string command_start { get; }
+    public string command_lang { get; }
     public string command_help { get; }
     public string command_last { get; }
     public string command_set { get; }
@@ -21,9 +22,13 @@ public interface ILocalization
     public string settings { get; }
     public string settings_language_ru { get; }
     public string settings_language_en { get; }
+    public string settings_language_de { get; }
     public string settings_language_changedSuccessfully { get; }
     public string send_mapInfo { get; }
     public string send_dailyStatistic { get; }
+    public string daily_stats_count_scores { get; }
+    public string daily_stats_max_pp { get; }
+    public string daily_stats_tashkent_time { get; }
     public string waiting { get; }
 
     public string error_baseMessage { get; }
@@ -92,6 +97,7 @@ public interface ILocalization
     public string last_usage { get; }
     public string last_unknownModsNoPp { get; }
     public string last_tooManyObjectsLimitedInfo { get; }
+    public string last_humanizerCulture { get; }
 
     public string group_onlyForGroups { get; }
     public string group_onlyForAdmins { get; }

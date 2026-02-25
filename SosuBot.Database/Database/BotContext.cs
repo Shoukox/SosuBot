@@ -74,6 +74,10 @@ public class BotContext : DbContext
             .HasConversion(renderSettingsConverter, renderSettingsComparer)
             .HasColumnType("jsonb");
 
+        modelBuilder.Entity<DailyStatistics>()
+            .Property(e => e.DayOfStatistic)
+            .HasColumnType("timestamp without time zone");
+
         // Many-to-many relationships
         modelBuilder.Entity<DailyStatistics>()
             .HasMany(m => m.Scores)

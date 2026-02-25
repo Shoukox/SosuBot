@@ -86,9 +86,23 @@ public sealed class ScoresObserverBackgroundService(IServiceProvider serviceProv
         await _userDatabase.CacheIfNeeded();
 
         DailyStatistics dailyStatistics;
-        if (_database.DailyStatistics.Count() > 0 && _database.DailyStatistics.OrderBy(m => m.Id).Last().DayOfStatistic.Day == DateTime.UtcNow.ChangeTimezone(Country.Uzbekistan).Day)
+        if (_database.DailyStatistics.Count() > 0)
         {
-            dailyStatistics = _database.DailyStatistics.OrderBy(m => m.Id).Last();
+            var lastDailyStatistics = _database.DailyStatistics.OrderBy(m => m.Id).Last();
+            if (lastDailyStatistics.DayOfStatistic.Day == DateTime.UtcNow.ChangeTimezone(Country.Uzbekistan).Day)
+            {
+                dailyStatistics = lastDailyStatistics;
+            }
+            else
+            {
+                dailyStatistics = new DailyStatistics()
+                {
+                    CountryCode = CountryCode.Uzbekistan,
+                    DayOfStatistic = DateTime.UtcNow.ChangeTimezone(Country.Uzbekistan)
+                };
+                _database.DailyStatistics.Add(dailyStatistics);
+                _database.SaveChanges();
+            }
         }
         else
         {
@@ -162,6 +176,7 @@ public sealed class ScoresObserverBackgroundService(IServiceProvider serviceProv
                 var tashkentToday = DateTime.UtcNow.ChangeTimezone(Country.Uzbekistan).Date;
                 var uzScores = allOsuScores.Where(m =>
                 {
+                    var a = m.EndedAt!.Value.ChangeTimezone(Country.Uzbekistan);
                     var scoreDateIsOk = m.EndedAt!.Value.ChangeTimezone(Country.Uzbekistan) >= tashkentToday;
                     var isUzPlayer = _userDatabase.ContainsUserStatistics(m.UserId!.Value);
                     return scoreDateIsOk && isUzPlayer;

@@ -79,17 +79,30 @@ public sealed class ScoresObserverBackgroundService(IServiceProvider serviceProv
         await _userDatabase.CacheIfNeeded(stoppingToken);
 
         DailyStatistics dailyStatistics;
-        if (_database.DailyStatistics.Count() > 0 &&
-            _database.DailyStatistics.OrderBy(m => m.Id).Last().DayOfStatistic.Day == DateTime.UtcNow.ChangeTimezone(Country.Uzbekistan).Day)
+        if (_database.DailyStatistics.Count() > 0)
         {
-            dailyStatistics = _database.DailyStatistics.OrderBy(m => m.Id).Last();
+            var lastDailyStatistics = _database.DailyStatistics.OrderBy(m => m.Id).Last();
+            if (lastDailyStatistics.DayOfStatistic.Day == DateTime.UtcNow.ChangeTimezone(Country.Uzbekistan).DateTime.Day)
+            {
+                dailyStatistics = lastDailyStatistics;
+            }
+            else
+            {
+                dailyStatistics = new DailyStatistics
+                {
+                    CountryCode = CountryCode.Uzbekistan,
+                    DayOfStatistic = DateTime.UtcNow.ChangeTimezone(Country.Uzbekistan).DateTime
+                };
+                _database.DailyStatistics.Add(dailyStatistics);
+                _database.SaveChanges();
+            }
         }
         else
         {
             dailyStatistics = new DailyStatistics
             {
                 CountryCode = CountryCode.Uzbekistan,
-                DayOfStatistic = DateTime.UtcNow.ChangeTimezone(Country.Uzbekistan)
+                DayOfStatistic = DateTime.UtcNow.ChangeTimezone(Country.Uzbekistan).DateTime
             };
             _database.DailyStatistics.Add(dailyStatistics);
             _database.SaveChanges();
@@ -184,7 +197,7 @@ public sealed class ScoresObserverBackgroundService(IServiceProvider serviceProv
                     }
                 }
 
-                if (DateTime.UtcNow.ChangeTimezone(Country.Uzbekistan).Day != dailyStatistics.DayOfStatistic.Day)
+                if (DateTime.UtcNow.ChangeTimezone(Country.Uzbekistan).DateTime.Day != dailyStatistics.DayOfStatistic.Day)
                 {
                     try
                     {
@@ -200,7 +213,7 @@ public sealed class ScoresObserverBackgroundService(IServiceProvider serviceProv
                         _logger.LogError(e, "Error while sending final daily statistics");
                     }
 
-                    dailyStatistics = new DailyStatistics { CountryCode = CountryCode.Uzbekistan, DayOfStatistic = DateTime.UtcNow.ChangeTimezone(Country.Uzbekistan) };
+                    dailyStatistics = new DailyStatistics { CountryCode = CountryCode.Uzbekistan, DayOfStatistic = DateTime.UtcNow.ChangeTimezone(Country.Uzbekistan).DateTime };
                     _database.DailyStatistics.Add(dailyStatistics);
                     _database.SaveChanges();
                 }

@@ -60,7 +60,7 @@ namespace SosuBot.Migrations
                         .HasColumnType("text");
 
                     b.Property<DateTime>("DayOfStatistic")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp without time zone");
 
                     b.HasKey("Id");
 
@@ -151,6 +151,10 @@ namespace SosuBot.Migrations
 
                     b.PrimitiveCollection<List<long>>("ExcludeFromChatstats")
                         .HasColumnType("bigint[]");
+
+                    b.Property<string>("LanguageCode")
+                        .IsRequired()
+                        .HasColumnType("text");
 
                     b.Property<int?>("LastBeatmapId")
                         .HasColumnType("integer");
