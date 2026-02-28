@@ -11,6 +11,8 @@ namespace SosuBot.TelegramHandlers.Callbacks;
 
 public sealed class SetLanguageCallback : CommandBase<CallbackQuery>
 {
+    public static readonly string Command = "lang";
+
     private BotContext _database = null!;
 
     public override async Task BeforeExecuteAsync()
