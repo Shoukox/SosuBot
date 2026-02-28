@@ -5,6 +5,7 @@ using OsuApi.BanchoV2.Users.Models;
 using SosuBot.Database;
 using SosuBot.Extensions;
 using SosuBot.Helpers;
+using SosuBot.Localization;
 using SosuBot.Services.Synchronization;
 using SosuBot.TelegramHandlers.Abstract;
 using Telegram.Bot.Types;
@@ -32,12 +33,6 @@ public sealed class OsuUpdateCommand : CommandBase<Message>
     public override async Task ExecuteAsync()
     {
         var language = Context.GetLocalization();
-        var rateLimiter = _rateLimiterFactory.Get(RateLimiterFactory.RateLimitPolicy.UpdateCommand);
-        if (!await rateLimiter.IsAllowedAsync($"{Context.Update.From!.Id}"))
-        {
-            await Context.Update.ReplyAsync(Context.BotClient, language.update_rateLimit);
-            return;
-        }
         var waitMessage = await Context.Update.ReplyAsync(Context.BotClient, language.waiting);
 
         var osuUserInDatabase = await _database.OsuUsers.FindAsync(Context.Update.From!.Id);
@@ -57,7 +52,7 @@ public sealed class OsuUpdateCommand : CommandBase<Message>
             return;
         }
 
-        string cacheKey = $"osuinfo:{osuUserInDatabase.OsuUserId}";
+        string cacheKey = $"osuinfo:{osuUserInDatabase.OsuUserId}:{language.last_humanizerCulture}";
         if (await _cache.GetOrCreateAsync<string>(cacheKey, null!, new() { Flags = HybridCacheEntryFlags.DisableUnderlyingData }) is { } sendMessage)
         {
             await waitMessage.EditAsync(Context.BotClient, sendMessage);
@@ -67,40 +62,55 @@ public sealed class OsuUpdateCommand : CommandBase<Message>
         var userScores = _database.ScoreEntity.Where(m => m.ScoreJson.UserId == osuUserInDatabase!.OsuUserId).ToList();
         bool uzbekPlayer = userScores.Count > 0;
 
-        sendMessage = $"Последняя информация о <b>{UserHelper.GetUserProfileUrlWrappedInUsernameString((int)osuUserInDatabase.OsuUserId, osuUserInDatabase.OsuUsername)}</b>\n" +
-            $"Последнее обновление этой статистики: {DateTime.UtcNow.ChangeTimezone(Helpers.Country.Uzbekistan)} по тшк.\n\n";
+        sendMessage = language.update_info_header.Fill([
+                UserHelper.GetUserProfileUrlWrappedInUsernameString((int)osuUserInDatabase.OsuUserId, osuUserInDatabase.OsuUsername)
+            ]) + "\n" +
+            language.update_info_lastUpdate.Fill([
+                DateTime.UtcNow.ChangeTimezone(Helpers.Country.Uzbekistan).ToString(),
+                language.daily_stats_tashkent_time
+            ]) + "\n\n";
 
         if (uzbekPlayer)
         {
-            sendMessage += $"- <b>Бот</b> отслеживает твои скоры с <b><u>{userScores.MinBy(m => m.ScoreJson.EndedAt)!.ScoreJson.EndedAt!.Value.ChangeTimezone(Helpers.Country.Uzbekistan):dd.MM.yyyy HH:mm:ss}</u></b> по тшк.\n";
-            sendMessage += $"- <b>С тех пор</b> бот знает о <b><u>{userScores.Count}</u></b> твоих скорах (все моды)\n";
+            sendMessage += language.update_info_trackingSince.Fill([
+                userScores.MinBy(m => m.ScoreJson.EndedAt)!.ScoreJson.EndedAt!.Value.ChangeTimezone(Helpers.Country.Uzbekistan).ToString("dd.MM.yyyy HH:mm:ss"),
+                language.daily_stats_tashkent_time
+            ]) + "\n";
+            sendMessage += language.update_info_trackedScoresSince.Fill([$"{userScores.Count}"]) + "\n";
 
             var newestScore = userScores.MaxBy(m => m.ScoreJson.EndedAt);
             if (newestScore?.ScoreJson.EndedAt != null)
             {
-                sendMessage += $"- <a href=\"{OsuConstants.BaseScoreUrl}{newestScore.ScoreId}\"><b>Твой последний скор</b></a> был сделан <b><u>{newestScore.ScoreJson.EndedAt!.Value.ChangeTimezone(Helpers.Country.Uzbekistan):dd.MM.yyyy HH:mm:ss}</u></b> по тшк.\n";
+                sendMessage += language.update_info_lastScoreAt.Fill([
+                    $"{OsuConstants.BaseScoreUrl}{newestScore.ScoreId}",
+                    newestScore.ScoreJson.EndedAt!.Value.ChangeTimezone(Helpers.Country.Uzbekistan).ToString("dd.MM.yyyy HH:mm:ss"),
+                    language.daily_stats_tashkent_time
+                ]) + "\n";
             }
 
             var monthUserScores = userScores.Where(m => m.ScoreJson.EndedAt > DateTime.UtcNow.Date.AddDays(-DateTime.UtcNow.Date.Day + 1)).ToArray();
-            sendMessage += $"- <b>За этот месяц</b> ты поставил <b><u>{monthUserScores.Length}</u></b> скоров\n";
+            sendMessage += language.update_info_scoresThisMonth.Fill([$"{monthUserScores.Length}"]) + "\n";
         }
 
         string playerRuleset = osuUserInDatabase.OsuMode.ToRuleset();
         var userBestScores = await _osuApiV2.Users.GetUserScores(osuUserInDatabase.OsuUserId, ScoreType.Best, new() { Limit = 200, Mode = playerRuleset });
         var timeSortedUserBestScores = userBestScores!.Scores.Where(m => m.EndedAt > DateTime.UtcNow.Date.AddDays(-DateTime.UtcNow.Date.Day + 1)).ToArray();
-        sendMessage += $"- <b>За этот месяц</b> ты поставил <b><u>{timeSortedUserBestScores.Length}</u></b> новых топ плеев (<i>{playerRuleset.ParseRulesetToGamemode()}</i>)\n";
-        sendMessage += $"- <b>Подробная статистика:</b> <a href=\"https://ameobea.me/osutrack/user/{osuUserInDatabase!.OsuUsername}\">ссылка</a>\n\n";
+        sendMessage += language.update_info_newTopPlaysThisMonth.Fill([$"{timeSortedUserBestScores.Length}", playerRuleset.ParseRulesetToGamemode()]) + "\n";
+        sendMessage += language.update_info_detailedStats.Fill([$"https://ameobea.me/osutrack/user/{osuUserInDatabase!.OsuUsername}"]) + "\n\n";
 
         var lastBestScores = userBestScores!.Scores.OrderByDescending(m => m.EndedAt).ToArray();
         int newTopPlays = Math.Min(5, lastBestScores.Length);
         if (newTopPlays > 0)
         {
-            sendMessage += $"<b>{newTopPlays} твоих последних новых топ скоров:</b>\n";
+            sendMessage += language.update_info_lastTopScoresTitle.Fill([$"{newTopPlays}"]) + "\n";
             for (int i = 0; i < newTopPlays; i++)
             {
-                sendMessage += $"<b>#{userBestScores.Scores.IndexOf(lastBestScores[i]) + 1}</b> - " +
-                    $"{_scoreHelper.GetScoreUrlWrappedInString(osuUserInDatabase.OsuUserId, $"{_scoreHelper.GetFormattedNumConsideringNull(lastBestScores[i].Pp, format: "N0")}pp")} - " +
-                    $"{lastBestScores[i].EndedAt!.Value.ChangeTimezone(Helpers.Country.Uzbekistan):dd.MM.yyyy HH:mm:ss} по тшк.\n";
+                sendMessage += language.update_info_lastTopScoresEntry.Fill([
+                        $"{userBestScores.Scores.IndexOf(lastBestScores[i]) + 1}",
+                        _scoreHelper.GetScoreUrlWrappedInString(lastBestScores[i].Id.GetValueOrDefault(0), $"{_scoreHelper.GetFormattedNumConsideringNull(lastBestScores[i].Pp, format: "N0")}pp"),
+                        lastBestScores[i].EndedAt!.Value.ChangeTimezone(Helpers.Country.Uzbekistan).ToString("dd.MM.yyyy HH:mm:ss"),
+                        language.daily_stats_tashkent_time
+                    ]) + "\n";
             }
         }
 

@@ -203,6 +203,16 @@ public sealed class Russian : ILocalization
 
     public string update_rateLimit => "Эту команду можно применять макс. 5 раз за 24 часа. Подожди немного.";
     public string update_onlyInfoAllowed => "Разрешено только /info";
+    public string update_info_header => "Последняя информация о <b>{}</b>";
+    public string update_info_lastUpdate => "Последнее обновление этой статистики: {} {}";
+    public string update_info_trackingSince => "- <b>Бот</b> отслеживает твои скоры с <b><u>{}</u></b> {}";
+    public string update_info_trackedScoresSince => "- <b>С тех пор</b> бот знает о <b><u>{}</u></b> твоих скорах (все моды)";
+    public string update_info_lastScoreAt => "- <a href=\"{}\"><b>Твой последний скор</b></a> был сделан <b><u>{}</u></b> {}";
+    public string update_info_scoresThisMonth => "- <b>За этот месяц</b> ты поставил <b><u>{}</u></b> скоров";
+    public string update_info_newTopPlaysThisMonth => "- <b>За этот месяц</b> ты поставил <b><u>{}</u></b> новых топ плеев (<i>{}</i>)";
+    public string update_info_detailedStats => "- <b>Подробная статистика:</b> <a href=\"{}\">ссылка</a>";
+    public string update_info_lastTopScoresTitle => "<b>{} твоих последних новых топ скоров:</b>";
+    public string update_info_lastTopScoresEntry => "<b>#{}</b> - {} - {} {}";
 
     public string calc_onlySupportsModeMaps => "Эта команда поддерживает только {} карты";
     public string calc_tooManyObjects => "В карте слишком много объектов.";
