@@ -5,6 +5,7 @@ using SosuBot.Localization;
 using SosuBot.Localization.Languages;
 using SosuBot.TelegramHandlers.Abstract;
 using Telegram.Bot.Types;
+using Telegram.Bot.Types.Enums;
 
 namespace SosuBot.TelegramHandlers.Callbacks;
 

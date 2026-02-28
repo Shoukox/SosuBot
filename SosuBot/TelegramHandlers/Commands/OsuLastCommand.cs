@@ -205,7 +205,7 @@ public class OsuLastCommand(bool onlyPassed = false, bool sendCover = false) : C
                     { HitResult.Ok, scoreStatistics.GetValueOrDefault(HitResult.Ok) },
                     {
                         HitResult.Meh,
-                        scoreStatistics.GetValueOrDefault(HitResult.Meh)
+                        scoreStatistics.GetValueOrDefault(HitResult.Meh) + scoreStatistics.GetValueOrDefault(HitResult.Miss)
                     },
                     { HitResult.Miss, 0 }
                 };

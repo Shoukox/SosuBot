@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.Extensions.DependencyInjection;
 using OsuApi.BanchoV2;
 using SosuBot.Database;
 using SosuBot.Extensions;
@@ -53,15 +54,13 @@ public sealed class ReplayRenderCommand : CommandBase<Message>
         await Task.Delay(500);
 
         OnlineRenderer[]? onlineRenderers = null;
-        try
-        {
-            onlineRenderers = await _replayRenderService.GetOnlineRenderers();
-        }
-        catch (HttpRequestException ex) when (ex.InnerException is SocketException socketException && socketException.ErrorCode == 10061)
+        onlineRenderers = await _replayRenderService.GetOnlineRenderers();
+        if (onlineRenderers is null)
         {
             await Context.Update.ReplyAsync(Context.BotClient, language.replayRender_serverDown);
             return;
         }
+        //catch (HttpRequestException ex) when (ex.InnerException is SocketException socketException && socketException.ErrorCode == 10061)
 
         int onlineRenderersCount = onlineRenderers!.Length;
         if (onlineRenderers == null || onlineRenderers.Length == 0)

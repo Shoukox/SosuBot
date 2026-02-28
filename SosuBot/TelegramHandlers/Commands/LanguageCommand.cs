@@ -1,7 +1,9 @@
 ﻿using SosuBot.Extensions;
 using SosuBot.Localization;
 using SosuBot.TelegramHandlers.Abstract;
+using Telegram.Bot;
 using Telegram.Bot.Types;
+using Telegram.Bot.Types.Enums;
 using Telegram.Bot.Types.ReplyMarkups;
 
 namespace SosuBot.TelegramHandlers.Commands;
@@ -13,6 +15,16 @@ public sealed class LanguageCommand : CommandBase<Message>
     public override async Task ExecuteAsync()
     {
         var language = Context.GetLocalization();
+
+        if (Context.Update.Chat.Type is ChatType.Group or ChatType.Supergroup)
+        {
+            var chatAdmins = await Context.BotClient.GetChatAdministrators(Context.Update.Chat.Id);
+            if (!chatAdmins.Any(m => m.User.Id == Context.Update.From?.Id))
+            {
+                await Context.Update.ReplyAsync(Context.BotClient, language.group_onlyForAdmins);
+                return;
+            }
+        }
 
         var ikm = new InlineKeyboardMarkup(
         [
