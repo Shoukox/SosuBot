@@ -1,10 +1,12 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Npgsql;
+using Polly;
 using SosuBot.Database;
 using SosuBot.Database.Models;
 using SosuBot.Localization;
 using Telegram.Bot.Types;
+using Telegram.Bot.Types.Enums;
 
 namespace SosuBot.Extensions;
 
@@ -16,18 +18,23 @@ public static class BotContextExtensions
         var userId = message.From?.Id;
         var leftUserId = message.LeftChatMember?.Id;
         var telegramLanguageCode = message.From?.LanguageCode;
-        var defaultLanguage = telegramLanguageCode switch
-        {
-            var code when !string.IsNullOrWhiteSpace(code) && code.StartsWith(Language.English, StringComparison.OrdinalIgnoreCase) => Language.English,
-            var code when !string.IsNullOrWhiteSpace(code) && code.StartsWith(Language.German, StringComparison.OrdinalIgnoreCase) => Language.German,
-            _ => Language.Russian
-        };
+        var defaultLanguage = Language.English;
 
         try
         {
             var chat = await database.TelegramChats.FindAsync(chatId);
             if (chat == null)
             {
+                if (message.Chat.Type is ChatType.Private)
+                {
+                    defaultLanguage = telegramLanguageCode switch
+                    {
+                        var code when !string.IsNullOrWhiteSpace(code) && code.StartsWith(Language.Russian, StringComparison.OrdinalIgnoreCase) => Language.Russian,
+                        var code when !string.IsNullOrWhiteSpace(code) && code.StartsWith(Language.English, StringComparison.OrdinalIgnoreCase) => Language.English,
+                        var code when !string.IsNullOrWhiteSpace(code) && code.StartsWith(Language.German, StringComparison.OrdinalIgnoreCase) => Language.German,
+                        _ => Language.English
+                    };
+                }
                 await database.AddAsync(new TelegramChat
                 {
                     ChatId = chatId,

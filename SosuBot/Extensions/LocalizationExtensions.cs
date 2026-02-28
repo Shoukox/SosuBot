@@ -2,9 +2,10 @@
 using SosuBot.Database;
 using SosuBot.Localization;
 using SosuBot.Localization.Languages;
+using SosuBot.TelegramHandlers.Abstract;
 using Telegram.Bot.Types;
 
-namespace SosuBot.TelegramHandlers.Abstract;
+namespace SosuBot.Extensions;
 
 public static class LocalizationExtensions
 {
