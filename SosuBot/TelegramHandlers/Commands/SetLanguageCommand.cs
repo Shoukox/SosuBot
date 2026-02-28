@@ -8,9 +8,9 @@ using Telegram.Bot.Types.ReplyMarkups;
 
 namespace SosuBot.TelegramHandlers.Commands;
 
-public sealed class LanguageCommand : CommandBase<Message>
+public sealed class SetLanguageCommand : CommandBase<Message>
 {
-    public static readonly string[] Commands = ["/lang"];
+    public static readonly string[] Commands = ["/botlang"];
 
     public override async Task ExecuteAsync()
     {

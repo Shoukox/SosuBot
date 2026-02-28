@@ -19,6 +19,7 @@ public sealed class Russian : ILocalization
     public string command_help =>
         $"<blockquote expandable>Команды:\n" +
         $"<b>Важно! Если в вашем нике есть пробелы, заменяйте их на \"_\". Например, \"Blue Archive\" -> \"Blue_Archive\"</b>\n\n" +
+        $"/botlang - изменить язык в боте.\n" +
         $"/set [nickname] - добавить\\изменить свой ник в боте.\n" +
         $"/mode [gamemode] - изменить игровой режим по умолчанию.\n" +
         $"/user [nickname] - краткая информация об игроке с данным юзернеймом.\n" +

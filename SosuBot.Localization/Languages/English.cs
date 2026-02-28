@@ -19,6 +19,7 @@ public sealed class English : ILocalization
     public string command_help =>
         $"<blockquote expandable>Commands:\n" +
         $"<b>Important! If your nickname contains spaces, replace them with \"_\". Example: \"Blue Archive\" -> \"Blue_Archive\"</b>\n\n" +
+        $"/botlang - сhange language in bot.\n" +
         $"/set [nickname] - add/change your nickname in the bot.\n" +
         $"/mode [gamemode] - change your default game mode.\n" +
         $"/user [nickname] - short info about a player by username.\n" +
