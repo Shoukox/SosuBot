@@ -196,6 +196,16 @@ public sealed class Deutsch : ILocalization
 
     public string update_rateLimit => "Dieser Befehl kann maximal 5-mal pro 24h verwendet werden. Bitte warte kurz.";
     public string update_onlyInfoAllowed => "Nur /info ist erlaubt";
+    public string update_info_header => "Letzte Infos zu <b>{}</b>";
+    public string update_info_lastUpdate => "Letzte Aktualisierung dieser Statistik: {} {}";
+    public string update_info_trackingSince => "- <b>Der Bot</b> verfolgt deine Scores seit <b><u>{}</u></b> {}";
+    public string update_info_trackedScoresSince => "- <b>Seitdem</b> kennt der Bot <b><u>{}</u></b> deiner Scores (alle Mods)";
+    public string update_info_lastScoreAt => "- <a href=\"{}\"><b>Dein letzter Score</b></a> wurde am <b><u>{}</u></b> {} gesetzt";
+    public string update_info_scoresThisMonth => "- <b>Diesen Monat</b> hast du <b><u>{}</u></b> Scores gesetzt";
+    public string update_info_newTopPlaysThisMonth => "- <b>Diesen Monat</b> hast du <b><u>{}</u></b> neue Top-Plays gesetzt (<i>{}</i>)";
+    public string update_info_detailedStats => "- <b>Detaillierte Statistik:</b> <a href=\"{}\">Link</a>";
+    public string update_info_lastTopScoresTitle => "<b>{} deiner neuesten Top-Scores:</b>";
+    public string update_info_lastTopScoresEntry => "<b>#{}</b> - {} - {} {}";
 
     public string calc_onlySupportsModeMaps => "Dieser Befehl unterstützt nur {} Maps";
     public string calc_tooManyObjects => "Beatmap hat zu viele Objekte.";

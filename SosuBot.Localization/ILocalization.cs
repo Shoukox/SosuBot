@@ -87,6 +87,16 @@ public interface ILocalization
 
     public string update_rateLimit { get; }
     public string update_onlyInfoAllowed { get; }
+    public string update_info_header { get; }
+    public string update_info_lastUpdate { get; }
+    public string update_info_trackingSince { get; }
+    public string update_info_trackedScoresSince { get; }
+    public string update_info_lastScoreAt { get; }
+    public string update_info_scoresThisMonth { get; }
+    public string update_info_newTopPlaysThisMonth { get; }
+    public string update_info_detailedStats { get; }
+    public string update_info_lastTopScoresTitle { get; }
+    public string update_info_lastTopScoresEntry { get; }
 
     public string calc_onlySupportsModeMaps { get; }
     public string calc_tooManyObjects { get; }

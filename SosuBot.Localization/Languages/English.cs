@@ -203,6 +203,16 @@ public sealed class English : ILocalization
 
     public string update_rateLimit => "This command can be used at most 5 times per 24 hours. Please wait a bit.";
     public string update_onlyInfoAllowed => "Only /info is allowed";
+    public string update_info_header => "Latest info about <b>{}</b>";
+    public string update_info_lastUpdate => "Last update of this stats snapshot: {} {}";
+    public string update_info_trackingSince => "- <b>The bot</b> tracks your scores since <b><u>{}</u></b> {}";
+    public string update_info_trackedScoresSince => "- <b>Since then</b> the bot knows about <b><u>{}</u></b> of your scores (all mods)";
+    public string update_info_lastScoreAt => "- <a href=\"{}\"><b>Your latest score</b></a> was set at <b><u>{}</u></b> {}";
+    public string update_info_scoresThisMonth => "- <b>This month</b> you set <b><u>{}</u></b> scores";
+    public string update_info_newTopPlaysThisMonth => "- <b>This month</b> you set <b><u>{}</u></b> new top plays (<i>{}</i>)";
+    public string update_info_detailedStats => "- <b>Detailed stats:</b> <a href=\"{}\">link</a>";
+    public string update_info_lastTopScoresTitle => "<b>{} your latest new top scores:</b>";
+    public string update_info_lastTopScoresEntry => "<b>#{}</b> - {} - {} {}";
 
     public string calc_onlySupportsModeMaps => "This command supports only {} maps";
     public string calc_tooManyObjects => "Beatmap has too many objects.";
