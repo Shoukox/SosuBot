@@ -19,6 +19,7 @@ public sealed class Deutsch : ILocalization
     public string command_help =>
         $"<blockquote expandable>Befehle:\n" +
         $"<b>Wichtig! Wenn dein Nickname Leerzeichen enthält, ersetze sie durch \"_\". Beispiel: \"Blue Archive\" -> \"Blue_Archive\"</b>\n\n" +
+        $"/botlang - Sprache im Bot ändern.\n" +
         $"/set [nickname] - Nickname im Bot setzen/ändern.\n" +
         $"/mode [gamemode] - Standard-Spielmodus ändern.\n" +
         $"/user [nickname] - Kurzinfos zu einem Spieler per Username.\n" +

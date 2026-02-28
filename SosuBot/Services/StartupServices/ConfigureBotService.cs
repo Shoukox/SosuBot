@@ -17,7 +17,7 @@ public class ConfigureBotService(IServiceProvider serviceProvider) : IHostedServ
 
     private static IEnumerable<BotCommand> botCommands = [
         new("/help", "Lists all bot commands"),
-        new("/lang", "Changes the bot language"),
+        new("/botlang", "Changes the bot language"),
     ];
 
     public async Task StartAsync(CancellationToken cancellationToken)
@@ -31,7 +31,7 @@ public class ConfigureBotService(IServiceProvider serviceProvider) : IHostedServ
         // Register commands
         RegisterCommand<StartCommand>(StartCommand.Commands);
         RegisterCommand<HelpCommand>(HelpCommand.Commands);
-        RegisterCommand<LanguageCommand>(LanguageCommand.Commands);
+        RegisterCommand<SetLanguageCommand>(SetLanguageCommand.Commands);
         RegisterCommand<OsuSetCommand>(OsuSetCommand.Commands);
         RegisterCommand<OsuModeCommand>(OsuModeCommand.Commands);
         RegisterCommand<OsuUserbestCommand>(OsuUserbestCommand.Commands);
@@ -66,7 +66,7 @@ public class ConfigureBotService(IServiceProvider serviceProvider) : IHostedServ
         RegisterCallback<OsuSongPreviewCallback>(OsuSongPreviewCallback.Command);
         RegisterCallback<RenderStatusCallback>(RenderStatusCallback.Command);
         RegisterCallback<RenderSettingsCallback>(RenderSettingsCallback.Command);
-        RegisterCallback<LanguageCallback>(LanguageCallback.Command);
+        RegisterCallback<SetLanguageCallback>(SetLanguageCallback.Command);
     }
 
     void RegisterCommand<T>(IEnumerable<string> commands) where T : CommandBase<Message>
