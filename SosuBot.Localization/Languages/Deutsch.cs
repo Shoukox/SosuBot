@@ -10,8 +10,8 @@ public sealed class Deutsch : ILocalization
 
     public string command_start =>
         $"Ein Hilfsbot für osu!-Spieler\n" +
-        $"/help - vollständige Befehlsliste anzeigen.\n" +
-        $"Nutze /lang, um die Bot-Sprache zu ändern.\n\n" +
+        $"/help - vollständige Befehlsliste anzeigen.\n\n" +
+        $"Nutze /botlang, um die Bot-Sprache zu ändern.\n\n" +
         $"Wenn du Bugs oder Feature-Ideen hast, kontaktiere den Entwickler: @Shoukkoo";
 
     public string command_lang => "Wähle die Bot-Sprache:";
