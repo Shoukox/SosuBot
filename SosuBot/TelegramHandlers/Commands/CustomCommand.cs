@@ -468,6 +468,17 @@ public sealed class CustomCommand : CommandBase<Message>
             }
             await _database.SaveChangesAsync();
         }
+        else if (parameters[0] == "fix_lang0103")
+        {
+            ILocalization language = new Russian();
+            var waitMessage = await Context.Update.ReplyAsync(Context.BotClient, language.waiting);
+            foreach (var chat in _database.TelegramChats)
+            {
+                chat.LanguageCode = Localization.Language.Russian;
+            }
+            await _database.SaveChangesAsync();
+            await waitMessage.EditAsync(Context.BotClient, $"Done");
+        }
     }
 }
 
