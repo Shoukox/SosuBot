@@ -171,8 +171,8 @@ public sealed class English : ILocalization
     public string callback_songPreviewNotFound => "Song preview was not found";
     public string callback_songPreviewRequestedBy => "Requested by: {}";
     public string callback_renderRequestNotFound => "Render request was not found in the database";
-    public string callback_rendererUploadingReplay => "Renderer is uploading replay...";
-    public string callback_rendererUploadingBeatmap => "Renderer is uploading beatmap...";
+    public string callback_rendererDownloadingReplay => "Renderer is downloading the replay...";
+    public string callback_rendererDownloadingBeatmap => "Renderer is downloading the beatmap...";
     public string callback_rendererInitializing => "Initializing. Waiting for a free renderer...";
     public string callback_renderFinishedPercent => "Render is {} complete";
     public string callback_rendererUploadingVideo => "Renderer is uploading video...";

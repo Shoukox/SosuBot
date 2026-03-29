@@ -41,11 +41,11 @@ public class RenderStatusCallback() : CommandBase<CallbackQuery>
         {
             if (renderJob.ProgressPercent == -2)
             {
-                renderProgressText = language.callback_rendererUploadingReplay;
+                renderProgressText = language.callback_rendererDownloadingReplay;
             }
             else if (renderJob.ProgressPercent == -1)
             {
-                renderProgressText = language.callback_rendererUploadingBeatmap;
+                renderProgressText = language.callback_rendererDownloadingBeatmap;
             }
         }
         else if (renderJob.ProgressPercent == 0)

@@ -1,0 +1,37 @@
+# /opt/telegram-bot-api-server should exist
+# /etc/systemd/system/telegram-bot-api-server.service should exist
+# [Unit]
+# Description=telegram bot api server
+# After=network.target
+# StartLimitIntervalSec=0
+#
+# [Service]
+# User=telegram
+# Group=telegram
+# ExecStart=/opt/telegram-bot-api-server/tg-bot-api-server-start.sh
+# 
+# [Install]
+# WantedBy=default.target
+
+mkdir -p /var/telegram-data
+mkdir -p /var/telegram-temp
+
+# Create system group
+groupadd --system telegram
+
+# Create system user
+useradd --system \
+  --gid telegram \
+  --home-dir /var/lib/telegram \
+  --create-home \
+  --shell /usr/sbin/nologin \
+  telegram
+
+chown -R telegram:telegram /opt/telegram-bot-api-server
+chmod +x /opt/telegram-bot-api-server/tg-bot-api-server-start.sh
+
+chown -R telegram:telegram /var/telegram-data
+chmod -R 750 /var/telegram-data
+
+chown -R telegram:telegram /var/telegram-temp
+chmod -R 750 /var/telegram-temp
