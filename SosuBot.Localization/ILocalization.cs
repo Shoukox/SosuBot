@@ -55,8 +55,8 @@ public interface ILocalization
     public string callback_songPreviewNotFound { get; }
     public string callback_songPreviewRequestedBy { get; }
     public string callback_renderRequestNotFound { get; }
-    public string callback_rendererUploadingReplay { get; }
-    public string callback_rendererUploadingBeatmap { get; }
+    public string callback_rendererDownloadingReplay { get; }
+    public string callback_rendererDownloadingBeatmap { get; }
     public string callback_rendererInitializing { get; }
     public string callback_renderFinishedPercent { get; }
     public string callback_rendererUploadingVideo { get; }

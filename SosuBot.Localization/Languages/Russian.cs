@@ -171,8 +171,8 @@ public sealed class Russian : ILocalization
     public string callback_songPreviewNotFound => "Превью песни не найдено";
     public string callback_songPreviewRequestedBy => "Запрос от: {}";
     public string callback_renderRequestNotFound => "Запрос на рендер не найден в базе данных";
-    public string callback_rendererUploadingReplay => "Рендерер загружает реплей...";
-    public string callback_rendererUploadingBeatmap => "Рендерер загружает карту...";
+    public string callback_rendererDownloadingReplay => "Рендерер загружает реплей...";
+    public string callback_rendererDownloadingBeatmap => "Рендерер загружает карту...";
     public string callback_rendererInitializing => "Инициализация. Ждем свободного рендерера...";
     public string callback_renderFinishedPercent => "Рендер завершен на {}";
     public string callback_rendererUploadingVideo => "Рендерер загружает видео...";

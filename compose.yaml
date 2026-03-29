@@ -3,7 +3,7 @@
     build:
       context: .
       dockerfile: ./SosuBot/Dockerfile
-    restart: unless-stopped
+    restart: always
     deploy:
       mode: replicated
       replicas: 1
@@ -34,6 +34,7 @@
   
   redis-service:
     image: redis
+    restart: always
     container_name: redis
     command: redis-server /usr/local/etc/redis/redis.conf
     environment:
@@ -54,7 +55,7 @@
 
   db-service:
     image: postgres:17-alpine
-    restart: unless-stopped
+    restart: always
     secrets:
       - db-password
     volumes:
