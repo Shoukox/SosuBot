@@ -4,6 +4,8 @@
       context: .
       dockerfile: ./SosuBot/Dockerfile
     restart: always
+    group_add:
+      - 989
     deploy:
       mode: replicated
       replicas: 1
