@@ -164,6 +164,7 @@ public sealed class Russian : ILocalization
     public string error_excludeListAlreadyContainsThisId => "Этот пользователь уже был исключен из /chatstats";
     public string error_userWasNotExcluded => "Этот пользователь и так не был исключен из /chatstats";
     public string error_beatmapNotFound => "Карта не найдена";
+    public string error_dontUseTelegramUsername => "Тебе нужно вписать юзернейм игрока из osu!";
 
     public string common_rateLimitSlowDown => "Давай не так быстро!";
     public string common_back => "Назад";
@@ -249,11 +250,12 @@ public sealed class Russian : ILocalization
     public string replayRender_usage => "Используй эту команду на реплей файл или на скор с реплеем.\nЛибо укажи ссылку на скор после команды.";
     public string replayRender_skinNotFound => "Вероятно, твой выбранный скин не был найден на сервере - выбери другой.";
     public string replayRender_statusButton => "Статус";
-    public string replayRender_onlineQueueSearching => "Текущее количество онлайн рендереров: {}\n\nОчередь: {}\nИщем свободный рендерер...";
+    public string replayRender_settingsAd => "Используй /settings для настройки рендерера.";
+    public string replayRender_onlineQueueSearching => "Текущее количество онлайн рендереров: {}\n\nОчередь: {}\nИщем свободный рендерер...\n\n" + replayRender_settingsAd;
     public string replayRender_noRenderersLeft => "Сейчас свободных рендереров не осталось, попробуй позже :(";
-    public string replayRender_onlineQueueSearchingAgain => "Текущее количество онлайн рендереров: {}\n\nОчередь: {}\nИщем свободный рендерер...";
-    public string replayRender_onlineRendererInProcess => "Текущее количество онлайн рендереров: {}\n\n<b>Рендерер:</b> {}\n<b>Видеокарта</b>: {}\nРендер в процессе...";
-    public string replayRender_onlineSearchingNewRenderer => "Текущее количество онлайн рендереров: {}\n\nИщем нового рендерера...";
+    public string replayRender_onlineQueueSearchingAgain => "Текущее количество онлайн рендереров: {}\n\nОчередь: {}\nИщем свободный рендерер...\n\n" + replayRender_settingsAd;
+    public string replayRender_onlineRendererInProcess => "Текущее количество онлайн рендереров: {}\n\n<b>Рендерер:</b> {}\n<b>Видеокарта</b>: {}\nРендер в процессе...\n\n" + replayRender_settingsAd;
+    public string replayRender_onlineSearchingNewRenderer => "Текущее количество онлайн рендереров: {}\n\nИщем новый рендерер...\n\n" + replayRender_settingsAd;
     public string replayRender_timeout => "Таймаут. Рендеринг не был завершен за {} секунд, повторите попытку.";
     public string replayRender_onlyOsuStd => "Рендер доступен только для osu!std";
     public string replayRender_errorWithReason => "Ошибка рендера.\n{}";

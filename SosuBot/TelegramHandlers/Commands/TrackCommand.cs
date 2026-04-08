@@ -60,7 +60,7 @@ public sealed class TrackCommand : CommandBase<Message>
                         usersToRemoveFromObservedList.Add(osuUserId);
                     }
                 }
-
+                chatInDatabase!.TrackedPlayers = null;
                 await ScoresObserverBackgroundService.RemovePlayersFromObserverList(usersToRemoveFromObservedList);
             }
             await waitMessage.EditAsync(Context.BotClient, language.track_cleared);

@@ -13,7 +13,7 @@ public sealed class UpdateHandlerBackgroundService(IServiceProvider serviceProvi
 {
     private readonly UpdateQueueService _updateQueue = serviceProvider.GetRequiredService<UpdateQueueService>();
     private readonly ILogger<UpdateHandlerBackgroundService> _logger = serviceProvider.GetRequiredService<ILogger<UpdateHandlerBackgroundService>>();
-    private readonly int _workersCount = 128;
+    private readonly int _workersCount = 64;
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
@@ -22,7 +22,7 @@ public sealed class UpdateHandlerBackgroundService(IServiceProvider serviceProvi
         _logger.LogInformation($"Starting {_workersCount} workers to handle updates.");
 
         ThreadPool.GetAvailableThreads(out int workerThreads, out int completionPortThreads);
-        _logger.LogInformation($"Available worker threads: {workerThreads}, available completion port threads: {completionPortThreads}");
+        _logger.LogDebug($"Available worker threads: {workerThreads}, available completion port threads: {completionPortThreads}");
 
         try
         {

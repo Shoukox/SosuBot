@@ -1,0 +1,8 @@
+chmod 777 cache/
+chmod 777 cache/beatmaps cache/daily_statistics cache/users
+cd cache/beatmaps
+find . -type f -exec chmod 666 {} +
+cd cache/daily_statistics
+find . -type f -exec chmod 666 {} +
+cd cache/users
+find . -type f -exec chmod 666 {} +
