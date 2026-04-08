@@ -32,11 +32,7 @@ public class RenderSettingsCallback() : CommandBase<CallbackQuery>
     public override async Task ExecuteAsync()
     {
         var language = Context.GetLocalization();
-
         var parameters = Context.Update.Data!.Split(' ');
-        var settingName = parameters[1];
-
-        _chatId = Context.Update.Message!.Chat.Id;
 
         string? settingValue = null;
         if (parameters.Length >= 3)
@@ -44,6 +40,7 @@ public class RenderSettingsCallback() : CommandBase<CallbackQuery>
             settingValue = string.Join(" ", parameters[2..]);
         }
 
+        _chatId = Context.Update.Message!.Chat.Id;
         if (_chatId != Context.Update.From.Id)
         {
             await Context.Update.AnswerAsync(Context.BotClient);
@@ -58,6 +55,7 @@ public class RenderSettingsCallback() : CommandBase<CallbackQuery>
         }
         _osuUser = osuUser;
 
+        var settingName = parameters[1];
         Func<Task> executeTask = settingName switch
         {
             "general-volume" => GeneralVolume,

@@ -39,7 +39,7 @@ public sealed class PollingBackgroundService(IServiceProvider serviceProvider) :
             try
             {
                 var updates = await _botClient.GetUpdates(_offset, timeout: 20, cancellationToken: stoppingToken);
-                _logger.LogInformation("Received {Count} updates", updates.Length);
+                _logger.LogDebug("Received {Count} updates", updates.Length);
                 if (updates.Length == 0) continue;
 
                 _offset = updates.Last().Id + 1;

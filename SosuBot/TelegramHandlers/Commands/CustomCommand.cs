@@ -479,6 +479,38 @@ public sealed class CustomCommand : CommandBase<Message>
             await _database.SaveChangesAsync();
             await waitMessage.EditAsync(Context.BotClient, $"Done");
         }
+        else if (parameters[0] == "remove_left_chatmembers")
+        {
+            ILocalization language = new Russian();
+            var waitMessage = await Context.Update.ReplyAsync(Context.BotClient, language.waiting);
+
+            foreach (var chat in _database.TelegramChats)
+            {
+                if (chat.ChatMembers is null) continue;
+                foreach(long member in chat.ChatMembers)
+                {
+                    try
+                    {
+                        if (await Context.BotClient.GetChatMember(chat.ChatId, member) is { IsInChat: false })
+                        {
+                            chat.ChatMembers.Remove(member);
+                        }
+                    }
+                    catch (ApiRequestException ex) when (ex.Message.Contains("chat not found") || ex.Message.Contains("PARTICIPANT_ID_INVALID"))
+                    {
+                        _database.TelegramChats.Remove(chat);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Error");
+                    }
+                    await Task.Delay(500);
+                }
+            }
+
+            await _database.SaveChangesAsync();
+            await waitMessage.EditAsync(Context.BotClient, $"Done");
+        }
     }
 }
 

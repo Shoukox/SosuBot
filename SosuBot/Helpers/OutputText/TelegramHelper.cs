@@ -84,4 +84,14 @@ public static class TelegramHelper
         return await SendOrEditMessage(messageId, chatId, botClient, currentText, !sentOrEdited, edit, parseMode,
             replyMarkup, linkPreviewEnabled);
     }
+
+    public static async Task<bool> IsGroupAdmin(ITelegramBotClient botClient, Chat chat, long userId)
+    {
+        if (chat.Type is ChatType.Group or ChatType.Supergroup)
+        {
+            var chatAdmins = await botClient.GetChatAdministrators(chat.Id);
+            return chatAdmins.Any(m => m.User.Id == userId);
+        }
+        return true; // in dm you are a trivial admin
+    }
 }

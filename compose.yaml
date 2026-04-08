@@ -1,30 +1,24 @@
 ﻿services:
   sosubot-service:
+    image: sosubot
     build:
       context: .
       dockerfile: ./SosuBot/Dockerfile
     restart: always
-    group_add:
-      - 989
     deploy:
       mode: replicated
       replicas: 1
     environment:
-      REDIS_HOST: redis-service
-      DB_HOST: db-service
-      DB_PORT: 5432
-      DB_NAME: sosubot
-      DB_USER: sosubot
-      DB_PASSWORD_FILE: /run/secrets/db-password
-      DB_MIGRATE: "NO"
-      USE_POSTGRES: "YES"
+      "DOTNET_ENVIRONMENT": "Development"
     secrets:
       - db-password
     expose:
       - "5000"
     volumes:
-      - ./cache:/app/cache
-      - /var/telegram-data:/var/telegram-data
+      - /var/telegram-data:/var/telegram-data:rw
+      - ./cache:/app/cache:rw
+      - ./logs:/app/logs:rw
+      - ./SosuBot/appsettings.Development.Test.json:/app/appsettings.json:ro
     depends_on:
       db-service:
         condition: service_healthy
@@ -45,7 +39,6 @@
       - "6379:6379"
     volumes:
       - ./.redis/data:/data
-      - ./.redis/redis.conf:/usr/local/etc/redis/redis.conf
     healthcheck:
       test: [ "CMD-SHELL", "redis-cli ping | grep PONG" ]
       interval: 1s
@@ -85,6 +78,6 @@ secrets:
 
 networks:
   app-network:
+    driver: bridge
     enable_ipv4: false
     enable_ipv6: true
-    driver: bridge

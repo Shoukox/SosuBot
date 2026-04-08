@@ -48,6 +48,7 @@ public interface ILocalization
     public string error_excludeListAlreadyContainsThisId { get; }
     public string error_userWasNotExcluded { get; }
     public string error_beatmapNotFound { get; }
+    public string error_dontUseTelegramUsername { get; }
 
     public string common_rateLimitSlowDown { get; }
     public string common_back { get; }
@@ -133,6 +134,7 @@ public interface ILocalization
     public string replayRender_usage { get; }
     public string replayRender_skinNotFound { get; }
     public string replayRender_statusButton { get; }
+    public string replayRender_settingsAd { get; }
     public string replayRender_onlineQueueSearching { get; }
     public string replayRender_noRenderersLeft { get; }
     public string replayRender_onlineQueueSearchingAgain { get; }

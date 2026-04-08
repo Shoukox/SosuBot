@@ -4,6 +4,7 @@ using SosuBot.Extensions;
 using SosuBot.Localization;
 using SosuBot.Localization.Languages;
 using SosuBot.TelegramHandlers.Abstract;
+using Telegram.Bot;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 
@@ -23,6 +24,13 @@ public sealed class SetLanguageCallback : CommandBase<CallbackQuery>
 
     public override async Task ExecuteAsync()
     {
+        var language = Context.GetLocalization();
+        if (await TelegramHelper.IsGroupAdmin(Context.BotClient, Context.Update.Message!.Chat, Context.Update.From.Id))
+        {
+            await Context.Update.AnswerAsync(Context.BotClient, language.group_onlyForAdmins, showAlert: true);
+            return;
+        }
+
         var parameters = Context.Update.Data!.Split(' ');
         var selectedLanguage = parameters.Length >= 2 ? parameters[1] : Language.Russian;
 

@@ -164,6 +164,7 @@ public sealed class English : ILocalization
     public string error_excludeListAlreadyContainsThisId => "This user is already excluded from /chatstats";
     public string error_userWasNotExcluded => "This user was not excluded from /chatstats";
     public string error_beatmapNotFound => "Beatmap not found";
+    public string error_dontUseTelegramUsername => "You need to enter the osu! player's username";
 
     public string common_rateLimitSlowDown => "Slow down a bit!";
     public string common_back => "Back";
@@ -249,11 +250,12 @@ public sealed class English : ILocalization
     public string replayRender_usage => "Use this command on a replay file or a score with replay.\nOr provide a score link after the command.";
     public string replayRender_skinNotFound => "Your selected skin was likely not found on the server. Choose another one.";
     public string replayRender_statusButton => "Status";
-    public string replayRender_onlineQueueSearching => "Current online renderers: {}\n\nQueue: {}\nLooking for a free renderer...";
+    public string replayRender_settingsAd => "Use /settings to configure your renderer.";
+    public string replayRender_onlineQueueSearching => "Current online renderers: {}\n\nQueue: {}\nLooking for a free renderer...\n\n" + replayRender_settingsAd;
     public string replayRender_noRenderersLeft => "No free renderers left right now, try again later :(";
-    public string replayRender_onlineQueueSearchingAgain => "Current online renderers: {}\n\nQueue: {}\nLooking for a free renderer...";
-    public string replayRender_onlineRendererInProcess => "Current online renderers: {}\n\n<b>Renderer:</b> {}\n<b>GPU</b>: {}\nRendering in progress...";
-    public string replayRender_onlineSearchingNewRenderer => "Current online renderers: {}\n\nLooking for a new renderer...";
+    public string replayRender_onlineQueueSearchingAgain => "Current online renderers: {}\n\nQueue: {}\nLooking for a free renderer...\n\n" + replayRender_settingsAd;
+    public string replayRender_onlineRendererInProcess => "Current online renderers: {}\n\n<b>Renderer:</b> {}\n<b>GPU</b>: {}\nRendering in progress...\n\n" + replayRender_settingsAd;
+    public string replayRender_onlineSearchingNewRenderer => "Current online renderers: {}\n\nLooking for a new renderer...\n\n" + replayRender_settingsAd;
     public string replayRender_timeout => "Timeout. Rendering was not completed in {} seconds. Please retry.";
     public string replayRender_onlyOsuStd => "Rendering is available only for osu!std";
     public string replayRender_errorWithReason => "Render failed.\n{}";

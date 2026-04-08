@@ -84,8 +84,13 @@ internal class Program
         builder.Services.AddSingleton<BeatmapsService>();
 
         // Redis
-        var redisHost = Environment.GetEnvironmentVariable("REDIS_HOST") ?? "localhost";
-        int redisPort = 6379;
+        var redisHost = builder.Configuration["Redis:Host"]!;
+        if(!int.TryParse(builder.Configuration["Redis:Port"], out int redisPort))
+        {
+            redisPort = 6379;
+            Log("Failed to parse Redis port from configuration, defaulting to 6379");
+        }
+
         var redisConfigurationOptions = new ConfigurationOptions()
         {
             EndPoints =

@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using OsuApi.BanchoV2;
 using OsuApi.BanchoV2.Clients.Users.HttpIO;
 using OsuApi.BanchoV2.Users.Models;
@@ -39,19 +40,21 @@ public class OsuUserCommand(bool includeIdInSearch = false) : CommandBase<Messag
             return;
         }
 
-
         var osuUserInDatabase = await _database.OsuUsers.FindAsync(Context.Update.From!.Id);
-        var parameters = Context.Update.Text!.GetCommandParameters()!;
+        var keywordParameters = Context.Update.Text!.GetCommandKeywordParameters()!;
+        var parameters = Context.Update.Text!.GetCommandParameters()!.Where(m => !keywordParameters.Contains(m)).ToArray();
 
         var waitMessage = await Context.Update.ReplyAsync(Context.BotClient, language.waiting);
 
         // Fake 500ms wait
         await Task.Delay(500);
 
-        UserExtend? user;
-        Playmode playmode;
+        string username;
+        string? ruleset = null;
+        Playmode playmode = Playmode.Osu;
+        bool shouldUpdatePlaymode = false;
 
-        var searchPrefix = "@";
+        string searchPrefix = "@";
         if (includeIdInSearch) searchPrefix = "";
 
         if (parameters.Length == 0)
@@ -63,50 +66,19 @@ public class OsuUserCommand(bool includeIdInSearch = false) : CommandBase<Messag
             }
 
             playmode = osuUserInDatabase.OsuMode;
-            user = (await _osuApiV2.Users.GetUser($"{searchPrefix}{osuUserInDatabase.OsuUsername}",
-                new GetUserQueryParameters(), playmode.ToRuleset()))?.UserExtend;
+            username = $"{searchPrefix}{osuUserInDatabase.OsuUsername}";
+            ruleset = playmode.ToRuleset();
         }
         else if (parameters.Length == 1)
         {
-            if (parameters[0].StartsWith("mode="))
+            if (parameters[0].StartsWith("@"))
             {
-                if (osuUserInDatabase is null)
-                {
-                    await waitMessage.EditAsync(Context.BotClient, language.error_userNotSetHimself);
-                    return;
-                }
-
-                var ruleset = parameters[0].ParseToRuleset();
-                if (ruleset is null)
-                {
-                    await waitMessage.EditAsync(Context.BotClient, language.error_modeIncorrect);
-                    return;
-                }
-
-                var userResponse = await _osuApiV2.Users.GetUser($"{searchPrefix}{osuUserInDatabase.OsuUsername}",
-                    new GetUserQueryParameters(), ruleset);
-                if (userResponse is null)
-                {
-                    await waitMessage.EditAsync(Context.BotClient, language.error_userNotFound);
-                    return;
-                }
-
-                user = userResponse.UserExtend;
-            }
-            else
-            {
-                var userResponse =
-                    await _osuApiV2.Users.GetUser($"{searchPrefix}{parameters[0]}", new GetUserQueryParameters());
-                if (userResponse is null)
-                {
-                    await waitMessage.EditAsync(Context.BotClient, language.error_userNotFound);
-                    return;
-                }
-
-                user = userResponse.UserExtend;
+                await waitMessage.EditAsync(Context.BotClient, language.error_dontUseTelegramUsername);
+                return;
             }
 
-            playmode = user!.Playmode!.ParseRulesetToPlaymode();
+            username = $"{searchPrefix}{parameters[0]}";
+            shouldUpdatePlaymode = true;
         }
         else
         {
@@ -114,10 +86,35 @@ public class OsuUserCommand(bool includeIdInSearch = false) : CommandBase<Messag
             return;
         }
 
+        if (ruleset == null || keywordParameters.Length != 0)
+        {
+            if (keywordParameters.FirstOrDefault(m => m.StartsWith("mode")) is { } keyword)
+            {
+                ruleset = keyword.Split('=')[1].ParseToRuleset();
+                if (ruleset is null)
+                {
+                    await waitMessage.EditAsync(Context.BotClient, language.error_modeIncorrect);
+                    return;
+                }
+            }
+        }
+
+        var userResponse = await _osuApiV2.Users.GetUser(username, new GetUserQueryParameters(), ruleset);
+        if (userResponse is null)
+        {
+            await waitMessage.EditAsync(Context.BotClient, language.error_userNotFound);
+            return;
+        }
+        UserExtend? user = userResponse.UserExtend;
         if (user == null)
         {
             await waitMessage.EditAsync(Context.BotClient, language.error_userNotFound);
             return;
+        }
+
+        if (shouldUpdatePlaymode)
+        {
+            playmode = user!.Playmode!.ParseRulesetToPlaymode();
         }
 
         double? currentPp = user.Statistics!.Pp;

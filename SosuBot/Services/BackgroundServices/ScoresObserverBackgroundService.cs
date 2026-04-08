@@ -201,10 +201,14 @@ public sealed class ScoresObserverBackgroundService(IServiceProvider serviceProv
                         if (_database.UserEntity.Find(userStatistics.User!.Id) is { } foundUserEntity)
                         {
                             dailyStatistics.ActiveUsers.Add(foundUserEntity);
+                            foundUserEntity.UserJson = userStatistics.User!;
+                            await _database.SaveChangesAsync();
                         }
                         else
                         {
-                            dailyStatistics.ActiveUsers.Add(new UserEntity() { UserId = userStatistics.User!.Id!.Value, UserJson = userStatistics.User! });
+                            UserEntity userEntity = new UserEntity() { UserId = userStatistics.User!.Id!.Value, UserJson = userStatistics.User! };
+                            dailyStatistics.ActiveUsers.Add(userEntity);
+                            _database.UserEntity.Add(userEntity);
                         }
                     }
 
@@ -235,7 +239,7 @@ public sealed class ScoresObserverBackgroundService(IServiceProvider serviceProv
 
                     dailyStatistics = new DailyStatistics() { CountryCode = CountryCode.Uzbekistan, DayOfStatistic = DateTime.UtcNow.ChangeTimezone(Country.Uzbekistan) };
                     _database.DailyStatistics.Add(dailyStatistics);
-                    _database.SaveChanges();
+                    await _database.SaveChangesAsync();
                 }
 
                 if (getStdScoresResponse != null) getStdScoresCursor = getStdScoresResponse.CursorString;
@@ -251,8 +255,7 @@ public sealed class ScoresObserverBackgroundService(IServiceProvider serviceProv
                 int stdScoresCount = Math.Max(1, getStdScoresResponse?.Scores?.Length ?? 1);
                 int delay = 3000 + 1000 * (1000 / stdScoresCount); //3sec + 1*n seconds
                 int clampedDelay = Math.Clamp(delay, 3000, 55_000);
-                _logger.LogInformation($"Processed {stdScoresCount} std scores. Next GetScores in {clampedDelay}ms.");
-                await _database.SaveChangesAsync();
+                _logger.LogDebug($"Processed {stdScoresCount} std scores. Next GetScores in {clampedDelay}ms.");
 
                 await Task.Delay(clampedDelay);
                 counter++;
