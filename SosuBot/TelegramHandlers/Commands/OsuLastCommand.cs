@@ -249,10 +249,10 @@ public class OsuLastCommand(bool onlyPassed = false, bool sendCover = false) : C
             bool lastScoresContainsOnlyOneScore = lastScores.Length == 1;
             string counterText = lastScoresContainsOnlyOneScore ? "" : $"{i + 1}. ";
             string optionalNewLine = lastScoresContainsOnlyOneScore ? "\n" : "";
-            double? scorePp = calculatedPp?.Current?.Pp ?? score.Pp;
+            double? scorePp = calculatedPp?.Current?.PP ?? score.Pp;
             if (scorePp is double.NaN) scorePp = null;
 
-            double? scorePpIfFc = calculatedPp?.IfFC?.Pp;
+            double? scorePpIfFc = calculatedPp?.IfFC?.PP;
             double? accuracyIfFc = calculatedPp?.IfFC?.CalculatedAccuracy;
             bool scoreModsContainsModIdk = scoreMods.Any(m => m is ModIdk);
 
@@ -316,7 +316,7 @@ public class OsuLastCommand(bool onlyPassed = false, bool sendCover = false) : C
             }
 
             string globalRankText = "";
-            if (score.RankGlobal != null && score.RankGlobal is > 0 and <= 10000)
+            if (score.RankGlobal != null && score.RankGlobal is > 0 and <= 2000)
             {
                 globalRankText = $"<b>Global #{score.RankGlobal}</b>\n";
             }

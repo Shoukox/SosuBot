@@ -170,8 +170,8 @@ public class OsuCalcCommand : CommandBase<Message>
             $"<b>[{beatmap.Version.EncodeHtml()}]</b>\n\n" +
             $"<b>+{modsFromMessage.ModsToString(playmode)}</b> {_scoreHelper.GetFormattedNumConsideringNull(difficultyRatingForGivenMods, round: false)}⭐️\n" +
             $"{_scoreHelper.GetScoreStatisticsText(scoreStatistics, playmode)}/{miss}❌\n" +
-            $"Lazer: {_scoreHelper.GetFormattedNumConsideringNull(ppLazer.CalculatedAccuracy * 100, round: false)}% - <b><u>{_scoreHelper.GetFormattedNumConsideringNull(ppLazer.Pp)}pp</u></b>\n" +
-            $"Stable: {_scoreHelper.GetFormattedNumConsideringNull(ppClassic.CalculatedAccuracy * 100, round: false)}% - <b><u>{_scoreHelper.GetFormattedNumConsideringNull(ppClassic.Pp)}pp</u></b>";
+            $"Lazer: {_scoreHelper.GetFormattedNumConsideringNull(ppLazer.CalculatedAccuracy * 100, round: false)}% - <b><u>{_scoreHelper.GetFormattedNumConsideringNull(ppLazer.PP)}pp</u></b>\n" +
+            $"Stable: {_scoreHelper.GetFormattedNumConsideringNull(ppClassic.CalculatedAccuracy * 100, round: false)}% - <b><u>{_scoreHelper.GetFormattedNumConsideringNull(ppClassic.PP)}pp</u></b>";
         await waitMessage.EditAsync(Context.BotClient, textToSend);
     }
 }

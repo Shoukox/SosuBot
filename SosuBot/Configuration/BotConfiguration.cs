@@ -3,6 +3,7 @@
 public record BotConfiguration
 {
     public required string Token { get; init; }
-    public required string Username { get; init; }
     public required string? ApiServerUrl { get; init; } = "http://[2a03:4000:6:417a:1::108]:8081";
+    public required string Username { get; set; } // will be set in a startup service
+    public required long Id { get; set; } // will be set in a startup service
 }

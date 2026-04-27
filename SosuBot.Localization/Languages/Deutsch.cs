@@ -46,12 +46,7 @@ public sealed class Deutsch : ILocalization
         $"\n" +
         $"Fragen und Vorschläge: @Shoukkoo</blockquote>";
 
-    public string command_last =>
-        "{GlobalRank}🎵{}<b>({})</b> <a href=\"https://osu.ppy.sh/beatmaps/{}\">{} [{}]</a> <b>({}; {}⭐️)</b>\n" +
-        "{}/{}❌ - <b><i>{}</i></b>%🎯{OptionalNewLine}\n" +
-        "<b>➕{}</b> <i><b>{}x/{}x</b></i> <b><u>{}pp💪</u></b>\n" +
-        "(<b><u>{}</u></b>) {link}\n" +
-        "{} | {}% abgeschlossen";
+    public string command_last => Shared.CommandLast + " abgeschlossen";
 
     public string command_set =>
         "Du bist jetzt <b>{}</b>, {}pp💪\n" +
@@ -62,24 +57,9 @@ public sealed class Deutsch : ILocalization
 
     public string command_setMode => "Dein Standardmodus: <b>{}</b>🎮";
 
-    public string command_score =>
-        "🎵<b>({})</b> <a href=\"{}\">{} [{}]</a> <b>({})</b>\n" +
-        "{}/{}❌ - <b><i>{}</i></b>%🎯\n" +
-        "<b>➕{}</b> <i><b>{}x/{}x</b></i> <b><u>{}pp💪</u></b>\n" +
-        "{}\n\n";
+    public string command_score => Shared.CommandScore;
 
-    public string command_user =>
-        "<b>{}</b>\n" +
-        "<i>{}</i>\n\n" +
-        "🌐<b>rank</b>: <i>#{} (#{} {})</i>\n" +
-        "💪<b>pp</b>: <i>{} {}</i>\n" +
-        "🎯<b>accuracy</b>: <i>{}</i>\n" +
-        "🔢<b>playcount</b>: <i>{}</i>\n" +
-        "⏱️<b>playtime</b>: <i>{}h</i>\n" +
-        "📍<b>registered</b>: <i>{}</i>\n" +
-        "🏆<b>achievements</b>: <i>{}/{}</i>\n\n" +
-        "<i>{}</i> <b>SSH</b>⚪️ - <i>{}</i> <b>SH</b>⚪️\n" +
-        "<i>{}</i> <b>SS</b>🟡 - <i>{}</i> <b>S</b>🟡 - <i>{}</i> <b>A</b>🟢";
+    public string command_user => Shared.CommandUser;
 
     public string command_compare =>
         "<pre>" +
@@ -92,10 +72,7 @@ public sealed class Deutsch : ILocalization
         "⏱️{}  ⏱️{}\n" +
         "</pre>";
 
-    public string command_userbest =>
-        "{}. 🎵(<b>{}</b>) <a href=\"http://osu.ppy.sh/b/{}\">{} [{}]</a> (<b>{}</b>)\n" +
-        "{}/{}❌ - <b><i>{}</i></b>%🎯\n" +
-        "<b>➕{}</b> <i><b>{}x</b>{}</i> <b><u>{}pp💪</u></b>\n\n";
+    public string command_userbest => Shared.CommandUserBest;
 
     public string command_chatstats_title => "Top-10 osu-Spieler (<b>{}</b>) in dieser Gruppe:\n\n";
     public string command_chatstats_row => "<b>{}. {}</b>: <i>{}pp💪</i>\n";
@@ -103,25 +80,7 @@ public sealed class Deutsch : ILocalization
     public string command_excluded => "<b>{}</b> wurde aus /chatstats ausgeschlossen";
     public string command_included => "<b>{}</b> erscheint wieder in /chatstats";
 
-    public string send_mapInfo =>
-        "<b>{}</b>\n" +
-        "<b>[{}]</b> - {}⭐️ - {} - {} - <b>{}</b> - <a href=\"https://osu.ppy.sh/beatmaps/{}\">link</a>\n" +
-        "<b>CS</b>: {} | <b>AR</b>: {} | <b>HP</b>: {} | <b>BPM</b>: {}\n\n" +
-        "<b>+{} ({}⭐️) pp calculation:</b>\n" +
-        "<code>" +
-        "acc      | classic\n" +
-        "---------+---------\n" +
-        "{}" +
-        "{}" +
-        "{}" +
-        "</code>\n\n" +
-        "<code>" +
-        "acc      | lazer\n" +
-        "---------+---------\n" +
-        "{}" +
-        "{}" +
-        "{}" +
-        "</code>\n";
+    public string send_mapInfo => Shared.MapInfo;
 
     public string send_dailyStatistic =>
         "<b>🇺🇿 Bericht seit {}:</b>\n\n" +
@@ -234,7 +193,8 @@ public sealed class Deutsch : ILocalization
     public string admin_chatsSummary => "chats: {}/{}";
 
     public string score_noLeaderboardNoOnlineScores => "Wenn die Map kein Leaderboard hat, hat niemand Online-Scores darauf.";
-
+    public string score_replayAvailable => "Um diesen Score zu rendern, sende bitte /render als Antwort auf diese Nachricht.";
+    
     public string replayRender_rateLimit => "Langsamer! Maximal 10 Anfragen pro Stunde sind erlaubt.";
     public string replayRender_serverDown => "Sieht aus, als wäre der Server gerade offline. Versuch es später erneut.";
     public string replayRender_noRenderers => "Derzeit keine freien Renderer verfügbar. Bitte später erneut versuchen.";
