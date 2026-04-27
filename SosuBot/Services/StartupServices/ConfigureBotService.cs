@@ -1,6 +1,9 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+using Polly;
+using SosuBot.Configuration;
 using SosuBot.TelegramHandlers;
 using SosuBot.TelegramHandlers.Abstract;
 using SosuBot.TelegramHandlers.Callbacks;
@@ -14,6 +17,7 @@ public class ConfigureBotService(IServiceProvider serviceProvider) : IHostedServ
 {
     private ITelegramBotClient _botClient = serviceProvider.GetRequiredService<ITelegramBotClient>();
     private ILogger<ConfigureBotService> _logger = serviceProvider.GetRequiredService<ILogger<ConfigureBotService>>();
+    private BotConfiguration _botConfig = serviceProvider.GetRequiredService<IOptions<BotConfiguration>>().Value;
 
     private static IEnumerable<BotCommand> botCommands = [
         new("/help", "Lists all bot commands"),
@@ -25,10 +29,16 @@ public class ConfigureBotService(IServiceProvider serviceProvider) : IHostedServ
         //await _botClient.LogOut();
         //_logger.LogInformation("Successfully logged out");
 
+        // Configure bot
+        User botUser = await _botClient.GetMe();
+        _botConfig.Username = botUser.Username!;
+        _botConfig.Id = botUser.Id;
+
+        // Configure bot commands
         await _botClient.SetMyCommands(botCommands, cancellationToken: cancellationToken);
         _logger.LogInformation("Successfully set bot commands");
 
-        // Register commands
+        // Register command handlers
         RegisterCommand<StartCommand>(StartCommand.Commands);
         RegisterCommand<HelpCommand>(HelpCommand.Commands);
         RegisterCommand<SetLanguageCommand>(SetLanguageCommand.Commands);

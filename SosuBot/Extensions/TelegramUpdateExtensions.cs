@@ -56,6 +56,11 @@ public static class TelegramUpdateExtensions
         return botClient.AnswerCallbackQuery(callbackQuery.Id, text, showAlert);
     }
 
+    public static bool IsForwardedFrom(this Message message, long userId)
+    {
+        return message.From?.Id == userId;
+    }
+
     public static IEnumerable<string> GetAllLinks(this Message message)
     {
         if ((message.Text == null || message.Entities == null) && message.Caption == null) return [];

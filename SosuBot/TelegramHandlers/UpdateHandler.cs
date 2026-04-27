@@ -37,7 +37,7 @@ public class UpdateHandler(
     {
         cancellationToken.ThrowIfCancellationRequested();
 
-        var eventHandler = update switch
+        Task eventHandler = update switch
         {
             { Message: { } message } => OnMessage(botClient, message, cancellationToken),
             { CallbackQuery: { } callbackQuery } => OnCallbackQuery(botClient, callbackQuery, cancellationToken),

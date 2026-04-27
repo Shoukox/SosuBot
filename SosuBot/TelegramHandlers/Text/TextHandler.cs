@@ -5,6 +5,7 @@ using OsuApi.BanchoV2;
 using OsuApi.BanchoV2.Clients.Users.HttpIO;
 using OsuApi.BanchoV2.Models;
 using OsuApi.BanchoV2.Users.Models;
+using Serilog.Parsing;
 using SosuBot.Configuration;
 using SosuBot.Database;
 using SosuBot.Database.Models;
@@ -31,6 +32,8 @@ public sealed class TextHandler : CommandBase<Message>
     private BotContext _database = null!;
     private ILogger<TextHandler> _logger = null!;
 
+    private TokenBucketRateLimiter _tokenBucketRateLimiter = null!;
+
     public override Task BeforeExecuteAsync()
     {
         _osuApiV2 = Context.ServiceProvider.GetRequiredService<BanchoApiV2>();
@@ -41,41 +44,65 @@ public sealed class TextHandler : CommandBase<Message>
         _database = Context.ServiceProvider.GetRequiredService<BotContext>();
         _botConfig = Context.ServiceProvider.GetRequiredService<IOptions<BotConfiguration>>().Value;
         _logger = Context.ServiceProvider.GetRequiredService<ILogger<TextHandler>>();
+
+        _tokenBucketRateLimiter = _rateLimiterFactory.Get(RateLimiterFactory.RateLimitPolicy.Command);
         return Task.CompletedTask;
     }
 
     public override async Task ExecuteAsync()
     {
-        if (ShouldIgnoreForwardedBotMessage()) return;
+        if (Context.Update.IsForwardedFrom(_botConfig.Id)) return;
 
         var language = Context.GetLocalization();
         await HandleBeatmapLink(language);
         await HandleUserProfileLink(language);
+        await HandleScoreLink(language);
     }
 
-    private bool ShouldIgnoreForwardedBotMessage()
+    private async Task HandleScoreLink(ILocalization language)
     {
-        return Context.Update.ForwardFrom?.Username == _botConfig.Username;
-    }
+        if (OsuHelper.ParseOsuScoreLink(Context.Update.GetAllLinks(), out long? scoreId) == null) return;
+        if (!await _tokenBucketRateLimiter.IsAllowedAsync($"{Context.Update.From!.Id}")) return;
 
-    private async Task<bool> IsRateLimitedAsync()
-    {
-        var rateLimiter = _rateLimiterFactory.Get(RateLimiterFactory.RateLimitPolicy.Command);
-        return !await rateLimiter.IsAllowedAsync($"{Context.Update.From!.Id}");
+        Score? score = await _osuApiV2.Scores.GetScore(scoreId!.Value);
+        if (score == null) return;
+
+        BeatmapExtended? beatmap = await _cachingHelper.GetOrCacheBeatmap(score.BeatmapId!.Value, _osuApiV2);
+        if (beatmap is null) return;
+
+        BeatmapsetExtended? beatmapset = await _cachingHelper.GetOrCacheBeatmapset(beatmap.BeatmapsetId.Value, _osuApiV2);
+        if (beatmapset is null) return;
+
+        Playmode currentPlaymode = (Playmode)beatmap.ModeInt!.Value;
+
+        string textToSend = LocalizationMessageHelper.CommandScore(language,
+            $"{_scoreHelper.GetScoreRankEmoji(score.Rank)}{_scoreHelper.ParseScoreRank(score.Rank!)}",
+            $"{beatmap.Url}",
+            $"{beatmapset!.Title.EncodeHtml()}",
+            $"{beatmap.Version.EncodeHtml()}",
+            $"{beatmap.Status}",
+            $"{_scoreHelper.GetScoreStatisticsText(score.Statistics!, currentPlaymode)}",
+            $"{score.Statistics!.Miss}",
+            $"{_scoreHelper.GetFormattedNumConsideringNull(score.Accuracy * 100, round: false)}",
+            $"{_scoreHelper.GetModsText(score.Mods!)}",
+            $"{score.MaxCombo}",
+            $"{beatmap.MaxCombo}",
+            $"{_scoreHelper.GetFormattedNumConsideringNull(score.Pp)}",
+            $"({score.EndedAt!.Value:dd.MM.yyyy HH:mm}) {_scoreHelper.GetScoreUrlWrappedInString(score.Id!.Value, "link")}"
+        );
+
+        if (score.HasReplay == true)
+        {
+            textToSend += language.score_replayAvailable;
+        }
+
+        await Context.Update.ReplyAsync(Context.BotClient, textToSend);
     }
 
     private async Task HandleUserProfileLink(ILocalization language)
     {
-        var userProfileLink = OsuHelper.ParseOsuUserLink(Context.Update.GetAllLinks(), out var userId);
-        if (userProfileLink == null) return;
-
-        if (userProfileLink.EndsWith('-'))
-        {
-            _logger.LogInformation("User profile link ends with '-', skipping gathering infos. Link: {Link}", userProfileLink);
-            return;
-        }
-
-        if (await IsRateLimitedAsync()) return;
+        if (OsuHelper.ParseOsuUserLink(Context.Update.GetAllLinks(), out var userId) == null) return;
+        if (!await _tokenBucketRateLimiter.IsAllowedAsync($"{Context.Update.From!.Id}")) return;
 
         var user = (await _osuApiV2.Users.GetUser($"{userId}", new GetUserQueryParameters()))?.UserExtend;
         if (user == null) return;
@@ -107,7 +134,7 @@ public sealed class TextHandler : CommandBase<Message>
             return;
         }
 
-        if (await IsRateLimitedAsync()) return;
+        if (!await _tokenBucketRateLimiter.IsAllowedAsync($"{Context.Update.From!.Id}")) return;
 
         BeatmapsetExtended? beatmapset = null;
         if (beatmapId is null && beatmapsetId is not null)
@@ -143,29 +170,30 @@ public sealed class TextHandler : CommandBase<Message>
 
         var calculatedPp = await CalculateBeatmapPpAsync(beatmap, playmode, classicModsToApply, lazerModsToApply, beatmapContainsTooManyHitObjects);
 
-        var duration = $"{beatmap.TotalLength / 60}m{beatmap.TotalLength % 60:00}s";
+        int totalLengthConsideringMods = (int)(beatmap.TotalLength!.Value / calculatedPp.LazerSS!.SpeedChangeFactor);
+        var duration = $"{_scoreHelper.GetFormattedNumConsideringNull(totalLengthConsideringMods / 60, round: false, format: "#")}m{_scoreHelper.GetFormattedNumConsideringNull(totalLengthConsideringMods % 60, round: false, format: "00")}s";
         var padLength = 9;
 
         string classicSSText = $"{_scoreHelper.GetFormattedNumConsideringNull(calculatedPp.ClassicSS?.CalculatedAccuracy * 100, defaultValue: $"{100:N2}", round: false)}%".PadRight(padLength) + "| " +
-                               $"{_scoreHelper.GetFormattedNumConsideringNull(calculatedPp.ClassicSS?.Pp)}pp\n";
+                               $"{_scoreHelper.GetFormattedNumConsideringNull(calculatedPp.ClassicSS?.PP)}pp\n";
         string classic99Text = playmode == Playmode.Mania
             ? ""
             : $"{_scoreHelper.GetFormattedNumConsideringNull(calculatedPp.Classic99?.CalculatedAccuracy * 100, defaultValue: $"{99:N2}", round: false)}%".PadRight(padLength) + "| " +
-              $"{_scoreHelper.GetFormattedNumConsideringNull(calculatedPp.Classic99?.Pp)}pp\n";
+              $"{_scoreHelper.GetFormattedNumConsideringNull(calculatedPp.Classic99?.PP)}pp\n";
         string classic98Text = playmode == Playmode.Mania
             ? ""
             : $"{_scoreHelper.GetFormattedNumConsideringNull(calculatedPp.Classic98?.CalculatedAccuracy * 100, defaultValue: $"{98:N2}", round: false)}%".PadRight(padLength) + "| " +
-              $"{_scoreHelper.GetFormattedNumConsideringNull(calculatedPp.Classic98?.Pp)}pp\n";
+              $"{_scoreHelper.GetFormattedNumConsideringNull(calculatedPp.Classic98?.PP)}pp\n";
         string lazerSSText = $"{_scoreHelper.GetFormattedNumConsideringNull(calculatedPp.LazerSS?.CalculatedAccuracy * 100, defaultValue: $"{100:N2}", round: false)}%".PadRight(padLength) + "| " +
-                             $"{_scoreHelper.GetFormattedNumConsideringNull(calculatedPp.LazerSS?.Pp)}pp\n";
+                             $"{_scoreHelper.GetFormattedNumConsideringNull(calculatedPp.LazerSS?.PP)}pp\n";
         string lazer99Text = playmode == Playmode.Mania
             ? ""
             : $"{_scoreHelper.GetFormattedNumConsideringNull(calculatedPp.Lazer99?.CalculatedAccuracy * 100, defaultValue: $"{99:N2}", round: false)}%".PadRight(padLength) + "| " +
-              $"{_scoreHelper.GetFormattedNumConsideringNull(calculatedPp.Lazer99?.Pp)}pp\n";
+              $"{_scoreHelper.GetFormattedNumConsideringNull(calculatedPp.Lazer99?.PP)}pp\n";
         string lazer98Text = playmode == Playmode.Mania
             ? ""
             : $"{_scoreHelper.GetFormattedNumConsideringNull(calculatedPp.Lazer98?.CalculatedAccuracy * 100, defaultValue: $"{98:N2}", round: false)}%".PadRight(padLength) + "| " +
-              $"{_scoreHelper.GetFormattedNumConsideringNull(calculatedPp.Lazer98?.Pp)}pp\n";
+              $"{_scoreHelper.GetFormattedNumConsideringNull(calculatedPp.Lazer98?.PP)}pp\n";
 
         double? difficultyRatingForGivenMods = calculatedPp.Lazer98?.DifficultyAttributes.StarRating;
         if (difficultyRatingForGivenMods == null)
@@ -175,22 +203,21 @@ public sealed class TextHandler : CommandBase<Message>
             difficultyRatingForGivenMods = beatmapAttributesResponse?.DifficultyAttributes?.StarRating;
         }
 
-        var ar = beatmap.ModeInt is (int)Playmode.Mania or (int)Playmode.Taiko ? "—" : beatmap.AR.ToString();
+        string ar = beatmap.ModeInt is (int)Playmode.Mania or (int)Playmode.Taiko ? "—" : calculatedPp.LazerSS!.AR.ToString();
 
         var textToSend = LocalizationMessageHelper.SendMapInfo(language,
             $"{playmode.ToGamemode()}",
+            $"{lazerModsToApply.ModsToString(playmode)}",
             $"{beatmap.Version.EncodeHtml()}",
-            $"{_scoreHelper.GetFormattedNumConsideringNull(beatmap.DifficultyRating, round: false)}",
+            $"{_scoreHelper.GetFormattedNumConsideringNull(difficultyRatingForGivenMods, round: false)}",
             $"{duration}",
             $"{beatmapset.Creator}",
             $"{beatmap.Status}",
             $"{beatmap.Id}",
-            $"{beatmap.CS}",
-            $"{ar}",
-            $"{beatmap.Drain}",
-            $"{beatmap.BPM}",
-            $"{lazerModsToApply.ModsToString(playmode)}",
-            $"{_scoreHelper.GetFormattedNumConsideringNull(difficultyRatingForGivenMods, round: false)}",
+            $"{_scoreHelper.GetFormattedNumConsideringNull(calculatedPp.LazerSS?.CS, round: false, format: "N1")}",
+            $"{_scoreHelper.GetFormattedNumConsideringNull(calculatedPp.LazerSS?.AR, round: false, format: "N1")}",
+            $"{_scoreHelper.GetFormattedNumConsideringNull(calculatedPp.LazerSS?.HP, round: false, format: "N1")}",
+            $"{_scoreHelper.GetFormattedNumConsideringNull(calculatedPp.LazerSS?.SpeedChangeFactor * beatmap.BPM, round: false)}",
             classicSSText,
             classic99Text,
             classic98Text,

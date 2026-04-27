@@ -125,6 +125,7 @@ public interface ILocalization
     public string admin_chatsSummary { get; }
 
     public string score_noLeaderboardNoOnlineScores { get; }
+    public string score_replayAvailable { get; }
 
     public string replayRender_rateLimit { get; }
     public string replayRender_serverDown { get; }
