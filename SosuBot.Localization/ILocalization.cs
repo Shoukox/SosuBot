@@ -77,6 +77,7 @@ public interface ILocalization
     public string render_settings_privateOnly { get; }
     public string render_settings_useScrollSpeed { get; }
     public string render_settings_invalidScrollSpeed { get; }
+    public string render_settings_scrollSpeedUpdated { get; }
 
     public string render_skin_replyToOskFile { get; }
     public string render_skin_maxSize { get; }

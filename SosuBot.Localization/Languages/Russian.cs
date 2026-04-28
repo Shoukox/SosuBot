@@ -152,6 +152,7 @@ public sealed class Russian : ILocalization
     public string render_settings_privateOnly => "Только в личке с ботом.";
     public string render_settings_useScrollSpeed => "Напиши боту /scroll твое_число. Например /scroll 25.0";
     public string render_settings_invalidScrollSpeed => "Это не похоже на число, которое понимает бот. Введи, например, 25.1 или 25";
+    public string render_settings_scrollSpeedUpdated => "Твой scroll speed был изменен на {}";
 
     public string render_skin_replyToOskFile => "Эту команду нужно использовать ответом на файл скина";
     public string render_skin_maxSize => "Скины не больше 150мб!";
