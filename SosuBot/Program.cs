@@ -78,7 +78,11 @@ internal class Program
         builder.Services.AddSingleton(serviceProvider =>
         {
             var logger = serviceProvider.GetRequiredService<ILogger<ReplayRenderService>>();
-            return new ReplayRenderService(new(renderConfig[nameof(RenderConfiguration.RenderUrl)]!), logger);
+            return new ReplayRenderService(
+                new(renderConfig[nameof(RenderConfiguration.RenderUrl)]!),
+                int.Parse(renderConfig[nameof(RenderConfiguration.ClientId)]!),
+                renderConfig[nameof(RenderConfiguration.ClientSecret)]!,
+                logger);
         });
         builder.Services.AddSingleton<OpenAiService>();
         builder.Services.AddSingleton<BeatmapsService>();
