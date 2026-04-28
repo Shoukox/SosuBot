@@ -246,4 +246,5 @@ public sealed class English : ILocalization
     public string render_menu_strainGraph => "Strain Graph";
     public string render_menu_useExperimentalRenderer => "Use Experimental Renderer";
     public string render_menu_resetSettings => "Reset settings";
+    public string render_cancel_success => "The render was successfully cancelled.";
 }

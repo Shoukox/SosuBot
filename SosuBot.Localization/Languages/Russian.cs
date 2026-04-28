@@ -246,4 +246,5 @@ public sealed class Russian : ILocalization
     public string render_menu_strainGraph => "Strain Graph";
     public string render_menu_useExperimentalRenderer => "Use Experimental Renderer";
     public string render_menu_resetSettings => "Сбросить настройки";
+    public string render_cancel_success => "Рендер успешно отменен.";
 }

@@ -1,3 +1,5 @@
+using System.Runtime.ConstrainedExecution;
+
 namespace SosuBot.Localization.Languages;
 
 public sealed class Deutsch : ILocalization
@@ -239,4 +241,5 @@ public sealed class Deutsch : ILocalization
     public string render_menu_strainGraph => "Strain Graph";
     public string render_menu_useExperimentalRenderer => "Use Experimental Renderer";
     public string render_menu_resetSettings => "Einstellungen zurücksetzen";
+    public string render_cancel_success => "Der Render-Vorgang wurde erfolgreich abgebrochen";
 }
