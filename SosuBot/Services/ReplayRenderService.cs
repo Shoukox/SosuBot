@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using SosuBot.Database.Database.Models;
+using System.Collections.Concurrent;
 using System.Net.Http.Json;
 using System.Net.Mime;
 using System.Text.Json.Serialization;
@@ -10,6 +11,7 @@ namespace SosuBot.Services
     public sealed class ReplayRenderService
     {
         private static readonly HttpClient _httpClient = new() { Timeout = TimeSpan.FromMinutes(10) };
+        private static readonly ConcurrentDictionary<int, byte> _cancelledJobs = new();
         private readonly Uri _serverUri;
         private readonly ILogger<ReplayRenderService> _logger;
 
@@ -99,6 +101,30 @@ namespace SosuBot.Services
                 null);
 
             return result;
+        }
+
+        public async Task<bool> CancelRender(int jobId)
+        {
+            var result = await MakeRequest<bool>(
+                HttpMethod.Post,
+                null,
+                $"render/cancel?job-id={jobId}",
+                null);
+
+            if (result)
+                _cancelledJobs[jobId] = 0;
+
+            return result;
+        }
+
+        public bool IsRenderCancelled(int jobId)
+        {
+            return _cancelledJobs.ContainsKey(jobId);
+        }
+
+        public void ClearCancelledRender(int jobId)
+        {
+            _cancelledJobs.TryRemove(jobId, out _);
         }
 
         public async Task<OnlineRenderer[]?> GetOnlineRenderers()
