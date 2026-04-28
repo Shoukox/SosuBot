@@ -171,4 +171,5 @@ public interface ILocalization
     public string render_menu_strainGraph { get; }
     public string render_menu_useExperimentalRenderer { get; }
     public string render_menu_resetSettings { get; }
+    public string render_cancel_success { get; }
 }

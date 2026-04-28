@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection;
 using SosuBot.Database;
 using SosuBot.Extensions;
 using SosuBot.Services;
@@ -26,13 +26,19 @@ public class RenderCancelCallback() : CommandBase<CallbackQuery>
 
         var parameters = Context.Update.Data!.Split(' ');
         var jobId = int.Parse(parameters[1]);
-
-        var chatId = Context.Update.Message!.Chat.Id;
+        var callbackUserId = Context.Update.From!.Id;
 
         var renderJob = await _replayRenderService.GetRenderJobInfo(jobId);
         if (renderJob == null)
         {
             await Context.Update.AnswerAsync(Context.BotClient, language.callback_renderRequestNotFound, showAlert: true);
+            return;
+        }
+
+        var expectedRequestedBy = $"telegram-user:{callbackUserId}";
+        if (!string.Equals(renderJob.RequestedBy, expectedRequestedBy, StringComparison.Ordinal))
+        {
+            await Context.Update.AnswerAsync(Context.BotClient, language.admin_accessDenied, showAlert: true);
             return;
         }
 
@@ -54,5 +60,3 @@ public class RenderCancelCallback() : CommandBase<CallbackQuery>
         }
     }
 }
-
-

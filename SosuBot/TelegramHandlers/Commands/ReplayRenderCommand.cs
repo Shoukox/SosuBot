@@ -140,7 +140,8 @@ public sealed class ReplayRenderCommand : CommandBase<Message>
         }
 
         // Queue replay
-        renderQueueResponse = await _replayRenderService.QueueReplay(replayStream, osuUserInDatabase.RenderSettings);
+        var requestedBy = $"telegram-user:{Context.Update.From!.Id}";
+        renderQueueResponse = await _replayRenderService.QueueReplay(replayStream, osuUserInDatabase.RenderSettings, requestedBy);
         if (renderQueueResponse is null)
         {
             await Context.Update.ReplyAsync(Context.BotClient, language.replayRender_skinNotFound);
@@ -166,6 +167,7 @@ public sealed class ReplayRenderCommand : CommandBase<Message>
             {
                 if (_replayRenderService.IsRenderCancelled(renderQueueResponse!.JobId))
                 {
+                    await message.EditAsync(Context.BotClient, "Cancelled");
                     return;
                 }
 

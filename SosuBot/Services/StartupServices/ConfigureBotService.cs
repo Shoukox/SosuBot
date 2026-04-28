@@ -75,6 +75,7 @@ public class ConfigureBotService(IServiceProvider serviceProvider) : IHostedServ
         RegisterCallback<OsuUserBestCallback>(OsuUserBestCallback.Command);
         RegisterCallback<OsuSongPreviewCallback>(OsuSongPreviewCallback.Command);
         RegisterCallback<RenderStatusCallback>(RenderStatusCallback.Command);
+        RegisterCallback<RenderCancelCallback>(RenderCancelCallback.Command);
         RegisterCallback<RenderSettingsCallback>(RenderSettingsCallback.Command);
         RegisterCallback<SetLanguageCallback>(SetLanguageCallback.Command);
     }
