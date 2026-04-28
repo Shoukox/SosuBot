@@ -1,11 +1,10 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using SosuBot.Database;
 using SosuBot.Extensions;
+using SosuBot.Localization;
 using SosuBot.Services;
 using SosuBot.Services.Synchronization;
 using SosuBot.TelegramHandlers.Abstract;
-using System.Text.RegularExpressions;
-using Telegram.Bot;
 using Telegram.Bot.Types;
 
 namespace SosuBot.TelegramHandlers.Commands;
@@ -13,15 +12,11 @@ namespace SosuBot.TelegramHandlers.Commands;
 public sealed class RenderScrollSpeedCommand : CommandBase<Message>
 {
     public static readonly string[] Commands = ["/scroll"];
-    private ReplayRenderService _replayRenderService = null!;
-    private RateLimiterFactory _rateLimiterFactory = null!;
     private BotContext _database = null!;
 
     public override async Task BeforeExecuteAsync()
     {
         await base.BeforeExecuteAsync();
-        _replayRenderService = Context.ServiceProvider.GetRequiredService<ReplayRenderService>();
-        _rateLimiterFactory = Context.ServiceProvider.GetRequiredService<RateLimiterFactory>();
         _database = Context.ServiceProvider.GetRequiredService<BotContext>();
     }
 
@@ -46,7 +41,7 @@ public sealed class RenderScrollSpeedCommand : CommandBase<Message>
 
         // Fake 500ms wait
         await Task.Delay(500);
-        await waitMessage.EditAsync(Context.BotClient, language.render_skin_uploadSuccess);
+        await waitMessage.EditAsync(Context.BotClient, language.render_settings_scrollSpeedUpdated.Fill([$"{scrollSpeed}"]));
         osuUserInDatabase.RenderSettings.ManiaScrollSpeed = scrollSpeed;
     }
 }
