@@ -145,6 +145,8 @@ public sealed class Deutsch : ILocalization
     public string render_settings_useSetSkin => "Nutze /setskin";
     public string render_settings_serverOfflineUseSetSkin => "Bot-Server ist offline. Nutze /setskin für eigenen Skin";
     public string render_settings_privateOnly => "Nutze diesen Befehl nur im privaten Chat mit dem Bot.";
+    public string render_settings_useScrollSpeed => "Gib dem Bot /scroll deine_Zahl ein. Zum Beispiel /scroll 25.0";
+    public string render_settings_invalidScrollSpeed => "Das sieht nicht wie eine Zahl aus, die der Bot versteht. Versuch zum Beispiel 25.1 oder 25.";
 
     public string render_skin_replyToOskFile => "Nutze diesen Befehl als Antwort auf eine .osk-Datei";
     public string render_skin_maxSize => "Skin-Größe muss unter 150 MB liegen";
@@ -241,5 +243,7 @@ public sealed class Deutsch : ILocalization
     public string render_menu_strainGraph => "Strain Graph";
     public string render_menu_useExperimentalRenderer => "Use Experimental Renderer";
     public string render_menu_resetSettings => "Einstellungen zurücksetzen";
+    public string render_menu_scrollSpeed => "Scroll Speed";
+    public string render_menu_scrollDirection => "Scroll Direction";
     public string render_cancel_success => "Der Render-Vorgang wurde erfolgreich abgebrochen";
 }

@@ -75,6 +75,8 @@ public interface ILocalization
     public string render_settings_useSetSkin { get; }
     public string render_settings_serverOfflineUseSetSkin { get; }
     public string render_settings_privateOnly { get; }
+    public string render_settings_useScrollSpeed { get; }
+    public string render_settings_invalidScrollSpeed { get; }
 
     public string render_skin_replyToOskFile { get; }
     public string render_skin_maxSize { get; }
@@ -171,5 +173,7 @@ public interface ILocalization
     public string render_menu_strainGraph { get; }
     public string render_menu_useExperimentalRenderer { get; }
     public string render_menu_resetSettings { get; }
+    public string render_menu_scrollSpeed { get; }
+    public string render_menu_scrollDirection { get; }
     public string render_cancel_success { get; }
 }
