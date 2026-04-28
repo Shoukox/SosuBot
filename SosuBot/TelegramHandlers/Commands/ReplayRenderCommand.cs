@@ -148,10 +148,11 @@ public sealed class ReplayRenderCommand : CommandBase<Message>
         }
         replayStream.Close();
 
-        var ik = new InlineKeyboardMarkup(new[]
-        {
-            InlineKeyboardButton.WithCallbackData(language.replayRender_statusButton, $"render-status {renderQueueResponse!.JobId}")
-        });
+        var ik = new InlineKeyboardMarkup(
+        [
+            [InlineKeyboardButton.WithCallbackData(language.replayRender_statusButton, $"render-status {renderQueueResponse!.JobId}"), 
+                InlineKeyboardButton.WithCallbackData("Cancel", $"render-cancel {renderQueueResponse!.JobId}")]
+        ]);
         var message = await Context.Update.ReplyAsync(Context.BotClient, LocalizationMessageHelper.ReplayOnlineQueueSearching(language, $"{onlineRenderersCount}", $"{await _replayRenderService.GetWaitqueueLength(renderQueueResponse!.JobId)}"), replyMarkup: ik);
 
         int timeoutSeconds = 600;
@@ -159,54 +160,101 @@ public sealed class ReplayRenderCommand : CommandBase<Message>
         RenderJob? jobInfo = null;
 
         bool rendererGotThisJob = false;
-        while (!Context.CancellationToken.IsCancellationRequested)
+        try
         {
-            var currentOnlineRenderers = await _replayRenderService.GetOnlineRenderers();
-            if (onlineRenderersCount != currentOnlineRenderers!.Length)
+            while (!Context.CancellationToken.IsCancellationRequested)
             {
-                onlineRenderersCount = currentOnlineRenderers!.Length;
-                if (onlineRenderersCount == 0)
+                if (_replayRenderService.IsRenderCancelled(renderQueueResponse!.JobId))
                 {
-                    await message.EditAsync(Context.BotClient, language.replayRender_noRenderersLeft);
                     return;
                 }
-                else
+
+                var currentOnlineRenderers = await _replayRenderService.GetOnlineRenderers();
+                if (currentOnlineRenderers is null || onlineRenderersCount != currentOnlineRenderers!.Length)
                 {
-                    if (!rendererGotThisJob)
+                    onlineRenderersCount = currentOnlineRenderers?.Length ?? 0;
+                    if (onlineRenderersCount == 0)
+                    {
+                        await message.EditAsync(Context.BotClient, language.replayRender_noRenderersLeft);
+                        return;
+                    }
+                    else if (!rendererGotThisJob)
                     {
                         await Task.Delay(3000 + Random.Shared.Next(500, 1500));
-                        await message.EditAsync(Context.BotClient, LocalizationMessageHelper.ReplayOnlineQueueSearchingAgain(language, $"{onlineRenderersCount}", $"{await _replayRenderService.GetWaitqueueLength(jobInfo!.JobId)}"), replyMarkup: ik);
+
+                        if (_replayRenderService.IsRenderCancelled(renderQueueResponse!.JobId))
+                        {
+                            return;
+                        }
+
+                        await message.EditAsync(Context.BotClient, LocalizationMessageHelper.ReplayOnlineQueueSearchingAgain(language, $"{onlineRenderersCount}", $"{await _replayRenderService.GetWaitqueueLength(renderQueueResponse!.JobId)}"), replyMarkup: ik);
                     }
                 }
-            }
-            jobInfo = await _replayRenderService.GetRenderJobInfo(renderQueueResponse!.JobId);
-            if (!rendererGotThisJob && jobInfo!.RenderingBy != -1)
-            {
-                startedWaiting = DateTime.Now;
-                rendererGotThisJob = true;
 
-                var currentRenderer = currentOnlineRenderers.First(m => m.RendererId == jobInfo.RenderingBy);
-                await Task.Delay(1000 + Random.Shared.Next(500, 1500));
-                await message.EditAsync(Context.BotClient, LocalizationMessageHelper.ReplayRendererInProcess(language, $"{onlineRenderersCount}", currentRenderer.RendererName, currentRenderer.UsedGPU), replyMarkup: ik);
+                jobInfo = await _replayRenderService.GetRenderJobInfo(renderQueueResponse!.JobId);
+                if (_replayRenderService.IsRenderCancelled(renderQueueResponse!.JobId))
+                {
+                    return;
+                }
+
+                if (!rendererGotThisJob && jobInfo!.RenderingBy != -1)
+                {
+                    startedWaiting = DateTime.Now;
+                    rendererGotThisJob = true;
+
+                    var currentRenderer = currentOnlineRenderers!.First(m => m.RendererId == jobInfo.RenderingBy);
+                    await Task.Delay(1000 + Random.Shared.Next(500, 1500));
+
+                    if (_replayRenderService.IsRenderCancelled(renderQueueResponse!.JobId))
+                    {
+                        return;
+                    }
+
+                    await message.EditAsync(Context.BotClient, LocalizationMessageHelper.ReplayRendererInProcess(language, $"{onlineRenderersCount}", currentRenderer.RendererName, currentRenderer.UsedGPU), replyMarkup: ik);
+                }
+
+                if (rendererGotThisJob && jobInfo!.RenderingBy == -1)
+                {
+                    rendererGotThisJob = false;
+                    await Task.Delay(1000 + Random.Shared.Next(500, 1500));
+
+                    if (_replayRenderService.IsRenderCancelled(renderQueueResponse!.JobId))
+                    {
+                        return;
+                    }
+
+                    await message.EditAsync(Context.BotClient, LocalizationMessageHelper.ReplaySearchingNewRenderer(language, $"{onlineRenderersCount}"), replyMarkup: ik);
+                }
+
+                if (rendererGotThisJob && DateTime.Now - startedWaiting >= TimeSpan.FromSeconds(timeoutSeconds))
+                {
+                    await Task.Delay(1000 + Random.Shared.Next(500, 1500));
+
+                    if (_replayRenderService.IsRenderCancelled(renderQueueResponse!.JobId))
+                    {
+                        return;
+                    }
+
+                    await message.EditAsync(Context.BotClient, LocalizationMessageHelper.ReplayTimeout(language, $"{timeoutSeconds}"), linkPreviewEnabled: true);
+                    return;
+                }
+
+                if (jobInfo!.IsComplete || jobInfo.IsSuccess)
+                    break;
+
+                await Task.Delay(2000, Context.CancellationToken);
             }
 
-            if (rendererGotThisJob && jobInfo!.RenderingBy == -1)
+            if (_replayRenderService.IsRenderCancelled(renderQueueResponse!.JobId))
             {
-                rendererGotThisJob = false;
-                await Task.Delay(1000 + Random.Shared.Next(500, 1500));
-                await message.EditAsync(Context.BotClient, LocalizationMessageHelper.ReplaySearchingNewRenderer(language, $"{onlineRenderersCount}"), replyMarkup: ik);
-            }
-
-            if (rendererGotThisJob && DateTime.Now - startedWaiting >= TimeSpan.FromSeconds(timeoutSeconds))
-            {
-                await Task.Delay(1000 + Random.Shared.Next(500, 1500));
-                await message.EditAsync(Context.BotClient, LocalizationMessageHelper.ReplayTimeout(language, $"{timeoutSeconds}"), linkPreviewEnabled: true);
                 return;
             }
-
-            if (jobInfo!.IsComplete || jobInfo.IsSuccess) break;
-            await Task.Delay(2000);
         }
+        finally
+        {
+            _replayRenderService.ClearCancelledRender(renderQueueResponse!.JobId);
+        }
+
         if (!jobInfo!.IsSuccess)
         {
             if (jobInfo.FailureReason == "ruleset")
