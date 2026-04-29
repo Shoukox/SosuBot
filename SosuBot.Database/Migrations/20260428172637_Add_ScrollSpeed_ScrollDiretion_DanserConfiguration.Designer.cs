@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using SosuBot.Database;
@@ -13,9 +14,11 @@ using SosuBot.Database.Models;
 namespace SosuBot.Migrations
 {
     [DbContext(typeof(BotContext))]
-    partial class BotContextModelSnapshot : ModelSnapshot
+    [Migration("20260428172637_Add_ScrollSpeed_ScrollDiretion_DanserConfiguration")]
+    partial class Add_ScrollSpeed_ScrollDiretion_DanserConfiguration
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -40,7 +43,7 @@ namespace SosuBot.Migrations
 
                     b.HasIndex("DailyStatisticsId");
 
-                    b.ToTable("DailyStatisticsUserEntity", (string)null);
+                    b.ToTable("DailyStatisticsUserEntity");
                 });
 
             modelBuilder.Entity("SosuBot.Database.Models.DailyStatistics", b =>
@@ -64,7 +67,7 @@ namespace SosuBot.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("DailyStatistics", (string)null);
+                    b.ToTable("DailyStatistics");
                 });
 
             modelBuilder.Entity("SosuBot.Database.Models.OsuUser", b =>
@@ -104,7 +107,7 @@ namespace SosuBot.Migrations
 
                     b.HasKey("TelegramId");
 
-                    b.ToTable("OsuUsers", (string)null);
+                    b.ToTable("OsuUsers");
 
                     b.HasData(
                         new
@@ -138,7 +141,7 @@ namespace SosuBot.Migrations
 
                     b.HasIndex("DailyStatisticsId");
 
-                    b.ToTable("ScoreEntity", (string)null);
+                    b.ToTable("ScoreEntity");
                 });
 
             modelBuilder.Entity("SosuBot.Database.Models.TelegramChat", b =>
@@ -164,7 +167,7 @@ namespace SosuBot.Migrations
 
                     b.HasKey("ChatId");
 
-                    b.ToTable("TelegramChats", (string)null);
+                    b.ToTable("TelegramChats");
                 });
 
             modelBuilder.Entity("SosuBot.Database.Models.UserEntity", b =>
@@ -178,7 +181,7 @@ namespace SosuBot.Migrations
 
                     b.HasKey("UserId");
 
-                    b.ToTable("UserEntity", (string)null);
+                    b.ToTable("UserEntity");
                 });
 
             modelBuilder.Entity("DailyStatisticsUserEntity", b =>

@@ -60,15 +60,15 @@ public class BotContext : DbContext
             .HasColumnType("jsonb");
 
         // Convert render settings
-        var renderSettingsComparer = new ValueComparer<DanserConfiguration>(
+        var renderSettingsComparer = new ValueComparer<RenderSettings>(
             (l, r) => JsonSerializer.Serialize(l) == JsonSerializer.Serialize(r),
             v => JsonSerializer.Serialize(v).GetHashCode(),
-            v => JsonSerializer.Deserialize<DanserConfiguration>(
+            v => JsonSerializer.Deserialize<RenderSettings>(
                     JsonSerializer.Serialize(v))!
         );
-        var renderSettingsConverter = new ValueConverter<DanserConfiguration, string>(
+        var renderSettingsConverter = new ValueConverter<RenderSettings, string>(
             v => JsonSerializer.Serialize(v, jsonConfig),
-            v => JsonSerializer.Deserialize<DanserConfiguration>(v)!);
+            v => JsonSerializer.Deserialize<RenderSettings>(v)!);
         modelBuilder.Entity<OsuUser>()
             .Property(e => e.RenderSettings)
             .HasConversion(renderSettingsConverter, renderSettingsComparer)

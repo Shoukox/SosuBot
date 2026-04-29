@@ -138,6 +138,7 @@ public interface ILocalization
     public string replayRender_usage { get; }
     public string replayRender_skinNotFound { get; }
     public string replayRender_statusButton { get; }
+    public string replayRender_cancelButton { get; }
     public string replayRender_settingsAd { get; }
     public string replayRender_onlineQueueSearching { get; }
     public string replayRender_noRenderersLeft { get; }
@@ -148,7 +149,8 @@ public interface ILocalization
     public string replayRender_onlyOsuStd { get; }
     public string replayRender_errorWithReason { get; }
     public string replayRender_finishedWithLink { get; }
-
+    public string replayRender_cancelled { get; }
+    
     public string text_songPreviewButton { get; }
     public string text_tooManyObjectsNoPp { get; }
     public string text_beatmapLinkSkipLog { get; }

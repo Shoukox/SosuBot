@@ -28,14 +28,14 @@ public sealed class RenderSkinSetCommand : CommandBase<Message>
     public override async Task ExecuteAsync()
     {
         var language = Context.GetLocalization();
-        if (Context.Update.ReplyToMessage == null || Context.Update.ReplyToMessage.Document == null ||
-            Context.Update.ReplyToMessage?.Document.FileName![^4..] != ".osk")
+        if ((Context.Update.ReplyToMessage == null || Context.Update.ReplyToMessage.Document == null ||
+            Context.Update.ReplyToMessage?.Document.FileName?[^4..] != ".osk") && (Context.Update.Document == null || Context.Update.Document.FileName?[^4..] != ".osk"))
         {
             await Context.Update.ReplyAsync(Context.BotClient, language.render_skin_replyToOskFile);
             return;
         }
 
-        if (Context.Update.ReplyToMessage?.Document.FileSize >= 157286400)
+        if (Context.Update.ReplyToMessage?.Document?.FileSize >= 157286400)
         {
             await Context.Update.ReplyAsync(Context.BotClient, language.render_skin_maxSize);
             return;
@@ -60,17 +60,26 @@ public sealed class RenderSkinSetCommand : CommandBase<Message>
 
         var chatInDatabase = await _database.TelegramChats.FindAsync(Context.Update.Chat.Id);
 
-
         // Fake 500ms wait
         await Task.Delay(500);
 
-
         Stream skinStream = new MemoryStream();
-        var tgfile = await Context.BotClient.GetFile(Context.Update.ReplyToMessage!.Document.FileId);
+        TGFile tgfile;
+        string fileName;
+        if (Context.Update.Document != null && Context.Update.Document.FileName![^4..] == ".osk")
+        {
+            tgfile = await Context.BotClient.GetFile(Context.Update.Document!.FileId);
+            fileName = Context.Update.Document!.FileName!;
+        }
+        else
+        {
+            tgfile = await Context.BotClient.GetFile(Context.Update.ReplyToMessage!.Document!.FileId);
+            fileName = Context.Update.ReplyToMessage!.Document!.FileName!;
+        }
+
         await Context.BotClient.DownloadFileConsideringLocalServer(tgfile, skinStream);
         skinStream.Position = 0;
-
-        var fileName = Context.Update.ReplyToMessage!.Document.FileName!;
+        
         fileName = Regex.Replace(fileName, @"\s+", " ");
 
         string asciiSkinName = AnyAscii.Transliteration.Transliterate(fileName);

@@ -158,7 +158,7 @@ namespace SosuBot.Services
             }
         }
 
-        public async Task<RenderQueuedResponse?> QueueReplay(Stream replayFile, DanserConfiguration danserConfiguration, string requestedBy)
+        public async Task<RenderQueuedResponse?> QueueReplay(Stream replayFile, RenderSettings danserConfiguration, string requestedBy)
         {
             var multipart = new MultipartFormDataContent()
             {
@@ -167,7 +167,7 @@ namespace SosuBot.Services
             };
             var headers = new Dictionary<string, string>()
             {
-                ["Requested-By"] = "sosubot!!!"
+                ["Requested-By"] = requestedBy
             };
 
             return await MakeRequest<RenderQueuedResponse>(

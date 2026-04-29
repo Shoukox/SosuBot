@@ -6,7 +6,6 @@ using SosuBot.Extensions;
 using SosuBot.Services;
 using SosuBot.Services.Synchronization;
 using SosuBot.TelegramHandlers.Abstract;
-using System.Net.Sockets;
 using Telegram.Bot;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.ReplyMarkups;
@@ -167,7 +166,7 @@ public sealed class ReplayRenderCommand : CommandBase<Message>
             {
                 if (_replayRenderService.IsRenderCancelled(renderQueueResponse!.JobId))
                 {
-                    await message.EditAsync(Context.BotClient, "Cancelled");
+                    await message.EditAsync(Context.BotClient, language.replayRender_cancelled);
                     return;
                 }
 
@@ -183,22 +182,11 @@ public sealed class ReplayRenderCommand : CommandBase<Message>
                     else if (!rendererGotThisJob)
                     {
                         await Task.Delay(3000 + Random.Shared.Next(500, 1500));
-
-                        if (_replayRenderService.IsRenderCancelled(renderQueueResponse!.JobId))
-                        {
-                            return;
-                        }
-
                         await message.EditAsync(Context.BotClient, LocalizationMessageHelper.ReplayOnlineQueueSearchingAgain(language, $"{onlineRenderersCount}", $"{await _replayRenderService.GetWaitqueueLength(renderQueueResponse!.JobId)}"), replyMarkup: ik);
                     }
                 }
 
                 jobInfo = await _replayRenderService.GetRenderJobInfo(renderQueueResponse!.JobId);
-                if (_replayRenderService.IsRenderCancelled(renderQueueResponse!.JobId))
-                {
-                    return;
-                }
-
                 if (!rendererGotThisJob && jobInfo!.RenderingBy != -1)
                 {
                     startedWaiting = DateTime.Now;
@@ -206,12 +194,6 @@ public sealed class ReplayRenderCommand : CommandBase<Message>
 
                     var currentRenderer = currentOnlineRenderers!.First(m => m.RendererId == jobInfo.RenderingBy);
                     await Task.Delay(1000 + Random.Shared.Next(500, 1500));
-
-                    if (_replayRenderService.IsRenderCancelled(renderQueueResponse!.JobId))
-                    {
-                        return;
-                    }
-
                     await message.EditAsync(Context.BotClient, LocalizationMessageHelper.ReplayRendererInProcess(language, $"{onlineRenderersCount}", currentRenderer.RendererName, currentRenderer.UsedGPU), replyMarkup: ik);
                 }
 
@@ -219,37 +201,20 @@ public sealed class ReplayRenderCommand : CommandBase<Message>
                 {
                     rendererGotThisJob = false;
                     await Task.Delay(1000 + Random.Shared.Next(500, 1500));
-
-                    if (_replayRenderService.IsRenderCancelled(renderQueueResponse!.JobId))
-                    {
-                        return;
-                    }
-
                     await message.EditAsync(Context.BotClient, LocalizationMessageHelper.ReplaySearchingNewRenderer(language, $"{onlineRenderersCount}"), replyMarkup: ik);
                 }
 
                 if (rendererGotThisJob && DateTime.Now - startedWaiting >= TimeSpan.FromSeconds(timeoutSeconds))
                 {
                     await Task.Delay(1000 + Random.Shared.Next(500, 1500));
-
-                    if (_replayRenderService.IsRenderCancelled(renderQueueResponse!.JobId))
-                    {
-                        return;
-                    }
-
                     await message.EditAsync(Context.BotClient, LocalizationMessageHelper.ReplayTimeout(language, $"{timeoutSeconds}"), linkPreviewEnabled: true);
                     return;
                 }
 
-                if (jobInfo!.IsComplete || jobInfo.IsSuccess)
+                if ((jobInfo!.IsComplete || jobInfo.IsSuccess) && jobInfo.FailureReason != "Cancelled")
                     break;
 
                 await Task.Delay(2000, Context.CancellationToken);
-            }
-
-            if (_replayRenderService.IsRenderCancelled(renderQueueResponse!.JobId))
-            {
-                return;
             }
         }
         finally
