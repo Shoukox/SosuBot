@@ -2,9 +2,8 @@
 using SosuBot.Database;
 using SosuBot.Extensions;
 using SosuBot.Localization;
-using SosuBot.Services;
-using SosuBot.Services.Synchronization;
 using SosuBot.TelegramHandlers.Abstract;
+using System.Globalization;
 using Telegram.Bot.Types;
 
 namespace SosuBot.TelegramHandlers.Commands;
@@ -24,7 +23,7 @@ public sealed class RenderScrollSpeedCommand : CommandBase<Message>
     {
         var language = Context.GetLocalization();
         var parameters = Context.Update.Text!.GetCommandParameters()!.ToArray();
-        if (!int.TryParse(parameters[0], out int scrollSpeed))
+        if (!double.TryParse(parameters[0], CultureInfo.InvariantCulture, out double scrollSpeed) || scrollSpeed < 1 || scrollSpeed > 40)
         {
             await Context.Update.ReplyAsync(Context.BotClient, language.render_settings_invalidScrollSpeed);
             return;

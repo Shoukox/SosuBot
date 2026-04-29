@@ -134,7 +134,7 @@ internal class Program
 
         // Database
         var connectionString = builder.Configuration.GetConnectionString("Postgres")!;
-        Log($"Using the following connection string: {connectionString}");
+        Log($"Using the following connection string: {connectionString.Substring(0, connectionString.IndexOf("Password") + 9)}********");
         builder.Services.AddDbContextPool<BotContext>(options =>
             options.UseLazyLoadingProxies()
                 .UseNpgsql(connectionString, (m) => m.MapEnum<Playmode>())

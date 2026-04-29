@@ -148,7 +148,7 @@ public static partial class OsuHelper
         };
     }
 
-    public static InlineKeyboardMarkup GetRenderSettingsMarkup(DanserConfiguration config, ILocalization language)
+    public static InlineKeyboardMarkup GetRenderSettingsMarkup(RenderSettings config, ILocalization language)
     {
         string generalVolume = language.render_menu_generalVolume;
         string musicVolume = language.render_menu_music;
@@ -170,6 +170,8 @@ public static partial class OsuHelper
         string leaderboard = (config.Leaderboard ? Emojis.CheckMarkEmoji : "") + language.render_menu_leaderboard;
         string strainGraph = (config.StrainGraph ? Emojis.CheckMarkEmoji : "") + language.render_menu_strainGraph;
         string useExperimentalRenderer = (config.UseExperimentalRenderer ? Emojis.CheckMarkEmoji : "") + language.render_menu_useExperimentalRenderer;
+        string scrollSpeed = language.render_menu_scrollSpeed + ": " + config.ManiaScrollSpeed;
+        string scrollDirection = language.render_menu_scrollDirection + ": " + (config.ManiaScrollDirectionUp ? "⬆️" : "⬇️");
         string resetSettings = language.render_menu_resetSettings;
         var ikm = new InlineKeyboardMarkup(
             [
@@ -212,6 +214,10 @@ public static partial class OsuHelper
                 ],
                 [
                     InlineKeyboardButton.WithCallbackData(useExperimentalRenderer, $"rs experimental-renderer"),
+                ],
+                [
+                    InlineKeyboardButton.WithCallbackData(scrollSpeed, $"rs scroll-speed"),
+                    InlineKeyboardButton.WithCallbackData(scrollDirection, $"rs scroll-direction"),
                 ],
                 [
                     InlineKeyboardButton.WithCallbackData(resetSettings, $"rs reset-settings"),

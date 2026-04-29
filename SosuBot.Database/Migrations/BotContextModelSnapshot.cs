@@ -19,7 +19,7 @@ namespace SosuBot.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "10.0.1")
+                .HasAnnotation("ProductVersion", "10.0.5")
                 .HasAnnotation("Proxies:ChangeTracking", false)
                 .HasAnnotation("Proxies:CheckEquality", false)
                 .HasAnnotation("Proxies:LazyLoading", true)
@@ -40,7 +40,7 @@ namespace SosuBot.Migrations
 
                     b.HasIndex("DailyStatisticsId");
 
-                    b.ToTable("DailyStatisticsUserEntity");
+                    b.ToTable("DailyStatisticsUserEntity", (string)null);
                 });
 
             modelBuilder.Entity("SosuBot.Database.Models.DailyStatistics", b =>
@@ -64,7 +64,7 @@ namespace SosuBot.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("DailyStatistics");
+                    b.ToTable("DailyStatistics", (string)null);
                 });
 
             modelBuilder.Entity("SosuBot.Database.Models.OsuUser", b =>
@@ -104,7 +104,7 @@ namespace SosuBot.Migrations
 
                     b.HasKey("TelegramId");
 
-                    b.ToTable("OsuUsers");
+                    b.ToTable("OsuUsers", (string)null);
 
                     b.HasData(
                         new
@@ -116,7 +116,7 @@ namespace SosuBot.Migrations
                             OsuMode = Playmode.Osu,
                             OsuUserId = 15319810L,
                             OsuUsername = "Shoukko",
-                            RenderSettings = "{\"VideoWidth\":1280,\"VideoHeight\":720,\"Encoder\":\"h264_nvenc\",\"SkinName\":\"default\",\"GeneralVolume\":0.5,\"MusicVolume\":0.5,\"SampleVolume\":0.5,\"BackgroundDim\":0.95,\"HitErrorMeter\":true,\"AimErrorMeter\":false,\"HPBar\":true,\"ShowPP\":true,\"HitCounter\":true,\"IgnoreFailsInReplays\":false,\"Video\":false,\"Storyboard\":false,\"Mods\":true,\"KeyOverlay\":true,\"Combo\":true,\"Leaderboard\":false,\"StrainGraph\":true,\"MotionBlur\":false,\"UseExperimentalRenderer\":false}",
+                            RenderSettings = "{\"VideoWidth\":1280,\"VideoHeight\":720,\"Encoder\":\"h264_nvenc\",\"SkinName\":\"default\",\"GeneralVolume\":0.5,\"MusicVolume\":0.5,\"SampleVolume\":0.5,\"BackgroundDim\":0.95,\"HitErrorMeter\":true,\"AimErrorMeter\":false,\"HPBar\":true,\"ShowPP\":true,\"HitCounter\":true,\"IgnoreFailsInReplays\":false,\"Video\":false,\"Storyboard\":false,\"Mods\":true,\"KeyOverlay\":true,\"Combo\":true,\"Leaderboard\":false,\"StrainGraph\":true,\"MotionBlur\":false,\"UseExperimentalRenderer\":false,\"ManiaScrollSpeed\":25,\"ManiaScrollDirectionUp\":false}",
                             StdPPValue = 0.0,
                             TaikoPPValue = 0.0
                         });
@@ -138,7 +138,7 @@ namespace SosuBot.Migrations
 
                     b.HasIndex("DailyStatisticsId");
 
-                    b.ToTable("ScoreEntity");
+                    b.ToTable("ScoreEntity", (string)null);
                 });
 
             modelBuilder.Entity("SosuBot.Database.Models.TelegramChat", b =>
@@ -164,7 +164,7 @@ namespace SosuBot.Migrations
 
                     b.HasKey("ChatId");
 
-                    b.ToTable("TelegramChats");
+                    b.ToTable("TelegramChats", (string)null);
                 });
 
             modelBuilder.Entity("SosuBot.Database.Models.UserEntity", b =>
@@ -178,7 +178,7 @@ namespace SosuBot.Migrations
 
                     b.HasKey("UserId");
 
-                    b.ToTable("UserEntity");
+                    b.ToTable("UserEntity", (string)null);
                 });
 
             modelBuilder.Entity("DailyStatisticsUserEntity", b =>

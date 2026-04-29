@@ -21,5 +21,5 @@ public record OsuUser
     public double CatchPPValue { get; set; }
     public double ManiaPPValue { get; set; }
     public bool IsAdmin { get; set; }
-    public DanserConfiguration RenderSettings { get; set; } = new();
+    public RenderSettings RenderSettings { get; set; } = new();
 }

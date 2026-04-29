@@ -151,10 +151,10 @@ public sealed class Russian : ILocalization
     public string render_settings_serverOfflineUseSetSkin => "Сервер бота оффлайн. Для кастомного скина используй /setskin";
     public string render_settings_privateOnly => "Только в личке с ботом.";
     public string render_settings_useScrollSpeed => "Напиши боту /scroll твое_число. Например /scroll 25.0";
-    public string render_settings_invalidScrollSpeed => "Это не похоже на число, которое понимает бот. Введи, например, 25.1 или 25";
+    public string render_settings_invalidScrollSpeed => "Это не похоже на правильный scroll speed. Диапазон: от 1.0 до 40.0";
     public string render_settings_scrollSpeedUpdated => "Твой scroll speed был изменен на {}";
 
-    public string render_skin_replyToOskFile => "Эту команду нужно использовать ответом на файл скина";
+    public string render_skin_replyToOskFile => "Эту команду нужно использовать с файлом скина или в ответ на него";
     public string render_skin_maxSize => "Скины не больше 150мб!";
     public string render_skin_uploadError => "Ошибка загрузки скина. Возможно, скин весит слишком много.\nПожалуйста, сообщи создателю об ошибке.";
     public string render_skin_uploadSuccess => "Скин успешно загружен и будет использован по умолчанию!";
@@ -213,6 +213,7 @@ public sealed class Russian : ILocalization
     public string replayRender_usage => "Используй эту команду на реплей файл или на скор с реплеем.\nЛибо укажи ссылку на скор после команды.";
     public string replayRender_skinNotFound => "Вероятно, твой выбранный скин не был найден на сервере - выбери другой.";
     public string replayRender_statusButton => "Статус";
+    public string replayRender_cancelButton => "Отменить";
     public string replayRender_settingsAd => "Используй /settings для настройки рендерера.";
     public string replayRender_onlineQueueSearching => "Текущее количество онлайн рендереров: {}\n\nОчередь: {}\nИщем свободный рендерер...\n\n" + replayRender_settingsAd;
     public string replayRender_noRenderersLeft => "Сейчас свободных рендереров не осталось, попробуй позже :(";
@@ -223,6 +224,7 @@ public sealed class Russian : ILocalization
     public string replayRender_onlyOsuStd => "Рендер доступен только для osu!std";
     public string replayRender_errorWithReason => "Ошибка рендера.\n{}";
     public string replayRender_finishedWithLink => "Рендер завершен.\n<a href=\"{}\">Ссылка на видео</a>";
+    public string replayRender_cancelled => "Рендер был отменен.";
 
     public string text_songPreviewButton => "Song preview";
     public string text_tooManyObjectsNoPp => "В карте слишком много объектов, пп расчет не будет проведен.";

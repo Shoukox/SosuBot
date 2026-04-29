@@ -1,5 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using SosuBot.Database;
+using SosuBot.Database.Models;
 using SosuBot.Extensions;
 using SosuBot.Services;
 using SosuBot.TelegramHandlers.Abstract;
@@ -51,7 +52,6 @@ public class RenderCancelCallback() : CommandBase<CallbackQuery>
                 return;
             }
 
-            await Context.Update.Message!.EditAsync(Context.BotClient, "Cancelled");
             await Context.Update.AnswerAsync(Context.BotClient, language.render_cancel_success, showAlert: true);
         }
         catch

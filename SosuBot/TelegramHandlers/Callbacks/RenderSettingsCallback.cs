@@ -78,6 +78,8 @@ public class RenderSettingsCallback() : CommandBase<CallbackQuery>
             "leaderboard" => Leaderboard,
             "strain-graph" => StrainGraph,
             "experimental-renderer" => ExperimentalRenderer,
+            "scroll-speed" => ScrollSpeed,
+            "scroll-direction" => ScrollDirection,
             "home" => Home,
             "reset-settings" => ResetSettings,
             // setters
@@ -425,6 +427,17 @@ public class RenderSettingsCallback() : CommandBase<CallbackQuery>
     async Task ExperimentalRenderer()
     {
         _osuUser.RenderSettings.UseExperimentalRenderer = !_osuUser.RenderSettings.UseExperimentalRenderer;
+        await Home();
+    }
+
+    async Task ScrollSpeed()
+    {
+        await Context.Update.AnswerAsync(Context.BotClient, Context.GetLocalization().render_settings_useScrollSpeed, showAlert: true);
+    }
+
+    async Task ScrollDirection()
+    {
+        _osuUser.RenderSettings.ManiaScrollDirectionUp = !_osuUser.RenderSettings.ManiaScrollDirectionUp;
         await Home();
     }
 }

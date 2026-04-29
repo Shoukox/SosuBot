@@ -151,10 +151,10 @@ public sealed class English : ILocalization
     public string render_settings_serverOfflineUseSetSkin => "Bot server is offline. Use /setskin for custom skin";
     public string render_settings_privateOnly => "Use this command only in a private chat with the bot.";
     public string render_settings_useScrollSpeed => "Type /scroll your_number in the bot. For example, /scroll 25.0";
-    public string render_settings_invalidScrollSpeed => "That doesn't look like a number the bot understands. Try something like 25.1 or 25.";
+    public string render_settings_invalidScrollSpeed => "That doesn't seem like the correct scroll speed. Range: 1.0 to 40.0";
     public string render_settings_scrollSpeedUpdated => "Your scroll speed has been changed to {}.";
 
-    public string render_skin_replyToOskFile => "Use this command as a reply to a .osk skin file";
+    public string render_skin_replyToOskFile => "This command should be used with a skin file or in response to one";
     public string render_skin_maxSize => "Skin size must be below 150 MB";
     public string render_skin_uploadError => "Skin upload failed. The skin may be too large.\nPlease report this issue to the bot creator.";
     public string render_skin_uploadSuccess => "Skin uploaded successfully and set as default.";
@@ -213,6 +213,7 @@ public sealed class English : ILocalization
     public string replayRender_usage => "Use this command on a replay file or a score with replay.\nOr provide a score link after the command.";
     public string replayRender_skinNotFound => "Your selected skin was likely not found on the server. Choose another one.";
     public string replayRender_statusButton => "Status";
+    public string replayRender_cancelButton => "Cancel";
     public string replayRender_settingsAd => "Use /settings to configure your renderer.";
     public string replayRender_onlineQueueSearching => "Current online renderers: {}\n\nQueue: {}\nLooking for a free renderer...\n\n" + replayRender_settingsAd;
     public string replayRender_noRenderersLeft => "No free renderers left right now, try again later :(";
@@ -223,6 +224,7 @@ public sealed class English : ILocalization
     public string replayRender_onlyOsuStd => "Rendering is available only for osu!std";
     public string replayRender_errorWithReason => "Render failed.\n{}";
     public string replayRender_finishedWithLink => "Render completed.\n<a href=\"{}\">Video link</a>";
+    public string replayRender_cancelled => "Render was cancelled.";
 
     public string text_songPreviewButton => "Song preview";
     public string text_tooManyObjectsNoPp => "Beatmap has too many objects; pp calculation is skipped.";
