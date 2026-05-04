@@ -151,8 +151,11 @@ public sealed class English : ILocalization
     public string render_settings_serverOfflineUseSetSkin => "Bot server is offline. Use /setskin for custom skin";
     public string render_settings_privateOnly => "Use this command only in a private chat with the bot.";
     public string render_settings_useScrollSpeed => "Type /scroll your_number in the bot. For example, /scroll 25.0";
+    public string render_settings_useCursorChange => "Type /cursor your_number in the bot. For example, /cursor 1.3";
     public string render_settings_invalidScrollSpeed => "That doesn't seem like the correct scroll speed. Range: 1.0 to 40.0";
+    public string render_settings_invalidCursorSize => "That doesn't seem like the correct cursor size. Range: 0.0 to 2.0";
     public string render_settings_scrollSpeedUpdated => "Your scroll speed has been changed to {}.";
+    public string render_settings_cursorSizeUpdated => "Your cursor size has been changed to {}.";
 
     public string render_skin_replyToOskFile => "This command should be used with a skin file or in response to one";
     public string render_skin_maxSize => "Skin size must be below 150 MB";
@@ -215,6 +218,7 @@ public sealed class English : ILocalization
     public string replayRender_statusButton => "Status";
     public string replayRender_cancelButton => "Cancel";
     public string replayRender_settingsAd => "Use /settings to configure your renderer.";
+    public string replayRender_usingExperimentalRenderer => "Since this isn't osu!std, an experimental renderer will be used.";
     public string replayRender_onlineQueueSearching => "Current online renderers: {}\n\nQueue: {}\nLooking for a free renderer...\n\n" + replayRender_settingsAd;
     public string replayRender_noRenderersLeft => "No free renderers left right now, try again later :(";
     public string replayRender_onlineQueueSearchingAgain => "Current online renderers: {}\n\nQueue: {}\nLooking for a free renderer...\n\n" + replayRender_settingsAd;
@@ -253,5 +257,6 @@ public sealed class English : ILocalization
     public string render_menu_resetSettings => "Reset settings";
     public string render_menu_scrollSpeed => "Scroll Speed";
     public string render_menu_scrollDirection => "Scroll Direction";
+    public string render_menu_cursorSize => "Cursor Size";
     public string render_cancel_success => "The render was successfully cancelled.";
 }

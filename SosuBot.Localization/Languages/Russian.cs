@@ -151,8 +151,11 @@ public sealed class Russian : ILocalization
     public string render_settings_serverOfflineUseSetSkin => "Сервер бота оффлайн. Для кастомного скина используй /setskin";
     public string render_settings_privateOnly => "Только в личке с ботом.";
     public string render_settings_useScrollSpeed => "Напиши боту /scroll твое_число. Например /scroll 25.0";
+    public string render_settings_useCursorChange => "Напиши боту /cursor твое_число. Например /cursor 1.3";
     public string render_settings_invalidScrollSpeed => "Это не похоже на правильный scroll speed. Диапазон: от 1.0 до 40.0";
+    public string render_settings_invalidCursorSize => "Это не похоже на правильный размер курсора. Диапазон: от 0.0 до 2.0";
     public string render_settings_scrollSpeedUpdated => "Твой scroll speed был изменен на {}";
+    public string render_settings_cursorSizeUpdated => "Твой размер курсора был изменен на {}";
 
     public string render_skin_replyToOskFile => "Эту команду нужно использовать с файлом скина или в ответ на него";
     public string render_skin_maxSize => "Скины не больше 150мб!";
@@ -215,6 +218,7 @@ public sealed class Russian : ILocalization
     public string replayRender_statusButton => "Статус";
     public string replayRender_cancelButton => "Отменить";
     public string replayRender_settingsAd => "Используй /settings для настройки рендерера.";
+    public string replayRender_usingExperimentalRenderer => "Так как это не osu!std, для рендера будет использоваться экспериментальный рендерер.";
     public string replayRender_onlineQueueSearching => "Текущее количество онлайн рендереров: {}\n\nОчередь: {}\nИщем свободный рендерер...\n\n" + replayRender_settingsAd;
     public string replayRender_noRenderersLeft => "Сейчас свободных рендереров не осталось, попробуй позже :(";
     public string replayRender_onlineQueueSearchingAgain => "Текущее количество онлайн рендереров: {}\n\nОчередь: {}\nИщем свободный рендерер...\n\n" + replayRender_settingsAd;
@@ -253,5 +257,6 @@ public sealed class Russian : ILocalization
     public string render_menu_resetSettings => "Сбросить настройки";
     public string render_menu_scrollSpeed => "Scroll Speed";
     public string render_menu_scrollDirection => "Scroll Direction";
+    public string render_menu_cursorSize => "Cursor Size";
     public string render_cancel_success => "Рендер успешно отменен.";
 }

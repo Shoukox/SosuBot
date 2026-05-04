@@ -172,6 +172,7 @@ public static partial class OsuHelper
         string useExperimentalRenderer = (config.UseExperimentalRenderer ? Emojis.CheckMarkEmoji : "") + language.render_menu_useExperimentalRenderer;
         string scrollSpeed = language.render_menu_scrollSpeed + ": " + config.ManiaScrollSpeed;
         string scrollDirection = language.render_menu_scrollDirection + ": " + (config.ManiaScrollDirectionUp ? "⬆️" : "⬇️");
+        string cursorSize = language.render_menu_cursorSize + ": " + config.CursorSize;
         string resetSettings = language.render_menu_resetSettings;
         var ikm = new InlineKeyboardMarkup(
             [
@@ -209,6 +210,7 @@ public static partial class OsuHelper
                     InlineKeyboardButton.WithCallbackData(combo, $"rs combo"),
                 ],
                 [
+                    InlineKeyboardButton.WithCallbackData(cursorSize, $"rs cursor-size"),
                     InlineKeyboardButton.WithCallbackData(leaderboard, $"rs leaderboard"),
                     InlineKeyboardButton.WithCallbackData(strainGraph, $"rs strain-graph"),
                 ],

@@ -58,7 +58,7 @@ public static class TelegramUpdateExtensions
 
     public static bool IsForwardedFrom(this Message message, long userId)
     {
-        return message.From?.Id == userId;
+        return message.ForwardFrom?.Id == userId;
     }
 
     public static IEnumerable<string> GetAllLinks(this Message message)
@@ -86,7 +86,7 @@ public static class TelegramUpdateExtensions
             {
                 filePath = Path.Combine(AppContext.BaseDirectory, "replay.osr");
             }
-
+            
             Console.WriteLine();
             Console.WriteLine(tgfile.FilePath);
             using var fs = new FileStream(tgfile.FilePath!, FileMode.Open, FileAccess.Read);

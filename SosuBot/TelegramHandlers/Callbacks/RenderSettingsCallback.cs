@@ -80,6 +80,7 @@ public class RenderSettingsCallback() : CommandBase<CallbackQuery>
             "experimental-renderer" => ExperimentalRenderer,
             "scroll-speed" => ScrollSpeed,
             "scroll-direction" => ScrollDirection,
+            "cursor-size" => CursorSize,
             "home" => Home,
             "reset-settings" => ResetSettings,
             // setters
@@ -435,6 +436,10 @@ public class RenderSettingsCallback() : CommandBase<CallbackQuery>
         await Context.Update.AnswerAsync(Context.BotClient, Context.GetLocalization().render_settings_useScrollSpeed, showAlert: true);
     }
 
+    async Task CursorSize()
+    {
+        await Context.Update.AnswerAsync(Context.BotClient, Context.GetLocalization().render_settings_useCursorChange, showAlert: true);
+    }
     async Task ScrollDirection()
     {
         _osuUser.RenderSettings.ManiaScrollDirectionUp = !_osuUser.RenderSettings.ManiaScrollDirectionUp;

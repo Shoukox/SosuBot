@@ -18,7 +18,7 @@
       - /var/telegram-data:/var/telegram-data:rw
       - ./cache:/app/cache:rw
       - ./logs:/app/logs:rw
-      - ./SosuBot/appsettings.Development.Test.json:/app/appsettings.json:ro
+      - ./SosuBot/appsettings.json:/app/appsettings.json:ro
     depends_on:
       db-service:
         condition: service_healthy
@@ -80,5 +80,5 @@ secrets:
 networks:
   app-network:
     driver: bridge
-    # enable_ipv4: true
-    # enable_ipv6: true
+    enable_ipv4: false
+    enable_ipv6: true

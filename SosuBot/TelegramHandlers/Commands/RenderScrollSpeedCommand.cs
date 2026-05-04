@@ -44,6 +44,3 @@ public sealed class RenderScrollSpeedCommand : CommandBase<Message>
         osuUserInDatabase.RenderSettings.ManiaScrollSpeed = scrollSpeed;
     }
 }
-
-
-
