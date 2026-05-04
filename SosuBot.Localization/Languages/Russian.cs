@@ -153,7 +153,7 @@ public sealed class Russian : ILocalization
     public string render_settings_useScrollSpeed => "Напиши боту /scroll твое_число. Например /scroll 25.0";
     public string render_settings_useCursorChange => "Напиши боту /cursor твое_число. Например /cursor 1.3";
     public string render_settings_invalidScrollSpeed => "Это не похоже на правильный scroll speed. Диапазон: от 1.0 до 40.0";
-    public string render_settings_invalidCursorSize => "Это не похоже на правильный размер курсора. Диапазон: от 0.0 до 2.0";
+    public string render_settings_invalidCursorSize => "Это не похоже на правильный размер курсора. Диапазон: от 0.1 до 2.0";
     public string render_settings_scrollSpeedUpdated => "Твой scroll speed был изменен на {}";
     public string render_settings_cursorSizeUpdated => "Твой размер курсора был изменен на {}";
 
