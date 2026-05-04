@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Primitives;
 using OsuApi.BanchoV2;
 using SosuBot.Database;
@@ -21,6 +22,7 @@ public sealed class ReplayRenderCommand : CommandBase<Message>
     private ReplayRenderService _replayRenderService = null!;
     private RateLimiterFactory _rateLimiterFactory = null!;
     private BotContext _database = null!;
+    private ILogger<ReplayRenderCommand> _logger = null!;
 
     public override async Task BeforeExecuteAsync()
     {
@@ -29,6 +31,7 @@ public sealed class ReplayRenderCommand : CommandBase<Message>
         _replayRenderService = Context.ServiceProvider.GetRequiredService<ReplayRenderService>();
         _rateLimiterFactory = Context.ServiceProvider.GetRequiredService<RateLimiterFactory>();
         _database = Context.ServiceProvider.GetRequiredService<BotContext>();
+        _logger = Context.ServiceProvider.GetRequiredService<ILogger<ReplayRenderCommand>>();
     }
 
     public override async Task ExecuteAsync()
@@ -253,7 +256,9 @@ public sealed class ReplayRenderCommand : CommandBase<Message>
             watchUrl = watchUrl[..^4];
         }
 
-        string videoPath = File.Exists(jobInfo.VideoLocalPath) ? jobInfo.VideoLocalPath : $"/videos/{new Uri(jobInfo.VideoUri).Segments.Last()}";
+        _logger.LogInformation("jobInfo.VideoThumbnailUri: {VideoThumbnailUri}", jobInfo.VideoThumbnailUri);
+
+        string videoPath = File.Exists(jobInfo.VideoLocalPath) ? jobInfo.VideoLocalPath : $"./videos/{new Uri(jobInfo.VideoUri).Segments.Last()}";
         using var fs = new FileStream(jobInfo.VideoLocalPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
         InputMediaVideo video = new InputMediaVideo(new InputFileStream(fs))
         {
@@ -262,11 +267,12 @@ public sealed class ReplayRenderCommand : CommandBase<Message>
             SupportsStreaming = true,
             Width = osuUserInDatabase.RenderSettings.VideoWidth,
             Height = osuUserInDatabase.RenderSettings.VideoHeight,
-            Thumbnail = new InputFileUrl(jobInfo.VideoThumbnailUri)
+            Duration = jobInfo.VideoDuration
         };
         if (!string.IsNullOrEmpty(jobInfo.VideoThumbnailUri))
         {
-            video.Thumbnail = new InputFileUrl(jobInfo.VideoThumbnailUri);
+            video.Thumbnail = new InputFileUrl("https://sosubot.shoukko.de/thumbnails/MTA4OV8xMzQyMjMzMDg3NjQ4OTMzNzA.jpg");
+            video.Cover = new InputFileUrl("https://sosubot.shoukko.de/thumbnails/MTA4OV8xMzQyMjMzMDg3NjQ4OTMzNzA.jpg");
         }
 
         try
@@ -279,6 +285,3 @@ public sealed class ReplayRenderCommand : CommandBase<Message>
         }
     }
 }
-
-
-
