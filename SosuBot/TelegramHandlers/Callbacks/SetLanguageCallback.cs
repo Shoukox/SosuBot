@@ -25,7 +25,7 @@ public sealed class SetLanguageCallback : CommandBase<CallbackQuery>
     public override async Task ExecuteAsync()
     {
         var language = Context.GetLocalization();
-        if (await TelegramHelper.IsGroupAdmin(Context.BotClient, Context.Update.Message!.Chat, Context.Update.From.Id))
+        if (!await TelegramHelper.IsGroupAdmin(Context.BotClient, Context.Update.Message!.Chat, Context.Update.From.Id))
         {
             await Context.Update.AnswerAsync(Context.BotClient, language.group_onlyForAdmins, showAlert: true);
             return;

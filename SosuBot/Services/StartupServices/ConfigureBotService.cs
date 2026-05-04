@@ -63,6 +63,7 @@ public class ConfigureBotService(IServiceProvider serviceProvider) : IHostedServ
         RegisterCommand<GetRankingCommand>(GetRankingCommand.Commands);
         RegisterCommand<ReplayRenderCommand>(ReplayRenderCommand.Commands);
         RegisterCommand<RenderSkinSetCommand>(RenderSkinSetCommand.Commands);
+        RegisterCommand<RenderCursorSizeCommand>(RenderCursorSizeCommand.Commands);
         RegisterCommand<RenderScrollSpeedCommand>(RenderScrollSpeedCommand.Commands);
         RegisterCommand<RenderSettingsCommand>(RenderSettingsCommand.Commands);
         RegisterCommand<TrackCommand>(TrackCommand.Commands);

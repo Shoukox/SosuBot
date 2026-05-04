@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Primitives;
 using OsuApi.BanchoV2;
 using SosuBot.Database;
 using SosuBot.Extensions;
@@ -133,8 +134,13 @@ public sealed class ReplayRenderCommand : CommandBase<Message>
         replayStream.Position = 0;
 
         var replayInfo = OsuParsers.Decoders.ReplayDecoder.Decode(copyStream);
+        bool forceUsingExperimentalRenderer = false;
         if (replayInfo.Ruleset != OsuParsers.Enums.Ruleset.Standard)
         {
+            if (!osuUserInDatabase.RenderSettings.UseExperimentalRenderer)
+            {
+                forceUsingExperimentalRenderer = true;
+            }
             osuUserInDatabase.RenderSettings.UseExperimentalRenderer = true;
         }
 
@@ -150,8 +156,8 @@ public sealed class ReplayRenderCommand : CommandBase<Message>
 
         var ik = new InlineKeyboardMarkup(
         [
-            [InlineKeyboardButton.WithCallbackData(language.replayRender_statusButton, $"render-status {renderQueueResponse!.JobId}"), 
-                InlineKeyboardButton.WithCallbackData("Cancel", $"render-cancel {renderQueueResponse!.JobId}")]
+            [InlineKeyboardButton.WithCallbackData(language.replayRender_statusButton, $"render-status {renderQueueResponse!.JobId}"),
+                InlineKeyboardButton.WithCallbackData(language.replayRender_cancelButton, $"render-cancel {renderQueueResponse!.JobId}")]
         ]);
         var message = await Context.Update.ReplyAsync(Context.BotClient, LocalizationMessageHelper.ReplayOnlineQueueSearching(language, $"{onlineRenderersCount}", $"{await _replayRenderService.GetWaitqueueLength(renderQueueResponse!.JobId)}"), replyMarkup: ik);
 
@@ -162,6 +168,11 @@ public sealed class ReplayRenderCommand : CommandBase<Message>
         bool rendererGotThisJob = false;
         try
         {
+            string helpText = string.Empty;
+            if (forceUsingExperimentalRenderer)
+            {
+                helpText += "\n\n" + language.replayRender_usingExperimentalRenderer;
+            }
             while (!Context.CancellationToken.IsCancellationRequested)
             {
                 if (_replayRenderService.IsRenderCancelled(renderQueueResponse!.JobId))
@@ -194,20 +205,20 @@ public sealed class ReplayRenderCommand : CommandBase<Message>
 
                     var currentRenderer = currentOnlineRenderers!.First(m => m.RendererId == jobInfo.RenderingBy);
                     await Task.Delay(1000 + Random.Shared.Next(500, 1500));
-                    await message.EditAsync(Context.BotClient, LocalizationMessageHelper.ReplayRendererInProcess(language, $"{onlineRenderersCount}", currentRenderer.RendererName, currentRenderer.UsedGPU), replyMarkup: ik);
+                    await message.EditAsync(Context.BotClient, LocalizationMessageHelper.ReplayRendererInProcess(language, $"{onlineRenderersCount}", currentRenderer.RendererName, currentRenderer.UsedGPU) + helpText, replyMarkup: ik);
                 }
 
                 if (rendererGotThisJob && jobInfo!.RenderingBy == -1)
                 {
                     rendererGotThisJob = false;
                     await Task.Delay(1000 + Random.Shared.Next(500, 1500));
-                    await message.EditAsync(Context.BotClient, LocalizationMessageHelper.ReplaySearchingNewRenderer(language, $"{onlineRenderersCount}"), replyMarkup: ik);
+                    await message.EditAsync(Context.BotClient, LocalizationMessageHelper.ReplaySearchingNewRenderer(language, $"{onlineRenderersCount}") + helpText, replyMarkup: ik);
                 }
 
                 if (rendererGotThisJob && DateTime.Now - startedWaiting >= TimeSpan.FromSeconds(timeoutSeconds))
                 {
                     await Task.Delay(1000 + Random.Shared.Next(500, 1500));
-                    await message.EditAsync(Context.BotClient, LocalizationMessageHelper.ReplayTimeout(language, $"{timeoutSeconds}"), linkPreviewEnabled: true);
+                    await message.EditAsync(Context.BotClient, LocalizationMessageHelper.ReplayTimeout(language, $"{timeoutSeconds}") + helpText, linkPreviewEnabled: true);
                     return;
                 }
 
@@ -242,7 +253,30 @@ public sealed class ReplayRenderCommand : CommandBase<Message>
             watchUrl = watchUrl[..^4];
         }
 
-        await message.EditAsync(Context.BotClient, LocalizationMessageHelper.ReplayFinishedWithLink(language, $"{watchUrl}"), linkPreviewEnabled: true);
+        string videoPath = File.Exists(jobInfo.VideoLocalPath) ? jobInfo.VideoLocalPath : $"/videos/{new Uri(jobInfo.VideoUri).Segments.Last()}";
+        using var fs = new FileStream(jobInfo.VideoLocalPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+        InputMediaVideo video = new InputMediaVideo(new InputFileStream(fs))
+        {
+            Caption = LocalizationMessageHelper.ReplayFinishedWithLink(language, $"{watchUrl}"),
+            ParseMode = Telegram.Bot.Types.Enums.ParseMode.Html,
+            SupportsStreaming = true,
+            Width = osuUserInDatabase.RenderSettings.VideoWidth,
+            Height = osuUserInDatabase.RenderSettings.VideoHeight,
+            Thumbnail = new InputFileUrl(jobInfo.VideoThumbnailUri)
+        };
+        if (!string.IsNullOrEmpty(jobInfo.VideoThumbnailUri))
+        {
+            video.Thumbnail = new InputFileUrl(jobInfo.VideoThumbnailUri);
+        }
+
+        try
+        {
+            await Context.BotClient.EditMessageMedia(message.Chat.Id, message.Id, video);
+        }
+        catch
+        {
+            await message.EditAsync(Context.BotClient, LocalizationMessageHelper.ReplayFinishedWithLink(language, $"{watchUrl}"), linkPreviewEnabled: true);
+        }
     }
 }
 

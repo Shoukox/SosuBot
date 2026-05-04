@@ -286,6 +286,8 @@ namespace SosuBot.Services
         {
             public int JobId { get; set; }
             public string VideoUri { get; set; } = string.Empty;
+            public string VideoLocalPath { get; set; } = string.Empty;
+            public string VideoThumbnailUri { get; set; } = string.Empty;
             public string ReplayPath { get; set; } = string.Empty;
             public DateTime RequestedAt { get; set; }
             public string RequestedBy { get; set; } = null!;

@@ -8,9 +8,9 @@ using Telegram.Bot.Types;
 
 namespace SosuBot.TelegramHandlers.Commands;
 
-public sealed class RenderScrollSpeedCommand : CommandBase<Message>
+public sealed class RenderCursorSizeCommand : CommandBase<Message>
 {
-    public static readonly string[] Commands = ["/scroll"];
+    public static readonly string[] Commands = ["/cursor"];
     private BotContext _database = null!;
 
     public override async Task BeforeExecuteAsync()
@@ -23,9 +23,9 @@ public sealed class RenderScrollSpeedCommand : CommandBase<Message>
     {
         var language = Context.GetLocalization();
         var parameters = Context.Update.Text!.GetCommandParameters()!.ToArray();
-        if (!double.TryParse(parameters[0], CultureInfo.InvariantCulture, out double scrollSpeed) || scrollSpeed < 1 || scrollSpeed > 40)
+        if (!double.TryParse(parameters[0], CultureInfo.InvariantCulture, out double cursorSize) || cursorSize < 0 || cursorSize > 2)
         {
-            await Context.Update.ReplyAsync(Context.BotClient, language.render_settings_invalidScrollSpeed);
+            await Context.Update.ReplyAsync(Context.BotClient, language.render_settings_invalidCursorSize);
             return;
         }
 
@@ -40,7 +40,7 @@ public sealed class RenderScrollSpeedCommand : CommandBase<Message>
 
         // Fake 500ms wait
         await Task.Delay(500);
-        await waitMessage.EditAsync(Context.BotClient, language.render_settings_scrollSpeedUpdated.Fill([$"{scrollSpeed}"]));
-        osuUserInDatabase.RenderSettings.ManiaScrollSpeed = scrollSpeed;
+        await waitMessage.EditAsync(Context.BotClient, language.render_settings_cursorSizeUpdated.Fill([$"{cursorSize}"]));
+        osuUserInDatabase.RenderSettings.CursorSize = cursorSize;
     }
 }

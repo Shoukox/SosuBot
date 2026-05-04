@@ -146,8 +146,11 @@ public sealed class Deutsch : ILocalization
     public string render_settings_serverOfflineUseSetSkin => "Bot-Server ist offline. Nutze /setskin für eigenen Skin";
     public string render_settings_privateOnly => "Nutze diesen Befehl nur im privaten Chat mit dem Bot.";
     public string render_settings_useScrollSpeed => "Gib dem Bot /scroll deine_Zahl ein. Zum Beispiel /scroll 25.0";
+    public string render_settings_useCursorChange => "Gib dem Bot /cursor deine_Zahl ein. Zum Beispiel /cursor 1.3";
     public string render_settings_invalidScrollSpeed => "Das scheint nicht die richtige Bildlaufgeschwindigkeit zu sein. Bereich: 1.0 bis 40.0";
+    public string render_settings_invalidCursorSize => "Das scheint nicht die richtige Größe des Cursors zu sein. Bereich: 0.0 bis 2.0";
     public string render_settings_scrollSpeedUpdated => "Deine Scroll-Geschwindigkeit wurde auf {} geändert.";
+    public string render_settings_cursorSizeUpdated => "Deine Cursor-Größe wurde auf {} geändert.";
 
     public string render_skin_replyToOskFile => "Dieser Befehl muss zusammen mit einer Skin-Datei oder als Reaktion darauf verwendet werden";
     public string render_skin_maxSize => "Skin-Größe muss unter 150 MB liegen";
@@ -210,6 +213,7 @@ public sealed class Deutsch : ILocalization
     public string replayRender_statusButton => "Status";
     public string replayRender_cancelButton => "Abbrechen";
     public string replayRender_settingsAd => "Benutze /settings, um deinen Renderer einzustellen.";
+    public string replayRender_usingExperimentalRenderer => "Da es sich nicht um osu!std handelt, wird fürs Rendern ein experimenteller Renderer verwendet.";
     public string replayRender_onlineQueueSearching => "Aktuell online Renderer: {}\n\nWarteschlange: {}\nSuche freien Renderer...\n\n" + replayRender_settingsAd;
     public string replayRender_noRenderersLeft => "Gerade sind keine freien Renderer mehr da, versuch es später :(";
     public string replayRender_onlineQueueSearchingAgain => "Aktuell online Renderer: {}\n\nWarteschlange: {}\nSuche freien Renderer...\n\n" + replayRender_settingsAd;
@@ -248,5 +252,6 @@ public sealed class Deutsch : ILocalization
     public string render_menu_resetSettings => "Einstellungen zurücksetzen";
     public string render_menu_scrollSpeed => "Scroll Speed";
     public string render_menu_scrollDirection => "Scroll Direction";
+    public string render_menu_cursorSize => "Cursor Size";
     public string render_cancel_success => "Der Render-Vorgang wurde erfolgreich abgebrochen";
 }
