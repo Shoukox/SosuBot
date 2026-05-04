@@ -15,6 +15,7 @@
     expose:
       - "5000"
     volumes:
+      - /videos:/app/videos:rw
       - /var/telegram-data:/var/telegram-data:rw
       - ./cache:/app/cache:rw
       - ./logs:/app/logs:rw
