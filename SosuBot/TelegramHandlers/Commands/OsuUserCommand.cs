@@ -124,7 +124,7 @@ public class OsuUserCommand(bool includeIdInSearch = false) : CommandBase<Messag
         UserHelper.UpdateOsuUsers(_database, user, playmode);
 
         int achievementsCount = user.UserAchievements?.Length ?? 0;
-        var achievementsTotalText = $"{OsuConstants.TotalAchievementsCount} ({(double)achievementsCount / OsuConstants.TotalAchievementsCount * 100:00.00}%)";
+        var achievementsTotalText = $"{OsuConstants.TotalAchievementsCount} ({(double)achievementsCount / OsuConstants.TotalAchievementsCount * 100:#.00}%)";
 
         var textToSend = LocalizationMessageHelper.UserProfileText(
             language,
