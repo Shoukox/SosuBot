@@ -26,8 +26,8 @@ public sealed class RenderCursorSizeCommand : CommandBase<Message>
         if (parameters.Length == 0)
         {
             await Context.Update.ReplyAsync(Context.BotClient,
-                $"{Commands[0]} <number>\n" +
-                $"{Commands[0]} 1" +
+                $"{Commands[0]} <i>number</i>\n" +
+                $"{Commands[0]} 1\n" +
                 $"{Commands[0]} 1.5");
             return;
         }

@@ -26,8 +26,8 @@ public sealed class RenderScrollSpeedCommand : CommandBase<Message>
         if(parameters.Length == 0)
         {
             await Context.Update.ReplyAsync(Context.BotClient,
-                $"{Commands[0]} <number>\n" +
-                $"{Commands[0]} 25" +
+                $"{Commands[0]} <i>number</i>\n" +
+                $"{Commands[0]} 25\n" +
                 $"{Commands[0]} 25.5");
             return;
         }
