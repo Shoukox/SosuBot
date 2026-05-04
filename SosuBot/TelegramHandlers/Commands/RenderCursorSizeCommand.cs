@@ -23,7 +23,15 @@ public sealed class RenderCursorSizeCommand : CommandBase<Message>
     {
         var language = Context.GetLocalization();
         var parameters = Context.Update.Text!.GetCommandParameters()!.ToArray();
-        if (!double.TryParse(parameters[0], CultureInfo.InvariantCulture, out double cursorSize) || cursorSize < 0 || cursorSize > 2)
+        if (parameters.Length == 0)
+        {
+            await Context.Update.ReplyAsync(Context.BotClient,
+                $"{Commands[0]} <number>\n" +
+                $"{Commands[0]} 1" +
+                $"{Commands[0]} 1.5");
+            return;
+        }
+        if (!double.TryParse(parameters[0], CultureInfo.InvariantCulture, out double cursorSize) || !double.IsFinite(cursorSize) || cursorSize < 0.1 || cursorSize > 2)
         {
             await Context.Update.ReplyAsync(Context.BotClient, language.render_settings_invalidCursorSize);
             return;

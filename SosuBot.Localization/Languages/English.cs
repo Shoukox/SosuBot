@@ -153,7 +153,7 @@ public sealed class English : ILocalization
     public string render_settings_useScrollSpeed => "Type /scroll your_number in the bot. For example, /scroll 25.0";
     public string render_settings_useCursorChange => "Type /cursor your_number in the bot. For example, /cursor 1.3";
     public string render_settings_invalidScrollSpeed => "That doesn't seem like the correct scroll speed. Range: 1.0 to 40.0";
-    public string render_settings_invalidCursorSize => "That doesn't seem like the correct cursor size. Range: 0.0 to 2.0";
+    public string render_settings_invalidCursorSize => "That doesn't seem like the correct cursor size. Range: 0.1 to 2.0";
     public string render_settings_scrollSpeedUpdated => "Your scroll speed has been changed to {}.";
     public string render_settings_cursorSizeUpdated => "Your cursor size has been changed to {}.";
 

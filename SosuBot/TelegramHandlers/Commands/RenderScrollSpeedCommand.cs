@@ -23,7 +23,15 @@ public sealed class RenderScrollSpeedCommand : CommandBase<Message>
     {
         var language = Context.GetLocalization();
         var parameters = Context.Update.Text!.GetCommandParameters()!.ToArray();
-        if (!double.TryParse(parameters[0], CultureInfo.InvariantCulture, out double scrollSpeed) || scrollSpeed < 1 || scrollSpeed > 40)
+        if(parameters.Length == 0)
+        {
+            await Context.Update.ReplyAsync(Context.BotClient,
+                $"{Commands[0]} <number>\n" +
+                $"{Commands[0]} 25" +
+                $"{Commands[0]} 25.5");
+            return;
+        }
+        if (!double.TryParse(parameters[0], CultureInfo.InvariantCulture, out double scrollSpeed) || !double.IsFinite(scrollSpeed) || scrollSpeed < 1 || scrollSpeed > 40)
         {
             await Context.Update.ReplyAsync(Context.BotClient, language.render_settings_invalidScrollSpeed);
             return;

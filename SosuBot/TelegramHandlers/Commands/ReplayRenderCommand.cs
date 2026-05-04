@@ -271,8 +271,8 @@ public sealed class ReplayRenderCommand : CommandBase<Message>
         };
         if (!string.IsNullOrEmpty(jobInfo.VideoThumbnailUri))
         {
-            video.Thumbnail = new InputFileUrl("https://sosubot.shoukko.de/thumbnails/MTA4OV8xMzQyMjMzMDg3NjQ4OTMzNzA.jpg");
-            video.Cover = new InputFileUrl("https://sosubot.shoukko.de/thumbnails/MTA4OV8xMzQyMjMzMDg3NjQ4OTMzNzA.jpg");
+            video.Thumbnail = new InputFileUrl(jobInfo.VideoThumbnailUri.Replace("http://", "https://"));
+            video.Cover = new InputFileUrl(jobInfo.VideoThumbnailUri.Replace("http://", "https://"));
         }
 
         try
