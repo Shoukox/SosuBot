@@ -260,9 +260,11 @@ public sealed class ReplayRenderCommand : CommandBase<Message>
 
         string videoPath = File.Exists(jobInfo.VideoLocalPath) ? jobInfo.VideoLocalPath : $"./videos/{new Uri(jobInfo.VideoUri).Segments.Last()}";
         using var fs = new FileStream(jobInfo.VideoLocalPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+
+        string textOrCaption = LocalizationMessageHelper.ReplayFinishedWithLink(language, $"{watchUrl}");
         InputMediaVideo video = new InputMediaVideo(new InputFileStream(fs))
         {
-            Caption = LocalizationMessageHelper.ReplayFinishedWithLink(language, $"{watchUrl}"),
+            Caption = textOrCaption,
             ParseMode = Telegram.Bot.Types.Enums.ParseMode.Html,
             SupportsStreaming = true,
             Width = osuUserInDatabase.RenderSettings.VideoWidth,
@@ -279,9 +281,10 @@ public sealed class ReplayRenderCommand : CommandBase<Message>
         {
             await Context.BotClient.EditMessageMedia(message.Chat.Id, message.Id, video);
         }
-        catch
+        catch (Exception ex)
         {
-            await message.EditAsync(Context.BotClient, LocalizationMessageHelper.ReplayFinishedWithLink(language, $"{watchUrl}"), linkPreviewEnabled: true);
+            _logger.LogError(ex, "Error while sending video, sending link instead");
+            await message.EditAsync(Context.BotClient, textOrCaption, linkPreviewEnabled: true);
         }
     }
 }
