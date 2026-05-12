@@ -10,7 +10,7 @@ public static class ServiceCollectionExtensions
         return services.AddHttpClient(name)
             .ConfigureHttpClient(client =>
             {
-                client.Timeout = TimeSpan.FromSeconds(60); //60 is default
+                client.Timeout = TimeSpan.FromSeconds(120); //120 is default
                 client.DefaultRequestHeaders.ConnectionClose = true;
             })
             .AddHttpMessageHandler(sp => new RateLimitingHandler(sp.GetRequiredService<ILogger<RateLimitingHandler>>(), executionsPerMinute));
