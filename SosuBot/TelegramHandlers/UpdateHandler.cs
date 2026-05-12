@@ -59,6 +59,13 @@ public class UpdateHandler(
     {
         logger.LogError(exception, "HandleError (source: {Source})", source);
 
+        // Telegram Bot API error 400: Bad Request: message is not modified: specified new message content and reply markup are exactly the same as a current content and reply markup of the message
+        if (exception is Telegram.Bot.Exceptions.ApiRequestException apiEx && apiEx.Message.Contains("message is not modified"))
+        {
+            logger.LogInformation(exception, "Ignoring the previous error (source: {Source})", source);
+            return;
+        }
+
         // if a text-command message
         if (update.Message is { Text: string } msg && msg.Text.IsCommand())
         {
