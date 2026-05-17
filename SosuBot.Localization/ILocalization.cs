@@ -154,7 +154,8 @@ public interface ILocalization
     public string replayRender_errorWithReason { get; }
     public string replayRender_finishedWithLink { get; }
     public string replayRender_cancelled { get; }
-    
+    public string replayRender_beatmapLengthTooLong { get; }
+
     public string text_songPreviewButton { get; }
     public string text_tooManyObjectsNoPp { get; }
     public string text_beatmapLinkSkipLog { get; }

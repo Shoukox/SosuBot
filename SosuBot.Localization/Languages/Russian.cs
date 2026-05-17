@@ -229,6 +229,7 @@ public sealed class Russian : ILocalization
     public string replayRender_errorWithReason => "Ошибка рендера.\n{}";
     public string replayRender_finishedWithLink => "Рендер завершен.\n<a href=\"{}\">Ссылка на видео</a>";
     public string replayRender_cancelled => "Рендер был отменен.";
+    public string replayRender_beatmapLengthTooLong => "Карта в этом реплее длится слишком долго. Попробуй карту, которая длится менее 30 минут. Для экспериментального рендерера лимит установлен на 20 минутах.";
 
     public string text_songPreviewButton => "Song preview";
     public string text_tooManyObjectsNoPp => "В карте слишком много объектов, пп расчет не будет проведен.";

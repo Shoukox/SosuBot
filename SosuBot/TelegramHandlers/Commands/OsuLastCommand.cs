@@ -344,6 +344,14 @@ public class OsuLastCommand(bool onlyPassed = false, bool sendCover = false) : C
                 $"{_scoreHelper.GetFormattedNumConsideringNull(completion, format: "N1")}"
             );
 
+            if (lastScoresContainsOnlyOneScore)
+            {
+                if (score.HasReplay == true)
+                {
+                    textToSend += $"\n\n{language.score_replayAvailable}";
+                }
+            }
+
             if (scoreModsContainsModIdk)
                 textToSend += $"\n{language.last_unknownModsNoPp}";
 

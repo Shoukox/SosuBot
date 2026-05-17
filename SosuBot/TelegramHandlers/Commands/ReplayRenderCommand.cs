@@ -130,7 +130,7 @@ public sealed class ReplayRenderCommand : CommandBase<Message>
             return;
         }
 
-        // Check replay ruleset
+        // Check replay ruleset and beatmap length
         using var copyStream = new MemoryStream();
         replayStream.CopyTo(copyStream);
         copyStream.Position = 0;
@@ -145,6 +145,14 @@ public sealed class ReplayRenderCommand : CommandBase<Message>
                 forceUsingExperimentalRenderer = true;
             }
             osuUserInDatabase.RenderSettings.UseExperimentalRenderer = true;
+        }
+
+        int beatmapLengthInSeconds = replayInfo.ReplayFrames.Max(m => m.Time) / 1000;
+        if (beatmapLengthInSeconds > 20 * 60 && osuUserInDatabase.RenderSettings.UseExperimentalRenderer
+            || beatmapLengthInSeconds > 30 * 60 && !osuUserInDatabase.RenderSettings.UseExperimentalRenderer)
+        {
+            await Context.Update.ReplyAsync(Context.BotClient, language.replayRender_beatmapLengthTooLong);
+            return;
         }
 
         // Queue replay
