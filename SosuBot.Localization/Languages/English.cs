@@ -229,6 +229,7 @@ public sealed class English : ILocalization
     public string replayRender_errorWithReason => "Render failed.\n{}";
     public string replayRender_finishedWithLink => "Render completed.\n<a href=\"{}\">Video link</a>";
     public string replayRender_cancelled => "Render was cancelled.";
+    public string replayRender_beatmapLengthTooLong => "The map in this replay is too long. Try a map that lasts less than 30 minutes. The limit for the experimental renderer is 20 minutes.";
 
     public string text_songPreviewButton => "Song preview";
     public string text_tooManyObjectsNoPp => "Beatmap has too many objects; pp calculation is skipped.";

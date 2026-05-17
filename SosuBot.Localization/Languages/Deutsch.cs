@@ -224,7 +224,8 @@ public sealed class Deutsch : ILocalization
     public string replayRender_errorWithReason => "Render fehlgeschlagen.\n{}";
     public string replayRender_finishedWithLink => "Render abgeschlossen.\n<a href=\"{}\">Videolink</a>";
     public string replayRender_cancelled => "Render abgebrochen.";
-
+    public string replayRender_beatmapLengthTooLong => "Die Karte in diesem Replay dauert zu lange. Probiere eine Karte aus, die weniger als 30 Minuten dauert. Für den experimentellen Renderer ist die Obergrenze auf 20 Minuten festgelegt.";
+    
     public string text_songPreviewButton => "Song preview";
     public string text_tooManyObjectsNoPp => "Beatmap hat zu viele Objekte; pp-Berechnung wird übersprungen.";
     public string text_beatmapLinkSkipLog => "Beatmap-Link endet auf '-', pp-Berechnung wird übersprungen. Link: {Link}";

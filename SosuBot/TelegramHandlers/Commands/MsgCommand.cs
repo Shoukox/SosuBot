@@ -1,6 +1,9 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using Markdig.Renderers.Html;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using NUnit.Framework;
 using SosuBot.Database;
+using SosuBot.Database.Models;
 using SosuBot.Extensions;
 using SosuBot.TelegramHandlers.Abstract;
 using Telegram.Bot;
@@ -30,11 +33,11 @@ public sealed class MsgCommand : CommandBase<Message>
         if (osuUserInDatabase is null || !osuUserInDatabase.IsAdmin) return;
 
         var parameters = Context.Update.Text!.GetCommandParameters()!;
-        if (parameters[0] == "groups")
+        if (parameters[0] == "chats")
         {
             var msg = string.Join(" ", parameters[1..]);
 
-            foreach (var chat in _database.TelegramChats)
+            foreach (var chat in _database.TelegramChats.ToList())
                 try
                 {
                     await Task.Delay(500);
@@ -50,6 +53,75 @@ public sealed class MsgCommand : CommandBase<Message>
                     _logger.LogError(ex,
                         $"Exception in MsgCommand while sending message to group {chat.ChatId}");
                 }
+        }
+        else if (parameters[0] == "all_except_uzosu_check")
+        {
+            string msg = string.Join(" ", parameters[1..]);
+            OsuUser adminUser = _database.OsuUsers.First(m => m.IsAdmin); // Shoukko
+            TelegramChat exceptChat = _database.TelegramChats.First(m => m.ChatId == -1002693455476); // uzosu
+
+            List<TelegramChat> allChats = _database.TelegramChats.ToList();
+            List<TelegramChat> filteredChats = allChats.Where(chat =>
+            {
+                // Skip the exceptChat
+                if (chat.ChatId == exceptChat.ChatId) return false;
+
+                // Skip if the chat is a user in the exceptChat
+                if (exceptChat.ChatMembers?.Contains(chat.ChatId) == true) return false;
+
+                // Skip if the chat contains me
+                if (chat.ChatMembers?.Contains(adminUser.TelegramId) == true) return false;
+
+                return true;
+            }).ToList();
+
+            await Context.BotClient.SendMessage(adminUser.TelegramId, msg, ParseMode.Html);
+            await Context.BotClient.SendMessage(adminUser.TelegramId, $"Отправка будет в {filteredChats.Count}/{allChats.Count} чатов. Конец.", ParseMode.Html);
+        }
+        else if (parameters[0] == "all_except_uzosu")
+        {
+            string msg = string.Join(" ", parameters[1..]);
+            OsuUser adminUser = _database.OsuUsers.First(m => m.IsAdmin); // Shoukko
+            TelegramChat exceptChat = _database.TelegramChats.First(m => m.ChatId == -1002693455476); // uzosu
+
+            List<TelegramChat> allChats = _database.TelegramChats.ToList();
+            List<TelegramChat> filteredChats = allChats.Where(chat =>
+            {
+                // Skip the exceptChat
+                if (chat.ChatId == exceptChat.ChatId) return false;
+
+                // Skip if the chat is a user in the exceptChat
+                if (exceptChat.ChatMembers?.Contains(chat.ChatId) == true) return false;
+
+                // Skip if the chat contains me
+                if (chat.ChatMembers?.Contains(adminUser.TelegramId) == true) return false;
+
+                return true;
+            }).ToList();
+
+            await Context.BotClient.SendMessage(adminUser.TelegramId, msg, ParseMode.Html);
+            await Context.BotClient.SendMessage(adminUser.TelegramId, $"Начинаем отправку в {filteredChats.Count}/{allChats.Count} чатов", ParseMode.Html);
+
+            int sent = 0;
+            foreach (var chat in filteredChats)
+                try
+                {
+                    await Task.Delay(500);
+                    await Context.BotClient.SendMessage(chat.ChatId, msg, ParseMode.Html);
+                    sent += 1;
+                }
+                catch (ApiRequestException reqEx)
+                {
+                    _logger.LogError(reqEx,
+                        $"ApiRequestException in MsgCommand while sending message to group {chat.ChatId}");
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex,
+                        $"Exception in MsgCommand while sending message to group {chat.ChatId}");
+                }
+
+            await Context.BotClient.SendMessage(adminUser.TelegramId, $"Завершено. Успешно отправлено в {sent}/{filteredChats.Count} чатов", ParseMode.Html);
         }
         else if (parameters[0] == "me")
         {
