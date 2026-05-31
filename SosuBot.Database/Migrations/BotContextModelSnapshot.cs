@@ -19,7 +19,7 @@ namespace SosuBot.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "10.0.5")
+                .HasAnnotation("ProductVersion", "10.0.8")
                 .HasAnnotation("Proxies:ChangeTracking", false)
                 .HasAnnotation("Proxies:CheckEquality", false)
                 .HasAnnotation("Proxies:LazyLoading", true)
@@ -116,7 +116,7 @@ namespace SosuBot.Migrations
                             OsuMode = Playmode.Osu,
                             OsuUserId = 15319810L,
                             OsuUsername = "Shoukko",
-                            RenderSettings = "{\"VideoWidth\":1280,\"VideoHeight\":720,\"Encoder\":\"h264_nvenc\",\"SkinName\":\"default\",\"GeneralVolume\":0.5,\"MusicVolume\":0.5,\"SampleVolume\":0.5,\"BackgroundDim\":0.95,\"CursorSize\":1,\"HitErrorMeter\":true,\"AimErrorMeter\":false,\"HPBar\":true,\"ShowPP\":true,\"HitCounter\":true,\"IgnoreFailsInReplays\":false,\"Video\":false,\"Storyboard\":false,\"Mods\":true,\"KeyOverlay\":true,\"Combo\":true,\"Leaderboard\":false,\"StrainGraph\":true,\"MotionBlur\":false,\"UseExperimentalRenderer\":false,\"ManiaScrollSpeed\":25,\"ManiaScrollDirectionUp\":false}",
+                            RenderSettings = "{\"VideoWidth\":1280,\"VideoHeight\":720,\"Encoder\":\"h264_nvenc\",\"SkinName\":\"default\",\"GeneralVolume\":0.5,\"MusicVolume\":0.5,\"SampleVolume\":0.5,\"BackgroundDim\":0.95,\"CursorSize\":1,\"SkipIntro\":true,\"HitErrorMeter\":true,\"AimErrorMeter\":false,\"HPBar\":true,\"ShowPP\":true,\"HitCounter\":true,\"IgnoreFailsInReplays\":false,\"Video\":false,\"Storyboard\":false,\"Mods\":true,\"KeyOverlay\":true,\"Combo\":true,\"Leaderboard\":false,\"StrainGraph\":true,\"MotionBlur\":false,\"UseExperimentalRenderer\":false,\"ManiaScrollSpeed\":25,\"ManiaScrollDirectionUp\":false}",
                             StdPPValue = 0.0,
                             TaikoPPValue = 0.0
                         });

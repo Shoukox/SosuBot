@@ -164,6 +164,7 @@ public interface ILocalization
     public string render_menu_music { get; }
     public string render_menu_effects { get; }
     public string render_menu_background { get; }
+    public string render_menu_skipIntro { get; }
     public string render_menu_skin { get; }
     public string render_menu_urBar { get; }
     public string render_menu_aimErrorCircle { get; }
