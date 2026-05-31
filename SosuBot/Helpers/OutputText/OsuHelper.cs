@@ -155,6 +155,7 @@ public static partial class OsuHelper
         string sampleVolume = language.render_menu_effects;
         string backgroundDim = language.render_menu_background;
         string skinName = language.render_menu_skin;
+        string skipIntro = (config.SkipIntro ? Emojis.CheckMarkEmoji : "") + language.render_menu_skipIntro;
         string hitErrorMeter = (config.HitErrorMeter ? Emojis.CheckMarkEmoji : "") + language.render_menu_urBar;
         string aimErrorMeter = (config.AimErrorMeter ? Emojis.CheckMarkEmoji : "") + language.render_menu_aimErrorCircle;
         string motionBlur = (config.MotionBlur ? Emojis.CheckMarkEmoji : "") + language.render_menu_motionBlur;
@@ -184,7 +185,8 @@ public static partial class OsuHelper
                     InlineKeyboardButton.WithCallbackData($"{sampleVolume}: {config.SampleVolume*100:00}%", $"rs effects-volume")
                 ],
                 [
-                    InlineKeyboardButton.WithCallbackData($"{backgroundDim}: {config.BackgroundDim*100:00}%", $"rs background")
+                    InlineKeyboardButton.WithCallbackData($"{backgroundDim}: {config.BackgroundDim*100:00}%", $"rs background"),
+                    InlineKeyboardButton.WithCallbackData(skipIntro, $"rs skip-intro")
                 ],
                 [
                     InlineKeyboardButton.WithCallbackData($"{skinName}: {config.SkinName}", $"rs skin 1")

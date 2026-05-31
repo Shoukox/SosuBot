@@ -239,6 +239,7 @@ public sealed class English : ILocalization
     public string render_menu_music => "Music";
     public string render_menu_effects => "Effects";
     public string render_menu_background => "Background";
+    public string render_menu_skipIntro => "Skip Intro";
     public string render_menu_skin => "Skin";
     public string render_menu_urBar => "UR Bar";
     public string render_menu_aimErrorCircle => "Aim Error Circle";

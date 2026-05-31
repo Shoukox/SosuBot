@@ -234,6 +234,7 @@ public sealed class Deutsch : ILocalization
     public string render_menu_music => "Musik";
     public string render_menu_effects => "Effekte";
     public string render_menu_background => "Hintergrund";
+    public string render_menu_skipIntro => "Intro überspringen";
     public string render_menu_skin => "Skin";
     public string render_menu_urBar => "UR Bar";
     public string render_menu_aimErrorCircle => "Aim Error Circle";

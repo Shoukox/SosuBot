@@ -239,6 +239,7 @@ public sealed class Russian : ILocalization
     public string render_menu_music => "Музыка";
     public string render_menu_effects => "Эффекты";
     public string render_menu_background => "Background";
+    public string render_menu_skipIntro => "Skip Intro";
     public string render_menu_skin => "Skin";
     public string render_menu_urBar => "UR Bar";
     public string render_menu_aimErrorCircle => "Aim Error Circle";

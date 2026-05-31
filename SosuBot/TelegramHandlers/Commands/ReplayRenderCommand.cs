@@ -137,14 +137,11 @@ public sealed class ReplayRenderCommand : CommandBase<Message>
         replayStream.Position = 0;
 
         var replayInfo = OsuParsers.Decoders.ReplayDecoder.Decode(copyStream);
-        bool forceUsingExperimentalRenderer = false;
-        if (replayInfo.Ruleset != OsuParsers.Enums.Ruleset.Standard)
+
+        bool useExperimentalRenderer = osuUserInDatabase.RenderSettings.UseExperimentalRenderer;
+        if (replayInfo.Ruleset != OsuParsers.Enums.Ruleset.Standard && !osuUserInDatabase.RenderSettings.UseExperimentalRenderer)
         {
-            if (!osuUserInDatabase.RenderSettings.UseExperimentalRenderer)
-            {
-                forceUsingExperimentalRenderer = true;
-            }
-            osuUserInDatabase.RenderSettings.UseExperimentalRenderer = true;
+            useExperimentalRenderer = true;
         }
 
         int beatmapLengthInSeconds = replayInfo.ReplayFrames.Max(m => m.Time) / 1000;
@@ -157,7 +154,7 @@ public sealed class ReplayRenderCommand : CommandBase<Message>
 
         // Queue replay
         var requestedBy = $"telegram-user:{Context.Update.From!.Id}";
-        renderQueueResponse = await _replayRenderService.QueueReplay(replayStream, osuUserInDatabase.RenderSettings, requestedBy);
+        renderQueueResponse = await _replayRenderService.QueueReplay(replayStream, osuUserInDatabase.RenderSettings with { UseExperimentalRenderer = useExperimentalRenderer }, requestedBy);
         if (renderQueueResponse is null)
         {
             await Context.Update.ReplyAsync(Context.BotClient, language.replayRender_skinNotFound);
@@ -180,7 +177,7 @@ public sealed class ReplayRenderCommand : CommandBase<Message>
         try
         {
             string helpText = string.Empty;
-            if (forceUsingExperimentalRenderer)
+            if (useExperimentalRenderer)
             {
                 helpText += "\n\n" + language.replayRender_usingExperimentalRenderer;
             }

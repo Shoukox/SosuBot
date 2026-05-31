@@ -61,6 +61,7 @@ public class RenderSettingsCallback() : CommandBase<CallbackQuery>
             "general-volume" => GeneralVolume,
             "music-volume" => MusicVolume,
             "background" => BackgroundDim,
+            "skip-intro" => SkipIntro,
             "effects-volume" => EffectsVolume,
             "skin" => () => Skin(settingValue),
             "hit-error-meter" => HitErrorMeter,
@@ -276,6 +277,12 @@ public class RenderSettingsCallback() : CommandBase<CallbackQuery>
 
         _osuUser.RenderSettings.BackgroundDim = double.Parse(settingValue, CultureInfo.InvariantCulture);
         await BackgroundDim();
+    }
+
+    async Task SkipIntro()
+    {
+        _osuUser.RenderSettings.SkipIntro = !_osuUser.RenderSettings.SkipIntro;
+        await Home();
     }
 
     async Task Skin(string? settingValue)
