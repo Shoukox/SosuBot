@@ -53,14 +53,17 @@ public sealed class ReplayRenderCommand : CommandBase<Message>
             return;
         }
 
+        var waitMessage = await Context.Update.ReplyAsync(Context.BotClient, language.waiting);
+
         // Fake 500ms wait
         await Task.Delay(500);
+
 
         OnlineRenderer[]? onlineRenderers = null;
         onlineRenderers = await _replayRenderService.GetOnlineRenderers();
         if (onlineRenderers is null)
         {
-            await Context.Update.ReplyAsync(Context.BotClient, language.replayRender_serverDown);
+            await waitMessage.EditAsync(Context.BotClient, language.replayRender_serverDown);
             return;
         }
         //catch (HttpRequestException ex) when (ex.InnerException is SocketException socketException && socketException.ErrorCode == 10061)
@@ -68,7 +71,7 @@ public sealed class ReplayRenderCommand : CommandBase<Message>
         int onlineRenderersCount = onlineRenderers!.Length;
         if (onlineRenderers == null || onlineRenderers.Length == 0)
         {
-            await Context.Update.ReplyAsync(Context.BotClient, language.replayRender_noRenderers);
+            await waitMessage.EditAsync(Context.BotClient, language.replayRender_noRenderers);
             return;
         }
 
@@ -97,12 +100,12 @@ public sealed class ReplayRenderCommand : CommandBase<Message>
             var score = await _osuApiV2.Scores.GetScore(scoreId.Value);
             if (score is null)
             {
-                await Context.Update.ReplyAsync(Context.BotClient, LocalizationMessageHelper.ReplayScoreNotFound(language, $"{scoreLink}"));
+                await waitMessage.EditAsync(Context.BotClient, LocalizationMessageHelper.ReplayScoreNotFound(language, $"{scoreLink}"));
                 return;
             }
             if (!score.HasReplay!.Value)
             {
-                await Context.Update.ReplyAsync(Context.BotClient, LocalizationMessageHelper.ReplayScoreHasNoReplay(language, $"{scoreLink}"));
+                await waitMessage.EditAsync(Context.BotClient, LocalizationMessageHelper.ReplayScoreHasNoReplay(language, $"{scoreLink}"));
                 return;
             }
 
@@ -113,12 +116,12 @@ public sealed class ReplayRenderCommand : CommandBase<Message>
             var score = await _osuApiV2.Scores.GetScore(scoreId.Value);
             if (score is null)
             {
-                await Context.Update.ReplyAsync(Context.BotClient, LocalizationMessageHelper.ReplayScoreNotFound(language, $"{scoreLinkFromReply}"));
+                await waitMessage.EditAsync(Context.BotClient, LocalizationMessageHelper.ReplayScoreNotFound(language, $"{scoreLinkFromReply}"));
                 return;
             }
             if (!score.HasReplay!.Value)
             {
-                await Context.Update.ReplyAsync(Context.BotClient, LocalizationMessageHelper.ReplayScoreHasNoReplay(language, $"{scoreLinkFromReply}"));
+                await waitMessage.EditAsync(Context.BotClient, LocalizationMessageHelper.ReplayScoreHasNoReplay(language, $"{scoreLinkFromReply}"));
                 return;
             }
 
@@ -126,7 +129,7 @@ public sealed class ReplayRenderCommand : CommandBase<Message>
         }
         else
         {
-            await Context.Update.ReplyAsync(Context.BotClient, language.replayRender_usage);
+            await waitMessage.EditAsync(Context.BotClient, language.replayRender_usage);
             return;
         }
 
@@ -139,7 +142,8 @@ public sealed class ReplayRenderCommand : CommandBase<Message>
         var replayInfo = OsuParsers.Decoders.ReplayDecoder.Decode(copyStream);
 
         bool useExperimentalRenderer = osuUserInDatabase.RenderSettings.UseExperimentalRenderer;
-        if (replayInfo.Ruleset != OsuParsers.Enums.Ruleset.Standard && !osuUserInDatabase.RenderSettings.UseExperimentalRenderer)
+        bool isRulesetNotStd = replayInfo.Ruleset != OsuParsers.Enums.Ruleset.Standard;
+        if (isRulesetNotStd)
         {
             useExperimentalRenderer = true;
         }
@@ -148,7 +152,7 @@ public sealed class ReplayRenderCommand : CommandBase<Message>
         if (beatmapLengthInSeconds > 20 * 60 && osuUserInDatabase.RenderSettings.UseExperimentalRenderer
             || beatmapLengthInSeconds > 30 * 60 && !osuUserInDatabase.RenderSettings.UseExperimentalRenderer)
         {
-            await Context.Update.ReplyAsync(Context.BotClient, language.replayRender_beatmapLengthTooLong);
+            await waitMessage.EditAsync(Context.BotClient, language.replayRender_beatmapLengthTooLong);
             return;
         }
 
@@ -157,7 +161,7 @@ public sealed class ReplayRenderCommand : CommandBase<Message>
         renderQueueResponse = await _replayRenderService.QueueReplay(replayStream, osuUserInDatabase.RenderSettings with { UseExperimentalRenderer = useExperimentalRenderer }, requestedBy);
         if (renderQueueResponse is null)
         {
-            await Context.Update.ReplyAsync(Context.BotClient, language.replayRender_skinNotFound);
+            await waitMessage.EditAsync(Context.BotClient, language.replayRender_skinNotFound);
             return;
         }
         replayStream.Close();
@@ -167,7 +171,7 @@ public sealed class ReplayRenderCommand : CommandBase<Message>
             [InlineKeyboardButton.WithCallbackData(language.replayRender_statusButton, $"render-status {renderQueueResponse!.JobId}"),
                 InlineKeyboardButton.WithCallbackData(language.replayRender_cancelButton, $"render-cancel {renderQueueResponse!.JobId}")]
         ]);
-        var message = await Context.Update.ReplyAsync(Context.BotClient, LocalizationMessageHelper.ReplayOnlineQueueSearching(language, $"{onlineRenderersCount}", $"{await _replayRenderService.GetWaitqueueLength(renderQueueResponse!.JobId)}"), replyMarkup: ik);
+        var message = await waitMessage.EditAsync(Context.BotClient, LocalizationMessageHelper.ReplayOnlineQueueSearching(language, $"{onlineRenderersCount}", $"{await _replayRenderService.GetWaitqueueLength(renderQueueResponse!.JobId)}"), replyMarkup: ik);
 
         int timeoutSeconds = 600;
         DateTime startedWaiting = DateTime.Now;
@@ -177,7 +181,7 @@ public sealed class ReplayRenderCommand : CommandBase<Message>
         try
         {
             string helpText = string.Empty;
-            if (useExperimentalRenderer)
+            if (isRulesetNotStd)
             {
                 helpText += "\n\n" + language.replayRender_usingExperimentalRenderer;
             }

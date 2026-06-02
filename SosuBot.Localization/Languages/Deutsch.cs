@@ -42,6 +42,8 @@ public sealed class Deutsch : ILocalization
         $"/settings - Renderer-Einstellungen.\n" +
         $"/setskin - deinen Skin an den Bot senden.\n" +
         $"/info - letzte Infos zu deinem osu!-Profil vom Bot.\n" +
+        $"/calc [x100] [x50] [xMiss] [mods] - Rechner für die PP der ausgewählten Std Map mit diesen Werten.\n" +
+        $"/calcmania [x300] [x200] [x100] [x50] [xMiss] [mods] - Rechner für die PP der ausgewählten Mania Map mit diesen Werten.\n" +
         $"\n" +
         $"Wenn du einen Beatmap-Link sendest, schickt der Bot kurze Map-Infos.\n" +
         $"Um das zu verhindern, hänge ein Minus ans Linkende ('-').\n" +
