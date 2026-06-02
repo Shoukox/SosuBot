@@ -50,6 +50,7 @@ public class ConfigureBotService(IServiceProvider serviceProvider) : IHostedServ
         RegisterCommand<OsuChatstatsIncludeCommand>(OsuChatstatsIncludeCommand.Commands);
         RegisterCommand<OsuCompareCommand>(OsuCompareCommand.Commands);
         RegisterCommandWithParameters(OsuLastCommand.Commands, () => new OsuLastCommand());
+        RegisterCommand<OsuLastBestCommand>(OsuLastBestCommand.Commands);
         RegisterCommand<OsuLastWithCoverCommand>(OsuLastWithCoverCommand.Commands);
         RegisterCommand<OsuLastPassedCommand>(OsuLastPassedCommand.Commands);
         RegisterCommandWithParameters(OsuUserCommand.Commands, () => new OsuUserCommand());

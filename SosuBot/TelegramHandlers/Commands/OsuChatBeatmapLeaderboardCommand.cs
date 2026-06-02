@@ -19,8 +19,6 @@ public sealed class OsuChatBeatmapLeaderboardCommand : CommandBase<Message>
     private RateLimiterFactory _rateLimiterFactory = null!;
     private BotContext _database = null!;
 
-    private static readonly IEqualityComparer<OsuUser> OsuUserComparer = EqualityComparer<OsuUser>.Create((u1, u2) => u1?.OsuUserId == u2?.OsuUserId, u => u.GetHashCode());
-
     public override async Task BeforeExecuteAsync()
     {
         await base.BeforeExecuteAsync();
@@ -88,7 +86,7 @@ public sealed class OsuChatBeatmapLeaderboardCommand : CommandBase<Message>
             if (foundMember != null && !chatInDatabase.ExcludeFromChatstats.Contains(foundMember.OsuUserId))
                 foundChatMembers.Add(foundMember);
         }
-        foundChatMembers = foundChatMembers.Distinct(OsuUserComparer).ToList();
+        foundChatMembers = foundChatMembers.DistinctBy(m => m.OsuUserId).ToList();
 
         // Fake delay to avoid hitting rate limits
         await Task.Delay(1000);
@@ -131,7 +129,3 @@ public sealed class OsuChatBeatmapLeaderboardCommand : CommandBase<Message>
         await waitMessage.EditAsync(Context.BotClient, sendMessage);
     }
 }
-
-
-
-

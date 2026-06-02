@@ -40,6 +40,8 @@ public sealed class English : ILocalization
         $"/settings - replay renderer settings.\n" +
         $"/setskin - send your skin to the bot.\n" +
         $"/info - latest info about your osu profile from the bot.\n" +
+        $"/calc [x100] [x50] [xMiss] [mods] - the pp calculation for the selected std map with these stats.\n" +
+        $"/calcmania [x300] [x200] [x100] [x50] [xMiss] [mods] - the pp calculation for the selected mania map with these stats.\n" +
         $"\n" +
         $"If you send a beatmap link, the bot sends short map information.\n" +
         $"To prevent that, add a minus at the end of the link ('-').\n" +
