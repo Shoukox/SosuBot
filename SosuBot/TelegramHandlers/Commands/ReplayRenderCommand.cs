@@ -256,6 +256,11 @@ public sealed class ReplayRenderCommand : CommandBase<Message>
                 await message.EditAsync(Context.BotClient, language.replayRender_onlyOsuStd);
                 return;
             }
+            else if (jobInfo.FailureReason == "beatmap_not_found")
+            {
+                await message.EditAsync(Context.BotClient, language.replayRender_beatmapNotFound);
+                return;
+            }
             else
             {
                 await message.EditAsync(Context.BotClient, LocalizationMessageHelper.ReplayErrorWithReason(language, jobInfo.FailureReason));

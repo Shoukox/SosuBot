@@ -212,6 +212,7 @@ public sealed class Deutsch : ILocalization
     public string replayRender_scoreHasNoReplay => "<a href=\"{}\">Score</a> hat kein Replay";
     public string replayRender_usage => "Nutze diesen Befehl auf eine Replay-Datei oder einen Score mit Replay.\nOder gib nach dem Befehl einen Score-Link an.";
     public string replayRender_skinNotFound => "Dein gewählter Skin wurde auf dem Server vermutlich nicht gefunden. Wähle einen anderen.";
+    public string replayRender_beatmapNotFound => "Die Beatmap aus diesem Replay ist weder auf den Spiegelseiten noch auf der osu! Website zu finden. Vielleicht handelt es sich um eine lokale Karte?";
     public string replayRender_statusButton => "Status";
     public string replayRender_cancelButton => "Abbrechen";
     public string replayRender_settingsAd => "Benutze /settings, um deinen Renderer einzustellen.";
