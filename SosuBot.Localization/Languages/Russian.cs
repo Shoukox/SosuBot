@@ -217,6 +217,7 @@ public sealed class Russian : ILocalization
     public string replayRender_scoreHasNoReplay => "<a href=\"{}\">Скор</a> не имеет реплея";
     public string replayRender_usage => "Используй эту команду на реплей файл или на скор с реплеем.\nЛибо укажи ссылку на скор после команды.";
     public string replayRender_skinNotFound => "Вероятно, твой выбранный скин не был найден на сервере - выбери другой.";
+    public string replayRender_beatmapNotFound => "Карта из этого реплея не найдена ни на зеркалах, ни на сайте осу. Может быть, это локальная карта?";
     public string replayRender_statusButton => "Статус";
     public string replayRender_cancelButton => "Отменить";
     public string replayRender_settingsAd => "Используй /settings для настройки рендерера.";

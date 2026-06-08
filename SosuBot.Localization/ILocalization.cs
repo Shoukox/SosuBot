@@ -140,6 +140,7 @@ public interface ILocalization
     public string replayRender_scoreHasNoReplay { get; }
     public string replayRender_usage { get; }
     public string replayRender_skinNotFound { get; }
+    public string replayRender_beatmapNotFound { get; }
     public string replayRender_statusButton { get; }
     public string replayRender_cancelButton { get; }
     public string replayRender_settingsAd { get; }
