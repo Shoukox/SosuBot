@@ -20,8 +20,8 @@ public class ConfigureBotService(IServiceProvider serviceProvider) : IHostedServ
     private BotConfiguration _botConfig = serviceProvider.GetRequiredService<IOptions<BotConfiguration>>().Value;
 
     private static IEnumerable<BotCommand> botCommands = [
-        new("/help", "Lists all bot commands"),
-        new("/botlang", "Changes the bot language"),
+        new("/help", "Все команды бота"),
+        new("/botlang", "Изменяет язык бота"),
     ];
 
     public async Task StartAsync(CancellationToken cancellationToken)
@@ -100,6 +100,7 @@ public class ConfigureBotService(IServiceProvider serviceProvider) : IHostedServ
 
     public Task StopAsync(CancellationToken cancellationToken)
     {
+        _logger.LogInformation("Bot is stopping...");
         return Task.CompletedTask;
     }
 }
