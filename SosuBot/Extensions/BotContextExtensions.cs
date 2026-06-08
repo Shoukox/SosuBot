@@ -22,7 +22,7 @@ public static class BotContextExtensions
 
         try
         {
-            var chat = await database.TelegramChats.FindAsync(chatId);
+            TelegramChat? chat = await database.TelegramChats.FindAsync(chatId);
             if (chat == null)
             {
                 if (message.Chat.Type is ChatType.Private)

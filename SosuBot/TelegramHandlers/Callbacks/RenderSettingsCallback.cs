@@ -3,6 +3,7 @@ using SosuBot.Database;
 using SosuBot.Database.Models;
 using SosuBot.Extensions;
 using SosuBot.Helpers;
+using SosuBot.Localization;
 using SosuBot.Services;
 using SosuBot.TelegramHandlers.Abstract;
 using System.Globalization;
@@ -31,7 +32,7 @@ public class RenderSettingsCallback() : CommandBase<CallbackQuery>
 
     public override async Task ExecuteAsync()
     {
-        var language = Context.GetLocalization();
+        ILocalization language = Context.GetLocalization();
         var parameters = Context.Update.Data!.Split(' ');
 
         string? settingValue = null;
@@ -47,7 +48,7 @@ public class RenderSettingsCallback() : CommandBase<CallbackQuery>
             return;
         }
 
-        var osuUser = await _database.OsuUsers.FindAsync(_chatId);
+        OsuUser? osuUser = await _database.OsuUsers.FindAsync(_chatId);
         if (osuUser == null)
         {
             await Context.Update.AnswerAsync(Context.BotClient, language.error_userNotSetHimself);
@@ -103,7 +104,7 @@ public class RenderSettingsCallback() : CommandBase<CallbackQuery>
     }
     async Task Home()
     {
-        var language = Context.GetLocalization();
+        ILocalization language = Context.GetLocalization();
         await Context.BotClient.EditMessageText(_chatId, Context.Update.Message!.Id, language.render_settings_title, replyMarkup: OsuHelper.GetRenderSettingsMarkup(_osuUser.RenderSettings, language));
     }
 
@@ -316,7 +317,7 @@ public class RenderSettingsCallback() : CommandBase<CallbackQuery>
         }
 
         string renderSkinNameNoOsk = _osuUser.RenderSettings.SkinName.EndsWith(".osk") ? _osuUser.RenderSettings.SkinName[..^4] : _osuUser.RenderSettings.SkinName;
-        var availableSkinsAsIkm = availableSkins.Select(m => m.EndsWith(".osk") ? m[..^4] : m).Select(m => new InlineKeyboardButton[]
+        IEnumerable<InlineKeyboardButton[]> availableSkinsAsIkm = availableSkins.Select(m => m.EndsWith(".osk") ? m[..^4] : m).Select(m => new InlineKeyboardButton[]
         {
             InlineKeyboardButton.WithCallbackData(renderSkinNameNoOsk == m ? Emojis.CheckMarkEmoji + m : m, $"rs ss {m}")
         });

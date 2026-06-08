@@ -34,9 +34,9 @@ public static class DateTimeExtensions
     private static DateTimeOffset ConvertToTimeZoneOffset(DateTime dateTime, string timeZoneId)
     {
         var tz = TimeZoneInfo.FindSystemTimeZoneById(timeZoneId);
-        var utc = dateTime.Kind == DateTimeKind.Utc ? dateTime : dateTime.ToUniversalTime();
-        var localTime = TimeZoneInfo.ConvertTimeFromUtc(utc, tz);
-        var offset = tz.GetUtcOffset(localTime);
+        DateTime utc = dateTime.Kind == DateTimeKind.Utc ? dateTime : dateTime.ToUniversalTime();
+        DateTime localTime = TimeZoneInfo.ConvertTimeFromUtc(utc, tz);
+        TimeSpan offset = tz.GetUtcOffset(localTime);
         return new DateTimeOffset(localTime, offset);
     }
 }

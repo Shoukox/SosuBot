@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using OsuApi.BanchoV2;
+using OsuApi.BanchoV2.Clients.Beatmaps.HttpIO;
 using OsuApi.BanchoV2.Clients.Users.HttpIO;
 using OsuApi.BanchoV2.Models;
 using OsuApi.BanchoV2.Users.Models;
@@ -53,7 +54,7 @@ public sealed class TextHandler : CommandBase<Message>
     {
         if (Context.Update.IsForwardedFrom(_botConfig.Id)) return;
 
-        var language = Context.GetLocalization();
+        ILocalization language = Context.GetLocalization();
         await HandleBeatmapLink(language);
         await HandleUserProfileLink(language);
         await HandleScoreLink(language);
@@ -104,10 +105,10 @@ public sealed class TextHandler : CommandBase<Message>
         if (OsuHelper.ParseOsuUserLink(Context.Update.GetAllLinks(), out var userId) == null) return;
         if (!await _tokenBucketRateLimiter.IsAllowedAsync($"{Context.Update.From!.Id}")) return;
 
-        var user = (await _osuApiV2.Users.GetUser($"{userId}", new GetUserQueryParameters()))?.UserExtend;
+        UserExtend? user = (await _osuApiV2.Users.GetUser($"{userId}", new GetUserQueryParameters()))?.UserExtend;
         if (user == null) return;
 
-        var playmode = user.Playmode!.ParseRulesetToPlaymode();
+        Playmode playmode = user.Playmode!.ParseRulesetToPlaymode();
         double? currentPp = user.Statistics!.Pp;
         var ppDifferenceText = await UserHelper.GetPpDifferenceTextAsync(_database, user, playmode, currentPp);
 
@@ -145,7 +146,7 @@ public sealed class TextHandler : CommandBase<Message>
 
         if (beatmapId is null) return;
 
-        var beatmap = await _cachingHelper.GetOrCacheBeatmap(beatmapId.Value, _osuApiV2);
+        BeatmapExtended? beatmap = await _cachingHelper.GetOrCacheBeatmap(beatmapId.Value, _osuApiV2);
         if (beatmap == null) return;
 
         var hitobjectsSum = beatmap.CountCircles + beatmap.CountSliders + beatmap.CountSpinners;
@@ -154,8 +155,8 @@ public sealed class TextHandler : CommandBase<Message>
         beatmapset ??= await _cachingHelper.GetOrCacheBeatmapset(beatmap.BeatmapsetId!.Value, _osuApiV2);
         if (beatmapset == null) return;
 
-        var playmode = beatmap.Mode!.ParseRulesetToPlaymode();
-        var classicMod = OsuHelper.GetClassicMode(playmode);
+        Playmode playmode = beatmap.Mode!.ParseRulesetToPlaymode();
+        osu.Game.Rulesets.Mods.Mod classicMod = OsuHelper.GetClassicMode(playmode);
 
         osu.Game.Rulesets.Mods.Mod[] modsFromMessage = [];
         if (beatmapLink.Contains('+'))
@@ -165,10 +166,10 @@ public sealed class TextHandler : CommandBase<Message>
             modsFromMessage = splittedMessage[1].ToMods(playmode).Except([classicMod]).ToArray();
         }
 
-        var classicModsToApply = modsFromMessage.Concat([classicMod]).Distinct().ToArray();
-        var lazerModsToApply = modsFromMessage.Distinct().ToArray();
+        osu.Game.Rulesets.Mods.Mod[] classicModsToApply = modsFromMessage.Concat([classicMod]).Distinct().ToArray();
+        osu.Game.Rulesets.Mods.Mod[] lazerModsToApply = modsFromMessage.Distinct().ToArray();
 
-        var calculatedPp = await CalculateBeatmapPpAsync(beatmap, playmode, classicModsToApply, lazerModsToApply, beatmapContainsTooManyHitObjects);
+        (PPCalculationResult? ClassicSS, PPCalculationResult? Classic99, PPCalculationResult? Classic98, PPCalculationResult? LazerSS, PPCalculationResult? Lazer99, PPCalculationResult? Lazer98) calculatedPp = await CalculateBeatmapPpAsync(beatmap, playmode, classicModsToApply, lazerModsToApply, beatmapContainsTooManyHitObjects);
 
         int totalLengthConsideringMods = (int)(beatmap.TotalLength!.Value / calculatedPp.LazerSS!.SpeedChangeFactor);
         var duration = $"{_scoreHelper.GetFormattedNumConsideringNull(totalLengthConsideringMods / 60, round: false, format: "#")}m{_scoreHelper.GetFormattedNumConsideringNull(totalLengthConsideringMods % 60, round: false, format: "00")}s";
@@ -198,7 +199,7 @@ public sealed class TextHandler : CommandBase<Message>
         double? difficultyRatingForGivenMods = calculatedPp.Lazer98?.DifficultyAttributes.StarRating;
         if (difficultyRatingForGivenMods == null)
         {
-            var beatmapAttributesResponse = await _osuApiV2.Beatmaps.GetBeatmapAttributes(beatmap.Id.Value,
+            GetBeatmapAttributesResponse? beatmapAttributesResponse = await _osuApiV2.Beatmaps.GetBeatmapAttributes(beatmap.Id.Value,
                 new() { RulesetId = ((int)playmode).ToString(), Mods = lazerModsToApply.Select(m => new Mod { Acronym = m.Acronym }).ToArray() });
             difficultyRatingForGivenMods = beatmapAttributesResponse?.DifficultyAttributes?.StarRating;
         }
@@ -242,7 +243,7 @@ public sealed class TextHandler : CommandBase<Message>
             await Context.Update.ReplyAsync(Context.BotClient, textToSend, replyMarkup: ik);
         }
 
-        var chatInDatabase = await _database.TelegramChats.FindAsync(Context.Update.Chat.Id);
+        TelegramChat? chatInDatabase = await _database.TelegramChats.FindAsync(Context.Update.Chat.Id);
         chatInDatabase!.LastBeatmapId = beatmapId;
     }
 
@@ -257,9 +258,9 @@ public sealed class TextHandler : CommandBase<Message>
             return (null, null, null, null, null, null);
 
         var ppCalculator = new PPCalculator();
-        var beatmapFile = await _beatmapsService.DownloadOrCacheBeatmap(beatmap.Id!.Value);
+        Stream beatmapFile = await _beatmapsService.DownloadOrCacheBeatmap(beatmap.Id!.Value);
 
-        var classicSS = await ppCalculator.CalculatePpAsync(
+        PPCalculationResult? classicSS = await ppCalculator.CalculatePpAsync(
             beatmapId: beatmap.Id.Value,
             beatmapFile: beatmapFile,
             accuracy: 1,
@@ -269,7 +270,7 @@ public sealed class TextHandler : CommandBase<Message>
             rulesetId: (int)playmode,
             cancellationToken: Context.CancellationToken);
 
-        var classic99 = playmode == Playmode.Mania ? null : await ppCalculator.CalculatePpAsync(
+        PPCalculationResult? classic99 = playmode == Playmode.Mania ? null : await ppCalculator.CalculatePpAsync(
             beatmapId: beatmap.Id.Value,
             beatmapFile: beatmapFile,
             accuracy: 0.99,
@@ -279,7 +280,7 @@ public sealed class TextHandler : CommandBase<Message>
             rulesetId: (int)playmode,
             cancellationToken: Context.CancellationToken);
 
-        var classic98 = playmode == Playmode.Mania ? null : await ppCalculator.CalculatePpAsync(
+        PPCalculationResult? classic98 = playmode == Playmode.Mania ? null : await ppCalculator.CalculatePpAsync(
             beatmapId: beatmap.Id.Value,
             beatmapFile: beatmapFile,
             accuracy: 0.98,
@@ -289,7 +290,7 @@ public sealed class TextHandler : CommandBase<Message>
             rulesetId: (int)playmode,
             cancellationToken: Context.CancellationToken);
 
-        var lazerSS = await ppCalculator.CalculatePpAsync(
+        PPCalculationResult? lazerSS = await ppCalculator.CalculatePpAsync(
             beatmapId: beatmap.Id.Value,
             beatmapFile: beatmapFile,
             accuracy: 1,
@@ -299,7 +300,7 @@ public sealed class TextHandler : CommandBase<Message>
             rulesetId: (int)playmode,
             cancellationToken: Context.CancellationToken);
 
-        var lazer99 = playmode == Playmode.Mania ? null : await ppCalculator.CalculatePpAsync(
+        PPCalculationResult? lazer99 = playmode == Playmode.Mania ? null : await ppCalculator.CalculatePpAsync(
             beatmapId: beatmap.Id.Value,
             beatmapFile: beatmapFile,
             accuracy: 0.99,
@@ -309,7 +310,7 @@ public sealed class TextHandler : CommandBase<Message>
             rulesetId: (int)playmode,
             cancellationToken: Context.CancellationToken);
 
-        var lazer98 = playmode == Playmode.Mania ? null : await ppCalculator.CalculatePpAsync(
+        PPCalculationResult? lazer98 = playmode == Playmode.Mania ? null : await ppCalculator.CalculatePpAsync(
             beatmapId: beatmap.Id.Value,
             beatmapFile: beatmapFile,
             accuracy: 0.98,

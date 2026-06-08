@@ -42,7 +42,7 @@ public sealed class ScoresObserverBackgroundService(IServiceProvider serviceProv
         await AddPlayersToObserverListFromSpecificCountryLeaderboard("uz");
         await AddPlayersToObserverListFromSpecificCountryLeaderboard();
 
-        var chatsWithTrackedPlayers = _database.TelegramChats.Where(m => m.TrackedPlayers != null);
+        IQueryable<TelegramChat> chatsWithTrackedPlayers = _database.TelegramChats.Where(m => m.TrackedPlayers != null);
         _logger.LogInformation("Found {ChatsCount} chats with tracked players", chatsWithTrackedPlayers.Count());
 
         await Task.WhenAll(chatsWithTrackedPlayers.Select(m => AddPlayersToObserverList(m.TrackedPlayers!.ToArray())));
@@ -81,7 +81,7 @@ public sealed class ScoresObserverBackgroundService(IServiceProvider serviceProv
         DailyStatistics dailyStatistics;
         if (_database.DailyStatistics.Count() > 0)
         {
-            var lastDailyStatistics = _database.DailyStatistics.OrderBy(m => m.Id).Last();
+            DailyStatistics lastDailyStatistics = _database.DailyStatistics.OrderBy(m => m.Id).Last();
             if (lastDailyStatistics.DayOfStatistic.Day == DateTime.UtcNow.ChangeTimezone(Country.Uzbekistan).DateTime.Day)
             {
                 dailyStatistics = lastDailyStatistics;
@@ -144,7 +144,7 @@ public sealed class ScoresObserverBackgroundService(IServiceProvider serviceProv
                     continue;
                 }
 
-                var allOsuScores = getStdScoresResponse?.Scores?
+                IEnumerable<Score> allOsuScores = getStdScoresResponse?.Scores?
                     .Select(m => m with { Mode = Ruleset.Osu, ModeInt = (int)Playmode.Osu })
                     .Concat(getTaikoScoresResponse?.Scores?.Select(m => m with { Mode = Ruleset.Taiko, ModeInt = (int)Playmode.Taiko }) ?? [])
                     .Concat(getFruitsScoresResponse?.Scores?.Select(m => m with { Mode = Ruleset.Fruits, ModeInt = (int)Playmode.Catch }) ?? [])
@@ -157,17 +157,17 @@ public sealed class ScoresObserverBackgroundService(IServiceProvider serviceProv
                     continue;
                 }
 
-                var tashkentToday = DateTime.UtcNow.ChangeTimezone(Country.Uzbekistan).Date;
-                var uzScores = allOsuScores.Where(m =>
+                DateTime tashkentToday = DateTime.UtcNow.ChangeTimezone(Country.Uzbekistan).Date;
+                Score[] uzScores = allOsuScores.Where(m =>
                 {
                     var scoreDateIsOk = m.EndedAt!.Value.ChangeTimezone(Country.Uzbekistan) >= tashkentToday;
                     var isUzPlayer = _userDatabase.ContainsUserStatistics(m.UserId!.Value);
                     return scoreDateIsOk && isUzPlayer;
                 }).ToArray();
 
-                foreach (var score in uzScores)
+                foreach (Score? score in uzScores)
                 {
-                    var userStatistics = await _userDatabase.GetUserStatistics(score.UserId!.Value, stoppingToken);
+                    UserStatistics? userStatistics = await _userDatabase.GetUserStatistics(score.UserId!.Value, stoppingToken);
                     if (userStatistics?.User == null)
                     {
                         _logger.LogError("User statistics is null for userId = {UserId}", score.UserId!.Value);
@@ -265,7 +265,7 @@ public sealed class ScoresObserverBackgroundService(IServiceProvider serviceProv
             {
                 foreach (int userId in ObservedUsers)
                 {
-                    var userBestScores = await _osuApi.Users.GetUserScores(userId, ScoreType.Best,
+                    GetUserScoresResponse? userBestScores = await _osuApi.Users.GetUserScores(userId, ScoreType.Best,
                         new GetUserScoreQueryParameters { Limit = scoresLimit });
                     if (userBestScores == null)
                     {
@@ -281,7 +281,7 @@ public sealed class ScoresObserverBackgroundService(IServiceProvider serviceProv
                         {
                             _ = Task.Run(async () =>
                             {
-                                foreach (var score in newScores)
+                                foreach (Score score in newScores)
                                 {
                                     try
                                     {
@@ -292,8 +292,8 @@ public sealed class ScoresObserverBackgroundService(IServiceProvider serviceProv
                                             linkPreviewOptions: new LinkPreviewOptions { IsDisabled = true }, cancellationToken: stoppingToken);
                                         await Task.Delay(waitMs, stoppingToken);
 
-                                        var chatsToSend = _database.TelegramChats.Where(m => m.TrackedPlayers != null && m.TrackedPlayers.Contains(userId));
-                                        foreach (var chat in chatsToSend)
+                                        IQueryable<TelegramChat> chatsToSend = _database.TelegramChats.Where(m => m.TrackedPlayers != null && m.TrackedPlayers.Contains(userId));
+                                        foreach (TelegramChat? chat in chatsToSend)
                                         {
                                             await _botClient.SendMessage(chat.ChatId, msg, ParseMode.Html,
                                                 linkPreviewOptions: new LinkPreviewOptions { IsDisabled = true }, cancellationToken: stoppingToken);
@@ -332,7 +332,7 @@ public sealed class ScoresObserverBackgroundService(IServiceProvider serviceProv
 
     private async Task<UserStatistics[]> GetBestPlayersFor(string? countryCode = null)
     {
-        var rankings = await _osuApi.Rankings.GetRanking(Ruleset.Osu, RankingType.Performance,
+        Rankings? rankings = await _osuApi.Rankings.GetRanking(Ruleset.Osu, RankingType.Performance,
             new GetRankingQueryParameters { Country = countryCode, Filter = Filter.All });
         if (rankings == null)
         {
@@ -345,8 +345,8 @@ public sealed class ScoresObserverBackgroundService(IServiceProvider serviceProv
 
     private async Task AddPlayersToObserverListFromSpecificCountryLeaderboard(string? countryCode = null, int count = 50)
     {
-        var bestPlayersStatistics = (await GetBestPlayersFor(countryCode)).Take(count).ToArray();
-        foreach (var playerStatistics in bestPlayersStatistics) ObservedUsers.Add(playerStatistics.User!.Id.Value);
+        UserStatistics[] bestPlayersStatistics = (await GetBestPlayersFor(countryCode)).Take(count).ToArray();
+        foreach (UserStatistics? playerStatistics in bestPlayersStatistics) ObservedUsers.Add(playerStatistics.User!.Id.Value);
     }
 
     public static async Task AddPlayersToObserverList(int[] playerIds)
@@ -396,7 +396,7 @@ public sealed class ScoresObserverBackgroundService(IServiceProvider serviceProv
     {
         if (!File.Exists(CachePath)) return;
 
-        var list = JsonSerializer.Deserialize<List<DailyStats>>(await File.ReadAllTextAsync(CachePath));
+        List<DailyStats>? list = JsonSerializer.Deserialize<List<DailyStats>>(await File.ReadAllTextAsync(CachePath));
         if (list == null) return;
 
         AllDailyStatistics = list.Select(m => new DailyStatistics
@@ -441,7 +441,7 @@ public sealed class ScoresObserverBackgroundService(IServiceProvider serviceProv
             .Take(5)
             .ToArray();
 
-        var topMaps = passedScores
+        IGrouping<int, ScoreEntity>[] topMaps = passedScores
             .Where(s => s.ScoreJson.BeatmapId.HasValue)
             .GroupBy(s => s.ScoreJson.BeatmapId!.Value)
             .OrderByDescending(g => g.Count())

@@ -3,6 +3,7 @@ using SosuBot.Database.Models;
 using System.Collections;
 using System.Data;
 using System.Data.Common;
+using System.Reflection;
 
 namespace SosuBot.Database.Extensions;
 
@@ -10,11 +11,11 @@ public static class DatabaseExtensions
 {
     public static string ToReadfriendlyTableString(this DbSet<OsuUser> set, int intervalSpaceCount = 5)
     {
-        var users = set.ToArray();
+        OsuUser[] users = set.ToArray();
         var rows = new string[users.Length + 1]; // +heading
 
-        var osuUserType = typeof(OsuUser);
-        var osuUserAttributes = osuUserType.GetProperties();
+        Type osuUserType = typeof(OsuUser);
+        PropertyInfo[] osuUserAttributes = osuUserType.GetProperties();
         var intervalString = new string(' ', intervalSpaceCount);
 
         // index at every row
@@ -24,7 +25,7 @@ public static class DatabaseExtensions
         // ### heading into the heading row
         rows[0] = new string('#', indexPadding) + intervalString;
 
-        foreach (var property in osuUserAttributes)
+        foreach (PropertyInfo property in osuUserAttributes)
         {
             var propertyName = property.Name;
 
@@ -50,11 +51,11 @@ public static class DatabaseExtensions
 
     public static string ToReadfriendlyTableString(this DbSet<TelegramChat> set, int intervalSpaceCount = 5)
     {
-        var users = set.ToArray();
+        TelegramChat[] users = set.ToArray();
         var rows = new string[users.Length + 1]; // +heading
 
-        var telegramChatType = typeof(TelegramChat);
-        var telegramChatAttributes = telegramChatType.GetProperties();
+        Type telegramChatType = typeof(TelegramChat);
+        PropertyInfo[] telegramChatAttributes = telegramChatType.GetProperties();
         var intervalString = new string(' ', intervalSpaceCount);
 
         // index at every row
@@ -64,7 +65,7 @@ public static class DatabaseExtensions
         // ### heading into the heading row
         rows[0] = new string('#', indexPadding) + intervalString;
 
-        foreach (var property in telegramChatAttributes)
+        foreach (PropertyInfo property in telegramChatAttributes)
         {
             var propertyName = property.Name;
 
@@ -106,13 +107,13 @@ public static class DatabaseExtensions
 
     public static List<List<string>> RawSqlQuery(this DbContext context, string query)
     {
-        using var command = context.Database.GetDbConnection().CreateCommand();
+        using DbCommand command = context.Database.GetDbConnection().CreateCommand();
         command.CommandText = query;
         command.CommandType = CommandType.Text;
 
         context.Database.OpenConnection();
 
-        using (var result = command.ExecuteReader())
+        using (DbDataReader result = command.ExecuteReader())
         {
             var entities = new List<List<string>>();
             entities.Add(result.ReadDbRow(true));

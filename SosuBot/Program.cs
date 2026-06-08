@@ -7,6 +7,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using OsuApi.BanchoV2;
+using Polly;
 using SosuBot.Configuration;
 using SosuBot.Database;
 using SosuBot.Database.Models;
@@ -31,7 +32,7 @@ internal class Program
 
     private static void Run(string[] args)
     {
-        var builder = Host.CreateApplicationBuilder(args);
+        HostApplicationBuilder builder = Host.CreateApplicationBuilder(args);
 
         // Configuration
         var configurationFileName = "appsettings.json";
@@ -44,11 +45,11 @@ internal class Program
         builder.Logging.AddConsoleFormatter<CustomConsoleFormatter, CustomConsoleFormatterOptions>();
 
         // Policy
-        var pollyPolicies = PollyPolicies.GetCombinedPolicy();
+        IAsyncPolicy<HttpResponseMessage> pollyPolicies = PollyPolicies.GetCombinedPolicy();
 
         // Services
-        var botConfig = builder.Configuration.GetSection(nameof(BotConfiguration));
-        var renderConfig = builder.Configuration.GetSection(nameof(RenderConfiguration));
+        IConfigurationSection botConfig = builder.Configuration.GetSection(nameof(BotConfiguration));
+        IConfigurationSection renderConfig = builder.Configuration.GetSection(nameof(RenderConfiguration));
         builder.Services.Configure<BotConfiguration>(botConfig);
         builder.Services.Configure<OsuApiV2Configuration>(builder.Configuration.GetSection(nameof(OsuApiV2Configuration)));
         builder.Services.Configure<OpenAiConfiguration>(builder.Configuration.GetSection(nameof(OpenAiConfiguration)));
@@ -56,7 +57,7 @@ internal class Program
         builder.Services.AddCustomHttpClient(nameof(ITelegramBotClient), 32_767)
                         .AddTypedClient<ITelegramBotClient>((httpClient, sp) =>
                         {
-                            var options = sp.GetRequiredService<IOptions<BotConfiguration>>();
+                            IOptions<BotConfiguration> options = sp.GetRequiredService<IOptions<BotConfiguration>>();
                             var telegramOptions = new TelegramBotClientOptions(options.Value.Token, baseUrl: botConfig[nameof(BotConfiguration.ApiServerUrl)]);
                             return new TelegramBotClient(telegramOptions, httpClient);
                         })
@@ -66,9 +67,9 @@ internal class Program
 
         builder.Services.AddSingleton(provider =>
         {
-            var config = builder.Configuration.GetSection(nameof(OsuApiV2Configuration)).Get<OsuApiV2Configuration>()!;
-            var httpClient = provider.GetRequiredService<IHttpClientFactory>().CreateClient("CustomHttpClient");
-            var logger = provider.GetRequiredService<ILogger<BanchoApiV2>>();
+            OsuApiV2Configuration config = builder.Configuration.GetSection(nameof(OsuApiV2Configuration)).Get<OsuApiV2Configuration>()!;
+            HttpClient httpClient = provider.GetRequiredService<IHttpClientFactory>().CreateClient("CustomHttpClient");
+            ILogger<BanchoApiV2> logger = provider.GetRequiredService<ILogger<BanchoApiV2>>();
             return new BanchoApiV2(config.ClientId, config.ClientSecret, httpClient);
         });
 
@@ -77,7 +78,7 @@ internal class Program
         builder.Services.AddSingleton<UpdateQueueService>();
         builder.Services.AddSingleton(serviceProvider =>
         {
-            var logger = serviceProvider.GetRequiredService<ILogger<ReplayRenderService>>();
+            ILogger<ReplayRenderService> logger = serviceProvider.GetRequiredService<ILogger<ReplayRenderService>>();
             return new ReplayRenderService(
                 new(renderConfig[nameof(RenderConfiguration.RenderUrl)]!),
                 int.Parse(renderConfig[nameof(RenderConfiguration.ClientId)]!),
@@ -122,7 +123,7 @@ internal class Program
         builder.Services.AddSingleton(provide =>
         {
             var redis = ConnectionMultiplexer.Connect(redisConfigurationOptions);
-            var logger = provide.GetRequiredService<ILogger<TokenBucketRateLimiter>>();
+            ILogger<TokenBucketRateLimiter> logger = provide.GetRequiredService<ILogger<TokenBucketRateLimiter>>();
             return new RateLimiterFactory(redis, logger);
         });
 
@@ -140,10 +141,10 @@ internal class Program
                 .UseNpgsql(connectionString, (m) => m.MapEnum<Playmode>())
                 .ConfigureWarnings(m => m.Ignore(RelationalEventId.PendingModelChangesWarning)));
 
-        var app = builder.Build();
-        using (var scope = app.Services.CreateScope())
+        IHost app = builder.Build();
+        using (IServiceScope scope = app.Services.CreateScope())
         {
-            var db = scope.ServiceProvider.GetRequiredService<BotContext>();
+            BotContext db = scope.ServiceProvider.GetRequiredService<BotContext>();
             db.Database.Migrate();
         }
         app.Run();

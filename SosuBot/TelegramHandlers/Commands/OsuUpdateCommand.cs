@@ -1,8 +1,11 @@
 ﻿using Microsoft.Extensions.Caching.Hybrid;
 using Microsoft.Extensions.DependencyInjection;
 using OsuApi.BanchoV2;
+using OsuApi.BanchoV2.Clients.Users.HttpIO;
+using OsuApi.BanchoV2.Models;
 using OsuApi.BanchoV2.Users.Models;
 using SosuBot.Database;
+using SosuBot.Database.Models;
 using SosuBot.Extensions;
 using SosuBot.Helpers;
 using SosuBot.Localization;
@@ -32,10 +35,10 @@ public sealed class OsuUpdateCommand : CommandBase<Message>
     }
     public override async Task ExecuteAsync()
     {
-        var language = Context.GetLocalization();
-        var waitMessage = await Context.Update.ReplyAsync(Context.BotClient, language.waiting);
+        ILocalization language = Context.GetLocalization();
+        Message waitMessage = await Context.Update.ReplyAsync(Context.BotClient, language.waiting);
 
-        var osuUserInDatabase = await _database.OsuUsers.FindAsync(Context.Update.From!.Id);
+        OsuUser? osuUserInDatabase = await _database.OsuUsers.FindAsync(Context.Update.From!.Id);
         if (osuUserInDatabase is null)
         {
             await waitMessage.EditAsync(Context.BotClient, language.error_userNotSetHimself);
@@ -78,7 +81,7 @@ public sealed class OsuUpdateCommand : CommandBase<Message>
             ]) + "\n";
             sendMessage += language.update_info_trackedScoresSince.Fill([$"{userScores.Count}"]) + "\n";
 
-            var newestScore = userScores.MaxBy(m => m.ScoreJson.EndedAt);
+            ScoreEntity? newestScore = userScores.MaxBy(m => m.ScoreJson.EndedAt);
             if (newestScore?.ScoreJson.EndedAt != null)
             {
                 sendMessage += language.update_info_lastScoreAt.Fill([
@@ -88,17 +91,17 @@ public sealed class OsuUpdateCommand : CommandBase<Message>
                 ]) + "\n";
             }
 
-            var monthUserScores = userScores.Where(m => m.ScoreJson.EndedAt > DateTime.UtcNow.Date.AddDays(-DateTime.UtcNow.Date.Day + 1)).ToArray();
+            ScoreEntity[] monthUserScores = userScores.Where(m => m.ScoreJson.EndedAt > DateTime.UtcNow.Date.AddDays(-DateTime.UtcNow.Date.Day + 1)).ToArray();
             sendMessage += language.update_info_scoresThisMonth.Fill([$"{monthUserScores.Length}"]) + "\n";
         }
 
         string playerRuleset = osuUserInDatabase.OsuMode.ToRuleset();
-        var userBestScores = await _osuApiV2.Users.GetUserScores(osuUserInDatabase.OsuUserId, ScoreType.Best, new() { Limit = 200, Mode = playerRuleset });
-        var timeSortedUserBestScores = userBestScores!.Scores.Where(m => m.EndedAt > DateTime.UtcNow.Date.AddDays(-DateTime.UtcNow.Date.Day + 1)).ToArray();
+        GetUserScoresResponse? userBestScores = await _osuApiV2.Users.GetUserScores(osuUserInDatabase.OsuUserId, ScoreType.Best, new() { Limit = 200, Mode = playerRuleset });
+        Score[] timeSortedUserBestScores = userBestScores!.Scores.Where(m => m.EndedAt > DateTime.UtcNow.Date.AddDays(-DateTime.UtcNow.Date.Day + 1)).ToArray();
         sendMessage += language.update_info_newTopPlaysThisMonth.Fill([$"{timeSortedUserBestScores.Length}", playerRuleset.ParseRulesetToGamemode()]) + "\n";
         sendMessage += language.update_info_detailedStats.Fill([$"https://ameobea.me/osutrack/user/{osuUserInDatabase!.OsuUsername}"]) + "\n\n";
 
-        var lastBestScores = userBestScores!.Scores.OrderByDescending(m => m.EndedAt).ToArray();
+        Score[] lastBestScores = userBestScores!.Scores.OrderByDescending(m => m.EndedAt).ToArray();
         int newTopPlays = Math.Min(5, lastBestScores.Length);
         if (newTopPlays > 0)
         {

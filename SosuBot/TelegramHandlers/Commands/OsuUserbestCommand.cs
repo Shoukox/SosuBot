@@ -4,7 +4,9 @@ using OsuApi.BanchoV2.Clients.Users.HttpIO;
 using OsuApi.BanchoV2.Models;
 using OsuApi.BanchoV2.Users.Models;
 using SosuBot.Database;
+using SosuBot.Database.Models;
 using SosuBot.Extensions;
+using SosuBot.Localization;
 using SosuBot.Services.Synchronization;
 using SosuBot.TelegramHandlers.Abstract;
 using Telegram.Bot.Types;
@@ -31,8 +33,8 @@ public sealed class OsuUserbestCommand : CommandBase<Message>
 
     public override async Task ExecuteAsync()
     {
-        var language = Context.GetLocalization();
-        var rateLimiter = _rateLimiterFactory.Get(RateLimiterFactory.RateLimitPolicy.Command);
+        ILocalization language = Context.GetLocalization();
+        TokenBucketRateLimiter rateLimiter = _rateLimiterFactory.Get(RateLimiterFactory.RateLimitPolicy.Command);
         if (!await rateLimiter.IsAllowedAsync($"{Context.Update.From!.Id}"))
         {
             await Context.Update.ReplyAsync(Context.BotClient, language.common_rateLimitSlowDown);
@@ -40,10 +42,10 @@ public sealed class OsuUserbestCommand : CommandBase<Message>
         }
 
 
-        var chatInDatabase = await _database.TelegramChats.FindAsync(Context.Update.Chat.Id);
-        var osuUserInDatabase = await _database.OsuUsers.FindAsync(Context.Update.From!.Id);
+        TelegramChat? chatInDatabase = await _database.TelegramChats.FindAsync(Context.Update.Chat.Id);
+        OsuUser? osuUserInDatabase = await _database.OsuUsers.FindAsync(Context.Update.From!.Id);
 
-        var waitMessage = await Context.Update.ReplyAsync(Context.BotClient, language.waiting);
+        Message waitMessage = await Context.Update.ReplyAsync(Context.BotClient, language.waiting);
 
         // Fake 500ms wait
         await Task.Delay(500);
@@ -75,7 +77,7 @@ public sealed class OsuUserbestCommand : CommandBase<Message>
                 rulesetAlreadySet = true;
             }
 
-            var userResponse = await _osuApiV2.Users.GetUser(parameters[0], new GetUserQueryParameters());
+            GetUserResponse? userResponse = await _osuApiV2.Users.GetUser(parameters[0], new GetUserQueryParameters());
             if (userResponse is null)
             {
                 await waitMessage.EditAsync(Context.BotClient,
@@ -99,12 +101,12 @@ public sealed class OsuUserbestCommand : CommandBase<Message>
         }
 
         var gamemode = ruleset.ParseRulesetToGamemode();
-        var playmode = ruleset.ParseRulesetToPlaymode();
+        Playmode playmode = ruleset.ParseRulesetToPlaymode();
         var textToSend = $"{UserHelper.GetUserProfileUrlWrappedInUsernameString((int)osuUserIdForUserbest, osuUsernameForUserbest)} (<b>{gamemode}</b>)\n\n";
 
         for (var i = 0; i <= bestScores.Length - 1; i++)
         {
-            var score = bestScores[i];
+            Score score = bestScores[i];
             string fcText = " (" + (score.IsPerfectCombo!.Value ? "PFC" : "notPFC") + ")";
 
             textToSend += LocalizationMessageHelper.CommandUserBest(language,

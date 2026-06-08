@@ -5,6 +5,7 @@ using OsuApi.BanchoV2.Models;
 using OsuApi.BanchoV2.Users.Models;
 using SosuBot.Database.Models;
 using SosuBot.Extensions;
+using SosuBot.Localization;
 using SosuBot.TelegramHandlers.Abstract;
 using Telegram.Bot.Exceptions;
 using Telegram.Bot.Types;
@@ -27,7 +28,7 @@ public class OsuUserBestCallback : CommandBase<CallbackQuery>
 
     public override async Task ExecuteAsync()
     {
-        var language = Context.GetLocalization();
+        ILocalization language = Context.GetLocalization();
 
         var parameters = Context.Update.Data!.Split(' ');
         var directionOfPaging = parameters[1];
@@ -69,7 +70,7 @@ public class OsuUserBestCallback : CommandBase<CallbackQuery>
 
         var textToSend = $"{UserHelper.GetUserProfileUrlWrappedInUsernameString((int)osuUserId, osuUsername)} (<b>{playmode.ToGamemode()}</b>)\n\n";
         var index = page * 5;
-        foreach (var score in scores)
+        foreach (Score score in scores)
         {
             // should be equal to the variant from OsuUserbestCommand
             string fcText = " (" + (score.IsPerfectCombo!.Value ? "PFC" : "notPFC") + ")";

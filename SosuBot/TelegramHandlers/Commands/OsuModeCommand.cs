@@ -1,6 +1,8 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using SosuBot.Database;
+using SosuBot.Database.Models;
 using SosuBot.Extensions;
+using SosuBot.Localization;
 using SosuBot.TelegramHandlers.Abstract;
 using Telegram.Bot.Types;
 
@@ -19,8 +21,8 @@ public sealed class OsuModeCommand : CommandBase<Message>
     }
     public override async Task ExecuteAsync()
     {
-        var language = Context.GetLocalization();
-        var osuUserInDatabase = await _database.OsuUsers.FindAsync(Context.Update.From!.Id);
+        ILocalization language = Context.GetLocalization();
+        OsuUser? osuUserInDatabase = await _database.OsuUsers.FindAsync(Context.Update.From!.Id);
 
         var msgText = Context.Update.Text!;
         var parameters = msgText.GetCommandParameters()!;

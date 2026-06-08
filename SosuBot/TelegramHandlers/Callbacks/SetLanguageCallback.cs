@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using SosuBot.Database;
+using SosuBot.Database.Models;
 using SosuBot.Extensions;
 using SosuBot.Localization;
 using SosuBot.Localization.Languages;
@@ -24,7 +25,7 @@ public sealed class SetLanguageCallback : CommandBase<CallbackQuery>
 
     public override async Task ExecuteAsync()
     {
-        var language = Context.GetLocalization();
+        ILocalization language = Context.GetLocalization();
         if (!await TelegramHelper.IsGroupAdmin(Context.BotClient, Context.Update.Message!.Chat, Context.Update.From.Id))
         {
             await Context.Update.AnswerAsync(Context.BotClient, language.group_onlyForAdmins, showAlert: true);
@@ -41,7 +42,7 @@ public sealed class SetLanguageCallback : CommandBase<CallbackQuery>
             return;
         }
 
-        var chat = await _database.TelegramChats.FindAsync(chatId.Value);
+        TelegramChat? chat = await _database.TelegramChats.FindAsync(chatId.Value);
         if (chat is null)
         {
             await Context.Update.AnswerAsync(Context.BotClient);
@@ -55,7 +56,7 @@ public sealed class SetLanguageCallback : CommandBase<CallbackQuery>
             _ => Language.Russian
         };
 
-        var selectedLocalization = chat.LanguageCode switch
+        ILocalization selectedLocalization = chat.LanguageCode switch
         {
             Language.English => (ILocalization)new English(),
             Language.German => new Deutsch(),

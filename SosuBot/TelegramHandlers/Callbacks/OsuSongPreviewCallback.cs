@@ -1,4 +1,5 @@
 ﻿using SosuBot.Extensions;
+using SosuBot.Localization;
 using SosuBot.TelegramHandlers.Abstract;
 using Telegram.Bot;
 using Telegram.Bot.Types;
@@ -12,7 +13,7 @@ public class OsuSongPreviewCallback : CommandBase<CallbackQuery>
 
     public override async Task ExecuteAsync()
     {
-        var language = Context.GetLocalization();
+        ILocalization language = Context.GetLocalization();
         var parameters = Context.Update.Data!.Split(' ');
         var beatmapsetId = int.Parse(parameters[1]);
 

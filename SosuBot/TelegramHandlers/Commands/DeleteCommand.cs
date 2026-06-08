@@ -1,6 +1,8 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using SosuBot.Database;
+using SosuBot.Database.Models;
 using SosuBot.Extensions;
+using SosuBot.Localization;
 using SosuBot.TelegramHandlers.Abstract;
 using Telegram.Bot;
 using Telegram.Bot.Types;
@@ -20,8 +22,8 @@ public sealed class DeleteCommand : CommandBase<Message>
     }
     public override async Task ExecuteAsync()
     {
-        var language = Context.GetLocalization();
-        var osuUserInDatabase = await _database.OsuUsers.FindAsync(Context.Update.From!.Id);
+        ILocalization language = Context.GetLocalization();
+        OsuUser? osuUserInDatabase = await _database.OsuUsers.FindAsync(Context.Update.From!.Id);
         if (osuUserInDatabase is null || !osuUserInDatabase.IsAdmin)
         {
             await Context.Update.ReplyAsync(Context.BotClient, language.admin_accessDenied);

@@ -1,8 +1,10 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using OsuApi.BanchoV2;
+using OsuApi.BanchoV2.Users.Models;
 using SosuBot.Database.Models;
 using SosuBot.Extensions;
 using SosuBot.Helpers;
+using SosuBot.Localization;
 using SosuBot.Services.Synchronization;
 using SosuBot.TelegramHandlers.Abstract;
 using Telegram.Bot.Types;
@@ -24,14 +26,14 @@ public sealed class GetRankingCommand : CommandBase<Message>
 
     public override async Task ExecuteAsync()
     {
-        var rateLimiter = _rateLimiterFactory.Get(RateLimiterFactory.RateLimitPolicy.Command);
-        var language = Context.GetLocalization();
+        TokenBucketRateLimiter rateLimiter = _rateLimiterFactory.Get(RateLimiterFactory.RateLimitPolicy.Command);
+        ILocalization language = Context.GetLocalization();
         if (!await rateLimiter.IsAllowedAsync($"{Context.Update.From!.Id}"))
         {
             await Context.Update.ReplyAsync(Context.BotClient, language.common_rateLimitSlowDown);
             return;
         }
-        var waitMessage = await Context.Update.ReplyAsync(Context.BotClient, language.waiting);
+        Message waitMessage = await Context.Update.ReplyAsync(Context.BotClient, language.waiting);
 
         // Fake 500ms wait
         await Task.Delay(500);
@@ -39,7 +41,7 @@ public sealed class GetRankingCommand : CommandBase<Message>
         var parameters = Context.Update.Text!.GetCommandParameters()!;
 
         var countryCode = parameters.Length > 0 ? parameters[0] : null;
-        var users = await OsuApiHelper.GetUsersFromRanking(_osuApiV2, Playmode.Osu, countryCode, 20,
+        List<UserStatistics>? users = await OsuApiHelper.GetUsersFromRanking(_osuApiV2, Playmode.Osu, countryCode, 20,
             Context.CancellationToken);
 
         if (users == null)

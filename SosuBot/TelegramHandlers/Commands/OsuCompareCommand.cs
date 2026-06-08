@@ -2,8 +2,11 @@
 using OsuApi.BanchoV2;
 using OsuApi.BanchoV2.Clients.Users.HttpIO;
 using OsuApi.BanchoV2.Models;
+using OsuApi.BanchoV2.Users.Models;
 using SosuBot.Database;
+using SosuBot.Database.Models;
 using SosuBot.Extensions;
+using SosuBot.Localization;
 using SosuBot.TelegramHandlers.Abstract;
 using Telegram.Bot.Types;
 
@@ -24,10 +27,10 @@ public sealed class OsuCompareCommand : CommandBase<Message>
 
     public override async Task ExecuteAsync()
     {
-        var language = Context.GetLocalization();
-        var osuUserInDatabase = await _database.OsuUsers.FindAsync(Context.Update.From!.Id);
+        ILocalization language = Context.GetLocalization();
+        OsuUser? osuUserInDatabase = await _database.OsuUsers.FindAsync(Context.Update.From!.Id);
 
-        var waitMessage = await Context.Update.ReplyAsync(Context.BotClient, language.waiting);
+        Message waitMessage = await Context.Update.ReplyAsync(Context.BotClient, language.waiting);
 
         // Fake 500ms wait
         await Task.Delay(500);
@@ -65,9 +68,9 @@ public sealed class OsuCompareCommand : CommandBase<Message>
             }
         }
 
-        var getUser1Response =
+        GetUserResponse? getUser1Response =
             await _osuApiV2.Users.GetUser($"@{user1IdAsString}", new GetUserQueryParameters(), ruleset);
-        var getUser2Response =
+        GetUserResponse? getUser2Response =
             await _osuApiV2.Users.GetUser($"@{user2IdAsString}", new GetUserQueryParameters(), ruleset);
 
         if (getUser1Response == null)
@@ -82,8 +85,8 @@ public sealed class OsuCompareCommand : CommandBase<Message>
             return;
         }
 
-        var user1 = getUser1Response.UserExtend!;
-        var user2 = getUser2Response.UserExtend!;
+        UserExtend user1 = getUser1Response.UserExtend!;
+        UserExtend user2 = getUser2Response.UserExtend!;
 
         var acc1 = $"{user1.Statistics!.HitAccuracy:N2}%";
         var acc2 = $"{user2.Statistics!.HitAccuracy:N2}%";

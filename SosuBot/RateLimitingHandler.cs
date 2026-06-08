@@ -22,7 +22,7 @@ public class RateLimitingHandler(ILogger<RateLimitingHandler> logger, int execut
         CancellationToken cancellationToken)
     {
         // Acquire a permit — this waits but is cancellable.
-        using var lease = await _rateLimiter.AcquireAsync(1, cancellationToken);
+        using RateLimitLease lease = await _rateLimiter.AcquireAsync(1, cancellationToken);
         if (!lease.IsAcquired)
         {
             logger.LogWarning(

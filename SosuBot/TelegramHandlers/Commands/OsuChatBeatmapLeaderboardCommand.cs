@@ -1,9 +1,13 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using OsuApi.BanchoV2;
+using OsuApi.BanchoV2.Clients.Beatmaps.HttpIO;
+using OsuApi.BanchoV2.Models;
+using OsuApi.BanchoV2.Users.Models;
 using SosuBot.Database;
 using SosuBot.Database.Models;
 using SosuBot.Extensions;
 using SosuBot.Helpers;
+using SosuBot.Localization;
 using SosuBot.Services.Synchronization;
 using SosuBot.TelegramHandlers.Abstract;
 using Telegram.Bot.Types;
@@ -31,15 +35,15 @@ public sealed class OsuChatBeatmapLeaderboardCommand : CommandBase<Message>
 
     public override async Task ExecuteAsync()
     {
-        var language = Context.GetLocalization();
-        var rateLimiter = _rateLimiterFactory.Get(RateLimiterFactory.RateLimitPolicy.Command);
+        ILocalization language = Context.GetLocalization();
+        TokenBucketRateLimiter rateLimiter = _rateLimiterFactory.Get(RateLimiterFactory.RateLimitPolicy.Command);
         if (!await rateLimiter.IsAllowedAsync($"{Context.Update.From!.Id}"))
         {
             await Context.Update.ReplyAsync(Context.BotClient, language.common_rateLimitSlowDown);
             return;
         }
 
-        var osuUserInDatabase = await _database.OsuUsers.FindAsync(Context.Update.From!.Id);
+        OsuUser? osuUserInDatabase = await _database.OsuUsers.FindAsync(Context.Update.From!.Id);
         if (osuUserInDatabase is null || !osuUserInDatabase.IsAdmin)
         {
             await Context.Update.ReplyAsync(Context.BotClient, language.beatmapLeaderboard_adminOnly);
@@ -47,8 +51,8 @@ public sealed class OsuChatBeatmapLeaderboardCommand : CommandBase<Message>
         }
 
 
-        var chatInDatabase = await _database.TelegramChats.FindAsync(Context.Update.Chat.Id);
-        var waitMessage = await Context.Update.ReplyAsync(Context.BotClient, language.waiting);
+        TelegramChat? chatInDatabase = await _database.TelegramChats.FindAsync(Context.Update.Chat.Id);
+        Message waitMessage = await Context.Update.ReplyAsync(Context.BotClient, language.waiting);
 
         int? beatmapId = chatInDatabase!.LastBeatmapId;
         if (Context.Update.ReplyToMessage != null)
@@ -59,7 +63,7 @@ public sealed class OsuChatBeatmapLeaderboardCommand : CommandBase<Message>
             {
                 if (beatmapId is null && beatmapsetId is not null)
                 {
-                    var beatmapset = await _cachingHelper.GetOrCacheBeatmapset(beatmapsetId.Value, _osuApiV2);
+                    BeatmapsetExtended? beatmapset = await _cachingHelper.GetOrCacheBeatmapset(beatmapsetId.Value, _osuApiV2);
                     beatmapId = beatmapset!.Beatmaps![0].Id;
                 }
             }
@@ -71,7 +75,7 @@ public sealed class OsuChatBeatmapLeaderboardCommand : CommandBase<Message>
             return;
         }
 
-        var beatmap = await _cachingHelper.GetOrCacheBeatmap(beatmapId!.Value, _osuApiV2);
+        BeatmapExtended? beatmap = await _cachingHelper.GetOrCacheBeatmap(beatmapId!.Value, _osuApiV2);
         if (beatmap == null)
         {
             await waitMessage.EditAsync(Context.BotClient, language.beatmapLeaderboard_failedBeatmapInfo);
@@ -82,7 +86,7 @@ public sealed class OsuChatBeatmapLeaderboardCommand : CommandBase<Message>
         chatInDatabase!.ExcludeFromChatstats = chatInDatabase.ExcludeFromChatstats ?? new List<long>();
         foreach (var memberId in chatInDatabase.ChatMembers!)
         {
-            var foundMember = await _database.OsuUsers.FindAsync(memberId);
+            OsuUser? foundMember = await _database.OsuUsers.FindAsync(memberId);
             if (foundMember != null && !chatInDatabase.ExcludeFromChatstats.Contains(foundMember.OsuUserId))
                 foundChatMembers.Add(foundMember);
         }
@@ -102,9 +106,9 @@ public sealed class OsuChatBeatmapLeaderboardCommand : CommandBase<Message>
         string ruleset = playmode.ToRuleset();
         string sendMessage = "";
         List<OsuApi.BanchoV2.Models.Score> foundScores = new();
-        foreach (var osuUser in foundChatMembers)
+        foreach (OsuUser osuUser in foundChatMembers)
         {
-            var scores = await _osuApiV2.Beatmaps.GetUserBeatmapScore(beatmapId.Value, osuUser.OsuUserId, new() { Mode = ruleset });
+            GetUserBeatmapScoreResponse? scores = await _osuApiV2.Beatmaps.GetUserBeatmapScore(beatmapId.Value, osuUser.OsuUserId, new() { Mode = ruleset });
             if (scores?.BeatmapUserScore?.Score is { } score)
             {
                 foundScores.Add(score);
@@ -116,7 +120,7 @@ public sealed class OsuChatBeatmapLeaderboardCommand : CommandBase<Message>
 
         for (int i = 0; i < foundScores.Count; i++)
         {
-            var score = foundScores[i];
+            Score score = foundScores[i];
             sendMessage += $"{i + 1}. <b>{score.User?.Username}</b> - <b><i>{_scoreHelper.GetFormattedNumConsideringNull(score.Accuracy * 100, round: false)}</i></b>%🎯 - {score.Statistics!.Miss}❌ - <b><u>{_scoreHelper.GetScoreUrlWrappedInString(score.Id!.Value, $"{score.Pp:N2}pp")}💪</u></b>\n";
         }
 

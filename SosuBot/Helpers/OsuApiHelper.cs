@@ -28,12 +28,12 @@ public static class OsuApiHelper
         var page = 1;
         while (!token.IsCancellationRequested)
         {
-            var ranking = await api.Rankings.GetRanking(playmode.ToRuleset(), RankingType.Performance,
+            Rankings? ranking = await api.Rankings.GetRanking(playmode.ToRuleset(), RankingType.Performance,
                 new GetRankingQueryParameters { Country = countryCode, CursorPage = page });
 
             if (ranking == null) return null;
 
-            foreach (var userStatistics in ranking.Ranking!) users.Add(userStatistics);
+            foreach (UserStatistics userStatistics in ranking.Ranking!) users.Add(userStatistics);
 
             if (ranking.Cursor == null) break;
             if (count != null && count.Value <= page * 50) break;

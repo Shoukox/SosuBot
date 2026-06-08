@@ -53,7 +53,7 @@ namespace SosuBot.Services
                     })
                 };
 
-                using var response = await _httpClient.SendAsync(request);
+                using HttpResponseMessage response = await _httpClient.SendAsync(request);
                 if (!response.IsSuccessStatusCode)
                     return null;
 
@@ -102,7 +102,7 @@ namespace SosuBot.Services
 
             if (headers != null)
             {
-                foreach (var (key, value) in headers)
+                foreach ((string? key, string? value) in headers)
                     request.Headers.TryAddWithoutValidation(key, value);
             }
 
@@ -118,11 +118,11 @@ namespace SosuBot.Services
         {
             try
             {
-                using var request = await CreateRequest(method, content, relativePath, headers, authorizeAsSosuBot);
+                using HttpRequestMessage? request = await CreateRequest(method, content, relativePath, headers, authorizeAsSosuBot);
                 if (request == null)
                     return default;
 
-                using var response = await _httpClient.SendAsync(request);
+                using HttpResponseMessage response = await _httpClient.SendAsync(request);
                 if (!response.IsSuccessStatusCode)
                     return default;
 
@@ -144,11 +144,11 @@ namespace SosuBot.Services
         {
             try
             {
-                using var request = await CreateRequest(method, content, relativePath, headers, authorizeAsSosuBot);
+                using HttpRequestMessage? request = await CreateRequest(method, content, relativePath, headers, authorizeAsSosuBot);
                 if (request == null)
                     return false;
 
-                using var response = await _httpClient.SendAsync(request);
+                using HttpResponseMessage response = await _httpClient.SendAsync(request);
                 return response.IsSuccessStatusCode;
             }
             catch (Exception ex)

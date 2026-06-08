@@ -19,11 +19,11 @@ public sealed class SetLanguageCommand : CommandBase<Message>
 
     public override async Task ExecuteAsync()
     {
-        var language = Context.GetLocalization();
+        ILocalization language = Context.GetLocalization();
 
         if (Context.Update.Chat.Type is ChatType.Group or ChatType.Supergroup)
         {
-            var chatAdmins = await Context.BotClient.GetChatAdministrators(Context.Update.Chat.Id);
+            ChatMember[] chatAdmins = await Context.BotClient.GetChatAdministrators(Context.Update.Chat.Id);
             if (!chatAdmins.Any(m => m.User.Id == Context.Update.From?.Id))
             {
                 await Context.Update.ReplyAsync(Context.BotClient, language.group_onlyForAdmins);

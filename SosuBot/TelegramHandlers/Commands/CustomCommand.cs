@@ -51,7 +51,7 @@ public sealed class CustomCommand : CommandBase<Message>
 
     public override async Task ExecuteAsync()
     {
-        var osuUserInDatabase = await _database.OsuUsers.FindAsync(Context.Update.From!.Id);
+        OsuUser? osuUserInDatabase = await _database.OsuUsers.FindAsync(Context.Update.From!.Id);
         if (osuUserInDatabase is null || !osuUserInDatabase.IsAdmin)
         {
             await Context.Update.ReplyAsync(Context.BotClient, "Пшол вон!");
@@ -80,7 +80,7 @@ public sealed class CustomCommand : CommandBase<Message>
         }
         else if (parameters[0] == "getuser")
         {
-            var osuUserInReply = await _database.OsuUsers.FindAsync(Context.Update.ReplyToMessage!.From!.Id);
+            OsuUser? osuUserInReply = await _database.OsuUsers.FindAsync(Context.Update.ReplyToMessage!.From!.Id);
 
             var result = JsonConvert.SerializeObject(osuUserInReply,
                 Formatting.Indented,
@@ -95,10 +95,10 @@ public sealed class CustomCommand : CommandBase<Message>
         else if (parameters[0] == "ai")
         {
             ILocalization language = new Russian();
-            var waitMessage = await Context.Update.ReplyAsync(Context.BotClient, language.waiting);
+            Message waitMessage = await Context.Update.ReplyAsync(Context.BotClient, language.waiting);
 
             var userInput = string.Join(" ", parameters[1..]);
-            var output = await _openaiService.GetResponseAsync(userInput, Context.Update.From.Id);
+            Result<string> output = await _openaiService.GetResponseAsync(userInput, Context.Update.From.Id);
             if (!output.IsSuccess || string.IsNullOrEmpty(output.Data))
             {
                 switch (output.Exception?.Code)
@@ -126,29 +126,29 @@ public sealed class CustomCommand : CommandBase<Message>
         else if (parameters[0] == "slavik")
         {
             ILocalization language = new Russian();
-            var waitMessage = await Context.Update.ReplyAsync(Context.BotClient, language.waiting);
+            Message waitMessage = await Context.Update.ReplyAsync(Context.BotClient, language.waiting);
 
             var countPlayersFromRanking = 100;
             var countBestScoresPerPlayer = 200;
 
-            var uzOsuStdUsers = await OsuApiHelper.GetUsersFromRanking(_osuApiV2, count: countPlayersFromRanking);
+            List<UserStatistics>? uzOsuStdUsers = await OsuApiHelper.GetUsersFromRanking(_osuApiV2, count: countPlayersFromRanking);
 
-            var getBestScoresTask = uzOsuStdUsers!.Select(m =>
+            Task<GetUserScoresResponse?>[] getBestScoresTask = uzOsuStdUsers!.Select(m =>
                 _osuApiV2.Users.GetUserScores(m.User!.Id.Value, ScoreType.Best,
                     new GetUserScoreQueryParameters
                     { Limit = countBestScoresPerPlayer, Mode = Ruleset.Osu })).ToArray();
             await Task.WhenAll(getBestScoresTask);
 
-            var uzBestScores = getBestScoresTask.SelectMany(m => m.Result!.Scores).ToArray();
+            Score[] uzBestScores = getBestScoresTask.SelectMany(m => m.Result!.Scores).ToArray();
 
-            var bestScoresByMods = uzBestScores
+            (string Key, Score)[] bestScoresByMods = uzBestScores
                 .GroupBy(m => string.Join("",
                     _scoreHelper.GetModsText(m.Mods!.Where(mod =>
                         !mod.Acronym!.Equals("CL", StringComparison.InvariantCultureIgnoreCase)).ToArray())))
                 .Select(m => (m.Key, m.MaxBy(s => s.Pp)!)).OrderByDescending(m => m.Item2.Pp).ToArray();
 
             var sendText = "";
-            foreach (var pair in bestScoresByMods)
+            foreach ((string Key, Score) pair in bestScoresByMods)
             {
                 var lazer =
                     pair.Item2.Mods!.Any(m => m.Acronym!.Equals("CL", StringComparison.InvariantCultureIgnoreCase))
@@ -163,9 +163,9 @@ public sealed class CustomCommand : CommandBase<Message>
         else if (parameters[0] == "add-daily-stats-from-last")
         {
             ILocalization language = new Russian();
-            var waitMessage = await Context.Update.ReplyAsync(Context.BotClient, language.waiting);
+            Message waitMessage = await Context.Update.ReplyAsync(Context.BotClient, language.waiting);
 
-            var dailyStats = _database.DailyStatistics.OrderBy(m => m.Id).Last();
+            DailyStatistics dailyStats = _database.DailyStatistics.OrderBy(m => m.Id).Last();
             Task<(int newUsers, int newScores, int newBeatmaps)>[] resultTasks =
             [
                 _scoreHelper.UpdateDailyStatisticsFromLast(_osuApiV2, Playmode.Osu, dailyStats),
@@ -183,8 +183,8 @@ public sealed class CustomCommand : CommandBase<Message>
         else if (parameters[0] == "fix-daily-stats")
         {
             ILocalization language = new Russian();
-            var waitMessage = await Context.Update.ReplyAsync(Context.BotClient, language.waiting);
-            var dailyStatistics = _database.DailyStatistics.OrderBy(m => m.Id).Last();
+            Message waitMessage = await Context.Update.ReplyAsync(Context.BotClient, language.waiting);
+            DailyStatistics dailyStatistics = _database.DailyStatistics.OrderBy(m => m.Id).Last();
             var passedStdScores = dailyStatistics.Scores.Where(m => m.ScoreJson.ModeInt == (int)Playmode.Osu).ToList();
             var removed = dailyStatistics.Scores.RemoveAll(m =>
             {
@@ -193,7 +193,7 @@ public sealed class CustomCommand : CommandBase<Message>
             /*
              * 23.10.2025 02:00 UTC => alles bis 23.10.2025 07:00 UZ
              */
-            var tashkentToday = DateTime.UtcNow.ChangeTimezone(Country.Uzbekistan).Date;
+            DateTime tashkentToday = DateTime.UtcNow.ChangeTimezone(Country.Uzbekistan).Date;
             _logger.LogInformation(tashkentToday.ToString("g"));
             removed += dailyStatistics.Scores.RemoveAll(m =>
                 m.ScoreJson.EndedAt!.Value.ChangeTimezone(Country.Uzbekistan) < tashkentToday);
@@ -209,8 +209,8 @@ public sealed class CustomCommand : CommandBase<Message>
             int count = 1000;
             Parallel.For(0, count, m =>
             {
-                var beatmapFile = _beatmapsService.DownloadOrCacheBeatmap(beatmapId).Result;
-                var calculatedPp = ppCalculator.CalculatePpAsync(
+                Stream beatmapFile = _beatmapsService.DownloadOrCacheBeatmap(beatmapId).Result;
+                PPCalculationResult? calculatedPp = ppCalculator.CalculatePpAsync(
                     beatmapId: beatmapId,
                     beatmapFile: beatmapFile,
                     accuracy: 0.9889,
@@ -243,7 +243,7 @@ public sealed class CustomCommand : CommandBase<Message>
         else if (parameters[0] == "fix28112025_distinctscores")
         {
             // this id is raisy
-            var lastDbDailyStats = _database.DailyStatistics.OrderBy(m => m.Id).Last();
+            DailyStatistics lastDbDailyStats = _database.DailyStatistics.OrderBy(m => m.Id).Last();
             int oldCount = lastDbDailyStats.Scores.Count;
             lastDbDailyStats.Scores = lastDbDailyStats.Scores.DistinctBy(m => m.ScoreId).ToList();
             await Context.Update.ReplyAsync(Context.BotClient, $"Scores old count: {oldCount}\nScores new count: {lastDbDailyStats.Scores.Count}");
@@ -254,9 +254,9 @@ public sealed class CustomCommand : CommandBase<Message>
             await sqlite.OpenAsync();
             (int addedOsuUsers, int addedTelegramChats) = (0, 0);
 
-            await using var osuUsersCommand = sqlite.CreateCommand();
+            await using SqliteCommand osuUsersCommand = sqlite.CreateCommand();
             osuUsersCommand.CommandText = "SELECT * FROM OsuUsers";
-            await using var osuUsersReader = await osuUsersCommand.ExecuteReaderAsync();
+            await using SqliteDataReader osuUsersReader = await osuUsersCommand.ExecuteReaderAsync();
             while (await osuUsersReader.ReadAsync())
             {
                 var telegramId = osuUsersReader.GetInt64(osuUsersReader.GetOrdinal("TelegramId"));
@@ -302,9 +302,9 @@ public sealed class CustomCommand : CommandBase<Message>
                 await _database.SaveChangesAsync();
             }
 
-            await using var telegramChatsCommand = sqlite.CreateCommand();
+            await using SqliteCommand telegramChatsCommand = sqlite.CreateCommand();
             telegramChatsCommand.CommandText = "SELECT * FROM TelegramChats";
-            await using var telegramChatsReader = await telegramChatsCommand.ExecuteReaderAsync();
+            await using SqliteDataReader telegramChatsReader = await telegramChatsCommand.ExecuteReaderAsync();
             while (await telegramChatsReader.ReadAsync())
             {
                 var chatId = telegramChatsReader.GetInt64(telegramChatsReader.GetOrdinal("ChatId"));
@@ -356,7 +356,7 @@ public sealed class CustomCommand : CommandBase<Message>
         else if (parameters[0] == "replace-daily-stats-into-postgres19122025")
         {
             ILocalization language = new Russian();
-            var waitMessage = await Context.Update.ReplyAsync(Context.BotClient, language.waiting);
+            Message waitMessage = await Context.Update.ReplyAsync(Context.BotClient, language.waiting);
 
             _database.UserEntity.ExecuteDelete();
             _database.ScoreEntity.ExecuteDelete();
@@ -387,16 +387,16 @@ public sealed class CustomCommand : CommandBase<Message>
         else if (parameters[0] == "fix-daily-stats19122025")
         {
             ILocalization language = new Russian();
-            var waitMessage = await Context.Update.ReplyAsync(Context.BotClient, language.waiting);
+            Message waitMessage = await Context.Update.ReplyAsync(Context.BotClient, language.waiting);
 
             var scores = _database.ScoreEntity.ToList();
-            foreach (var score in scores)
+            foreach (ScoreEntity? score in scores)
             {
                 score.ScoreId = score.ScoreJson.Id!.Value;
             }
 
             var users = _database.UserEntity.ToList();
-            foreach (var user in users)
+            foreach (UserEntity? user in users)
             {
                 user.UserId = user.UserJson.Id!.Value;
             }
@@ -408,8 +408,8 @@ public sealed class CustomCommand : CommandBase<Message>
             long goal = -1001384452437;
             long from = -1002693455476;
 
-            var chatGoal = _database.TelegramChats.Find(goal);
-            var chatFrom = _database.TelegramChats.Find(from);
+            TelegramChat? chatGoal = _database.TelegramChats.Find(goal);
+            TelegramChat? chatFrom = _database.TelegramChats.Find(from);
 
             chatGoal!.ChatMembers = chatFrom!.ChatMembers;
             chatGoal.ExcludeFromChatstats = chatFrom.ExcludeFromChatstats;
@@ -417,11 +417,11 @@ public sealed class CustomCommand : CommandBase<Message>
         else if (parameters[0] == "remove_left_chatmembers")
         {
             ILocalization language = new Russian();
-            var waitMessage = await Context.Update.ReplyAsync(Context.BotClient, language.waiting);
+            Message waitMessage = await Context.Update.ReplyAsync(Context.BotClient, language.waiting);
 
             var chats = _database.TelegramChats.Where(m => m.ChatMembers != null && m.ChatId < 0).ToList();
             var chatsToDelete = new List<TelegramChat>();
-            foreach (var chat in chats)
+            foreach (TelegramChat? chat in chats)
             {
                 var usersToDelete = new List<long>();
                 foreach (var member in chat.ChatMembers!)
@@ -454,9 +454,9 @@ public sealed class CustomCommand : CommandBase<Message>
         else if (parameters[0] == "fix_user_entities10012026")
         {
             var usersDatabase = new UserStatisticsCacheDatabase(_osuApiV2);
-            foreach (var userEntity in _database.UserEntity)
+            foreach (UserEntity userEntity in _database.UserEntity)
             {
-                var ue = (await usersDatabase.GetUserStatistics(userEntity.UserId));
+                UserStatistics? ue = (await usersDatabase.GetUserStatistics(userEntity.UserId));
                 if (ue is null)
                 {
                     _database.UserEntity.Remove(userEntity);
@@ -471,8 +471,8 @@ public sealed class CustomCommand : CommandBase<Message>
         else if (parameters[0] == "fix_lang0103")
         {
             ILocalization language = new Russian();
-            var waitMessage = await Context.Update.ReplyAsync(Context.BotClient, language.waiting);
-            foreach (var chat in _database.TelegramChats)
+            Message waitMessage = await Context.Update.ReplyAsync(Context.BotClient, language.waiting);
+            foreach (TelegramChat chat in _database.TelegramChats)
             {
                 chat.LanguageCode = Localization.Language.Russian;
             }
@@ -482,9 +482,9 @@ public sealed class CustomCommand : CommandBase<Message>
         else if (parameters[0] == "remove_left_chatmembers")
         {
             ILocalization language = new Russian();
-            var waitMessage = await Context.Update.ReplyAsync(Context.BotClient, language.waiting);
+            Message waitMessage = await Context.Update.ReplyAsync(Context.BotClient, language.waiting);
 
-            foreach (var chat in _database.TelegramChats)
+            foreach (TelegramChat chat in _database.TelegramChats)
             {
                 if (chat.ChatMembers is null) continue;
                 foreach(long member in chat.ChatMembers)

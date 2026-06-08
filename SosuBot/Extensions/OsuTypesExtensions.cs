@@ -52,9 +52,9 @@ public static class OsuTypesExtensions
     public static Mod[] ToOsuMods(this OsuApi.BanchoV2.Models.Mod[] mods, Playmode playmode)
     {
         var osuMods = new List<Mod>();
-        foreach (var mod in mods)
+        foreach (OsuApi.BanchoV2.Models.Mod mod in mods)
         {
-            var rulesetMods = playmode switch
+            Mod[] rulesetMods = playmode switch
             {
                 Playmode.Osu => AllOsuMods,
                 Playmode.Taiko => AllTaikoMods,
@@ -62,7 +62,7 @@ public static class OsuTypesExtensions
                 Playmode.Catch => AllCatchMods,
                 _ => throw new NotImplementedException()
             };
-            var foundMod =
+            Mod? foundMod =
                 rulesetMods.FirstOrDefault(m =>
                     m.Acronym.Equals(mod.Acronym, StringComparison.InvariantCultureIgnoreCase));
 
@@ -78,7 +78,7 @@ public static class OsuTypesExtensions
                 continue;
             }
 
-            var modType = foundMod.GetType();
+            Type modType = foundMod.GetType();
             var osuMod = Activator.CreateInstance(modType) as Mod;
             if (osuMod is ModRateAdjust rateAdjustMod && mod.Settings?.SpeedChange != null)
             {
