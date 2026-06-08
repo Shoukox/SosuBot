@@ -148,10 +148,10 @@ public class ScoreHelper(CachingHelper cachingHelper)
     {
         language ??= new Russian();
 
-        var activePlayers = dailyStatistics.ActiveUsers;
+        List<UserEntity> activePlayers = dailyStatistics.ActiveUsers;
         var passedScores = dailyStatistics.Scores.Where(m => m.ScoreJson.ModeInt == (int)playmode).ToList();
 
-        var usersAndTheirScores = activePlayers.Select(m =>
+        (UserEntity m, ScoreEntity[])[] usersAndTheirScores = activePlayers.Select(m =>
             {
                 return (m, passedScores.Where(s => s.ScoreJson.UserId == m.UserId).ToArray());
             })
@@ -159,14 +159,14 @@ public class ScoreHelper(CachingHelper cachingHelper)
             .OrderByDescending(m => m.Item2.Length)
             .ToArray();
 
-        var mostPlayedBeatmaps = passedScores
+        IGrouping<int, ScoreEntity>[] mostPlayedBeatmaps = passedScores
             .GroupBy(m => m.ScoreJson.BeatmapId!.Value)
             .OrderByDescending(m => m.Count())
             .ToArray();
 
         var topPpScores = "";
         var count = 0;
-        foreach (var us in usersAndTheirScores.OrderByDescending(pair => pair.Item2.Max(m => m.ScoreJson.Pp)))
+        foreach ((UserEntity m, ScoreEntity[]) us in usersAndTheirScores.OrderByDescending(pair => pair.Item2.Max(m => m.ScoreJson.Pp)))
         {
             if (count >= 5) break;
 
@@ -189,7 +189,7 @@ public class ScoreHelper(CachingHelper cachingHelper)
 
         var topActivePlayers = "";
         count = 0;
-        foreach (var us in usersAndTheirScores)
+        foreach ((UserEntity m, ScoreEntity[]) us in usersAndTheirScores)
         {
             if (count >= 5) break;
             topActivePlayers +=
@@ -201,12 +201,12 @@ public class ScoreHelper(CachingHelper cachingHelper)
 
         var topMostPlayedBeatmaps = "";
         count = 0;
-        foreach (var us in mostPlayedBeatmaps)
+        foreach (IGrouping<int, ScoreEntity>? us in mostPlayedBeatmaps)
         {
             if (count >= 5) break;
 
-            var beatmap = await cachingHelper.GetOrCacheBeatmap(us.Key, osuApi);
-            var beatmapsetExtended = await cachingHelper.GetOrCacheBeatmapset(beatmap!.BeatmapsetId!.Value, osuApi);
+            BeatmapExtended? beatmap = await cachingHelper.GetOrCacheBeatmap(us.Key, osuApi);
+            BeatmapsetExtended? beatmapsetExtended = await cachingHelper.GetOrCacheBeatmapset(beatmap!.BeatmapsetId!.Value, osuApi);
 
             topMostPlayedBeatmaps +=
                 $"{count + 1}. (<b>{beatmap!.DifficultyRating:N2}⭐️</b>) <a href=\"https://osu.ppy.sh/beatmaps/{beatmap.Id}\">{beatmapsetExtended!.Title.EncodeHtml()} [{beatmap.Version.EncodeHtml()}]</a> — <b>{us.Count()} {language.daily_stats_count_scores}</b>\n";
@@ -219,7 +219,7 @@ public class ScoreHelper(CachingHelper cachingHelper)
         var passedScoresCount = passedScores.Count;
         var beatmapsPlayed = usersAndTheirScores.SelectMany(m => m.Item2).DistinctBy(m => m.ScoreJson.BeatmapId).Count();
 
-        var tashkentNow = dailyStatistics.DayOfStatistic;
+        DateTime tashkentNow = dailyStatistics.DayOfStatistic;
         var sendText = language.send_dailyStatistic.Fill([
             $"{tashkentNow:dd.MM.yyyy HH:mm} {language.daily_stats_tashkent_time}",
             $"{activePlayersCount}",
@@ -237,14 +237,14 @@ public class ScoreHelper(CachingHelper cachingHelper)
         BanchoApiV2 osuApiV2, Playmode playmode,
         DailyStatistics dailyStatistics)
     {
-        var uzOsuStdUsers = await OsuApiHelper.GetUsersFromRanking(osuApiV2, count: null, playmode: playmode);
+        List<UserStatistics>? uzOsuStdUsers = await OsuApiHelper.GetUsersFromRanking(osuApiV2, count: null, playmode: playmode);
 
         var newUsers = 0;
         var newScores = 0;
         var newBeatmaps = 0;
 
         List<Task<GetUserScoresResponse?>> lastScoresOfUzUsers = new();
-        foreach (var uzUser in uzOsuStdUsers!)
+        foreach (UserStatistics uzUser in uzOsuStdUsers!)
         {
             lastScoresOfUzUsers.Add(osuApiV2.Users.GetUserScores(uzUser.User!.Id.Value, ScoreType.Recent,
                 new GetUserScoreQueryParameters { Limit = 200, Mode = playmode.ToRuleset(), IncludeFails = 0 }));
@@ -255,8 +255,8 @@ public class ScoreHelper(CachingHelper cachingHelper)
             }
         }
 
-        var tashkentToday = DateTime.UtcNow.ChangeTimezone(Country.Uzbekistan).Date;
-        foreach (var getUserScoresResponse in lastScoresOfUzUsers)
+        DateTime tashkentToday = DateTime.UtcNow.ChangeTimezone(Country.Uzbekistan).Date;
+        foreach (Task<GetUserScoresResponse?> getUserScoresResponse in lastScoresOfUzUsers)
         {
             if (getUserScoresResponse.Result == null) continue;
 
@@ -268,7 +268,7 @@ public class ScoreHelper(CachingHelper cachingHelper)
                 s.ModeInt = (int)playmode;
                 if (dailyStatistics.ActiveUsers.All(m => m.UserId != s.UserId))
                 {
-                    var user = uzOsuStdUsers.Find(u => u.User!.Id == s.UserId)!.User!;
+                    User user = uzOsuStdUsers.Find(u => u.User!.Id == s.UserId)!.User!;
                     dailyStatistics.ActiveUsers.Add(new UserEntity() { UserId = user.Id!.Value, UserJson = user });
                     newUsers += 1;
                 }

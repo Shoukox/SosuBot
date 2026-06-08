@@ -7,6 +7,7 @@ using SosuBot.Database;
 using SosuBot.Database.Models;
 using SosuBot.Extensions;
 using SosuBot.Helpers;
+using SosuBot.Localization;
 using SosuBot.Services.Synchronization;
 using SosuBot.TelegramHandlers.Abstract;
 using Telegram.Bot.Types;
@@ -32,19 +33,19 @@ public class OsuUserCommand(bool includeIdInSearch = false) : CommandBase<Messag
 
     public override async Task ExecuteAsync()
     {
-        var language = Context.GetLocalization();
-        var rateLimiter = _rateLimiterFactory.Get(RateLimiterFactory.RateLimitPolicy.Command);
+        ILocalization language = Context.GetLocalization();
+        TokenBucketRateLimiter rateLimiter = _rateLimiterFactory.Get(RateLimiterFactory.RateLimitPolicy.Command);
         if (!await rateLimiter.IsAllowedAsync($"{Context.Update.From!.Id}"))
         {
             await Context.Update.ReplyAsync(Context.BotClient, language.common_rateLimitSlowDown);
             return;
         }
 
-        var osuUserInDatabase = await _database.OsuUsers.FindAsync(Context.Update.From!.Id);
+        OsuUser? osuUserInDatabase = await _database.OsuUsers.FindAsync(Context.Update.From!.Id);
         var keywordParameters = Context.Update.Text!.GetCommandKeywordParameters()!;
         var parameters = Context.Update.Text!.GetCommandParameters()!.Where(m => !keywordParameters.Contains(m)).ToArray();
 
-        var waitMessage = await Context.Update.ReplyAsync(Context.BotClient, language.waiting);
+        Message waitMessage = await Context.Update.ReplyAsync(Context.BotClient, language.waiting);
 
         // Fake 500ms wait
         await Task.Delay(500);
@@ -99,7 +100,7 @@ public class OsuUserCommand(bool includeIdInSearch = false) : CommandBase<Messag
             }
         }
 
-        var userResponse = await _osuApiV2.Users.GetUser(username, new GetUserQueryParameters(), ruleset);
+        GetUserResponse? userResponse = await _osuApiV2.Users.GetUser(username, new GetUserQueryParameters(), ruleset);
         if (userResponse is null)
         {
             await waitMessage.EditAsync(Context.BotClient, language.error_userNotFound);

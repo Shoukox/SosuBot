@@ -2,11 +2,13 @@
 using OsuApi.BanchoV2;
 using OsuApi.BanchoV2.Clients.Beatmaps.HttpIO;
 using OsuApi.BanchoV2.Clients.Users.HttpIO;
+using OsuApi.BanchoV2.Models;
 using OsuApi.BanchoV2.Users.Models;
 using SosuBot.Database;
 using SosuBot.Database.Models;
 using SosuBot.Extensions;
 using SosuBot.Helpers;
+using SosuBot.Localization;
 using SosuBot.Services.Synchronization;
 using SosuBot.TelegramHandlers.Abstract;
 using Telegram.Bot.Types;
@@ -34,8 +36,8 @@ public sealed class OsuScoreCommand : CommandBase<Message>
 
     public override async Task ExecuteAsync()
     {
-        var language = Context.GetLocalization();
-        var rateLimiter = _rateLimiterFactory.Get(RateLimiterFactory.RateLimitPolicy.Command);
+        ILocalization language = Context.GetLocalization();
+        TokenBucketRateLimiter rateLimiter = _rateLimiterFactory.Get(RateLimiterFactory.RateLimitPolicy.Command);
         if (!await rateLimiter.IsAllowedAsync($"{Context.Update.From!.Id}"))
         {
             await Context.Update.ReplyAsync(Context.BotClient, language.common_rateLimitSlowDown);
@@ -43,10 +45,10 @@ public sealed class OsuScoreCommand : CommandBase<Message>
         }
 
 
-        var chatInDatabase = await _database.TelegramChats.FindAsync(Context.Update.Chat.Id);
-        var osuUserInDatabase = await _database.OsuUsers.FindAsync(Context.Update.From!.Id);
+        TelegramChat? chatInDatabase = await _database.TelegramChats.FindAsync(Context.Update.Chat.Id);
+        OsuUser? osuUserInDatabase = await _database.OsuUsers.FindAsync(Context.Update.From!.Id);
 
-        var waitMessage = await Context.Update.ReplyAsync(Context.BotClient, language.waiting);
+        Message waitMessage = await Context.Update.ReplyAsync(Context.BotClient, language.waiting);
 
         // Fake 500ms wait
         await Task.Delay(500);
@@ -166,7 +168,7 @@ public sealed class OsuScoreCommand : CommandBase<Message>
         }
 
         // getting osu!player through username
-        var userResponse =
+        GetUserResponse? userResponse =
             await _osuApiV2.Users.GetUser($"@{osuUsernameForScore}", new GetUserQueryParameters());
         if (userResponse is null)
         {
@@ -182,7 +184,7 @@ public sealed class OsuScoreCommand : CommandBase<Message>
         var areScoresFromOtherRuleset = false;
         Playmode? beatmapPlaymode = null;
 
-        var scoresResponse = await _osuApiV2.Beatmaps.GetUserBeatmapScores(beatmapId.Value,
+        GetUserBeatmapScoresResponse? scoresResponse = await _osuApiV2.Beatmaps.GetUserBeatmapScores(beatmapId.Value,
             userResponse.UserExtend!.Id.Value,
             new GetUserBeatmapScoresQueryParameters { Ruleset = playmode.Value.ToRuleset() });
 
@@ -204,7 +206,7 @@ public sealed class OsuScoreCommand : CommandBase<Message>
             beatmapPlaymode =
                 (Playmode)(await _cachingHelper.GetOrCacheBeatmap(beatmapId.Value, _osuApiV2))!.ModeInt!.Value;
 
-        var scores = scoresResponse.Scores!.GroupBy(s => string.Join("", s.Mods!.Select(m => m.Acronym)))
+        Score[] scores = scoresResponse.Scores!.GroupBy(s => string.Join("", s.Mods!.Select(m => m.Acronym)))
             .Select(m => m.MaxBy(s => s.Pp)!).OrderByDescending(m => m.Pp).ToArray();
 
         if (scores.Length == 0)
@@ -213,7 +215,7 @@ public sealed class OsuScoreCommand : CommandBase<Message>
             return;
         }
 
-        var beatmap = await _cachingHelper.GetOrCacheBeatmap(scores.First().BeatmapId!.Value, _osuApiV2);
+        BeatmapExtended? beatmap = await _cachingHelper.GetOrCacheBeatmap(scores.First().BeatmapId!.Value, _osuApiV2);
         if (beatmapset is null) beatmapset = await _cachingHelper.GetOrCacheBeatmapset(beatmap!.BeatmapsetId.Value, _osuApiV2);
         chatInDatabase!.LastBeatmapId = beatmap!.Id;
 
@@ -222,7 +224,7 @@ public sealed class OsuScoreCommand : CommandBase<Message>
         Playmode currentPlaymode = beatmapPlaymode ?? playmode.Value;
         for (var i = 0; i <= scores.Length - 1; i++)
         {
-            var score = scores[i];
+            Score score = scores[i];
 
             textToSend += LocalizationMessageHelper.CommandScore(language,
                 $"{_scoreHelper.GetScoreRankEmoji(score.Rank)}{_scoreHelper.ParseScoreRank(score.Rank!)}",

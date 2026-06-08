@@ -3,6 +3,7 @@ using Polly;
 using Polly.Contrib.WaitAndRetry;
 using Polly.Extensions.Http;
 using System.Net;
+using System.Net.Http.Headers;
 using ILogger = Microsoft.Extensions.Logging.ILogger;
 
 namespace SosuBot.ScoresObserver;
@@ -47,14 +48,14 @@ public static class PollyPolicies
                 3,
                 (_, response, _) =>
                 {
-                    var ra = response.Result.Headers.RetryAfter;
+                    RetryConditionHeaderValue? ra = response.Result.Headers.RetryAfter;
 
                     if (ra == null) return TimeSpan.FromSeconds(5);
 
                     if (ra.Delta.HasValue) return ra.Delta.Value;
                     if (ra.Date.HasValue)
                     {
-                        var delta = ra.Date.Value - DateTimeOffset.UtcNow;
+                        TimeSpan delta = ra.Date.Value - DateTimeOffset.UtcNow;
                         return delta > TimeSpan.Zero ? delta : TimeSpan.FromSeconds(1);
                     }
 
@@ -70,8 +71,8 @@ public static class PollyPolicies
 
     public static IAsyncPolicy<HttpResponseMessage> GetCombinedPolicy(ILogger logger)
     {
-        var transientRetryPolicy = GetTransientRetryPolicy(logger);
-        var retryAfterPolicy = GetRetryAfterPolicy(logger);
+        IAsyncPolicy<HttpResponseMessage> transientRetryPolicy = GetTransientRetryPolicy(logger);
+        IAsyncPolicy<HttpResponseMessage> retryAfterPolicy = GetRetryAfterPolicy(logger);
 
         return Policy.WrapAsync(transientRetryPolicy, retryAfterPolicy);
     }

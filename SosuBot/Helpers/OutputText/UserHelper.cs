@@ -41,7 +41,7 @@ public static class UserHelper
 
     public static void UpdateOsuUsers(BotContext database, UserExtend user, Playmode playmode)
     {
-        foreach (var osuUser in database.OsuUsers.Where(u => u.OsuUsername == user.Username))
+        foreach (OsuUser? osuUser in database.OsuUsers.Where(u => u.OsuUsername == user.Username))
             osuUser.Update(user, playmode);
     }
 

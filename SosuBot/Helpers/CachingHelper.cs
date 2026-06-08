@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Logging;
 using OsuApi;
 using OsuApi.BanchoV2;
+using OsuApi.BanchoV2.Clients.Beatmaps.HttpIO;
 using OsuApi.BanchoV2.Models;
 using OsuApi.BanchoV2.Users.Models;
 using Telegram.Bot.Types;
@@ -42,7 +43,7 @@ namespace SosuBot.Helpers
                     async token =>
                     {
                         logger?.LogInformation($"Getting beatmap infos ({beatmapId}) via osuApi");
-                        var response = await osuApiV2.Beatmaps.GetBeatmap(beatmapId);
+                        GetBeatmapResponse? response = await osuApiV2.Beatmaps.GetBeatmap(beatmapId);
                         return response?.BeatmapExtended ?? throw new InvalidOperationException($"Beatmap {beatmapId} not found.");
                     },
                     options: new HybridCacheEntryOptions { Expiration = TimeSpan.FromHours(1) }
@@ -68,7 +69,7 @@ namespace SosuBot.Helpers
                     async token =>
                     {
                         logger?.LogInformation($"Getting beatmapset infos ({beatmapsetId}) via osuApi");
-                        var response = await osuApiV2.Beatmapsets.GetBeatmapset(beatmapsetId);
+                        BeatmapsetExtended response = await osuApiV2.Beatmapsets.GetBeatmapset(beatmapsetId);
                         return response ?? throw new InvalidOperationException($"Beatmapset {beatmapsetId} not found.");
                     },
                     options: new HybridCacheEntryOptions { Expiration = TimeSpan.FromHours(1) }
@@ -93,7 +94,7 @@ namespace SosuBot.Helpers
                     async token =>
                     {
                         logger?.LogInformation($"Getting score infos ({scoreId}) via osuApi");
-                        var response = await osuApiV2.Scores.GetScore(scoreId);
+                        Score? response = await osuApiV2.Scores.GetScore(scoreId);
                         return response ?? throw new InvalidOperationException($"Score {scoreId} not found.");
                     },
                     options: new HybridCacheEntryOptions { Expiration = TimeSpan.FromDays(7) }

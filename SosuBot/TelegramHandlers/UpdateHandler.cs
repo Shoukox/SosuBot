@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using SosuBot.Configuration;
 using SosuBot.Database;
+using SosuBot.Database.Models;
 using SosuBot.Extensions;
 using SosuBot.TelegramHandlers.Abstract;
 using SosuBot.TelegramHandlers.Commands;
@@ -69,7 +70,7 @@ public class UpdateHandler(
         // if a text-command message
         if (update.Message is { Text: string } msg && msg.Text.IsCommand())
         {
-            var admin = await database.OsuUsers.FirstOrDefaultAsync(u => u.IsAdmin, cancellationToken);
+            OsuUser? admin = await database.OsuUsers.FirstOrDefaultAsync(u => u.IsAdmin, cancellationToken);
             if (admin is null) return;
 
             var errorText =
@@ -117,7 +118,7 @@ public class UpdateHandler(
         if (callbackQuery.Data is not { } data) return;
 
         var command = data.Split(" ")[0];
-        var callbackFactory = Callbacks.GetValueOrDefault(command, () => new DummyCallback());
+        Func<CommandBase<CallbackQuery>> callbackFactory = Callbacks.GetValueOrDefault(command, () => new DummyCallback());
         CommandBase<CallbackQuery> executableCommand = callbackFactory();
 
         executableCommand.SetContext(
@@ -135,7 +136,7 @@ public class UpdateHandler(
     private async Task OnCommand(ITelegramBotClient botClient, Message msg, CancellationToken cancellationToken)
     {
         var command = msg.Text!.GetCommand().RemoveUsernamePostfix(botConfig.Value.Username);
-        var commandFactory = Commands.GetValueOrDefault(command, () => new DummyCommand());
+        Func<CommandBase<Message>> commandFactory = Commands.GetValueOrDefault(command, () => new DummyCommand());
         CommandBase<Message> executableCommand = commandFactory();
 
         executableCommand.SetContext(

@@ -2,9 +2,11 @@
 using Microsoft.Extensions.DependencyInjection;
 using OsuApi.BanchoV2;
 using OsuApi.BanchoV2.Clients.Users.HttpIO;
+using OsuApi.BanchoV2.Users.Models;
 using SosuBot.Database;
 using SosuBot.Database.Models;
 using SosuBot.Extensions;
+using SosuBot.Localization;
 using SosuBot.TelegramHandlers.Abstract;
 using Telegram.Bot.Types;
 
@@ -25,7 +27,7 @@ public sealed class OsuSetCommand : CommandBase<Message>
 
     public override async Task ExecuteAsync()
     {
-        var language = Context.GetLocalization();
+        ILocalization language = Context.GetLocalization();
 
         var msgText = Context.Update.Text!;
         var parameters = msgText.GetCommandParameters()!;
@@ -37,18 +39,18 @@ public sealed class OsuSetCommand : CommandBase<Message>
             return;
         }
 
-        var osuUserInDatabase =
+        OsuUser? osuUserInDatabase =
             await _database.OsuUsers.FirstOrDefaultAsync(m => m.TelegramId == Context.Update.From!.Id);
-        var response = await _osuApiV2.Users.GetUser($"@{osuUsername}", new GetUserQueryParameters());
+        GetUserResponse? response = await _osuApiV2.Users.GetUser($"@{osuUsername}", new GetUserQueryParameters());
         if (response is null)
         {
             await Context.Update.ReplyAsync(Context.BotClient, language.error_userNotFound);
             return;
         }
 
-        var user = response.UserExtend!;
+        UserExtend user = response.UserExtend!;
 
-        var playmode = user.Playmode!.ParseRulesetToPlaymode();
+        Playmode playmode = user.Playmode!.ParseRulesetToPlaymode();
         if (osuUserInDatabase is null)
         {
             var newOsuUser = new OsuUser

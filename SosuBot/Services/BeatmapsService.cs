@@ -78,7 +78,7 @@ namespace SosuBot.Services
             try
             {
                 using var request = new HttpRequestMessage(HttpMethod.Get, BaseUrlOsu + $"osu/{beatmapId}");
-                var response = await HttpClient.SendAsync(request);
+                HttpResponseMessage response = await HttpClient.SendAsync(request);
                 response.EnsureSuccessStatusCode();
                 return Result<Stream>.FromSuccess(await response.Content.ReadAsStreamAsync());
             }
@@ -93,7 +93,7 @@ namespace SosuBot.Services
             try
             {
                 using var request = new HttpRequestMessage(HttpMethod.Get, BaseUrlSyui + $"osu/{beatmapId}");
-                var response = await HttpClient.SendAsync(request);
+                HttpResponseMessage response = await HttpClient.SendAsync(request);
                 response.EnsureSuccessStatusCode();
                 return Result<Stream>.FromSuccess(await response.Content.ReadAsStreamAsync());
             }
@@ -108,7 +108,7 @@ namespace SosuBot.Services
             try
             {
                 using var request = new HttpRequestMessage(HttpMethod.Get, BaseUrlMino + $"osu/{beatmapId}");
-                var response = await HttpClient.SendAsync(request);
+                HttpResponseMessage response = await HttpClient.SendAsync(request);
                 response.EnsureSuccessStatusCode();
                 return Result<Stream>.FromSuccess(await response.Content.ReadAsStreamAsync());
             }

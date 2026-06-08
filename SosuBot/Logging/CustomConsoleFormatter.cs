@@ -70,7 +70,7 @@ internal class CustomConsoleFormatter : ConsoleFormatter, IDisposable
         if (_formatterOptions.TimestampFormat == null)
             return;
 
-        var dateTime = _formatterOptions.UseUtcTimestamp ? DateTime.UtcNow : DateTime.Now;
+        DateTime dateTime = _formatterOptions.UseUtcTimestamp ? DateTime.UtcNow : DateTime.Now;
         var timestamp = dateTime.ToString(_formatterOptions.TimestampFormat);
 
         var message = $"[{timestamp}]";

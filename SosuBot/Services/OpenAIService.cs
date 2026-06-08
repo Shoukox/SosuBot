@@ -4,6 +4,8 @@ using Newtonsoft.Json;
 using OpenAI.Responses;
 using OsuApi.BanchoV2;
 using OsuApi.BanchoV2.Clients.Users.HttpIO;
+using OsuApi.BanchoV2.Models;
+using OsuApi.BanchoV2.Users.Models;
 using SosuBot.Configuration;
 using SosuBot.Database.Models;
 using SosuBot.Extensions;
@@ -184,8 +186,8 @@ public sealed class OpenAiService
         _syncDictionary[userTelegramId] = true;
 
         List<ResponseItem> inputItems;
-        var developerMessageItem = ResponseItem.CreateDeveloperMessageItem(DeveloperPrompt);
-        var userResponseItem = ResponseItem.CreateUserMessageItem(userInput);
+        MessageResponseItem developerMessageItem = ResponseItem.CreateDeveloperMessageItem(DeveloperPrompt);
+        MessageResponseItem userResponseItem = ResponseItem.CreateUserMessageItem(userInput);
         if (_chatDictionary.ContainsKey(userTelegramId))
         {
             _chatDictionary[userTelegramId].Add(userResponseItem);
@@ -218,7 +220,7 @@ public sealed class OpenAiService
                 OpenAIResponse response = await _responseClient.CreateResponseAsync(inputItems, options);
                 inputItems.AddRange(response.OutputItems);
 
-                foreach (var functionCall in response.OutputItems.OfType<FunctionCallResponseItem>())
+                foreach (FunctionCallResponseItem functionCall in response.OutputItems.OfType<FunctionCallResponseItem>())
                 {
                     switch (functionCall.FunctionName)
                     {
@@ -227,7 +229,7 @@ public sealed class OpenAiService
                                 var userId =
                                     functionCall.FunctionArguments.ToObjectFromJson<Dictionary<string, string>>()![
                                         "user_id"];
-                                var getUserResponse =
+                                GetUserResponse? getUserResponse =
                                     await _osuApiV2.Users.GetUser(userId, new GetUserQueryParameters());
                                 getUserResponse!.UserExtend!.Cover = null;
                                 getUserResponse.UserExtend.CoverUrl = null;
@@ -246,17 +248,17 @@ public sealed class OpenAiService
                             }
                         case FunctionNames.GetUserScores:
                             {
-                                var parameters = functionCall.FunctionArguments
+                                OpenAiFunctionCallParameters parameters = functionCall.FunctionArguments
                                     .ToObjectFromJson<OpenAiFunctionCallParameters>()!;
                                 var userId = parameters.UserId!.Value;
                                 var scoreType = parameters.ScoreType!;
                                 var mode = ((Playmode)parameters.Mode!).ToRuleset();
                                 var limit = parameters.Limit!.Value;
 
-                                var getUserBestResponse =
+                                GetUserScoresResponse? getUserBestResponse =
                                     await _osuApiV2.Users.GetUserScores(userId, scoreType,
                                         new GetUserScoreQueryParameters { Mode = mode, Limit = limit });
-                                var scores = getUserBestResponse!.Scores;
+                                Score[] scores = getUserBestResponse!.Scores;
                                 Array.ForEach(scores, m =>
                                 {
                                     m.Beatmap!.Checksum = null;
@@ -318,13 +320,13 @@ public sealed class OpenAiService
                             }
                         case FunctionNames.GetCountryRanking:
                             {
-                                var parameters = functionCall.FunctionArguments
+                                OpenAiFunctionCallParameters parameters = functionCall.FunctionArguments
                                     .ToObjectFromJson<OpenAiFunctionCallParameters>()!;
                                 var count = parameters.Count!.Value;
                                 var countryCode = parameters.CountryCode!;
                                 var mode = parameters.Mode!.Value;
 
-                                var getUserBestResponse =
+                                List<UserStatistics>? getUserBestResponse =
                                     await OsuApiHelper.GetUsersFromRanking(_osuApiV2, (Playmode)mode, countryCode, count);
                                 var functionOutput = JsonConvert.SerializeObject(getUserBestResponse, Formatting.None,
                                     _jsonSerializerSettings);
@@ -340,8 +342,8 @@ public sealed class OpenAiService
                     requiresAction = true;
                 }
 
-                var messageResponseItems = response.OutputItems.OfType<MessageResponseItem>();
-                foreach (var messageResponseItem in messageResponseItems)
+                IEnumerable<MessageResponseItem> messageResponseItems = response.OutputItems.OfType<MessageResponseItem>();
+                foreach (MessageResponseItem messageResponseItem in messageResponseItems)
                 {
                     var currentOutputText = messageResponseItem.Content[0].Text;
                     output += currentOutputText;

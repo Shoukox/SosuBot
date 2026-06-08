@@ -89,7 +89,7 @@ public static class TelegramHelper
     {
         if (chat.Type is ChatType.Group or ChatType.Supergroup)
         {
-            var chatAdmins = await botClient.GetChatAdministrators(chat.Id);
+            ChatMember[] chatAdmins = await botClient.GetChatAdministrators(chat.Id);
             return chatAdmins.Any(m => m.User.Id == userId);
         }
         return true; // in dm you are a trivial admin

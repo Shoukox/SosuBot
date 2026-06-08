@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using SosuBot.Database;
+using SosuBot.Database.Models;
 using SosuBot.Localization;
 using SosuBot.Localization.Languages;
 using SosuBot.TelegramHandlers.Abstract;
@@ -15,7 +16,7 @@ public static class LocalizationExtensions
 
     public static ILocalization GetLocalization<TUpdateType>(this ICommandContext<TUpdateType> context) where TUpdateType : class
     {
-        var database = context.ServiceProvider.GetRequiredService<BotContext>();
+        BotContext database = context.ServiceProvider.GetRequiredService<BotContext>();
 
         var chatId = context.Update switch
         {
@@ -27,7 +28,7 @@ public static class LocalizationExtensions
         if (chatId is null)
             return RussianLocalization;
 
-        var chat = database.TelegramChats.Find(chatId.Value);
+        TelegramChat? chat = database.TelegramChats.Find(chatId.Value);
         if (chat?.LanguageCode?.StartsWith(Language.English, StringComparison.OrdinalIgnoreCase) == true)
             return EnglishLocalization;
 

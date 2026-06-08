@@ -1,13 +1,16 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using OsuApi.BanchoV2;
 using OsuApi.BanchoV2.Clients.Users.HttpIO;
+using OsuApi.BanchoV2.Users.Models;
 using SosuBot.Database;
 using SosuBot.Database.Models;
 using SosuBot.Extensions;
 using SosuBot.Helpers;
+using SosuBot.Localization;
 using SosuBot.TelegramHandlers.Abstract;
 using Telegram.Bot.Exceptions;
 using Telegram.Bot.Types;
+using Telegram.Bot.Types.ReplyMarkups;
 
 namespace SosuBot.TelegramHandlers.Callbacks;
 
@@ -28,7 +31,7 @@ public class OsuUserCallback : CommandBase<CallbackQuery>
 
     public override async Task ExecuteAsync()
     {
-        var language = Context.GetLocalization();
+        ILocalization language = Context.GetLocalization();
 
         var parameters = Context.Update.Data!.Split(' ');
         var playmode = (Playmode)int.Parse(parameters[1]);
@@ -36,7 +39,7 @@ public class OsuUserCallback : CommandBase<CallbackQuery>
 
         var chatId = Context.Update.Message!.Chat.Id;
 
-        var user = (await _osuApiV2.Users.GetUser($"@{osuUsername}", new GetUserQueryParameters(),
+        UserExtend user = (await _osuApiV2.Users.GetUser($"@{osuUsername}", new GetUserQueryParameters(),
             playmode.ToRuleset()))!.UserExtend!;
 
         double? currentPp = user.Statistics!.Pp;
@@ -51,7 +54,7 @@ public class OsuUserCallback : CommandBase<CallbackQuery>
             ppDifferenceText,
             $"{OsuConstants.TotalAchievementsCount}");
 
-        var ik = UserHelper.BuildUserModeKeyboard(user.Username!);
+        InlineKeyboardMarkup ik = UserHelper.BuildUserModeKeyboard(user.Username!);
 
         try
         {

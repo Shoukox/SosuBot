@@ -5,6 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using OsuApi.BanchoV2;
+using Polly;
 using SosuBot.Database;
 using SosuBot.Database.Models;
 using SosuBot.ScoresObserver;
@@ -13,7 +14,7 @@ using SosuBot.ScoresObserver.Logging;
 using SosuBot.ScoresObserver.Services;
 using Telegram.Bot;
 
-var builder = Host.CreateApplicationBuilder(args);
+HostApplicationBuilder builder = Host.CreateApplicationBuilder(args);
 
 // Logging
 var loggingFileName = "logs/{Date}.log";
@@ -23,16 +24,16 @@ builder.Logging.AddConsoleFormatter<CustomConsoleFormatter, CustomConsoleFormatt
 ILogger logger = builder.Services.BuildServiceProvider().GetRequiredService<ILogger<Program>>();
 
 // Policy
-var pollyPolicies = PollyPolicies.GetCombinedPolicy(logger);
+IAsyncPolicy<HttpResponseMessage> pollyPolicies = PollyPolicies.GetCombinedPolicy(logger);
 
 // Services
 builder.Services.Configure<OsuApiV2Configuration>(builder.Configuration.GetSection(nameof(OsuApiV2Configuration)));
 builder.Services.AddCustomHttpClient(nameof(BanchoApiV2), 300).AddPolicyHandler(pollyPolicies);
 builder.Services.AddSingleton<BanchoApiV2>(provider =>
 {
-    var config = builder.Configuration.Get<OsuApiV2Configuration>()!;
-    var httpClient = provider.GetRequiredService<IHttpClientFactory>().CreateClient(nameof(BanchoApiV2));
-    var logger = provider.GetRequiredService<ILogger<BanchoApiV2>>();
+    OsuApiV2Configuration config = builder.Configuration.Get<OsuApiV2Configuration>()!;
+    HttpClient httpClient = provider.GetRequiredService<IHttpClientFactory>().CreateClient(nameof(BanchoApiV2));
+    ILogger<BanchoApiV2> logger = provider.GetRequiredService<ILogger<BanchoApiV2>>();
     return new BanchoApiV2(config.ClientId, config.ClientSecret, httpClient);
 });
 var botToken = Environment.GetEnvironmentVariable("TELEGRAM_BOT_TOKEN")
@@ -54,5 +55,5 @@ builder.Services.AddDbContextPool<BotContext>(options =>
         .UseNpgsql(connectionString, (m) => m.MapEnum<Playmode>())
         .ConfigureWarnings(m => m.Ignore(RelationalEventId.PendingModelChangesWarning)));
 
-var app = builder.Build();
+IHost app = builder.Build();
 app.Run();

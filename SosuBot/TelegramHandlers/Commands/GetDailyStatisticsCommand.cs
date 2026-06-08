@@ -3,7 +3,9 @@ using Microsoft.Extensions.Logging;
 using OsuApi.BanchoV2;
 using OsuApi.BanchoV2.Models;
 using SosuBot.Database;
+using SosuBot.Database.Models;
 using SosuBot.Extensions;
+using SosuBot.Localization;
 using SosuBot.Services.Synchronization;
 using SosuBot.TelegramHandlers.Abstract;
 using Telegram.Bot.Types;
@@ -31,14 +33,14 @@ public sealed class GetDailyStatisticsCommand : CommandBase<Message>
 
     public override async Task ExecuteAsync()
     {
-        var rateLimiter = _rateLimiterFactory.Get(RateLimiterFactory.RateLimitPolicy.Command);
-        var language = Context.GetLocalization();
+        TokenBucketRateLimiter rateLimiter = _rateLimiterFactory.Get(RateLimiterFactory.RateLimitPolicy.Command);
+        ILocalization language = Context.GetLocalization();
         if (!await rateLimiter.IsAllowedAsync($"{Context.Update.From!.Id}"))
         {
             await Context.Update.ReplyAsync(Context.BotClient, language.common_rateLimitSlowDown);
             return;
         }
-        var waitMessage = await Context.Update.ReplyAsync(Context.BotClient, language.waiting);
+        Message waitMessage = await Context.Update.ReplyAsync(Context.BotClient, language.waiting);
 
         // Fake 500ms wait
         await Task.Delay(500);
@@ -65,7 +67,7 @@ public sealed class GetDailyStatisticsCommand : CommandBase<Message>
             return;
         }
 
-        var playmode = ruleset.ParseRulesetToPlaymode();
+        Playmode playmode = ruleset.ParseRulesetToPlaymode();
 
         sendText = await _scoreHelper.GetDailyStatisticsSendText(playmode, dailyStats, _osuApiV2, language);
 

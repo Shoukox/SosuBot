@@ -1,6 +1,8 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using SosuBot.Database;
+using SosuBot.Database.Models;
 using SosuBot.Extensions;
+using SosuBot.Localization;
 using SosuBot.Services;
 using SosuBot.Services.Synchronization;
 using SosuBot.TelegramHandlers.Abstract;
@@ -27,7 +29,7 @@ public sealed class RenderSkinSetCommand : CommandBase<Message>
 
     public override async Task ExecuteAsync()
     {
-        var language = Context.GetLocalization();
+        ILocalization language = Context.GetLocalization();
         if ((Context.Update.ReplyToMessage == null || Context.Update.ReplyToMessage.Document == null ||
             Context.Update.ReplyToMessage?.Document.FileName?[^4..] != ".osk") && (Context.Update.Document == null || Context.Update.Document.FileName?[^4..] != ".osk"))
         {
@@ -41,7 +43,7 @@ public sealed class RenderSkinSetCommand : CommandBase<Message>
             return;
         }
 
-        var rateLimiter = _rateLimiterFactory.Get(RateLimiterFactory.RateLimitPolicy.Command);
+        TokenBucketRateLimiter rateLimiter = _rateLimiterFactory.Get(RateLimiterFactory.RateLimitPolicy.Command);
         if (!await rateLimiter.IsAllowedAsync($"{Context.Update.From!.Id}"))
         {
             await Context.Update.ReplyAsync(Context.BotClient, language.common_rateLimitSlowDown);
@@ -49,16 +51,16 @@ public sealed class RenderSkinSetCommand : CommandBase<Message>
         }
 
 
-        var waitMessage = await Context.Update.ReplyAsync(Context.BotClient, language.waiting);
+        Message waitMessage = await Context.Update.ReplyAsync(Context.BotClient, language.waiting);
 
-        var osuUserInDatabase = await _database.OsuUsers.FindAsync(Context.Update.From!.Id);
+        OsuUser? osuUserInDatabase = await _database.OsuUsers.FindAsync(Context.Update.From!.Id);
         if (osuUserInDatabase is null)
         {
             await waitMessage.EditAsync(Context.BotClient, language.error_userNotSetHimself);
             return;
         }
 
-        var chatInDatabase = await _database.TelegramChats.FindAsync(Context.Update.Chat.Id);
+        TelegramChat? chatInDatabase = await _database.TelegramChats.FindAsync(Context.Update.Chat.Id);
 
         // Fake 500ms wait
         await Task.Delay(500);
@@ -85,7 +87,7 @@ public sealed class RenderSkinSetCommand : CommandBase<Message>
         string asciiSkinName = AnyAscii.Transliteration.Transliterate(fileName);
         asciiSkinName = asciiSkinName.Substring(0, asciiSkinName.Length - 4);
         asciiSkinName = asciiSkinName.Substring(0, Math.Min(53, asciiSkinName.Length)) + ".osk";
-        var skinUploadResponse = await _replayRenderService.UploadSkin(skinStream, asciiSkinName);
+        ReplayRenderService.SkinUploadResponse? skinUploadResponse = await _replayRenderService.UploadSkin(skinStream, asciiSkinName);
         if (skinUploadResponse is null)
         {
             await waitMessage.EditAsync(Context.BotClient, language.render_skin_uploadError);

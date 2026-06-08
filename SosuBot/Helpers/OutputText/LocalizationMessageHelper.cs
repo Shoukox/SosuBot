@@ -117,7 +117,7 @@ public static class LocalizationMessageHelper
         string ppDifferenceText,
         string achievementsTotalText)
     {
-        DateTime.TryParse(user.JoinDate?.Value, out var registerDateTime);
+        DateTime.TryParse(user.JoinDate?.Value, out DateTime registerDateTime);
         int achievementsCount = user.UserAchievements?.Length ?? 0;
 
         return language.command_user.Fill([

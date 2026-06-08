@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using SosuBot.Database;
 using SosuBot.Extensions;
+using SosuBot.Localization;
 using SosuBot.Services;
 using SosuBot.TelegramHandlers.Abstract;
 using Telegram.Bot.Types;
@@ -22,14 +23,14 @@ public class RenderStatusCallback() : CommandBase<CallbackQuery>
 
     public override async Task ExecuteAsync()
     {
-        var language = Context.GetLocalization();
+        ILocalization language = Context.GetLocalization();
 
         var parameters = Context.Update.Data!.Split(' ');
         var jobId = int.Parse(parameters[1]);
 
         var chatId = Context.Update.Message!.Chat.Id;
 
-        var renderJob = await _replayRenderService.GetRenderJobInfo(jobId);
+        ReplayRenderService.RenderJob? renderJob = await _replayRenderService.GetRenderJobInfo(jobId);
         if (renderJob == null)
         {
             await Context.Update.AnswerAsync(Context.BotClient, language.callback_renderRequestNotFound, showAlert: true);

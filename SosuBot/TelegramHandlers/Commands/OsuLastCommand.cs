@@ -2,13 +2,16 @@
 using Microsoft.Extensions.Logging;
 using osu.Game.Rulesets.Scoring;
 using OsuApi.BanchoV2;
+using OsuApi.BanchoV2.Clients.Beatmaps.HttpIO;
 using OsuApi.BanchoV2.Clients.Users.HttpIO;
+using OsuApi.BanchoV2.Models;
 using OsuApi.BanchoV2.Users.Models;
 using SosuBot.Database;
 using SosuBot.Database.Models;
 using SosuBot.Extensions;
 using SosuBot.Helpers;
 using SosuBot.Helpers.Types;
+using SosuBot.Localization;
 using SosuBot.PerformanceCalculator;
 using SosuBot.Services;
 using SosuBot.Services.Synchronization;
@@ -48,17 +51,17 @@ public class OsuLastCommand(bool onlyPassed = false, bool sendCover = false) : C
 
     public override async Task ExecuteAsync()
     {
-        var language = Context.GetLocalization();
-        var rateLimiter = _rateLimiterFactory.Get(RateLimiterFactory.RateLimitPolicy.Command);
+        ILocalization language = Context.GetLocalization();
+        TokenBucketRateLimiter rateLimiter = _rateLimiterFactory.Get(RateLimiterFactory.RateLimitPolicy.Command);
         if (!await rateLimiter.IsAllowedAsync($"{Context.Update.From!.Id}"))
         {
             await Context.Update.ReplyAsync(Context.BotClient, language.common_rateLimitSlowDown);
             return;
         }
-        var chatInDatabase = await _database.TelegramChats.FindAsync(Context.Update.Chat.Id);
-        var osuUserInDatabase = await _database.OsuUsers.FindAsync(Context.Update.From!.Id);
+        TelegramChat? chatInDatabase = await _database.TelegramChats.FindAsync(Context.Update.Chat.Id);
+        OsuUser? osuUserInDatabase = await _database.OsuUsers.FindAsync(Context.Update.From!.Id);
 
-        var waitMessage = await Context.Update.ReplyAsync(Context.BotClient, language.waiting);
+        Message waitMessage = await Context.Update.ReplyAsync(Context.BotClient, language.waiting);
 
         // Fake 500ms wait
         await Task.Delay(500);
@@ -134,7 +137,7 @@ public class OsuLastCommand(bool onlyPassed = false, bool sendCover = false) : C
 
         // getting osu!player through username
         _logger.LogInformation("[/last] Get user from osu!api");
-        var userResponse =
+        GetUserResponse? userResponse =
             await _osuApiV2.Users.GetUser($"@{osuUsernameForLastScores}", new GetUserQueryParameters());
         _logger.LogInformation("[/last] End of get user from osu!api");
         if (userResponse is null)
@@ -150,7 +153,7 @@ public class OsuLastCommand(bool onlyPassed = false, bool sendCover = false) : C
         ruleset ??= userResponse.UserExtend!.Playmode!;
 
         _logger.LogInformation("[/last] Get user scores from osu!api");
-        var lastScoresResponse = await _osuApiV2.Users.GetUserScores(userResponse.UserExtend!.Id.Value,
+        GetUserScoresResponse? lastScoresResponse = await _osuApiV2.Users.GetUserScores(userResponse.UserExtend!.Id.Value,
             ScoreType.Recent,
             new GetUserScoreQueryParameters
             { IncludeFails = Convert.ToInt32(!_onlyPassed), Limit = limit, Mode = ruleset });
@@ -162,7 +165,7 @@ public class OsuLastCommand(bool onlyPassed = false, bool sendCover = false) : C
             return;
         }
 
-        var lastScores = lastScoresResponse.Scores;
+        Score[] lastScores = lastScoresResponse.Scores;
         BeatmapExtended[] beatmaps = lastScores
             .Select(async score => await _cachingHelper.GetOrCacheBeatmap(score.Beatmap!.Id!.Value, _osuApiV2))
             .Select(t => t.Result).ToArray()!;
@@ -175,20 +178,20 @@ public class OsuLastCommand(bool onlyPassed = false, bool sendCover = false) : C
         var beatmapsetIdOfFirstScore = beatmaps[0].BeatmapsetId!.Value;
         for (var i = 0; i <= lastScores.Length - 1; i++)
         {
-            var score = await _cachingHelper.GetOrCacheScore(lastScores[i].Id!.Value, _osuApiV2);
-            var beatmap = beatmaps[i];
+            Score? score = await _cachingHelper.GetOrCacheScore(lastScores[i].Id!.Value, _osuApiV2);
+            BeatmapExtended beatmap = beatmaps[i];
 
             var hitobjectsSum = beatmap.CountCircles + beatmap.CountSliders + beatmap.CountSpinners;
             bool beatmapContainsTooManyHitObjects = hitobjectsSum >= 20000;
-            var mods = score!.Mods!;
+            OsuApi.BanchoV2.Models.Mod[] mods = score!.Mods!;
 
             if (i == 0) chatInDatabase!.LastBeatmapId = beatmap.Id;
 
             var passed = score.Passed!.Value;
-            var scoreStatistics = score.Statistics!.ToStatistics();
+            Dictionary<HitResult, int> scoreStatistics = score.Statistics!.ToStatistics();
 
             // Get osu! mods of the score
-            var scoreMods = mods.ToOsuMods(playmode);
+            osu.Game.Rulesets.Mods.Mod[] scoreMods = mods.ToOsuMods(playmode);
 
             // Get score statistics for fc
             _logger.LogInformation("[/last] Get score statistics for fc");
@@ -216,7 +219,7 @@ public class OsuLastCommand(bool onlyPassed = false, bool sendCover = false) : C
             PPResult? calculatedPp = new PPResult() { Current = null, IfFC = null };
             if (!beatmapContainsTooManyHitObjects)
             {
-                var beatmapFile = await _beatmapsService.DownloadOrCacheBeatmap(beatmap.Id!.Value);
+                Stream beatmapFile = await _beatmapsService.DownloadOrCacheBeatmap(beatmap.Id!.Value);
                 _logger.LogInformation("[/last] Calculating pp");
                 calculatedPp = new PPResult
                 {
@@ -268,7 +271,7 @@ public class OsuLastCommand(bool onlyPassed = false, bool sendCover = false) : C
             double? difficultyRating = calculatedPp?.IfFC?.DifficultyAttributes.StarRating;
             if (difficultyRating == null)
             {
-                var beatmapAttributesResponse = await _osuApiV2.Beatmaps.GetBeatmapAttributes(beatmap.Id.Value, new() { RulesetId = ((int)playmode).ToString(), Mods = mods });
+                GetBeatmapAttributesResponse? beatmapAttributesResponse = await _osuApiV2.Beatmaps.GetBeatmapAttributes(beatmap.Id.Value, new() { RulesetId = ((int)playmode).ToString(), Mods = mods });
 
                 int? maxCombo = beatmapAttributesResponse?.DifficultyAttributes?.MaxCombo;
                 if (maxCombo != null && maxCombo != 0)

@@ -1,7 +1,10 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using OsuApi.BanchoV2;
+using OsuApi.BanchoV2.Clients.Users.HttpIO;
 using SosuBot.Database;
+using SosuBot.Database.Models;
 using SosuBot.Extensions;
+using SosuBot.Localization;
 using SosuBot.Services.BackgroundServices;
 using SosuBot.Services.Synchronization;
 using SosuBot.TelegramHandlers.Abstract;
@@ -25,8 +28,8 @@ public sealed class TrackCommand : CommandBase<Message>
     }
     public override async Task ExecuteAsync()
     {
-        var language = Context.GetLocalization();
-        var rateLimiter = _rateLimiterFactory.Get(RateLimiterFactory.RateLimitPolicy.Command);
+        ILocalization language = Context.GetLocalization();
+        TokenBucketRateLimiter rateLimiter = _rateLimiterFactory.Get(RateLimiterFactory.RateLimitPolicy.Command);
         if (!await rateLimiter.IsAllowedAsync($"{Context.Update.From!.Id}"))
         {
             await Context.Update.ReplyAsync(Context.BotClient, language.common_rateLimitSlowDown);
@@ -34,9 +37,9 @@ public sealed class TrackCommand : CommandBase<Message>
         }
 
 
-        var chatInDatabase = await _database.TelegramChats.FindAsync(Context.Update.Chat.Id);
+        TelegramChat? chatInDatabase = await _database.TelegramChats.FindAsync(Context.Update.Chat.Id);
 
-        var waitMessage = await Context.Update.ReplyAsync(Context.BotClient, language.waiting);
+        Message waitMessage = await Context.Update.ReplyAsync(Context.BotClient, language.waiting);
 
         // Fake 500ms wait
         await Task.Delay(500);
@@ -78,7 +81,7 @@ public sealed class TrackCommand : CommandBase<Message>
         HashSet<int> trackedPlayers = new HashSet<int>();
         foreach (string osuUsername in parameters)
         {
-            var getUserResponse = await _osuApiV2.Users.GetUser("@" + osuUsername, new());
+            GetUserResponse? getUserResponse = await _osuApiV2.Users.GetUser("@" + osuUsername, new());
             if (getUserResponse == null)
             {
                 await waitMessage.EditAsync(Context.BotClient, language.error_userNotFound + $"\n({osuUsername})");

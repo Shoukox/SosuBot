@@ -1,4 +1,5 @@
 ﻿using SosuBot.Extensions;
+using SosuBot.Localization;
 using SosuBot.TelegramHandlers.Abstract;
 using Telegram.Bot.Types;
 
@@ -10,7 +11,7 @@ public sealed class HelpCommand : CommandBase<Message>
 
     public override async Task ExecuteAsync()
     {
-        var language = Context.GetLocalization();
+        ILocalization language = Context.GetLocalization();
         await Context.Update.ReplyAsync(Context.BotClient, language.command_help, parseMode: Telegram.Bot.Types.Enums.ParseMode.Html);
     }
 }

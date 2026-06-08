@@ -1,6 +1,8 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using SosuBot.Database;
+using SosuBot.Database.Models;
 using SosuBot.Extensions;
+using SosuBot.Localization;
 using SosuBot.TelegramHandlers.Abstract;
 using Telegram.Bot;
 using Telegram.Bot.Types;
@@ -20,21 +22,21 @@ public sealed class OsuChatstatsExcludeCommand : CommandBase<Message>
     }
     public override async Task ExecuteAsync()
     {
-        var language = Context.GetLocalization();
+        ILocalization language = Context.GetLocalization();
         if (Context.Update.Chat.Type == Telegram.Bot.Types.Enums.ChatType.Private)
         {
             await Context.Update.ReplyAsync(Context.BotClient, language.group_onlyForGroups);
             return;
         }
-        var chatAdmins = await Context.BotClient.GetChatAdministrators(Context.Update.Chat.Id);
+        ChatMember[] chatAdmins = await Context.BotClient.GetChatAdministrators(Context.Update.Chat.Id);
         if (!chatAdmins.Any(m => m.User.Id == Context.Update.From?.Id))
         {
             await Context.Update.ReplyAsync(Context.BotClient, language.group_onlyForAdmins);
             return;
         }
-        var chatInDatabase = await _database.TelegramChats.FindAsync(Context.Update.Chat.Id);
+        TelegramChat? chatInDatabase = await _database.TelegramChats.FindAsync(Context.Update.Chat.Id);
 
-        var waitMessage = await Context.Update.ReplyAsync(Context.BotClient, language.waiting);
+        Message waitMessage = await Context.Update.ReplyAsync(Context.BotClient, language.waiting);
 
         // Fake 500ms wait
         await Task.Delay(500);
@@ -47,7 +49,7 @@ public sealed class OsuChatstatsExcludeCommand : CommandBase<Message>
         }
 
         var osuUsernameToExclude = parameters[0];
-        var osuUserToExclude = _database.OsuUsers.AsEnumerable().FirstOrDefault(m =>
+        OsuUser? osuUserToExclude = _database.OsuUsers.AsEnumerable().FirstOrDefault(m =>
             m.OsuUsername.Trim().Equals(osuUsernameToExclude.Trim(), StringComparison.InvariantCultureIgnoreCase));
         if (osuUserToExclude is null)
         {

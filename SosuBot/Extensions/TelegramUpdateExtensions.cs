@@ -69,7 +69,7 @@ public static class TelegramUpdateExtensions
 
 
         List<string> links = [];
-        foreach (var me in message.Entities.Where(e =>
+        foreach (MessageEntity? me in message.Entities.Where(e =>
                      e.Type is MessageEntityType.Url or MessageEntityType.TextLink))
             links.Add(me.Url ?? message.Text.Substring(me.Offset, me.Length));
 

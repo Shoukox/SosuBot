@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using SosuBot.Database;
+using SosuBot.Database.Models;
 using SosuBot.Extensions;
 using SosuBot.Localization;
 using SosuBot.TelegramHandlers.Abstract;
@@ -21,7 +22,7 @@ public sealed class RenderCursorSizeCommand : CommandBase<Message>
 
     public override async Task ExecuteAsync()
     {
-        var language = Context.GetLocalization();
+        ILocalization language = Context.GetLocalization();
         var parameters = Context.Update.Text!.GetCommandParameters()!.ToArray();
         if (parameters.Length == 0)
         {
@@ -37,9 +38,9 @@ public sealed class RenderCursorSizeCommand : CommandBase<Message>
             return;
         }
 
-        var waitMessage = await Context.Update.ReplyAsync(Context.BotClient, language.waiting);
+        Message waitMessage = await Context.Update.ReplyAsync(Context.BotClient, language.waiting);
 
-        var osuUserInDatabase = await _database.OsuUsers.FindAsync(Context.Update.From!.Id);
+        OsuUser? osuUserInDatabase = await _database.OsuUsers.FindAsync(Context.Update.From!.Id);
         if (osuUserInDatabase is null)
         {
             await waitMessage.EditAsync(Context.BotClient, language.error_userNotSetHimself);

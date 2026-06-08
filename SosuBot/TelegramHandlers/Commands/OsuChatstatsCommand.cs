@@ -2,6 +2,7 @@
 using SosuBot.Database;
 using SosuBot.Database.Models;
 using SosuBot.Extensions;
+using SosuBot.Localization;
 using SosuBot.TelegramHandlers.Abstract;
 using Telegram.Bot.Types;
 
@@ -20,22 +21,22 @@ public sealed class OsuChatstatsCommand : CommandBase<Message>
     }
     public override async Task ExecuteAsync()
     {
-        var language = Context.GetLocalization();
+        ILocalization language = Context.GetLocalization();
         if (Context.Update.Chat.Type == Telegram.Bot.Types.Enums.ChatType.Private)
         {
             await Context.Update.ReplyAsync(Context.BotClient, language.group_onlyForGroups);
             return;
         }
-        var chatInDatabase = await _database.TelegramChats.FindAsync(Context.Update.Chat.Id);
+        TelegramChat? chatInDatabase = await _database.TelegramChats.FindAsync(Context.Update.Chat.Id);
 
         var parameters = Context.Update.Text!.GetCommandParameters()!;
 
-        var waitMessage = await Context.Update.ReplyAsync(Context.BotClient, language.waiting);
+        Message waitMessage = await Context.Update.ReplyAsync(Context.BotClient, language.waiting);
 
         // Fake 500ms wait
         await Task.Delay(500);
 
-        var playmode = Playmode.Osu;
+        Playmode playmode = Playmode.Osu;
         if (parameters.Length == 1)
         {
             var ruleset = parameters[0].ParseToRuleset();
@@ -52,7 +53,7 @@ public sealed class OsuChatstatsCommand : CommandBase<Message>
         chatInDatabase!.ExcludeFromChatstats = chatInDatabase.ExcludeFromChatstats ?? new List<long>();
         foreach (var memberId in chatInDatabase.ChatMembers!)
         {
-            var foundMember = await _database.OsuUsers.FindAsync(memberId);
+            OsuUser? foundMember = await _database.OsuUsers.FindAsync(memberId);
             if (foundMember != null && !chatInDatabase.ExcludeFromChatstats.Contains(foundMember.OsuUserId))
                 foundChatMembers.Add(foundMember);
         }
@@ -63,7 +64,7 @@ public sealed class OsuChatstatsCommand : CommandBase<Message>
         var sendText = LocalizationMessageHelper.ChatstatsTitle(language, playmode.ToGamemode());
 
         var i = 1;
-        foreach (var chatMember in foundChatMembers)
+        foreach (OsuUser chatMember in foundChatMembers)
         {
             sendText += LocalizationMessageHelper.ChatstatsRow(language,
                 $"{i}",

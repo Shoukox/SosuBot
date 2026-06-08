@@ -3,8 +3,12 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Primitives;
 using OsuApi.BanchoV2;
+using OsuApi.BanchoV2.Models;
+using OsuParsers.Replays;
 using SosuBot.Database;
+using SosuBot.Database.Models;
 using SosuBot.Extensions;
+using SosuBot.Localization;
 using SosuBot.Services;
 using SosuBot.Services.Synchronization;
 using SosuBot.TelegramHandlers.Abstract;
@@ -36,24 +40,24 @@ public sealed class ReplayRenderCommand : CommandBase<Message>
 
     public override async Task ExecuteAsync()
     {
-        var language = Context.GetLocalization();
-        var rateLimiter = _rateLimiterFactory.Get(RateLimiterFactory.RateLimitPolicy.RenderCommand);
+        ILocalization language = Context.GetLocalization();
+        TokenBucketRateLimiter rateLimiter = _rateLimiterFactory.Get(RateLimiterFactory.RateLimitPolicy.RenderCommand);
         if (!await rateLimiter.IsAllowedAsync($"{Context.Update.From!.Id}"))
         {
             await Context.Update.ReplyAsync(Context.BotClient, language.replayRender_rateLimit);
             return;
         }
 
-        var chatInDatabase = await _database.TelegramChats.FindAsync(Context.Update.Chat.Id);
+        TelegramChat? chatInDatabase = await _database.TelegramChats.FindAsync(Context.Update.Chat.Id);
 
-        var osuUserInDatabase = await _database.OsuUsers.FindAsync(Context.Update.From!.Id);
+        OsuUser? osuUserInDatabase = await _database.OsuUsers.FindAsync(Context.Update.From!.Id);
         if (osuUserInDatabase is null)
         {
             await Context.Update.ReplyAsync(Context.BotClient, language.error_userNotSetHimself);
             return;
         }
 
-        var waitMessage = await Context.Update.ReplyAsync(Context.BotClient, language.waiting);
+        Message waitMessage = await Context.Update.ReplyAsync(Context.BotClient, language.waiting);
 
         // Fake 500ms wait
         await Task.Delay(500);
@@ -82,7 +86,7 @@ public sealed class ReplayRenderCommand : CommandBase<Message>
         if (Context.Update.ReplyToMessage?.Document != null &&
             Context.Update.ReplyToMessage?.Document.FileName![^4..] == ".osr")
         {
-            var tgfile = await Context.BotClient.GetFile(Context.Update.ReplyToMessage.Document.FileId);
+            TGFile tgfile = await Context.BotClient.GetFile(Context.Update.ReplyToMessage.Document.FileId);
 
             await Context.BotClient.DownloadFileConsideringLocalServer(tgfile, replayStream);
             replayStream.Position = 0;
@@ -90,14 +94,14 @@ public sealed class ReplayRenderCommand : CommandBase<Message>
         else if (Context.Update.Document != null &&
             Context.Update.Document.FileName![^4..] == ".osr")
         {
-            var tgfile = await Context.BotClient.GetFile(Context.Update.Document!.FileId);
+            TGFile tgfile = await Context.BotClient.GetFile(Context.Update.Document!.FileId);
 
             await Context.BotClient.DownloadFileConsideringLocalServer(tgfile, replayStream);
             replayStream.Position = 0;
         }
         else if (parameters.Length > 0 && OsuHelper.ParseOsuScoreLink([parameters[0]], out var scoreId) is { } scoreLink && scoreId != null)
         {
-            var score = await _osuApiV2.Scores.GetScore(scoreId.Value);
+            Score? score = await _osuApiV2.Scores.GetScore(scoreId.Value);
             if (score is null)
             {
                 await waitMessage.EditAsync(Context.BotClient, LocalizationMessageHelper.ReplayScoreNotFound(language, $"{scoreLink}"));
@@ -113,7 +117,7 @@ public sealed class ReplayRenderCommand : CommandBase<Message>
         }
         else if (Context.Update.ReplyToMessage != null && OsuHelper.ParseOsuScoreLink(Context.Update.ReplyToMessage.GetAllLinks(), out scoreId) is { } scoreLinkFromReply && scoreId != null)
         {
-            var score = await _osuApiV2.Scores.GetScore(scoreId.Value);
+            Score? score = await _osuApiV2.Scores.GetScore(scoreId.Value);
             if (score is null)
             {
                 await waitMessage.EditAsync(Context.BotClient, LocalizationMessageHelper.ReplayScoreNotFound(language, $"{scoreLinkFromReply}"));
@@ -139,7 +143,7 @@ public sealed class ReplayRenderCommand : CommandBase<Message>
         copyStream.Position = 0;
         replayStream.Position = 0;
 
-        var replayInfo = OsuParsers.Decoders.ReplayDecoder.Decode(copyStream);
+        Replay replayInfo = OsuParsers.Decoders.ReplayDecoder.Decode(copyStream);
 
         bool useExperimentalRenderer = osuUserInDatabase.RenderSettings.UseExperimentalRenderer;
         bool isRulesetNotStd = replayInfo.Ruleset != OsuParsers.Enums.Ruleset.Standard;
@@ -171,7 +175,7 @@ public sealed class ReplayRenderCommand : CommandBase<Message>
             [InlineKeyboardButton.WithCallbackData(language.replayRender_statusButton, $"render-status {renderQueueResponse!.JobId}"),
                 InlineKeyboardButton.WithCallbackData(language.replayRender_cancelButton, $"render-cancel {renderQueueResponse!.JobId}")]
         ]);
-        var message = await waitMessage.EditAsync(Context.BotClient, LocalizationMessageHelper.ReplayOnlineQueueSearching(language, $"{onlineRenderersCount}", $"{await _replayRenderService.GetWaitqueueLength(renderQueueResponse!.JobId)}"), replyMarkup: ik);
+        Message message = await waitMessage.EditAsync(Context.BotClient, LocalizationMessageHelper.ReplayOnlineQueueSearching(language, $"{onlineRenderersCount}", $"{await _replayRenderService.GetWaitqueueLength(renderQueueResponse!.JobId)}"), replyMarkup: ik);
 
         int timeoutSeconds = 600;
         DateTime startedWaiting = DateTime.Now;
@@ -193,7 +197,7 @@ public sealed class ReplayRenderCommand : CommandBase<Message>
                     return;
                 }
 
-                var currentOnlineRenderers = await _replayRenderService.GetOnlineRenderers();
+                OnlineRenderer[]? currentOnlineRenderers = await _replayRenderService.GetOnlineRenderers();
                 if (currentOnlineRenderers is null || onlineRenderersCount != currentOnlineRenderers!.Length)
                 {
                     onlineRenderersCount = currentOnlineRenderers?.Length ?? 0;
@@ -215,7 +219,7 @@ public sealed class ReplayRenderCommand : CommandBase<Message>
                     startedWaiting = DateTime.Now;
                     rendererGotThisJob = true;
 
-                    var currentRenderer = currentOnlineRenderers!.First(m => m.RendererId == jobInfo.RenderingBy);
+                    OnlineRenderer currentRenderer = currentOnlineRenderers!.First(m => m.RendererId == jobInfo.RenderingBy);
                     await Task.Delay(1000 + Random.Shared.Next(500, 1500));
                     await message.EditAsync(Context.BotClient, LocalizationMessageHelper.ReplayRendererInProcess(language, $"{onlineRenderersCount}", currentRenderer.RendererName, currentRenderer.UsedGPU) + helpText, replyMarkup: ik);
                 }

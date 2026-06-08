@@ -1,7 +1,9 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using SosuBot.Database;
 using SosuBot.Database.Extensions;
+using SosuBot.Database.Models;
 using SosuBot.Extensions;
+using SosuBot.Localization;
 using SosuBot.TelegramHandlers.Abstract;
 using System.Text;
 using Telegram.Bot.Types;
@@ -21,8 +23,8 @@ public sealed class DbCommand : CommandBase<Message>
     }
     public override async Task ExecuteAsync()
     {
-        var language = Context.GetLocalization();
-        var osuUserInDatabase = await _database.OsuUsers.FindAsync(Context.Update.From!.Id);
+        ILocalization language = Context.GetLocalization();
+        OsuUser? osuUserInDatabase = await _database.OsuUsers.FindAsync(Context.Update.From!.Id);
         if (osuUserInDatabase is null || !osuUserInDatabase.IsAdmin)
         {
             await Context.Update.ReplyAsync(Context.BotClient, language.admin_accessDenied);
@@ -64,7 +66,7 @@ public sealed class DbCommand : CommandBase<Message>
         else if (parameters[0] == "query")
         {
             var query = string.Join(" ", parameters[1..]);
-            var response = _database.RawSqlQuery(query);
+            List<List<string>> response = _database.RawSqlQuery(query);
 
             await Context.Update.ReplyDocumentAsync(Context.BotClient,
                 new InputFileStream(TextHelper.TextToStream(TextHelper.GetReadfriendlyTable(response))));

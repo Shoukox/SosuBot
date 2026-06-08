@@ -1,10 +1,13 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using OsuApi.BanchoV2;
 using OsuApi.BanchoV2.Clients.Users.HttpIO;
+using OsuApi.BanchoV2.Models;
 using OsuApi.BanchoV2.Users.Models;
 using SosuBot.Database;
+using SosuBot.Database.Models;
 using SosuBot.Extensions;
 using SosuBot.Helpers;
+using SosuBot.Localization;
 using SosuBot.Services.Synchronization;
 using SosuBot.TelegramHandlers.Abstract;
 using System.Data;
@@ -34,17 +37,17 @@ public class OsuLastBestCommand : CommandBase<Message>
 
     public override async Task ExecuteAsync()
     {
-        var language = Context.GetLocalization();
-        var rateLimiter = _rateLimiterFactory.Get(RateLimiterFactory.RateLimitPolicy.Command);
+        ILocalization language = Context.GetLocalization();
+        TokenBucketRateLimiter rateLimiter = _rateLimiterFactory.Get(RateLimiterFactory.RateLimitPolicy.Command);
         if (!await rateLimiter.IsAllowedAsync($"{Context.Update.From!.Id}"))
         {
             await Context.Update.ReplyAsync(Context.BotClient, language.common_rateLimitSlowDown);
             return;
         }
-        var chatInDatabase = await _database.TelegramChats.FindAsync(Context.Update.Chat.Id);
-        var osuUserInDatabase = await _database.OsuUsers.FindAsync(Context.Update.From!.Id);
+        TelegramChat? chatInDatabase = await _database.TelegramChats.FindAsync(Context.Update.Chat.Id);
+        OsuUser? osuUserInDatabase = await _database.OsuUsers.FindAsync(Context.Update.From!.Id);
 
-        var waitMessage = await Context.Update.ReplyAsync(Context.BotClient, language.waiting);
+        Message waitMessage = await Context.Update.ReplyAsync(Context.BotClient, language.waiting);
 
         // Fake 500ms wait
         await Task.Delay(500);
@@ -119,7 +122,7 @@ public class OsuLastBestCommand : CommandBase<Message>
         }
 
         // getting osu!player through username
-        var userResponse =
+        GetUserResponse? userResponse =
             await _osuApiV2.Users.GetUser($"@{osuUsernameForLastScores}", new GetUserQueryParameters());
         if (userResponse is null)
         {
@@ -133,9 +136,9 @@ public class OsuLastBestCommand : CommandBase<Message>
         // if username was entered, then use as ruleset his (this username) standard ruleset.
         ruleset ??= userResponse.UserExtend!.Playmode!;
 
-        var userBestScores = await _osuApiV2.Users.GetUserScores(userResponse.UserExtend.Id!.Value, ScoreType.Best, new() { Limit = 200, Mode = ruleset });
-        var timeSortedUserBestScores = userBestScores!.Scores.Where(m => m.EndedAt > DateTime.UtcNow.Date.AddDays(-DateTime.UtcNow.Date.Day + 1)).ToArray();
-        var lastBestScores = userBestScores!.Scores.OrderByDescending(m => m.EndedAt).Take(limit).ToArray();
+        GetUserScoresResponse? userBestScores = await _osuApiV2.Users.GetUserScores(userResponse.UserExtend.Id!.Value, ScoreType.Best, new() { Limit = 200, Mode = ruleset });
+        Score[] timeSortedUserBestScores = userBestScores!.Scores.Where(m => m.EndedAt > DateTime.UtcNow.Date.AddDays(-DateTime.UtcNow.Date.Day + 1)).ToArray();
+        Score[] lastBestScores = userBestScores!.Scores.OrderByDescending(m => m.EndedAt).Take(limit).ToArray();
 
         BeatmapExtended[] beatmaps = lastBestScores
             .Select(async score => await _cachingHelper.GetOrCacheBeatmap(score.Beatmap!.Id!.Value, _osuApiV2))
@@ -145,8 +148,8 @@ public class OsuLastBestCommand : CommandBase<Message>
             $"{UserHelper.GetUserProfileUrlWrappedInUsernameString(userResponse.UserExtend!.Id.Value, $"<b>{osuUsernameForLastScores}</b>")}\n\n";
         for (var i = 0; i <= lastBestScores.Length - 1; i++)
         {
-            var score = lastBestScores[i];
-            var beatmap = beatmaps[i];
+            Score score = lastBestScores[i];
+            BeatmapExtended beatmap = beatmaps[i];
             int scoreIndexInBestScores = Array.IndexOf(userBestScores.Scores, score) + 1;
 
             textToSend += $"{scoreIndexInBestScores}. " + LocalizationMessageHelper.CommandScore(language,

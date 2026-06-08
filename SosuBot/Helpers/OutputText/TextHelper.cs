@@ -21,7 +21,7 @@ public static class TextHelper
         for (var col = 0; col < columnCount; col++) columnWidths[col] = rows.Max(row => row[col].Length);
 
         var result = "";
-        foreach (var row in rows)
+        foreach (List<string> row in rows)
         {
             for (var col = 0; col < columnCount; col++) result += row[col].PadRight(columnWidths[col] + 2);
             result += "\n";

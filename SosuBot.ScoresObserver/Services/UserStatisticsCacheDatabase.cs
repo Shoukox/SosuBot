@@ -76,10 +76,10 @@ public class UserStatisticsCacheDatabase(BanchoApiV2 api, string? usersCachePath
         ];
         await Task.WhenAll(getRankingTasks);
 
-        var usersStd = getRankingTasks[0].Result;
-        var usersTaiko = getRankingTasks[1].Result;
-        var usersCatch = getRankingTasks[2].Result;
-        var usersMania = getRankingTasks[3].Result;
+        List<UserStatistics>? usersStd = getRankingTasks[0].Result;
+        List<UserStatistics>? usersTaiko = getRankingTasks[1].Result;
+        List<UserStatistics>? usersCatch = getRankingTasks[2].Result;
+        List<UserStatistics>? usersMania = getRankingTasks[3].Result;
 
         if (usersStd == null || usersTaiko == null || usersCatch == null || usersMania == null)
             throw new Exception("Could not get users from ranking");
@@ -92,7 +92,7 @@ public class UserStatisticsCacheDatabase(BanchoApiV2 api, string? usersCachePath
 
         users = users.DistinctBy(m => m!.User!.Id).ToList();
 
-        foreach (var user in users)
+        foreach (UserStatistics? user in users)
         {
             await File.WriteAllTextAsync(GetCachedUserStatisticsPath(user!.User!.Id.Value),
                 JsonSerializer.Serialize(user, new JsonSerializerOptions { WriteIndented = false }), token);
@@ -106,12 +106,12 @@ public class UserStatisticsCacheDatabase(BanchoApiV2 api, string? usersCachePath
 
         while (!token.IsCancellationRequested)
         {
-            var ranking = await api.Rankings.GetRanking(ToRuleset(playmode), RankingType.Performance,
+            Rankings? ranking = await api.Rankings.GetRanking(ToRuleset(playmode), RankingType.Performance,
                 new GetRankingQueryParameters { Country = countryCode, CursorPage = page });
 
             if (ranking == null) return null;
 
-            foreach (var userStatistics in ranking.Ranking!) users.Add(userStatistics);
+            foreach (UserStatistics userStatistics in ranking.Ranking!) users.Add(userStatistics);
 
             if (ranking.Cursor == null) break;
             if (count != null && count.Value <= page * 50) break;
@@ -160,7 +160,7 @@ public class UserStatisticsCacheDatabase(BanchoApiV2 api, string? usersCachePath
 
     private bool IsUserStatisticsCacheExpired(int userId)
     {
-        var lastModified = File.GetLastWriteTime(GetCachedUserStatisticsPath(userId));
+        DateTime lastModified = File.GetLastWriteTime(GetCachedUserStatisticsPath(userId));
         return (DateTime.Now - lastModified).TotalDays > CachingDays;
     }
 }

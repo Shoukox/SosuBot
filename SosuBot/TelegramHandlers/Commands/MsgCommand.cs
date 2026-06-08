@@ -5,6 +5,7 @@ using NUnit.Framework;
 using SosuBot.Database;
 using SosuBot.Database.Models;
 using SosuBot.Extensions;
+using SosuBot.Localization;
 using SosuBot.TelegramHandlers.Abstract;
 using Telegram.Bot;
 using Telegram.Bot.Exceptions;
@@ -28,8 +29,8 @@ public sealed class MsgCommand : CommandBase<Message>
 
     public override async Task ExecuteAsync()
     {
-        var language = Context.GetLocalization();
-        var osuUserInDatabase = await _database.OsuUsers.FindAsync(Context.Update.From!.Id);
+        ILocalization language = Context.GetLocalization();
+        OsuUser? osuUserInDatabase = await _database.OsuUsers.FindAsync(Context.Update.From!.Id);
         if (osuUserInDatabase is null || !osuUserInDatabase.IsAdmin) return;
 
         var parameters = Context.Update.Text!.GetCommandParameters()!;
@@ -37,7 +38,7 @@ public sealed class MsgCommand : CommandBase<Message>
         {
             var msg = string.Join(" ", parameters[1..]);
 
-            foreach (var chat in _database.TelegramChats.ToList())
+            foreach (TelegramChat? chat in _database.TelegramChats.ToList())
                 try
                 {
                     await Task.Delay(500);
@@ -103,7 +104,7 @@ public sealed class MsgCommand : CommandBase<Message>
             await Context.BotClient.SendMessage(adminUser.TelegramId, $"Начинаем отправку в {filteredChats.Count}/{allChats.Count} чатов", ParseMode.Html);
 
             int sent = 0;
-            foreach (var chat in filteredChats)
+            foreach (TelegramChat chat in filteredChats)
                 try
                 {
                     await Task.Delay(500);
@@ -141,11 +142,11 @@ public sealed class MsgCommand : CommandBase<Message>
             if (parameters[1] == "all")
             {
                 var chats = 0;
-                foreach (var chat in _database.TelegramChats)
+                foreach (TelegramChat chat in _database.TelegramChats)
                     try
                     {
                         await Task.Delay(500);
-                        var chatMember = await Context.BotClient.GetChatMember(chat.ChatId, Context.BotClient.BotId);
+                        ChatMember chatMember = await Context.BotClient.GetChatMember(chat.ChatId, Context.BotClient.BotId);
                         if (chatMember.Status is ChatMemberStatus.Administrator or ChatMemberStatus.Member) chats += 1;
                     }
                     catch (ApiRequestException reqEx)

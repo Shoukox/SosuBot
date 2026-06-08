@@ -116,7 +116,7 @@ public static class StringExtensions
         var startFrom = 0;
         if (!char.IsAsciiLetter(text[0])) startFrom = 1;
 
-        var rulesetMods = playmode switch
+        Mod[] rulesetMods = playmode switch
         {
             Playmode.Osu => OsuTypesExtensions.AllOsuMods,
             Playmode.Taiko => OsuTypesExtensions.AllTaikoMods,
@@ -128,7 +128,7 @@ public static class StringExtensions
         var mods = new List<Mod>();
         for (var i = startFrom; i < text.Length; i += 2)
         {
-            var currentMod = rulesetMods.FirstOrDefault(m => m.Acronym.ToUpperInvariant() == text.Substring(i, 2));
+            Mod? currentMod = rulesetMods.FirstOrDefault(m => m.Acronym.ToUpperInvariant() == text.Substring(i, 2));
             if (currentMod == null) continue;
             mods.Add(currentMod);
         }

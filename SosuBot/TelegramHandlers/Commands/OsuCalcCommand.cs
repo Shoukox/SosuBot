@@ -7,6 +7,7 @@ using SosuBot.Database;
 using SosuBot.Database.Models;
 using SosuBot.Extensions;
 using SosuBot.Helpers;
+using SosuBot.Localization;
 using SosuBot.PerformanceCalculator;
 using SosuBot.Services;
 using SosuBot.Services.Synchronization;
@@ -38,16 +39,16 @@ public class OsuCalcCommand : CommandBase<Message>
 
     public override async Task ExecuteAsync()
     {
-        var language = Context.GetLocalization();
-        var rateLimiter = _rateLimiterFactory.Get(RateLimiterFactory.RateLimitPolicy.Command);
+        ILocalization language = Context.GetLocalization();
+        TokenBucketRateLimiter rateLimiter = _rateLimiterFactory.Get(RateLimiterFactory.RateLimitPolicy.Command);
         if (!await rateLimiter.IsAllowedAsync($"{Context.Update.From!.Id}"))
         {
             await Context.Update.ReplyAsync(Context.BotClient, language.common_rateLimitSlowDown);
             return;
         }
-        var chatInDatabase = await _database.TelegramChats.FindAsync(Context.Update.Chat.Id);
+        TelegramChat? chatInDatabase = await _database.TelegramChats.FindAsync(Context.Update.Chat.Id);
 
-        var waitMessage = await Context.Update.ReplyAsync(Context.BotClient, language.waiting);
+        Message waitMessage = await Context.Update.ReplyAsync(Context.BotClient, language.waiting);
 
         // Fake 500ms wait
         await Task.Delay(500);
@@ -83,14 +84,14 @@ public class OsuCalcCommand : CommandBase<Message>
             return;
         }
 
-        var getBeatmapResponse = await _cachingHelper.GetOrCacheBeatmap(beatmapId.Value, _osuApiV2);
+        BeatmapExtended? getBeatmapResponse = await _cachingHelper.GetOrCacheBeatmap(beatmapId.Value, _osuApiV2);
         if (getBeatmapResponse is null)
         {
             await waitMessage.EditAsync(Context.BotClient, language.error_beatmapNotFound);
             return;
         }
 
-        var beatmap = getBeatmapResponse;
+        BeatmapExtended beatmap = getBeatmapResponse;
         if (beatmap.ModeInt != (int)Playmode.Osu)
         {
             await waitMessage.EditAsync(Context.BotClient, LocalizationMessageHelper.CalcOnlySupportsModeMaps(language, $"{Playmode.Osu.ToGamemode()}"));
@@ -134,8 +135,8 @@ public class OsuCalcCommand : CommandBase<Message>
         scoreStatistics[HitResult.Great] = scoreStatistics[HitResult.Great] - scoreStatistics[HitResult.Ok] - scoreStatistics[HitResult.Meh] - scoreStatistics[HitResult.Miss];
 
         var ppCalculator = new PPCalculator();
-        var beatmapFile = await _beatmapsService.DownloadOrCacheBeatmap(beatmap.Id!.Value);
-        var ppLazer = await ppCalculator.CalculatePpAsync(
+        Stream beatmapFile = await _beatmapsService.DownloadOrCacheBeatmap(beatmap.Id!.Value);
+        PPCalculationResult? ppLazer = await ppCalculator.CalculatePpAsync(
                              beatmapId: beatmap.Id!.Value,
                              beatmapFile: beatmapFile,
                              accuracy: null,
@@ -146,7 +147,7 @@ public class OsuCalcCommand : CommandBase<Message>
                              rulesetId: (int)playmode,
                              cancellationToken: Context.CancellationToken);
 
-        var ppClassic = await ppCalculator.CalculatePpAsync(
+        PPCalculationResult? ppClassic = await ppCalculator.CalculatePpAsync(
                              beatmapId: beatmap.Id!.Value,
                              beatmapFile: beatmapFile,
                              accuracy: null,
