@@ -142,7 +142,7 @@ public sealed class OpenAiService
 
     private readonly ILogger<OpenAiService> _logger;
 
-    private readonly string? _openaiToken = Environment.GetEnvironmentVariable("OPEN_AI_TOKEN")!;
+    private readonly string _openaiToken;
     private readonly BanchoApiV2 _osuApiV2;
 
     /// <summary>
@@ -152,17 +152,19 @@ public sealed class OpenAiService
     /// </summary>
     private readonly ConcurrentDictionary<long, bool> _syncDictionary = new();
 
-    private OpenAIResponseClient _responseClient;
+    private string _model;
+    private readonly ResponsesClient _responseClient;
 
     public OpenAiService(BanchoApiV2 osuApiV2, ILogger<OpenAiService> logger, IOptions<OpenAiConfiguration> openAiConfig)
     {
         _logger = logger;
         _osuApiV2 = osuApiV2;
 
-        if (_openaiToken == null) _openaiToken = openAiConfig.Value.Token;
+        _openaiToken = Environment.GetEnvironmentVariable("OPEN_AI_TOKEN") ?? openAiConfig.Value.Token;
+        _model = openAiConfig.Value.Model;
 
         DeveloperPrompt = File.ReadAllText("developer-prompt.txt");
-        _responseClient = new OpenAIResponseClient(openAiConfig.Value.Model, _openaiToken);
+        _responseClient = new ResponsesClient(_openaiToken);
     }
 
     private string DeveloperPrompt { get; }
@@ -175,7 +177,7 @@ public sealed class OpenAiService
     /// </param>
     public void ChangeModel(string model)
     {
-        _responseClient = new OpenAIResponseClient(model, _openaiToken);
+        _model = model;
     }
 
     public async Task<Result<string>> GetResponseAsync(string userInput, long userTelegramId)
@@ -204,12 +206,6 @@ public sealed class OpenAiService
             _chatDictionary[userTelegramId] = new List<ResponseItem>(inputItems);
         }
 
-        ResponseCreationOptions options = new()
-        {
-            Tools = { _getOsuUserTool, _getUserBestTool, _getCountryRankingTool },
-            Temperature = 0.7f
-        };
-
         var output = "";
         bool requiresAction;
         try
@@ -217,7 +213,15 @@ public sealed class OpenAiService
             do
             {
                 requiresAction = false;
-                OpenAIResponse response = await _responseClient.CreateResponseAsync(inputItems, options);
+                CreateResponseOptions options = new()
+                {
+                    Model = _model,
+                    Tools = { _getOsuUserTool, _getUserBestTool, _getCountryRankingTool },
+                    Temperature = 0.7f
+                };
+                foreach (ResponseItem inputItem in inputItems) options.InputItems.Add(inputItem);
+
+                ResponseResult response = await _responseClient.CreateResponseAsync(options);
                 inputItems.AddRange(response.OutputItems);
 
                 foreach (FunctionCallResponseItem functionCall in response.OutputItems.OfType<FunctionCallResponseItem>())
