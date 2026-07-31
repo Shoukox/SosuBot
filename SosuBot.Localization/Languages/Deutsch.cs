@@ -1,5 +1,3 @@
-using System.Runtime.ConstrainedExecution;
-
 namespace SosuBot.Localization.Languages;
 
 public sealed class Deutsch : ILocalization
@@ -29,12 +27,12 @@ public sealed class Deutsch : ILocalization
         $"/last [nickname] [count] - letzte Plays.\n" +
         $"/lastpassed [nickname] [count] - /last nur mit bestandenen Scores.\n" +
         $"/score [beatmap_link] - deine Records auf dieser Map.\n" +
+        $"/rnd [osu/mania/taiko/catch] - zufällige Beatmap für den gewählten Modus (standardmäßig osu).\n" +
         $"/userbest [nickname] [gamemode] - beste Plays des Spielers.\n" +
         $"/compare [nickname1] [nickname2] [gamemode] - Spieler vergleichen.\n" +
         $"/chatstats [gamemode] - Top 10 Spieler im Chat.\n" +
         $"/exclude [nickname] - Spieler aus Chat Top 10 ausschließen.\n" +
         $"/include [nickname] - Spieler wieder in Chat Top 10 aufnehmen.\n" +
-        $"/chatstats [gamemode] - Top 10 Spieler im Chat.\n" +
         $"/ranking [RU/UZ/country_code] - Top 20 Spieler eines Landes (oder global).\n" +
         $"/daily_stats - exklusiv für Usbekistan: tägliche Score-Statistik.\n" +
         $"/track [users1-3] - Benachrichtigung über neue Top50-Scores dieser Spieler.\n" +
@@ -78,6 +76,9 @@ public sealed class Deutsch : ILocalization
 
     public string command_userbest => Shared.CommandUserBest;
 
+    public string randomBeatmap_noCachedBeatmaps => "Im lokalen Speicher wurden keine <b>{}</b>-Beatmaps gefunden.";
+    public string randomBeatmap_usage => "/rnd [osu/mania/taiko/catch]";
+
     public string command_chatstats_title => "Top-10 osu-Spieler (<b>{}</b>) in dieser Gruppe:\n\n";
     public string command_chatstats_row => "<b>{}. {}</b>: <i>{}pp💪</i>\n";
     public string command_chatstats_end => "\nNutze <b>/user</b>, um dein <b>pp</b> in dieser Liste zu aktualisieren.";
@@ -107,8 +108,8 @@ public sealed class Deutsch : ILocalization
     public string error_userNotSetHimself => "Wer bist du? Nutze\n/set nickname";
     public string error_hintReplaceSpaces => "<b>Hinweis: </b>Enthält ein Nickname Leerzeichen, ersetze sie durch '_'. (Blue Archive => Blue_Archive)";
     public string error_nameIsEmpty => "Dieser Befehl kann nicht ohne Parameter verwendet werden.\nNutze <b>/set</b> dein_nickname";
-    public string error_modeIsEmpty => "Dieser Befehl kann nicht ohne Parameter verwendet werden.\nNutze <b>/mode</b> osu/mania/taiko/ctb";
-    public string error_modeIncorrect => "Ungültiger Spielmodus.\nVerfügbare Modi: <b>osu/mania/taiko/ctb</b>";
+    public string error_modeIsEmpty => "Dieser Befehl kann nicht ohne Parameter verwendet werden.\nNutze <b>/mode</b> osu/mania/taiko/catch";
+    public string error_modeIncorrect => "Ungültiger Spielmodus.\nVerfügbare Modi: <b>osu/mania/taiko/catch</b>";
     public string error_userNotFound => $"{error_baseMessage}\nBenutzer nicht gefunden";
     public string error_specificUserNotFound => $"{error_baseMessage}\n" + "Benutzer {} nicht gefunden";
     public string error_userNotFoundInBotsDatabase => $"{error_baseMessage}\nBenutzer nicht in der Bot-Datenbank gefunden";

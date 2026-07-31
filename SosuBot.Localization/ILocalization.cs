@@ -14,6 +14,8 @@ public interface ILocalization
     public string command_user { get; }
     public string command_compare { get; }
     public string command_userbest { get; }
+    public string randomBeatmap_noCachedBeatmaps { get; }
+    public string randomBeatmap_usage { get; }
     public string command_chatstats_title { get; }
     public string command_chatstats_row { get; }
     public string command_chatstats_end { get; }

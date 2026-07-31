@@ -15,17 +15,21 @@ namespace SosuBot.Services.StartupServices;
 
 public class ConfigureBotService(IServiceProvider serviceProvider) : IHostedService
 {
-    private ITelegramBotClient _botClient = serviceProvider.GetRequiredService<ITelegramBotClient>();
-    private ILogger<ConfigureBotService> _logger = serviceProvider.GetRequiredService<ILogger<ConfigureBotService>>();
-    private BotConfiguration _botConfig = serviceProvider.GetRequiredService<IOptions<BotConfiguration>>().Value;
+    private readonly ITelegramBotClient _botClient = serviceProvider.GetRequiredService<ITelegramBotClient>();
+    private readonly ILogger<ConfigureBotService> _logger = serviceProvider.GetRequiredService<ILogger<ConfigureBotService>>();
+    private readonly BotConfiguration _botConfig = serviceProvider.GetRequiredService<IOptions<BotConfiguration>>().Value;
+    private readonly BeatmapFileCache _beatmapFileCache = serviceProvider.GetRequiredService<BeatmapFileCache>();
 
-    private static IEnumerable<BotCommand> botCommands = [
-        new("/help", "Все команды бота"),
-        new("/botlang", "Изменяет язык бота"),
+    private static readonly BotCommand[] BotCommands = [
+        new("help", "Все команды бота"),
+        new("botlang", "Изменяет язык бота"),
+        new("rnd", "Случайная карта osu! по режиму"),
     ];
 
     public async Task StartAsync(CancellationToken cancellationToken)
     {
+        _ = _beatmapFileCache.WarmUpAsync();
+
         //await _botClient.LogOut();
         //_logger.LogInformation("Successfully logged out");
 
@@ -35,7 +39,7 @@ public class ConfigureBotService(IServiceProvider serviceProvider) : IHostedServ
         _botConfig.Id = botUser.Id;
 
         // Configure bot commands
-        await _botClient.SetMyCommands(botCommands, cancellationToken: cancellationToken);
+        await _botClient.SetMyCommands(BotCommands, cancellationToken: cancellationToken);
         _logger.LogInformation("Successfully set bot commands");
 
         // Register command handlers
@@ -72,6 +76,7 @@ public class ConfigureBotService(IServiceProvider serviceProvider) : IHostedServ
         RegisterCommand<OsuCalcCommand>(OsuCalcCommand.Commands);
         RegisterCommand<OsuCalcManiaCommand>(OsuCalcManiaCommand.Commands);
         RegisterCommand<OsuUpdateCommand>(OsuUpdateCommand.Commands);
+        RegisterCommand<RandomBeatmapCommand>(RandomBeatmapCommand.Commands);
 
         // Register callbacks
         RegisterCallback<OsuUserCallback>(OsuUserCallback.Command);
@@ -98,9 +103,9 @@ public class ConfigureBotService(IServiceProvider serviceProvider) : IHostedServ
         UpdateHandler.Callbacks[callbackData] = () => ActivatorUtilities.CreateInstance<T>(serviceProvider);
     }
 
-    public Task StopAsync(CancellationToken cancellationToken)
+    public async Task StopAsync(CancellationToken cancellationToken)
     {
+        await _beatmapFileCache.FlushIndexAsync(cancellationToken);
         _logger.LogInformation("Bot is stopping...");
-        return Task.CompletedTask;
     }
 }

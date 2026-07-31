@@ -27,12 +27,12 @@ public sealed class English : ILocalization
         $"/last [nickname] [count] - latest plays.\n" +
         $"/lastpassed [nickname] [count] - /last for passed scores only.\n" +
         $"/score [beatmap_link] - your records on this map.\n" +
+        $"/rnd [osu/mania/taiko/catch] - random beatmap for a selected mode (osu by default).\n" +
         $"/userbest [nickname] [gamemode] - player's best plays.\n" +
         $"/compare [nickname1] [nickname2] [gamemode] - compare players.\n" +
         $"/chatstats [gamemode] - top 10 players in this chat.\n" +
         $"/exclude [nickname] - exclude a user from chat top 10.\n" +
         $"/include [nickname] - include a user back into chat top 10.\n" +
-        $"/chatstats [gamemode] - top 10 players in this chat.\n" +
         $"/ranking [RU/UZ/country_code] - top 20 players for a country (or global).\n" +
         $"/daily_stats - Uzbekistan exclusive: daily stats for all scores from all players in the country.\n" +
         $"/track [users1-3] - bot notifies you about new top50 scores of these players.\n" +
@@ -76,6 +76,9 @@ public sealed class English : ILocalization
 
     public string command_userbest => Shared.CommandUserBest;
 
+    public string randomBeatmap_noCachedBeatmaps => "No <b>{}</b> beatmaps were found in local storage.";
+    public string randomBeatmap_usage => "/rnd [osu/mania/taiko/catch]";
+
     public string command_chatstats_title => "Top-10 osu players (<b>{}</b>) in this group:\n\n";
     public string command_chatstats_row => "<b>{}. {}</b>: <i>{}pp💪</i>\n";
     public string command_chatstats_end => "\nUse <b>/user</b> to update your <b>pp</b> in this list.";
@@ -111,9 +114,9 @@ public sealed class English : ILocalization
         "This command cannot be used without parameters.\nType <b>/set</b> your_nickname";
 
     public string error_modeIsEmpty =>
-        "This command cannot be used without parameters.\nType <b>/mode</b> osu/mania/taiko/ctb";
+        "This command cannot be used without parameters.\nType <b>/mode</b> osu/mania/taiko/catch";
 
-    public string error_modeIncorrect => "Invalid game mode.\nAvailable modes: <b>osu/mania/taiko/ctb</b>";
+    public string error_modeIncorrect => "Invalid game mode.\nAvailable modes: <b>osu/mania/taiko/catch</b>";
     public string error_userNotFound => $"{error_baseMessage}\nUser not found";
     public string error_specificUserNotFound => $"{error_baseMessage}\n" + "User {} not found";
     public string error_userNotFoundInBotsDatabase => $"{error_baseMessage}\nUser not found in bot database";

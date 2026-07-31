@@ -27,6 +27,9 @@ public static class LocalizationMessageHelper
     public static string CalcOnlySupportsModeMaps(ILocalization language, string gameMode)
         => language.calc_onlySupportsModeMaps.Fill([gameMode]);
 
+    public static string RandomBeatmapNoCachedBeatmaps(ILocalization language, string gameMode)
+        => language.randomBeatmap_noCachedBeatmaps.Fill([gameMode]);
+
     public static string BeatmapLeaderboardProgress(ILocalization language, string playersCount, string seconds)
         => language.beatmapLeaderboard_progress.Fill([playersCount, seconds]);
 

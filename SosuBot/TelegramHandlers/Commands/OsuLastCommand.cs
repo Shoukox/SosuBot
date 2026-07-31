@@ -219,7 +219,8 @@ public class OsuLastCommand(bool onlyPassed = false, bool sendCover = false) : C
             PPResult? calculatedPp = new PPResult() { Current = null, IfFC = null };
             if (!beatmapContainsTooManyHitObjects)
             {
-                Stream beatmapFile = await _beatmapsService.DownloadOrCacheBeatmap(beatmap.Id!.Value);
+                using Stream beatmapFile = await _beatmapsService.DownloadOrCacheBeatmapAsync(beatmap.Id!.Value,
+                    Context.CancellationToken);
                 _logger.LogInformation("[/last] Calculating pp");
                 calculatedPp = new PPResult
                 {

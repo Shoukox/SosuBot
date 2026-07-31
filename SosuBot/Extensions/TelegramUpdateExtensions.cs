@@ -13,7 +13,7 @@ public static class TelegramUpdateExtensions
     {
         if (splitValue == null)
             return TelegramHelper.SendMessageConsideringTelegramLength(message.Id, message.Chat.Id, botClient, text,
-                parseMode, replyMarkup, linkPreviewEnabled);
+                parseMode, replyMarkup, false, linkPreviewEnabled);
 
         return TelegramHelper.SendMessageConsideringTelegramLengthAndSplitValue(message.Id, message.Chat.Id, botClient,
             text,

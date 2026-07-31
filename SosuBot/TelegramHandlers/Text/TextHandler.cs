@@ -258,7 +258,8 @@ public sealed class TextHandler : CommandBase<Message>
             return (null, null, null, null, null, null);
 
         var ppCalculator = new PPCalculator();
-        Stream beatmapFile = await _beatmapsService.DownloadOrCacheBeatmap(beatmap.Id!.Value);
+        using Stream beatmapFile = await _beatmapsService.DownloadOrCacheBeatmapAsync(beatmap.Id!.Value,
+            Context.CancellationToken);
 
         PPCalculationResult? classicSS = await ppCalculator.CalculatePpAsync(
             beatmapId: beatmap.Id.Value,

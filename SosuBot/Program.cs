@@ -51,6 +51,7 @@ internal class Program
         IConfigurationSection botConfig = builder.Configuration.GetSection(nameof(BotConfiguration));
         IConfigurationSection renderConfig = builder.Configuration.GetSection(nameof(RenderConfiguration));
         builder.Services.Configure<BotConfiguration>(botConfig);
+        builder.Services.Configure<BeatmapsConfiguration>(builder.Configuration.GetSection(nameof(BeatmapsConfiguration)));
         builder.Services.Configure<OsuApiV2Configuration>(builder.Configuration.GetSection(nameof(OsuApiV2Configuration)));
         builder.Services.Configure<OpenAiConfiguration>(builder.Configuration.GetSection(nameof(OpenAiConfiguration)));
         builder.Services.Configure<RenderConfiguration>(renderConfig);
@@ -63,6 +64,8 @@ internal class Program
                         })
                         .AddPolicyHandler(pollyPolicies);
         builder.Services.AddCustomHttpClient("CustomHttpClient", 300)
+                        .AddPolicyHandler(pollyPolicies);
+        builder.Services.AddCustomHttpClient(BeatmapsService.HttpClientName, 300)
                         .AddPolicyHandler(pollyPolicies);
 
         builder.Services.AddSingleton(provider =>
@@ -86,6 +89,7 @@ internal class Program
                 logger);
         });
         builder.Services.AddSingleton<OpenAiService>();
+        builder.Services.AddSingleton<BeatmapFileCache>();
         builder.Services.AddSingleton<BeatmapsService>();
 
         // Redis

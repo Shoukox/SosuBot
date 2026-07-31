@@ -135,7 +135,8 @@ public class OsuCalcCommand : CommandBase<Message>
         scoreStatistics[HitResult.Great] = scoreStatistics[HitResult.Great] - scoreStatistics[HitResult.Ok] - scoreStatistics[HitResult.Meh] - scoreStatistics[HitResult.Miss];
 
         var ppCalculator = new PPCalculator();
-        Stream beatmapFile = await _beatmapsService.DownloadOrCacheBeatmap(beatmap.Id!.Value);
+        using Stream beatmapFile = await _beatmapsService.DownloadOrCacheBeatmapAsync(beatmap.Id!.Value,
+            Context.CancellationToken);
         PPCalculationResult? ppLazer = await ppCalculator.CalculatePpAsync(
                              beatmapId: beatmap.Id!.Value,
                              beatmapFile: beatmapFile,
