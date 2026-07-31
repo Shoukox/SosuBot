@@ -1,149 +1,101 @@
 ﻿using Microsoft.Extensions.Logging;
+using SosuBot.Database.Models;
+using System.Globalization;
 
-namespace SosuBot.Services
+namespace SosuBot.Services;
+
+public sealed class BeatmapsService
 {
-    public class BeatmapsService
+    public const string HttpClientName = nameof(BeatmapsService);
+
+    private static readonly DownloadSource[] DownloadSources =
+    [
+        new("osu!", new Uri("https://osu.ppy.sh/osu/")),
+        new("syui", new Uri("https://syui.eternityglow.de/osu/")),
+        new("mino", new Uri("https://catboy.best/osu/"))
+    ];
+
+    private readonly BeatmapFileCache _cache;
+    private readonly HttpClient _httpClient;
+    private readonly ILogger<BeatmapsService> _logger;
+
+    public BeatmapsService(IHttpClientFactory httpClientFactory, BeatmapFileCache cache,
+        ILogger<BeatmapsService> logger)
     {
-        private static HttpClient HttpClient { get; } = new();
-
-        private const string BaseUrlMino = "https://catboy.best/";
-        private const string BaseUrlSyui = "https://syui.eternityglow.de/";
-        private const string BaseUrlOsu = "http://osu.ppy.sh/";
-        private static string CacheDirectory = Path.Combine(AppContext.BaseDirectory, "cache", "beatmaps");
-
-        private readonly ILogger<BeatmapsService> _logger;
-
-        public BeatmapsService(ILogger<BeatmapsService> logger)
-        {
-            _logger = logger;
-
-            Directory.CreateDirectory(CacheDirectory);
-        }
-
-        public async Task<Stream> DownloadOrCacheBeatmap(int beatmapId)
-        {
-            Result<Stream> downloadResult;
-
-            string cachePath = Path.Combine(CacheDirectory, $"{beatmapId}.osu");
-            if (File.Exists(cachePath))
-            {
-                using var fs = new FileStream(cachePath, FileMode.Open, FileAccess.Read);
-
-                Stream stream = new MemoryStream();
-                fs.CopyTo(stream);
-                stream.Position = 0;
-
-                downloadResult = Result<Stream>.FromSuccess(stream);
-
-                _logger.LogInformation($"Got beatmap cache for {beatmapId} from the filesystem");
-            }
-            else
-            {
-                downloadResult = await DownloadBeatmapViaOsu(beatmapId);
-                if (downloadResult.Success) _logger.LogInformation($"Got beatmap cache for {beatmapId} from osu");
-            }
-
-            if (!downloadResult.Success)
-            {
-                downloadResult = await DownloadBeatmapViaSyui(beatmapId);
-                if (downloadResult.Success) _logger.LogInformation($"Got beatmap cache for {beatmapId} from syui");
-            }
-
-            if (!downloadResult.Success)
-            {
-                downloadResult = await DownloadBeatmapViaMino(beatmapId);
-                if (downloadResult.Success) _logger.LogInformation($"Got beatmap cache for {beatmapId} from mino");
-            }
-
-            // cache in filesystem if success
-            if (downloadResult.Success && !File.Exists(cachePath))
-            {
-                using var fs = new FileStream(cachePath, FileMode.Create, FileAccess.Write);
-                downloadResult.Output!.CopyTo(fs);
-                fs.Flush();
-                downloadResult.Output!.Position = 0;
-                if (downloadResult.Success) _logger.LogInformation($"Saving beatmap cache for {beatmapId} in the filesystem");
-            }
-
-            return downloadResult.Output!;
-        }
-
-        /// <summary>
-        /// NEEDS OSU_SESSION COOKIE
-        /// </summary>
-        /// <param name="beatmapsetId"></param>
-        /// <returns></returns>
-        private async Task<Result<Stream>> DownloadBeatmapViaOsu(int beatmapId)
-        {
-            try
-            {
-                using var request = new HttpRequestMessage(HttpMethod.Get, BaseUrlOsu + $"osu/{beatmapId}");
-                HttpResponseMessage response = await HttpClient.SendAsync(request);
-                response.EnsureSuccessStatusCode();
-                return Result<Stream>.FromSuccess(await response.Content.ReadAsStreamAsync());
-            }
-            catch (Exception e)
-            {
-                return Result<Stream>.FromFailure(e);
-            }
-        }
-
-        private async Task<Result<Stream>> DownloadBeatmapViaSyui(int beatmapId)
-        {
-            try
-            {
-                using var request = new HttpRequestMessage(HttpMethod.Get, BaseUrlSyui + $"osu/{beatmapId}");
-                HttpResponseMessage response = await HttpClient.SendAsync(request);
-                response.EnsureSuccessStatusCode();
-                return Result<Stream>.FromSuccess(await response.Content.ReadAsStreamAsync());
-            }
-            catch (Exception e)
-            {
-                return Result<Stream>.FromFailure(e);
-            }
-        }
-
-        private async Task<Result<Stream>> DownloadBeatmapViaMino(int beatmapId)
-        {
-            try
-            {
-                using var request = new HttpRequestMessage(HttpMethod.Get, BaseUrlMino + $"osu/{beatmapId}");
-                HttpResponseMessage response = await HttpClient.SendAsync(request);
-                response.EnsureSuccessStatusCode();
-                return Result<Stream>.FromSuccess(await response.Content.ReadAsStreamAsync());
-            }
-            catch (Exception e)
-            {
-                return Result<Stream>.FromFailure(e);
-            }
-        }
-
-        public enum Source
-        {
-            Osu = 0,
-            Mino = 1,
-            Syui = 2
-        }
-
-        public record Result<T>
-        {
-            public bool Success { get; init; }
-            public T? Output { get; init; }
-            public Exception? Exception { get; init; }
-
-            public static Result<T> FromSuccess(T output) => new Result<T>
-            {
-                Success = true,
-                Output = output,
-                Exception = null
-            };
-
-            public static Result<T> FromFailure(Exception exception) => new Result<T>
-            {
-                Success = false,
-                Output = default,
-                Exception = exception
-            };
-        }
+        _cache = cache;
+        _logger = logger;
+        _httpClient = httpClientFactory.CreateClient(HttpClientName);
     }
+
+    public Task<int?> GetRandomCachedBeatmapIdAsync(Playmode playmode,
+        CancellationToken cancellationToken = default)
+    {
+        return _cache.GetRandomBeatmapIdAsync(playmode, cancellationToken);
+    }
+
+    public async Task<Stream> DownloadOrCacheBeatmapAsync(int beatmapId,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(beatmapId);
+
+        byte[]? cachedBeatmap = await _cache.TryReadAsync(beatmapId, cancellationToken);
+        if (cachedBeatmap is not null)
+        {
+            if (BeatmapFileMetadata.TryReadPlaymode(cachedBeatmap, out _))
+            {
+                _logger.LogInformation("Loaded beatmap {BeatmapId} from the filesystem cache", beatmapId);
+                return CreateReadOnlyStream(cachedBeatmap);
+            }
+
+            _logger.LogWarning("Ignoring invalid cached beatmap {BeatmapId}", beatmapId);
+        }
+
+        List<Exception> failures = [];
+        foreach (DownloadSource source in DownloadSources)
+        {
+            try
+            {
+                byte[] downloadedBeatmap = await DownloadBeatmapAsync(source, beatmapId, cancellationToken);
+                await _cache.TryStoreAsync(beatmapId, downloadedBeatmap, cancellationToken);
+                _logger.LogInformation("Downloaded beatmap {BeatmapId} from {Source}", beatmapId, source.Name);
+                return CreateReadOnlyStream(downloadedBeatmap);
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                throw;
+            }
+            catch (Exception exception)
+            {
+                failures.Add(exception);
+                _logger.LogWarning(exception, "Could not download beatmap {BeatmapId} from {Source}", beatmapId,
+                    source.Name);
+            }
+        }
+
+        throw new AggregateException($"Could not download beatmap {beatmapId} from any configured source.",
+            failures);
+    }
+
+    private async Task<byte[]> DownloadBeatmapAsync(DownloadSource source, int beatmapId,
+        CancellationToken cancellationToken)
+    {
+        Uri requestUri = new(source.BaseUri, beatmapId.ToString(CultureInfo.InvariantCulture));
+        using var request = new HttpRequestMessage(HttpMethod.Get, requestUri);
+        using HttpResponseMessage response = await _httpClient.SendAsync(request,
+            HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+        response.EnsureSuccessStatusCode();
+
+        byte[] content = await response.Content.ReadAsByteArrayAsync(cancellationToken);
+        if (!BeatmapFileMetadata.TryReadPlaymode(content, out _))
+            throw new InvalidDataException($"{source.Name} returned content that is not an .osu file.");
+
+        return content;
+    }
+
+    private static Stream CreateReadOnlyStream(byte[] content)
+    {
+        return new MemoryStream(content, writable: false);
+    }
+
+    private sealed record DownloadSource(string Name, Uri BaseUri);
 }

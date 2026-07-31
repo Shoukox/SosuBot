@@ -209,7 +209,8 @@ public sealed class CustomCommand : CommandBase<Message>
             int count = 1000;
             Parallel.For(0, count, m =>
             {
-                Stream beatmapFile = _beatmapsService.DownloadOrCacheBeatmap(beatmapId).Result;
+                using Stream beatmapFile = _beatmapsService
+                    .DownloadOrCacheBeatmapAsync(beatmapId, Context.CancellationToken).GetAwaiter().GetResult();
                 PPCalculationResult? calculatedPp = ppCalculator.CalculatePpAsync(
                     beatmapId: beatmapId,
                     beatmapFile: beatmapFile,
@@ -226,7 +227,7 @@ public sealed class CustomCommand : CommandBase<Message>
             await Context.Update.ReplyAsync(Context.BotClient, $"pp calculation of {count} scores: {sw.ElapsedMilliseconds}ms");
             //for (var i = 1; i <= 1000; i++)
             //{
-            //    var beatmapFile = await _beatmapsService.DownloadOrCacheBeatmap(beatmapId);
+            //    var beatmapFile = await _beatmapsService.DownloadOrCacheBeatmapAsync(beatmapId);
             //    var calculatedPp = await ppCalculator.CalculatePpAsync(
             //        beatmapId: beatmapId, 
             //        beatmapFile: beatmapFile,

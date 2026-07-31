@@ -27,12 +27,12 @@ public sealed class Russian : ILocalization
         $"/last [nickname] [count] - последние сыгранные игры.\n" +
         $"/lastpassed [nickname] [count] - /last только для пасснутых скоров.\n" +
         $"/score [beatmap_link] - ваши рекорды на этой карте.\n" +
+        $"/rnd [osu/mania/taiko/catch] - случайная карта выбранного режима (по умолчанию osu).\n" +
         $"/userbest [nickname] [gamemode] - лучшие игры игрока.\n" +
         $"/compare [nickname1] [nickname2] [gamemode] - сравнить игроков.\n" +
         $"/chatstats [gamemode] - топ10 игроков в чате.\n" +
         $"/exclude [nickname] - исключить юзера из топ10 игроков в чате.\n" +
         $"/include [nickname] - вернуть юзера в топ10 игроков в чате.\n" +
-        $"/chatstats [gamemode] - топ10 игроков в чате.\n" +
         $"/ranking [RU/UZ/country_code] - топ20 игроков для данной страны (либо глобально).\n" +
         $"/daily_stats - эксклюзивно для Узбекистана. Ежедневная статистика по всем скорам от всех игроков в стране.\n" +
         $"/track [users1-3] - бот будет оповещать вас о новых скорах в топ50 данных игроков.\n" +
@@ -76,6 +76,9 @@ public sealed class Russian : ILocalization
 
     public string command_userbest => Shared.CommandUserBest;
 
+    public string randomBeatmap_noCachedBeatmaps => "В локальном хранилище не найдено карт режима <b>{}</b>.";
+    public string randomBeatmap_usage => "/rnd [osu/mania/taiko/catch]";
+
     public string command_chatstats_title => "Топ-10 осеров (<b>{}</b>) в группе:\n\n";
     public string command_chatstats_row => "<b>{}. {}</b>: <i>{}pp💪</i>\n";
     public string command_chatstats_end => "\nИспользуйте <b>/user</b>, чтобы обновить ваш <b>pp</b> в данном списке.";
@@ -111,9 +114,9 @@ public sealed class Russian : ILocalization
         "Эта команда не может быть использована без параметров.\nВведи <b>/set</b> твой_никнейм";
 
     public string error_modeIsEmpty =>
-        "Эта команда не может быть использована без параметров.\nВведи <b>/mode</b> osu/mania/taiko/ctb";
+        "Эта команда не может быть использована без параметров.\nВведи <b>/mode</b> osu/mania/taiko/catch";
 
-    public string error_modeIncorrect => "Неверный режим игры.\nДоступные режимы игры: <b>osu/mania/taiko/ctb</b>";
+    public string error_modeIncorrect => "Неверный режим игры.\nДоступные режимы игры: <b>osu/mania/taiko/catch</b>";
     public string error_userNotFound => $"{error_baseMessage}\nИгрок не найден";
     public string error_specificUserNotFound => $"{error_baseMessage}\n" + "Игрок {} не найден";
     public string error_userNotFoundInBotsDatabase => $"{error_baseMessage}\nИгрок не найден в базе данных бота";
