@@ -135,7 +135,7 @@ public sealed class MsgCommand : CommandBase<Message>
             int? messageId = parameters[2] == "null" ? null : int.Parse(parameters[2]);
             var msg = string.Join(" ", parameters[3..]);
 
-            await Context.BotClient.SendMessage(chatId, msg, ParseMode.Html, messageId, linkPreviewOptions: false);
+            await Context.BotClient.SendMessage(chatId, msg, ParseMode.Html, messageId, linkPreviewOptions: null);
         }
         else if (parameters[0] == "check")
         {

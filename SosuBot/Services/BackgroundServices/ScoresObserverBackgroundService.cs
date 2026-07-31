@@ -17,6 +17,7 @@ using SosuBot.Helpers.Types.Statistics;
 using System.Collections.Concurrent;
 using System.Text.Json;
 using Telegram.Bot;
+using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 using Country = SosuBot.Helpers.Country;
 
@@ -228,7 +229,7 @@ public sealed class ScoresObserverBackgroundService(IServiceProvider serviceProv
                             var sendText =
                                 await _scoreHelper.GetDailyStatisticsSendText((Playmode)i, dailyStatistics, _osuApi);
                             await _botClient.SendMessage(_adminTelegramId, sendText,
-                                ParseMode.Html, linkPreviewOptions: true);
+                                ParseMode.Html, linkPreviewOptions: LinkPreviewOptions.Disabled);
                             await Task.Delay(1000);
                         }
                     }
@@ -308,7 +309,7 @@ public sealed class ScoresObserverBackgroundService(IServiceProvider serviceProv
                                         // Send it to the admin
                                         await _botClient.SendMessage(_adminTelegramId,
                                             $"<b>{score.User?.Username}</b> set a <b>{score.Pp}pp</b> {_scoreHelper.GetScoreUrlWrappedInString(score.Id!.Value, "score!")}",
-                                            ParseMode.Html, linkPreviewOptions: true);
+                                            ParseMode.Html, linkPreviewOptions: LinkPreviewOptions.Disabled);
                                         await Task.Delay(waitMs);
 
 
@@ -318,7 +319,7 @@ public sealed class ScoresObserverBackgroundService(IServiceProvider serviceProv
                                         {
                                             await _botClient.SendMessage(chat.ChatId,
                                                 $"<b>{score.User?.Username}</b> set a <b>{score.Pp}pp</b> {_scoreHelper.GetScoreUrlWrappedInString(score.Id!.Value, "score!")}",
-                                                ParseMode.Html, linkPreviewOptions: true);
+                                                ParseMode.Html, linkPreviewOptions: LinkPreviewOptions.Disabled);
                                             await Task.Delay(waitMs);
                                         }
                                     }
