@@ -30,7 +30,8 @@ namespace SosuBot.Helpers
             return cover;
         }
 
-        public async Task<BeatmapExtended?> GetOrCacheBeatmap(int beatmapId, Api api)
+        public async Task<BeatmapExtended?> GetOrCacheBeatmap(int beatmapId, Api api,
+            CancellationToken cancellationToken = default)
         {
             BanchoApiV2 osuApiV2 = (BanchoApiV2)api;
 
@@ -43,10 +44,11 @@ namespace SosuBot.Helpers
                     async token =>
                     {
                         logger?.LogInformation($"Getting beatmap infos ({beatmapId}) via osuApi");
-                        GetBeatmapResponse? response = await osuApiV2.Beatmaps.GetBeatmap(beatmapId);
+                        GetBeatmapResponse? response = await osuApiV2.Beatmaps.GetBeatmap(beatmapId, token);
                         return response?.BeatmapExtended ?? throw new InvalidOperationException($"Beatmap {beatmapId} not found.");
                     },
-                    options: new HybridCacheEntryOptions { Expiration = TimeSpan.FromHours(1) }
+                    options: new HybridCacheEntryOptions { Expiration = TimeSpan.FromHours(1) },
+                    cancellationToken: cancellationToken
                 );
             }
             catch (InvalidOperationException)

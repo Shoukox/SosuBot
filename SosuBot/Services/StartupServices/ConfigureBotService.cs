@@ -24,11 +24,13 @@ public class ConfigureBotService(IServiceProvider serviceProvider) : IHostedServ
         new("help", "Все команды бота"),
         new("botlang", "Изменяет язык бота"),
         new("rnd", "Случайная карта osu! по режиму"),
+        new("osucard", "Карточка навыков игрока osu!"),
+        new("videopreview", "Превью видео для osu! score"),
     ];
 
     public async Task StartAsync(CancellationToken cancellationToken)
     {
-        _ = _beatmapFileCache.WarmUpAsync();
+        await _beatmapFileCache.WarmUpAsync().WaitAsync(cancellationToken);
 
         //await _botClient.LogOut();
         //_logger.LogInformation("Successfully logged out");
@@ -77,6 +79,8 @@ public class ConfigureBotService(IServiceProvider serviceProvider) : IHostedServ
         RegisterCommand<OsuCalcManiaCommand>(OsuCalcManiaCommand.Commands);
         RegisterCommand<OsuUpdateCommand>(OsuUpdateCommand.Commands);
         RegisterCommand<RandomBeatmapCommand>(RandomBeatmapCommand.Commands);
+        RegisterCommand<OsuCardCommand>(OsuCardCommand.Commands);
+        RegisterCommand<VideoPreviewCommand>(VideoPreviewCommand.Commands);
 
         // Register callbacks
         RegisterCallback<OsuUserCallback>(OsuUserCallback.Command);
@@ -90,13 +94,23 @@ public class ConfigureBotService(IServiceProvider serviceProvider) : IHostedServ
 
     void RegisterCommand<T>(IEnumerable<string> commands) where T : CommandBase<Message>
     {
-        foreach (var cmd in commands)
+        string[] commandNames = commands.ToArray();
+        string metricName = commandNames.First();
+        foreach (var cmd in commandNames)
+        {
             UpdateHandler.Commands[cmd] = () => ActivatorUtilities.CreateInstance<T>(serviceProvider);
+            UpdateHandler.CommandMetricNames[cmd] = metricName;
+        }
     }
     void RegisterCommandWithParameters(IEnumerable<string> commands, Func<CommandBase<Message>> factory)
     {
-        foreach (var cmd in commands)
+        string[] commandNames = commands.ToArray();
+        string metricName = commandNames.First();
+        foreach (var cmd in commandNames)
+        {
             UpdateHandler.Commands[cmd] = factory;
+            UpdateHandler.CommandMetricNames[cmd] = metricName;
+        }
     }
     void RegisterCallback<T>(string callbackData) where T : CommandBase<CallbackQuery>
     {

@@ -12,7 +12,11 @@ namespace SosuBot.Extensions;
 
 public static class BotContextExtensions
 {
-    public static async Task AddOrUpdateTelegramChat(this BotContext database, Message message, ILogger? logger = null)
+    public static async Task AddOrUpdateTelegramChat(
+        this BotContext database,
+        Message message,
+        ILogger logger,
+        CancellationToken cancellationToken)
     {
         var chatId = message.Chat.Id;
         var userId = message.From?.Id;
@@ -22,7 +26,7 @@ public static class BotContextExtensions
 
         try
         {
-            TelegramChat? chat = await database.TelegramChats.FindAsync(chatId);
+            TelegramChat? chat = await database.TelegramChats.FindAsync([chatId], cancellationToken);
             if (chat == null)
             {
                 if (message.Chat.Type is ChatType.Private)
@@ -41,8 +45,8 @@ public static class BotContextExtensions
                     ChatMembers = userId is null ? [] : [userId.Value],
                     LastBeatmapId = null,
                     LanguageCode = defaultLanguage
-                });
-                await database.SaveChangesAsync();
+                }, cancellationToken);
+                await database.SaveChangesAsync(cancellationToken);
                 return;
             }
 
@@ -53,24 +57,26 @@ public static class BotContextExtensions
             if (leftUserId is not null)
             {
                 chat.ChatMembers.Remove(leftUserId.Value);
-                await database.SaveChangesAsync();
+                await database.SaveChangesAsync(cancellationToken);
                 return;
             }
 
             if (userId is not null && !chat.ChatMembers.Contains(userId.Value))
             {
                 chat.ChatMembers.Add(userId.Value);
-                await database.SaveChangesAsync();
+                await database.SaveChangesAsync(cancellationToken);
             }
         }
         catch (DbUpdateException dbEx) when (dbEx.InnerException is PostgresException pe && pe.SqlState == PostgresErrorCodes.UniqueViolation)
         {
-            // because of a thread race
-            // do nothing
+            foreach (Microsoft.EntityFrameworkCore.ChangeTracking.EntityEntry entry in dbEx.Entries)
+                entry.State = EntityState.Detached;
+
+            logger.LogDebug("Ignored a concurrent Telegram chat insert");
         }
-        catch (Exception e)
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
-            logger?.LogError(e.ToString());
+            throw;
         }
     }
 }

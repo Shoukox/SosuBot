@@ -125,6 +125,38 @@ public sealed class BeatmapFileCache
         }
     }
 
+    public Task<long> CountCachedBeatmapFilesAsync(CancellationToken cancellationToken = default)
+    {
+        return Task.Run(() =>
+        {
+            try
+            {
+                _ = File.GetAttributes(_cacheDirectory);
+            }
+            catch (Exception exception) when (exception is DirectoryNotFoundException or FileNotFoundException)
+            {
+                return 0L;
+            }
+
+            var enumerationOptions = new EnumerationOptions
+            {
+                RecurseSubdirectories = true,
+                IgnoreInaccessible = false,
+                AttributesToSkip = FileAttributes.ReparsePoint
+            };
+
+            long count = 0;
+            foreach (string path in Directory.EnumerateFiles(_cacheDirectory, "*", enumerationOptions))
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                if (string.Equals(Path.GetExtension(path), ".osu", StringComparison.OrdinalIgnoreCase))
+                    count++;
+            }
+
+            return count;
+        }, cancellationToken);
+    }
+
     public async Task<int?> GetRandomBeatmapIdAsync(Playmode playmode,
         CancellationToken cancellationToken = default)
     {

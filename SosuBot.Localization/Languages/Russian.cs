@@ -28,6 +28,8 @@ public sealed class Russian : ILocalization
         $"/lastpassed [nickname] [count] - /last только для пасснутых скоров.\n" +
         $"/score [beatmap_link] - ваши рекорды на этой карте.\n" +
         $"/rnd [osu/mania/taiko/catch] - случайная карта выбранного режима (по умолчанию osu).\n" +
+        $"/osucard [nickname] [gamemode] - профильная карточка с навыками игрока.\n" +
+        $"/videopreview &lt;текст&gt; - превью видео для ссылки на скор из сообщения, на которое отвечаешь.\n" +
         $"/userbest [nickname] [gamemode] - лучшие игры игрока.\n" +
         $"/compare [nickname1] [nickname2] [gamemode] - сравнить игроков.\n" +
         $"/chatstats [gamemode] - топ10 игроков в чате.\n" +
@@ -78,6 +80,21 @@ public sealed class Russian : ILocalization
 
     public string randomBeatmap_noCachedBeatmaps => "В локальном хранилище не найдено карт режима <b>{}</b>.";
     public string randomBeatmap_usage => "/rnd [osu/mania/taiko/catch]";
+    public string osuCard_usage => "/osucard [nickname] [osu/mania/taiko/catch]\n" +
+                                   "Режим также можно указать как <b>mode=mania</b>.";
+    public string osuCard_caption => "<b>{}</b> · <b>{}</b>\nРассчитано лучших скоров: <b>{}/{}</b>.";
+    public string osuCard_calculationFailed =>
+        $"{error_baseMessage}\nНе удалось рассчитать навыки по лучшим скорам игрока.";
+    public string videoPreview_usage =>
+        "/videopreview &lt;текст&gt; нужно отправить ответом на сообщение со ссылкой на скор.\n" +
+        "BB-коды: <code>[color=#FF4D8D]текст[/color]</code> и " +
+        "<code>[glow=18]текст[/glow]</code>. Теги можно вкладывать.";
+    public string videoPreview_invalidText =>
+        "Некорректный текст или bb-коды. Цвет: имя либо #RGB/#RRGGBB; glow: 0–40; " +
+        "максимум 120 символов.";
+    public string videoPreview_scoreNotFound => "Скор по этой ссылке не найден.";
+    public string videoPreview_generationFailed =>
+        $"{error_baseMessage}\nНе удалось создать превью для этого скора.";
 
     public string command_chatstats_title => "Топ-10 осеров (<b>{}</b>) в группе:\n\n";
     public string command_chatstats_row => "<b>{}. {}</b>: <i>{}pp💪</i>\n";

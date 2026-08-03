@@ -6,7 +6,7 @@ namespace SosuBot.Services;
 
 public sealed class BeatmapsService
 {
-    public const string HttpClientName = nameof(BeatmapsService);
+    public const string HttpClientName = "BeatmapsServiceHttpClient";
 
     private static readonly DownloadSource[] DownloadSources =
     [

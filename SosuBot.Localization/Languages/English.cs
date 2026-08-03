@@ -28,6 +28,8 @@ public sealed class English : ILocalization
         $"/lastpassed [nickname] [count] - /last for passed scores only.\n" +
         $"/score [beatmap_link] - your records on this map.\n" +
         $"/rnd [osu/mania/taiko/catch] - random beatmap for a selected mode (osu by default).\n" +
+        $"/osucard [nickname] [gamemode] - a profile card with the player's skills.\n" +
+        $"/videopreview &lt;text&gt; - a video thumbnail for the score link in the replied-to message.\n" +
         $"/userbest [nickname] [gamemode] - player's best plays.\n" +
         $"/compare [nickname1] [nickname2] [gamemode] - compare players.\n" +
         $"/chatstats [gamemode] - top 10 players in this chat.\n" +
@@ -78,6 +80,21 @@ public sealed class English : ILocalization
 
     public string randomBeatmap_noCachedBeatmaps => "No <b>{}</b> beatmaps were found in local storage.";
     public string randomBeatmap_usage => "/rnd [osu/mania/taiko/catch]";
+    public string osuCard_usage => "/osucard [nickname] [osu/mania/taiko/catch]\n" +
+                                   "The mode can also be specified as <b>mode=mania</b>.";
+    public string osuCard_caption => "<b>{}</b> · <b>{}</b>\nCalculated best scores: <b>{}/{}</b>.";
+    public string osuCard_calculationFailed =>
+        $"{error_baseMessage}\nCould not calculate skills from the player's best scores.";
+    public string videoPreview_usage =>
+        "/videopreview &lt;text&gt; must be sent as a reply to a message containing an osu! score link.\n" +
+        "BB codes: <code>[color=#FF4D8D]text[/color]</code> and " +
+        "<code>[glow=18]text[/glow]</code>. Tags can be nested.";
+    public string videoPreview_invalidText =>
+        "Invalid text or BB codes. Color: a name or #RGB/#RRGGBB; glow: 0–40; " +
+        "maximum 120 characters.";
+    public string videoPreview_scoreNotFound => "The score from this link was not found.";
+    public string videoPreview_generationFailed =>
+        $"{error_baseMessage}\nCould not generate a preview for this score.";
 
     public string command_chatstats_title => "Top-10 osu players (<b>{}</b>) in this group:\n\n";
     public string command_chatstats_row => "<b>{}. {}</b>: <i>{}pp💪</i>\n";

@@ -16,6 +16,13 @@ public interface ILocalization
     public string command_userbest { get; }
     public string randomBeatmap_noCachedBeatmaps { get; }
     public string randomBeatmap_usage { get; }
+    public string osuCard_usage { get; }
+    public string osuCard_caption { get; }
+    public string osuCard_calculationFailed { get; }
+    public string videoPreview_usage { get; }
+    public string videoPreview_invalidText { get; }
+    public string videoPreview_scoreNotFound { get; }
+    public string videoPreview_generationFailed { get; }
     public string command_chatstats_title { get; }
     public string command_chatstats_row { get; }
     public string command_chatstats_end { get; }

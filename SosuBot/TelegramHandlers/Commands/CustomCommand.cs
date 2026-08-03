@@ -17,7 +17,6 @@ using SosuBot.Localization;
 using SosuBot.Localization.Languages;
 using SosuBot.PerformanceCalculator;
 using SosuBot.Services;
-using SosuBot.Services.BackgroundServices;
 using SosuBot.TelegramHandlers.Abstract;
 using System.Diagnostics;
 using Telegram.Bot;
@@ -354,37 +353,6 @@ public sealed class CustomCommand : CommandBase<Message>
             await Context.Update.ReplyAsync(Context.BotClient,
                 $"Added osuUsers: {addedOsuUsers}\nAdded telegramChats: {addedTelegramChats}");
         }
-        else if (parameters[0] == "replace-daily-stats-into-postgres19122025")
-        {
-            ILocalization language = new Russian();
-            Message waitMessage = await Context.Update.ReplyAsync(Context.BotClient, language.waiting);
-
-            _database.UserEntity.ExecuteDelete();
-            _database.ScoreEntity.ExecuteDelete();
-            _database.DailyStatistics.ExecuteDelete();
-            _database.SaveChanges();
-
-            int oldCount = _database.DailyStatistics.Count();
-            var allUsersFromStatistics = ScoresObserverBackgroundService.AllDailyStatistics.SelectMany(m => m.ActiveUsers).DistinctBy(m => m.UserId).ToList();
-            _database.UserEntity.AddRange(allUsersFromStatistics);
-            _database.SaveChanges();
-
-            var allScoresFromStatistics = ScoresObserverBackgroundService.AllDailyStatistics.SelectMany(m => m.Scores).DistinctBy(m => m.ScoreId).ToList();
-            _database.ScoreEntity.AddRange(allScoresFromStatistics);
-            _database.SaveChanges();
-
-            _database.DailyStatistics.AddRange(ScoresObserverBackgroundService.AllDailyStatistics.Select(m => new Database.Models.DailyStatistics()
-            {
-                CountryCode = m.CountryCode,
-                DayOfStatistic = m.DayOfStatistic,
-                ActiveUsers = m.ActiveUsers.Select(u => allUsersFromStatistics.First(m => m.UserId == u.UserId)).ToList(),
-                BeatmapsPlayed = m.BeatmapsPlayed,
-                Scores = m.Scores.Select(s => allScoresFromStatistics.First(m => m.ScoreId == s.ScoreId)).ToList(),
-            }));
-            _database.SaveChanges();
-            int newCount = _database.DailyStatistics.Count();
-            await waitMessage.EditAsync(Context.BotClient, $"Added {newCount - oldCount} new daily stats");
-        }
         else if (parameters[0] == "fix-daily-stats19122025")
         {
             ILocalization language = new Russian();
@@ -514,4 +482,3 @@ public sealed class CustomCommand : CommandBase<Message>
         }
     }
 }
-

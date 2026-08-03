@@ -24,6 +24,13 @@ public class BotContext : DbContext
     public DbSet<DailyStatistics> DailyStatistics { get; set; }
     public DbSet<UserEntity> UserEntity { get; set; }
     public DbSet<ScoreEntity> ScoreEntity { get; set; }
+    public DbSet<CommandUsageAggregate> CommandUsageAggregates { get; set; }
+    public DbSet<TrackedScoreEvent> TrackedScoreEvents { get; set; }
+    public DbSet<TrackedScoreDelivery> TrackedScoreDeliveries { get; set; }
+    public DbSet<TrackedPlayerCheckpoint> TrackedPlayerCheckpoints { get; set; }
+    public DbSet<DailyStatisticsReportDelivery> DailyStatisticsReportDeliveries { get; set; }
+    public DbSet<TrackedPlayerSubscription> TrackedPlayerSubscriptions { get; set; }
+    public DbSet<ScoreFeedCheckpoint> ScoreFeedCheckpoints { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -58,6 +65,42 @@ public class BotContext : DbContext
             .Property(e => e.ScoreJson)
             .HasConversion(scoreConverter)
             .HasColumnType("jsonb");
+        modelBuilder.Entity<TrackedScoreEvent>()
+            .Property(e => e.ScoreJson)
+            .HasConversion(scoreConverter)
+            .HasColumnType("jsonb");
+
+        modelBuilder.Entity<TrackedScoreEvent>()
+            .HasIndex(e => new { e.PlayerId, e.OccurredAtUtc });
+        modelBuilder.Entity<TrackedScoreDelivery>()
+            .HasIndex(e => new { e.AvailableAtUtc, e.LockedUntilUtc })
+            .HasDatabaseName("IX_TrackedScoreDeliveries_Pending")
+            .HasFilter("\"SentAtUtc\" IS NULL AND \"CancelledAtUtc\" IS NULL AND \"FailedAtUtc\" IS NULL");
+        modelBuilder.Entity<TrackedScoreDelivery>()
+            .HasOne(e => e.Event)
+            .WithMany(e => e.Deliveries)
+            .HasForeignKey(e => e.ScoreId)
+            .OnDelete(DeleteBehavior.Cascade);
+        modelBuilder.Entity<DailyStatisticsReportDelivery>()
+            .Property(delivery => delivery.Mode)
+            .HasConversion<int>()
+            .HasColumnType("integer");
+        modelBuilder.Entity<DailyStatisticsReportDelivery>()
+            .HasIndex(delivery => new { delivery.AvailableAtUtc, delivery.LockedUntilUtc })
+            .HasDatabaseName("IX_DailyStatisticsReportDeliveries_Pending")
+            .HasFilter("\"SentAtUtc\" IS NULL AND \"CancelledAtUtc\" IS NULL AND \"FailedAtUtc\" IS NULL");
+        modelBuilder.Entity<DailyStatisticsReportDelivery>()
+            .HasOne(delivery => delivery.DailyStatistics)
+            .WithMany()
+            .HasForeignKey(delivery => delivery.DailyStatisticsId)
+            .OnDelete(DeleteBehavior.Cascade);
+        modelBuilder.Entity<TrackedPlayerSubscription>()
+            .HasIndex(e => e.PlayerId);
+        modelBuilder.Entity<TrackedPlayerSubscription>()
+            .HasOne(e => e.Chat)
+            .WithMany()
+            .HasForeignKey(e => e.ChatId)
+            .OnDelete(DeleteBehavior.Cascade);
 
         // Convert render settings
         var renderSettingsComparer = new ValueComparer<RenderSettings>(
@@ -81,7 +124,8 @@ public class BotContext : DbContext
         // Many-to-many relationships
         modelBuilder.Entity<DailyStatistics>()
             .HasMany(m => m.Scores)
-            .WithOne();
+            .WithOne()
+            .HasForeignKey(m => m.DailyStatisticsId);
         modelBuilder.Entity<DailyStatistics>()
             .HasMany(m => m.ActiveUsers)
             .WithMany();

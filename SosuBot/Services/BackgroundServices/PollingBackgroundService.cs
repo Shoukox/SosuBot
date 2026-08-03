@@ -2,6 +2,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Telegram.Bot;
+using Telegram.Bot.Exceptions;
 using Telegram.Bot.Types;
 
 namespace SosuBot.Services.BackgroundServices;
@@ -23,10 +24,26 @@ public sealed class PollingBackgroundService(IServiceProvider serviceProvider) :
             Update[] pendingUpdates = await _botClient.GetUpdates(timeout: 1, cancellationToken: stoppingToken);
             if (pendingUpdates.Length != 0) _offset = pendingUpdates.Last().Id + 1;
         }
-        catch (OperationCanceledException e)
+        catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
         {
-            _logger.LogError(e, "Operation cancelled");
+            _logger.LogInformation("Polling background service stopped during startup");
             return;
+        }
+        catch (ApiRequestException exception)
+        {
+            _logger.LogWarning(
+                "Failed to inspect pending Telegram updates with API error {ErrorCode}; polling will retry",
+                exception.ErrorCode);
+        }
+        catch (HttpRequestException exception)
+        {
+            _logger.LogWarning(
+                "Failed to inspect pending Telegram updates with HTTP status {StatusCode}; polling will retry",
+                exception.StatusCode);
+        }
+        catch (Exception exception)
+        {
+            _logger.LogError(exception, "Failed to inspect pending Telegram updates; polling will retry");
         }
 
         // Start polling
@@ -36,10 +53,13 @@ public sealed class PollingBackgroundService(IServiceProvider serviceProvider) :
     private async Task EnqueueAllUpdates(CancellationToken stoppingToken)
     {
         _logger.LogInformation("Bot is ready");
+        int consecutiveFailures = 0;
         while (!stoppingToken.IsCancellationRequested)
+        {
             try
             {
                 Update[] updates = await _botClient.GetUpdates(_offset, timeout: 20, cancellationToken: stoppingToken);
+                consecutiveFailures = 0;
                 _logger.LogDebug("Received {Count} updates", updates.Length);
                 if (updates.Length == 0) continue;
 
@@ -47,11 +67,42 @@ public sealed class PollingBackgroundService(IServiceProvider serviceProvider) :
                 foreach (Update update in updates)
                     await _updateQueueService.EnqueueUpdateAsync(update, stoppingToken);
             }
-            catch (Exception e)
+            catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
             {
-                _logger.LogError(e, "Exception");
+                break;
             }
+            catch (ApiRequestException exception)
+            {
+                consecutiveFailures++;
+                _logger.LogWarning(
+                    "Telegram polling failed with API error {ErrorCode}; retry {FailureCount}",
+                    exception.ErrorCode,
+                    consecutiveFailures);
+                await DelayAfterFailure(consecutiveFailures, stoppingToken);
+            }
+            catch (HttpRequestException exception)
+            {
+                consecutiveFailures++;
+                _logger.LogWarning(
+                    "Telegram polling failed with HTTP status {StatusCode}; retry {FailureCount}",
+                    exception.StatusCode,
+                    consecutiveFailures);
+                await DelayAfterFailure(consecutiveFailures, stoppingToken);
+            }
+            catch (Exception exception)
+            {
+                consecutiveFailures++;
+                _logger.LogError(exception, "Unexpected Telegram polling failure; retry {FailureCount}", consecutiveFailures);
+                await DelayAfterFailure(consecutiveFailures, stoppingToken);
+            }
+        }
 
         _logger.LogInformation("Finished its work");
+    }
+
+    private static Task DelayAfterFailure(int consecutiveFailures, CancellationToken cancellationToken)
+    {
+        double exponentialDelaySeconds = Math.Pow(2, Math.Min(consecutiveFailures - 1, 5));
+        return Task.Delay(TimeSpan.FromSeconds(exponentialDelaySeconds), cancellationToken);
     }
 }

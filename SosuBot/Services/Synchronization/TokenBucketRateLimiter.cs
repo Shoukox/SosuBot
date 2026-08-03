@@ -77,7 +77,7 @@ namespace SosuBot.Services.Synchronization
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "TokenBucketRateLimiter failed for key {Key}", key);
+                _logger.LogError(ex, "Token bucket rate limiter failed");
                 return true; // fail-open strategy
             }
         }

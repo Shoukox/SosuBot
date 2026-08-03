@@ -19,7 +19,7 @@ namespace SosuBot.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "10.0.8")
+                .HasAnnotation("ProductVersion", "10.0.10")
                 .HasAnnotation("Proxies:ChangeTracking", false)
                 .HasAnnotation("Proxies:CheckEquality", false)
                 .HasAnnotation("Proxies:LazyLoading", true)
@@ -41,6 +41,34 @@ namespace SosuBot.Migrations
                     b.HasIndex("DailyStatisticsId");
 
                     b.ToTable("DailyStatisticsUserEntity");
+                });
+
+            modelBuilder.Entity("SosuBot.Database.Models.CommandUsageAggregate", b =>
+                {
+                    b.Property<string>("Command")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<DateTimeOffset>("BucketStartUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<long>("CancelledCount")
+                        .HasColumnType("bigint");
+
+                    b.Property<long>("ErrorCount")
+                        .HasColumnType("bigint");
+
+                    b.Property<long>("SuccessCount")
+                        .HasColumnType("bigint");
+
+                    b.Property<long>("TotalDurationMilliseconds")
+                        .HasColumnType("bigint");
+
+                    b.HasKey("Command", "BucketStartUtc");
+
+                    b.HasIndex("BucketStartUtc");
+
+                    b.ToTable("CommandUsageAggregates");
                 });
 
             modelBuilder.Entity("SosuBot.Database.Models.DailyStatistics", b =>
@@ -65,6 +93,55 @@ namespace SosuBot.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("DailyStatistics");
+                });
+
+            modelBuilder.Entity("SosuBot.Database.Models.DailyStatisticsReportDelivery", b =>
+                {
+                    b.Property<int>("DailyStatisticsId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Mode")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Attempts")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTimeOffset>("AvailableAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTimeOffset?>("CancelledAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<long>("ChatId")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTimeOffset?>("FailedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("LastError")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<string>("LockedBy")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.Property<DateTimeOffset?>("LockedUntilUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTimeOffset?>("SentAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("DailyStatisticsId", "Mode");
+
+                    b.HasIndex("AvailableAtUtc", "LockedUntilUtc")
+                        .HasDatabaseName("IX_DailyStatisticsReportDeliveries_Pending")
+                        .HasFilter("\"SentAtUtc\" IS NULL AND \"CancelledAtUtc\" IS NULL AND \"FailedAtUtc\" IS NULL");
+
+                    b.ToTable("DailyStatisticsReportDeliveries");
                 });
 
             modelBuilder.Entity("SosuBot.Database.Models.OsuUser", b =>
@@ -141,6 +218,23 @@ namespace SosuBot.Migrations
                     b.ToTable("ScoreEntity");
                 });
 
+            modelBuilder.Entity("SosuBot.Database.Models.ScoreFeedCheckpoint", b =>
+                {
+                    b.Property<string>("Source")
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)");
+
+                    b.Property<string>("Cursor")
+                        .HasColumnType("text");
+
+                    b.Property<DateTimeOffset>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Source");
+
+                    b.ToTable("ScoreFeedCheckpoints");
+                });
+
             modelBuilder.Entity("SosuBot.Database.Models.TelegramChat", b =>
                 {
                     b.Property<long>("ChatId")
@@ -165,6 +259,121 @@ namespace SosuBot.Migrations
                     b.HasKey("ChatId");
 
                     b.ToTable("TelegramChats");
+                });
+
+            modelBuilder.Entity("SosuBot.Database.Models.TrackedPlayerCheckpoint", b =>
+                {
+                    b.Property<int>("PlayerId")
+                        .HasColumnType("integer");
+
+                    b.PrimitiveCollection<List<long>>("BestScoreIds")
+                        .IsRequired()
+                        .HasColumnType("bigint[]");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean");
+
+                    b.Property<int?>("Mode")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTimeOffset>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("PlayerId");
+
+                    b.ToTable("TrackedPlayerCheckpoints");
+                });
+
+            modelBuilder.Entity("SosuBot.Database.Models.TrackedPlayerSubscription", b =>
+                {
+                    b.Property<long>("ChatId")
+                        .HasColumnType("bigint");
+
+                    b.Property<int>("PlayerId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTimeOffset>("StartedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("ChatId", "PlayerId");
+
+                    b.HasIndex("PlayerId");
+
+                    b.ToTable("TrackedPlayerSubscriptions");
+                });
+
+            modelBuilder.Entity("SosuBot.Database.Models.TrackedScoreDelivery", b =>
+                {
+                    b.Property<long>("ScoreId")
+                        .HasColumnType("bigint");
+
+                    b.Property<long>("ChatId")
+                        .HasColumnType("bigint");
+
+                    b.Property<int>("Attempts")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTimeOffset>("AvailableAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTimeOffset?>("CancelledAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTimeOffset?>("FailedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("IsAdminRecipient")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("LastError")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<string>("LockedBy")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.Property<DateTimeOffset?>("LockedUntilUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTimeOffset?>("SentAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("ScoreId", "ChatId");
+
+                    b.HasIndex("AvailableAtUtc", "LockedUntilUtc")
+                        .HasDatabaseName("IX_TrackedScoreDeliveries_Pending")
+                        .HasFilter("\"SentAtUtc\" IS NULL AND \"CancelledAtUtc\" IS NULL AND \"FailedAtUtc\" IS NULL");
+
+                    b.ToTable("TrackedScoreDeliveries");
+                });
+
+            modelBuilder.Entity("SosuBot.Database.Models.TrackedScoreEvent", b =>
+                {
+                    b.Property<long>("ScoreId")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTimeOffset>("DetectedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTimeOffset>("OccurredAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("PlayerId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("ScoreJson")
+                        .IsRequired()
+                        .HasColumnType("jsonb");
+
+                    b.HasKey("ScoreId");
+
+                    b.HasIndex("PlayerId", "OccurredAtUtc");
+
+                    b.ToTable("TrackedScoreEvents");
                 });
 
             modelBuilder.Entity("SosuBot.Database.Models.UserEntity", b =>
@@ -196,6 +405,17 @@ namespace SosuBot.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("SosuBot.Database.Models.DailyStatisticsReportDelivery", b =>
+                {
+                    b.HasOne("SosuBot.Database.Models.DailyStatistics", "DailyStatistics")
+                        .WithMany()
+                        .HasForeignKey("DailyStatisticsId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("DailyStatistics");
+                });
+
             modelBuilder.Entity("SosuBot.Database.Models.ScoreEntity", b =>
                 {
                     b.HasOne("SosuBot.Database.Models.DailyStatistics", null)
@@ -203,9 +423,36 @@ namespace SosuBot.Migrations
                         .HasForeignKey("DailyStatisticsId");
                 });
 
+            modelBuilder.Entity("SosuBot.Database.Models.TrackedPlayerSubscription", b =>
+                {
+                    b.HasOne("SosuBot.Database.Models.TelegramChat", "Chat")
+                        .WithMany()
+                        .HasForeignKey("ChatId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Chat");
+                });
+
+            modelBuilder.Entity("SosuBot.Database.Models.TrackedScoreDelivery", b =>
+                {
+                    b.HasOne("SosuBot.Database.Models.TrackedScoreEvent", "Event")
+                        .WithMany("Deliveries")
+                        .HasForeignKey("ScoreId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Event");
+                });
+
             modelBuilder.Entity("SosuBot.Database.Models.DailyStatistics", b =>
                 {
                     b.Navigation("Scores");
+                });
+
+            modelBuilder.Entity("SosuBot.Database.Models.TrackedScoreEvent", b =>
+                {
+                    b.Navigation("Deliveries");
                 });
 #pragma warning restore 612, 618
         }

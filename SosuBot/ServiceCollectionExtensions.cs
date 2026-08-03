@@ -1,18 +1,27 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
+using SosuBot.Monitoring;
+
 namespace SosuBot;
 
 public static class ServiceCollectionExtensions
 {
-    public static IHttpClientBuilder AddCustomHttpClient(this IServiceCollection services, string name, int executionsPerMinute)
+    public static IHttpClientBuilder AddCustomHttpClient(
+        this IServiceCollection services,
+        string name,
+        int executionsPerMinute,
+        TimeSpan? timeout = null)
     {
         return services.AddHttpClient(name)
             .ConfigureHttpClient(client =>
             {
-                client.Timeout = TimeSpan.FromSeconds(120); //120 is default
+                client.Timeout = timeout ?? TimeSpan.FromSeconds(120);
                 client.DefaultRequestHeaders.ConnectionClose = true;
             })
+            .AddHttpMessageHandler(sp => new OutboundHttpMetricsHandler(
+                sp.GetRequiredService<BotMetrics>(),
+                name))
             .AddHttpMessageHandler(sp => new RateLimitingHandler(sp.GetRequiredService<ILogger<RateLimitingHandler>>(), executionsPerMinute));
     }
 }

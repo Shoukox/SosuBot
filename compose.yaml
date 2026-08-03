@@ -1,85 +1,235 @@
-﻿services:
+﻿x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+services:
   sosubot-service:
-    image: sosubot
+    image: "${SOSUBOT_IMAGE:-shoukko/sosubot:latest}"
     build:
       context: .
       dockerfile: ./SosuBot/Dockerfile
-    restart: always
-    deploy:
-      mode: replicated
-      replicas: 1
+    restart: unless-stopped
+    init: true
     environment:
-      "DOTNET_ENVIRONMENT": "Development"
+      DOTNET_ENVIRONMENT: "${DOTNET_ENVIRONMENT:-Production}"
+      Monitoring__Enabled: "true"
+      Monitoring__Port: "9090"
+      Redis__Host: redis-service
+      Redis__Port: "6379"
+      ConnectionStrings__Postgres: "Host=db-service;Port=5432;Database=${POSTGRES_DB:-sosubot};Username=${POSTGRES_USER:-sosubot}"
+      Database__PasswordFile: /run/secrets/db-password
+      Database__MigrateOnStartup: "false"
+      Sentry__Dsn: "${SENTRY_DSN:-}"
+      Sentry__Environment: "${SENTRY_ENVIRONMENT:-production}"
+      Sentry__Release: "${SENTRY_RELEASE:-sosubot-local}"
+      Sentry__EnableLogs: "${SENTRY_ENABLE_LOGS:-false}"
+      Sentry__TracesSampleRate: "${SENTRY_TRACES_SAMPLE_RATE:-0.1}"
     secrets:
       - db-password
     expose:
-      - "5000"
+      - "9090"
     volumes:
-      - /videos:/app/videos:rw
-      - /var/telegram-data:/var/telegram-data:rw
+      - ${SOSUBOT_VIDEOS_PATH:-/videos}:/app/videos:rw
+      - ${TELEGRAM_DATA_PATH:-/var/telegram-data}:/var/telegram-data:rw
       - ./cache:/app/cache:rw
       - ./logs:/app/logs:rw
-      - ./SosuBot/appsettings.json:/app/appsettings.json:ro
+      - type: bind
+        source: ./SosuBot/appsettings.json
+        target: /app/appsettings.json
+        read_only: true
+        bind:
+          create_host_path: false
+    depends_on:
+      database-migrator:
+        condition: service_completed_successfully
+      db-service:
+        condition: service_healthy
+      redis-service:
+        condition: service_healthy
+    networks:
+      - app-network
+    logging: *default-logging
+    stop_grace_period: 30s
+
+  scores-observer-service:
+    image: "${SCORES_OBSERVER_IMAGE:-shoukko/sosubot-scores-observer:latest}"
+    build:
+      context: .
+      dockerfile: ./SosuBot.ScoresObserver/Dockerfile
+    restart: unless-stopped
+    init: true
+    environment:
+      DOTNET_ENVIRONMENT: "${DOTNET_ENVIRONMENT:-Production}"
+      Monitoring__Enabled: "true"
+      Monitoring__Port: "9090"
+      ScoresObserverConfiguration__CreateDeliveries: "${SCORES_OBSERVER_CREATE_DELIVERIES:-true}"
+      ConnectionStrings__Postgres: "Host=db-service;Port=5432;Database=${POSTGRES_DB:-sosubot};Username=${POSTGRES_USER:-sosubot}"
+      Database__PasswordFile: /run/sosubot-secrets/db-password
+      Sentry__Dsn: "${SENTRY_DSN:-}"
+      Sentry__Environment: "${SENTRY_ENVIRONMENT:-production}"
+      Sentry__Release: "${SENTRY_OBSERVER_RELEASE:-sosubot-scores-observer-local}"
+      Sentry__EnableLogs: "${SENTRY_ENABLE_LOGS:-false}"
+      Sentry__TracesSampleRate: "${SENTRY_TRACES_SAMPLE_RATE:-0.1}"
+    secrets:
+      - db-password
+    expose:
+      - "9090"
+    healthcheck:
+      test: ["CMD", "dotnet", "SosuBot.ScoresObserver.dll", "--healthcheck"]
+      interval: 15s
+      timeout: 5s
+      retries: 4
+      start_period: 20s
+    volumes:
+      - scores-observer-cache:/app/cache
+      - scores-observer-logs:/app/logs
+      - type: bind
+        source: ./SosuBot.ScoresObserver/appsettings.json
+        target: /run/config/scores-observer-appsettings.json
+        read_only: true
+        bind:
+          create_host_path: false
+    depends_on:
+      database-migrator:
+        condition: service_completed_successfully
+      db-service:
+        condition: service_healthy
+    networks:
+      - app-network
+    logging: *default-logging
+    stop_grace_period: 30s
+
+  database-migrator:
+    image: "${SOSUBOT_IMAGE:-shoukko/sosubot:latest}"
+    build:
+      context: .
+      dockerfile: ./SosuBot/Dockerfile
+    restart: "no"
+    environment:
+      DOTNET_ENVIRONMENT: "${DOTNET_ENVIRONMENT:-Production}"
+      Monitoring__Enabled: "false"
+      Redis__Host: redis-service
+      Redis__Port: "6379"
+      ConnectionStrings__Postgres: "Host=db-service;Port=5432;Database=${POSTGRES_DB:-sosubot};Username=${POSTGRES_USER:-sosubot}"
+      Database__PasswordFile: /run/secrets/db-password
+      Database__MigrateOnly: "true"
+    secrets:
+      - db-password
     depends_on:
       db-service:
         condition: service_healthy
-      redis-service: 
-        condition: service_healthy
     networks:
       - app-network
-      
-  
+    logging: *default-logging
+
   redis-service:
-    image: redis
-    restart: always
-    container_name: redis
-    command: redis-server /usr/local/etc/redis/redis.conf
-    environment:
-      - REDIS_PORT=6379
+    image: redis:7.4-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes", "--appendfsync", "everysec"]
     ports:
-      - "6379:6379"
+      - "127.0.0.1:${REDIS_PORT:-6379}:6379"
     volumes:
       - ./.redis/data:/data
-      - ./.redis/redis.conf:/usr/local/etc/redis/redis.conf
     healthcheck:
-      test: [ "CMD-SHELL", "redis-cli ping | grep PONG" ]
-      interval: 1s
+      test: ["CMD-SHELL", "redis-cli ping | grep -q PONG"]
+      interval: 5s
       timeout: 3s
-      retries: 5
+      retries: 10
+      start_period: 5s
     networks:
       - app-network
-    
+    logging: *default-logging
+    stop_grace_period: 10s
 
   db-service:
     image: postgres:17-alpine
-    restart: always
+    restart: unless-stopped
     secrets:
       - db-password
     volumes:
       - ./.db-data:/var/lib/postgresql/data
     environment:
-      POSTGRES_DB: sosubot
-      POSTGRES_USER: sosubot
+      POSTGRES_DB: "${POSTGRES_DB:-sosubot}"
+      POSTGRES_USER: "${POSTGRES_USER:-sosubot}"
       POSTGRES_PASSWORD_FILE: /run/secrets/db-password
     ports:
-      - "5432:5432"
+      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
     healthcheck:
-      test: [ "CMD", "pg_isready", "-U", "sosubot", "-d", "sosubot" ]
+      test: ["CMD-SHELL", "pg_isready -U '${POSTGRES_USER:-sosubot}' -d '${POSTGRES_DB:-sosubot}'"]
       interval: 10s
       timeout: 5s
       retries: 5
       start_period: 10s
     networks:
       - app-network
-    
+    logging: *default-logging
+    stop_grace_period: 30s
+
+  prometheus:
+    image: prom/prometheus:v3.5.0
+    restart: unless-stopped
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --storage.tsdb.retention.time=30d
+    ports:
+      - "127.0.0.1:${PROMETHEUS_PORT:-9090}:9090"
+    volumes:
+      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "--quiet", "http://127.0.0.1:9090/-/healthy"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - app-network
+    logging: *default-logging
+    stop_grace_period: 30s
+
+  grafana:
+    image: grafana/grafana:12.1.0
+    restart: unless-stopped
+    environment:
+      GF_SECURITY_ADMIN_USER: "${GRAFANA_ADMIN_USER:-admin}"
+      GF_SECURITY_ADMIN_PASSWORD: "${GRAFANA_ADMIN_PASSWORD:-admin}"
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    ports:
+      - "${GRAFANA_BIND_ADDRESS:-127.0.0.1}:${GRAFANA_PORT:-3000}:3000"
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    depends_on:
+      prometheus:
+        condition: service_healthy
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "--quiet", "http://127.0.0.1:3000/api/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    logging: *default-logging
+    stop_grace_period: 30s
 
 secrets:
   db-password:
     file: .secrets/.db_password
-    
+
 
 networks:
   app-network:
     driver: bridge
-    enable_ipv4: false
-    enable_ipv6: true
+    enable_ipv4: true
+    enable_ipv6: false
+
+volumes:
+  prometheus-data:
+  grafana-data:
+  scores-observer-cache:
+  scores-observer-logs:
