@@ -1,11 +1,11 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using OsuApi.BanchoV2;
 using OsuApi.BanchoV2.Clients.Users.HttpIO;
 using SosuBot.Database;
 using SosuBot.Database.Models;
 using SosuBot.Extensions;
 using SosuBot.Localization;
-using SosuBot.Services.BackgroundServices;
 using SosuBot.Services.Synchronization;
 using SosuBot.TelegramHandlers.Abstract;
 using Telegram.Bot.Types;
@@ -55,17 +55,13 @@ public sealed class TrackCommand : CommandBase<Message>
         {
             if (chatInDatabase!.TrackedPlayers != null)
             {
-                List<int> usersToRemoveFromObservedList = [];
-                foreach (int osuUserId in chatInDatabase!.TrackedPlayers)
-                {
-                    if (!_database.TelegramChats.Any(m => m.TrackedPlayers != null && m.TrackedPlayers.Contains(osuUserId)))
-                    {
-                        usersToRemoveFromObservedList.Add(osuUserId);
-                    }
-                }
                 chatInDatabase!.TrackedPlayers = null;
-                await ScoresObserverBackgroundService.RemovePlayersFromObserverList(usersToRemoveFromObservedList);
             }
+
+            TrackedPlayerSubscription[] subscriptions = await _database.TrackedPlayerSubscriptions
+                .Where(subscription => subscription.ChatId == Context.Update.Chat.Id)
+                .ToArrayAsync(Context.CancellationToken);
+            _database.TrackedPlayerSubscriptions.RemoveRange(subscriptions);
             await waitMessage.EditAsync(Context.BotClient, language.track_cleared);
             return;
         }
@@ -92,7 +88,25 @@ public sealed class TrackCommand : CommandBase<Message>
             trackedPlayers.Add(getUserResponse.UserExtend!.Id.Value);
         }
 
-        await ScoresObserverBackgroundService.AddPlayersToObserverList(trackedPlayers.ToArray());
+        TrackedPlayerSubscription[] existingSubscriptions = await _database.TrackedPlayerSubscriptions
+            .Where(subscription => subscription.ChatId == Context.Update.Chat.Id)
+            .ToArrayAsync(Context.CancellationToken);
+        _database.TrackedPlayerSubscriptions.RemoveRange(
+            existingSubscriptions.Where(subscription => !trackedPlayers.Contains(subscription.PlayerId)));
+
+        HashSet<int> existingPlayerIds = existingSubscriptions
+            .Select(subscription => subscription.PlayerId)
+            .ToHashSet();
+        DateTimeOffset now = DateTimeOffset.UtcNow;
+        foreach (int playerId in trackedPlayers.Where(playerId => !existingPlayerIds.Contains(playerId)))
+        {
+            _database.TrackedPlayerSubscriptions.Add(new TrackedPlayerSubscription
+            {
+                ChatId = Context.Update.Chat.Id,
+                PlayerId = playerId,
+                StartedAtUtc = now
+            });
+        }
 
         chatInDatabase!.TrackedPlayers = trackedPlayers.ToList();
         await waitMessage.EditAsync(Context.BotClient, LocalizationMessageHelper.TrackNowTrackingPlayers(language, $"{string.Join(", ", nicknames)}"));

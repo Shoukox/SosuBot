@@ -46,13 +46,11 @@ public sealed class MsgCommand : CommandBase<Message>
                 }
                 catch (ApiRequestException reqEx)
                 {
-                    _logger.LogError(reqEx,
-                        $"ApiRequestException in MsgCommand while sending message to group {chat.ChatId}");
+                    _logger.LogError(reqEx, "Telegram rejected a broadcast message in MsgCommand");
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex,
-                        $"Exception in MsgCommand while sending message to group {chat.ChatId}");
+                    _logger.LogError(ex, "Failed to send a broadcast message in MsgCommand");
                 }
         }
         else if (parameters[0] == "all_except_uzosu_check")
@@ -113,13 +111,11 @@ public sealed class MsgCommand : CommandBase<Message>
                 }
                 catch (ApiRequestException reqEx)
                 {
-                    _logger.LogError(reqEx,
-                        $"ApiRequestException in MsgCommand while sending message to group {chat.ChatId}");
+                    _logger.LogError(reqEx, "Telegram rejected a broadcast message in MsgCommand");
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex,
-                        $"Exception in MsgCommand while sending message to group {chat.ChatId}");
+                    _logger.LogError(ex, "Failed to send a broadcast message in MsgCommand");
                 }
 
             await Context.BotClient.SendMessage(adminUser.TelegramId, $"Завершено. Успешно отправлено в {sent}/{filteredChats.Count} чатов", ParseMode.Html);
@@ -151,12 +147,14 @@ public sealed class MsgCommand : CommandBase<Message>
                     }
                     catch (ApiRequestException reqEx)
                     {
-                        _logger.LogError(reqEx,
-                            $"ApiRequestException in MsgCommand while sending message to group {chat.ChatId}");
+                        _logger.LogError(reqEx, "Telegram rejected a chat membership check in MsgCommand");
                     }
                     catch (Exception ex)
                     {
-                        await Context.Update.ReplyAsync(Context.BotClient, ex.ToString());
+                        _logger.LogError(ex, "Failed to check chat membership in MsgCommand");
+                        await Context.Update.ReplyAsync(
+                            Context.BotClient,
+                            "Не удалось проверить один из чатов. Подробности сохранены в журнале ошибок.");
                     }
 
                 await Context.Update.ReplyAsync(Context.BotClient,

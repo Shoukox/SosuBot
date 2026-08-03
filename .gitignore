@@ -1,14 +1,83 @@
+# Build output
+[Bb]in/
+[Oo]bj/
+[Aa]rtifacts/
+[Dd]ebug/
+[Rr]elease/
+publish/
+
+# Test results and coverage
+[Tt]est[Rr]esults/
+coverage/
+coverage*.json
+coverage*.xml
+*.coverage
+*.coveragexml
+*.trx
+
+# NuGet artifacts
+packages/
+*.nupkg
+*.snupkg
+*.nuget.props
+*.nuget.targets
+
+# Visual Studio, Rider and VS Code
 .vs/
 .idea/
-appsettings*
-bin/
-obj/
-*.db*
-SosuBot/Properties/launchSettings.json
-logs/
+.vscode/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+*.DotSettings.user
+
+# User-specific publish settings
+*.pubxml.user
+
+# Local application configuration and secrets
+appsettings*.json
+!appsettings*.example.json
+!appsettings*.template.json
+.env
+.env.*
+!.env.example
+!.env.template
+.secrets/
+secrets.json
 openai-settings.json
+*.pfx
+*.p12
+*.key
+
+# Local launch settings containing credentials
+/SosuBot/Properties/launchSettings.json
+
+# Databases and service state
+*.db
+*.db-*
+*.sqlite
+*.sqlite3
+.db-data/
+.redis/data/
+
+# Runtime output and caches
+logs/
+*.log
+cache/
+.cache/
 .proxy/
 /SosuBot/migrate.load
-/cache
-/.secrets
-/.redis/data
+
+# Operating-system files
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Temporary and backup files
+*.tmp
+*.temp
+*.bak
+*.swp
+*.swo
+*~

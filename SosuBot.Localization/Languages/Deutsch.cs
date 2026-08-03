@@ -28,6 +28,8 @@ public sealed class Deutsch : ILocalization
         $"/lastpassed [nickname] [count] - /last nur mit bestandenen Scores.\n" +
         $"/score [beatmap_link] - deine Records auf dieser Map.\n" +
         $"/rnd [osu/mania/taiko/catch] - zufällige Beatmap für den gewählten Modus (standardmäßig osu).\n" +
+        $"/osucard [nickname] [gamemode] - Profilkarte mit den Fähigkeiten des Spielers.\n" +
+        $"/videopreview &lt;Text&gt; - Video-Vorschaubild für den Score-Link in der beantworteten Nachricht.\n" +
         $"/userbest [nickname] [gamemode] - beste Plays des Spielers.\n" +
         $"/compare [nickname1] [nickname2] [gamemode] - Spieler vergleichen.\n" +
         $"/chatstats [gamemode] - Top 10 Spieler im Chat.\n" +
@@ -78,6 +80,21 @@ public sealed class Deutsch : ILocalization
 
     public string randomBeatmap_noCachedBeatmaps => "Im lokalen Speicher wurden keine <b>{}</b>-Beatmaps gefunden.";
     public string randomBeatmap_usage => "/rnd [osu/mania/taiko/catch]";
+    public string osuCard_usage => "/osucard [nickname] [osu/mania/taiko/catch]\n" +
+                                   "Der Modus kann auch als <b>mode=mania</b> angegeben werden.";
+    public string osuCard_caption => "<b>{}</b> · <b>{}</b>\nBerechnete Best-Scores: <b>{}/{}</b>.";
+    public string osuCard_calculationFailed =>
+        $"{error_baseMessage}\nDie Fähigkeiten konnten nicht aus den Best-Scores berechnet werden.";
+    public string videoPreview_usage =>
+        "/videopreview &lt;Text&gt; muss als Antwort auf eine Nachricht mit einem osu!-Score-Link gesendet werden.\n" +
+        "BB-Codes: <code>[color=#FF4D8D]Text[/color]</code> und " +
+        "<code>[glow=18]Text[/glow]</code>. Tags können verschachtelt werden.";
+    public string videoPreview_invalidText =>
+        "Ungültiger Text oder BB-Codes. Farbe: Name oder #RGB/#RRGGBB; Glow: 0–40; " +
+        "maximal 120 Zeichen.";
+    public string videoPreview_scoreNotFound => "Der Score aus diesem Link wurde nicht gefunden.";
+    public string videoPreview_generationFailed =>
+        $"{error_baseMessage}\nFür diesen Score konnte keine Vorschau erstellt werden.";
 
     public string command_chatstats_title => "Top-10 osu-Spieler (<b>{}</b>) in dieser Gruppe:\n\n";
     public string command_chatstats_row => "<b>{}. {}</b>: <i>{}pp💪</i>\n";

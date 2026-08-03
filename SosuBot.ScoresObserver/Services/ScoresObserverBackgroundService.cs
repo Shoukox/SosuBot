@@ -2,6 +2,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+using Npgsql;
 using OsuApi.BanchoV2;
 using OsuApi.BanchoV2.Clients.Rankings.HttpIO;
 using OsuApi.BanchoV2.Clients.Scores.HttpIO;
@@ -10,472 +12,732 @@ using OsuApi.BanchoV2.Models;
 using OsuApi.BanchoV2.Users.Models;
 using SosuBot.Database;
 using SosuBot.Database.Models;
-using SosuBot.ScoresObserver.Comparers;
 using SosuBot.ScoresObserver.Extensions;
-using SosuBot.ScoresObserver.Models;
-using System.Collections.Concurrent;
-using System.Text.Json;
-using Telegram.Bot;
-using Telegram.Bot.Types;
-using Telegram.Bot.Types.Enums;
+using SosuBot.ScoresObserver.Monitoring;
 using Country = SosuBot.ScoresObserver.Models.Country;
 
 namespace SosuBot.ScoresObserver.Services;
 
-public sealed class ScoresObserverBackgroundService(IServiceProvider serviceProvider) : BackgroundService
+public sealed class ScoresObserverBackgroundService(
+    IServiceProvider serviceProvider,
+    IServiceScopeFactory scopeFactory,
+    NpgsqlDataSource dataSource,
+    IOptions<ScoresObserverConfiguration> configuration,
+    ObserverMetrics metrics,
+    ILogger<ScoresObserverBackgroundService> logger) : BackgroundService
 {
-    private readonly ITelegramBotClient _botClient = serviceProvider.GetRequiredService<ITelegramBotClient>();
-    private readonly BotContext _database = serviceProvider.GetRequiredService<BotContext>();
-    private readonly BanchoApiV2 _osuApi = serviceProvider.GetRequiredService<BanchoApiV2>();
-    private readonly ILogger<ScoresObserverBackgroundService> _logger = serviceProvider.GetRequiredService<ILogger<ScoresObserverBackgroundService>>();
-
-    private static readonly SemaphoreSlim Semaphore = new(1, 1);
-    public static ConcurrentBag<int> ObservedUsers = new();
-
-    private static readonly ScoreEqualityComparer ScoreComparer = new();
-
-    private UserStatisticsCacheDatabase _userDatabase = null!; // initialized in ExecuteAsync
-    private long _adminTelegramId;
-
-    private async Task SetupObserverList()
-    {
-        await AddPlayersToObserverListFromSpecificCountryLeaderboard("uz");
-        await AddPlayersToObserverListFromSpecificCountryLeaderboard();
-
-        IQueryable<TelegramChat> chatsWithTrackedPlayers = _database.TelegramChats.Where(m => m.TrackedPlayers != null);
-        _logger.LogInformation("Found {ChatsCount} chats with tracked players", chatsWithTrackedPlayers.Count());
-
-        await Task.WhenAll(chatsWithTrackedPlayers.Select(m => AddPlayersToObserverList(m.TrackedPlayers!.ToArray())));
-        _logger.LogInformation("Successfully added tracked players to {ServiceName}", nameof(ScoresObserverBackgroundService));
-    }
+    private const long LeaderLockId = 0x534F5355424F5401;
+    private const string StandardFeed = "osu";
+    private const string TaikoFeed = "taiko";
+    private const string FruitsFeed = "fruits";
+    private const string ManiaFeed = "mania";
+    private readonly ScoresObserverConfiguration _configuration = configuration.Value;
+    private BanchoApiV2 _osuApi = null!;
+    private UserStatisticsCacheDatabase _userStatisticsCache = null!;
+    private HashSet<int> _leaderboardPlayers = [];
+    private DateTimeOffset _nextLeaderboardRefreshUtc = DateTimeOffset.MinValue;
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        _userDatabase = new(_osuApi);
-        _logger.LogInformation("Scores observer background service started");
+        logger.LogInformation("Scores observer started");
 
+        while (!stoppingToken.IsCancellationRequested)
+        {
+            metrics.SetLeader(false);
+            try
+            {
+                await using NpgsqlConnection leaderConnection = await dataSource.OpenConnectionAsync(stoppingToken);
+                if (!await TryAcquireLeaderLock(leaderConnection, stoppingToken))
+                {
+                    logger.LogInformation("Another ScoresObserver instance is active; waiting for leadership");
+                    await Task.Delay(TimeSpan.FromSeconds(15), stoppingToken);
+                    continue;
+                }
+
+                logger.LogInformation("Acquired ScoresObserver PostgreSQL advisory lock");
+                metrics.SetLeader(true);
+                _osuApi = serviceProvider.GetRequiredService<BanchoApiV2>();
+                _userStatisticsCache = serviceProvider.GetRequiredService<UserStatisticsCacheDatabase>();
+                using CancellationTokenSource leaderTokenSource =
+                    CancellationTokenSource.CreateLinkedTokenSource(stoppingToken);
+                Task observerTask = Task.WhenAll(
+                    ObserveTrackedPlayerScores(leaderTokenSource.Token),
+                    ObserveCountryScores(leaderTokenSource.Token));
+                Task connectionMonitorTask = MonitorLeaderConnection(
+                    leaderConnection,
+                    leaderTokenSource.Token);
+
+                Task completedTask = await Task.WhenAny(observerTask, connectionMonitorTask);
+                if (completedTask == connectionMonitorTask)
+                {
+                    leaderTokenSource.Cancel();
+                    await IgnoreExpectedCancellation(observerTask, stoppingToken);
+                    await connectionMonitorTask;
+                    throw new InvalidOperationException("ScoresObserver leader connection monitor stopped unexpectedly.");
+                }
+
+                leaderTokenSource.Cancel();
+                await IgnoreExpectedCancellation(connectionMonitorTask, stoppingToken);
+                await observerTask;
+            }
+            catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+            {
+                metrics.SetLeader(false);
+                break;
+            }
+            catch (Exception exception)
+            {
+                metrics.SetLeader(false);
+                logger.LogError(exception, "ScoresObserver leadership was lost; retrying");
+                await Task.Delay(_configuration.ErrorDelay, stoppingToken);
+            }
+        }
+
+        metrics.SetLeader(false);
+        logger.LogInformation("Scores observer is stopping");
+    }
+
+    private static async Task<bool> TryAcquireLeaderLock(
+        NpgsqlConnection connection,
+        CancellationToken cancellationToken)
+    {
+        await using NpgsqlCommand command = connection.CreateCommand();
+        command.CommandText = "SELECT pg_try_advisory_lock($1)";
+        command.Parameters.AddWithValue(LeaderLockId);
+        object? result = await command.ExecuteScalarAsync(cancellationToken);
+        return result is true;
+    }
+
+    private static async Task MonitorLeaderConnection(
+        NpgsqlConnection connection,
+        CancellationToken cancellationToken)
+    {
+        using PeriodicTimer timer = new(TimeSpan.FromSeconds(10));
+        while (await timer.WaitForNextTickAsync(cancellationToken))
+        {
+            await using NpgsqlCommand command = connection.CreateCommand();
+            command.CommandText = "SELECT 1";
+            await command.ExecuteScalarAsync(cancellationToken);
+        }
+    }
+
+    private static async Task IgnoreExpectedCancellation(Task task, CancellationToken stoppingToken)
+    {
         try
         {
-            _adminTelegramId = (await _database.OsuUsers.FirstAsync(m => m.IsAdmin, stoppingToken)).TelegramId;
-
-            await SetupObserverList();
-
-            await Task.WhenAll(
-                ObserveScores(stoppingToken),
-                ObserveScoresGetScores(stoppingToken)
-            );
+            await task;
+        }
+        catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+        {
+            // Expected host shutdown.
         }
         catch (OperationCanceledException)
         {
-            _logger.LogWarning("Operation cancelled");
+            // Expected cancellation after the observer loops have completed.
         }
-
-        _logger.LogInformation("Finished its work");
     }
 
-    private async Task ObserveScoresGetScores(CancellationToken stoppingToken)
+    private async Task ObserveTrackedPlayerScores(CancellationToken stoppingToken)
     {
-        await LoadDailyStatistics();
-        await _userDatabase.CacheIfNeeded(stoppingToken);
-
-        DailyStatistics dailyStatistics;
-        if (_database.DailyStatistics.Count() > 0)
-        {
-            DailyStatistics lastDailyStatistics = _database.DailyStatistics.OrderBy(m => m.Id).Last();
-            if (lastDailyStatistics.DayOfStatistic.Day == DateTime.UtcNow.ChangeTimezone(Country.Uzbekistan).DateTime.Day)
-            {
-                dailyStatistics = lastDailyStatistics;
-            }
-            else
-            {
-                dailyStatistics = new DailyStatistics
-                {
-                    CountryCode = CountryCode.Uzbekistan,
-                    DayOfStatistic = DateTime.UtcNow.ChangeTimezone(Country.Uzbekistan).DateTime
-                };
-                _database.DailyStatistics.Add(dailyStatistics);
-                _database.SaveChanges();
-            }
-        }
-        else
-        {
-            dailyStatistics = new DailyStatistics
-            {
-                CountryCode = CountryCode.Uzbekistan,
-                DayOfStatistic = DateTime.UtcNow.ChangeTimezone(Country.Uzbekistan).DateTime
-            };
-            _database.DailyStatistics.Add(dailyStatistics);
-            _database.SaveChanges();
-        }
-
-        string? getStdScoresCursor = null;
-        string? getTaikoScoresCursor = null;
-        string? getFruitsScoresCursor = null;
-        string? getManiaScoresCursor = null;
-
-        ulong counter = 0;
         while (!stoppingToken.IsCancellationRequested)
+        {
             try
             {
-                ScoresResponse? getStdScoresResponse = await _osuApi.Scores.GetScores(new() { CursorString = getStdScoresCursor, Ruleset = Ruleset.Osu });
+                IReadOnlyList<int> observedPlayers = await GetObservedPlayers(stoppingToken);
+                await MarkUnobservedCheckpointsInactive(observedPlayers, stoppingToken);
+                metrics.SetObservedPlayers(observedPlayers.Count);
 
-                ScoresResponse? getTaikoScoresResponse = null;
-                if (counter % 8 == 0)
+                if (observedPlayers.Count == 0)
                 {
-                    getTaikoScoresResponse = await _osuApi.Scores.GetScores(new ScoresQueryParameters { CursorString = getTaikoScoresCursor, Ruleset = Ruleset.Taiko });
-                }
-
-                ScoresResponse? getFruitsScoresResponse = null;
-                if (counter % 12 == 0)
-                {
-                    getFruitsScoresResponse = await _osuApi.Scores.GetScores(new ScoresQueryParameters { CursorString = getFruitsScoresCursor, Ruleset = Ruleset.Fruits });
-                }
-
-                ScoresResponse? getManiaScoresResponse = null;
-                if (counter % 4 == 0)
-                {
-                    getManiaScoresResponse = await _osuApi.Scores.GetScores(new ScoresQueryParameters { CursorString = getManiaScoresCursor, Ruleset = Ruleset.Mania });
-                }
-
-                if (getStdScoresResponse == null && getTaikoScoresResponse == null && getFruitsScoresResponse == null && getManiaScoresResponse == null)
-                {
-                    _logger.LogWarning("GetScores returned null for all modes. Waiting 60 seconds before retrying...");
-                    await Task.Delay(60_000, stoppingToken);
+                    logger.LogWarning("No players are currently available for score observation");
+                    await Task.Delay(_configuration.EmptyObserverDelay, stoppingToken);
                     continue;
                 }
 
-                IEnumerable<Score> allOsuScores = getStdScoresResponse?.Scores?
-                    .Select(m => m with { Mode = Ruleset.Osu, ModeInt = (int)Playmode.Osu })
-                    .Concat(getTaikoScoresResponse?.Scores?.Select(m => m with { Mode = Ruleset.Taiko, ModeInt = (int)Playmode.Taiko }) ?? [])
-                    .Concat(getFruitsScoresResponse?.Scores?.Select(m => m with { Mode = Ruleset.Fruits, ModeInt = (int)Playmode.Catch }) ?? [])
-                    .Concat(getManiaScoresResponse?.Scores?.Select(m => m with { Mode = Ruleset.Mania, ModeInt = (int)Playmode.Mania }) ?? []) ?? [];
-
-                if (!allOsuScores.Any())
-                {
-                    _logger.LogWarning("No scores retrieved from GetScores. Waiting 20 seconds before retrying...");
-                    await Task.Delay(20_000, stoppingToken);
-                    continue;
-                }
-
-                DateTime tashkentToday = DateTime.UtcNow.ChangeTimezone(Country.Uzbekistan).Date;
-                Score[] uzScores = allOsuScores.Where(m =>
-                {
-                    var scoreDateIsOk = m.EndedAt!.Value.ChangeTimezone(Country.Uzbekistan) >= tashkentToday;
-                    var isUzPlayer = _userDatabase.ContainsUserStatistics(m.UserId!.Value);
-                    return scoreDateIsOk && isUzPlayer;
-                }).ToArray();
-
-                foreach (Score? score in uzScores)
-                {
-                    UserStatistics? userStatistics = await _userDatabase.GetUserStatistics(score.UserId!.Value, stoppingToken);
-                    if (userStatistics?.User == null)
-                    {
-                        _logger.LogError("User statistics is null for userId = {UserId}", score.UserId!.Value);
-                        continue;
-                    }
-
-                    if (!dailyStatistics.Scores.Any(m => m.ScoreId == score.Id!.Value))
-                    {
-                        dailyStatistics.Scores.Add(new ScoreEntity { ScoreId = score.Id!.Value, ScoreJson = score });
-                    }
-
-                    if (!dailyStatistics.ActiveUsers.Any(m => m.UserId == userStatistics.User.Id))
-                    {
-                        if (_database.UserEntity.Find(userStatistics.User.Id) is { } foundUserEntity)
-                        {
-                            dailyStatistics.ActiveUsers.Add(foundUserEntity);
-                        }
-                        else
-                        {
-                            dailyStatistics.ActiveUsers.Add(new UserEntity { UserId = userStatistics.User.Id!.Value, UserJson = userStatistics.User });
-                        }
-                    }
-
-                    if (!dailyStatistics.BeatmapsPlayed.Any(m => m == score.BeatmapId!.Value))
-                    {
-                        dailyStatistics.BeatmapsPlayed.Add(score.BeatmapId!.Value);
-                    }
-                }
-
-                if (DateTime.UtcNow.ChangeTimezone(Country.Uzbekistan).DateTime.Day != dailyStatistics.DayOfStatistic.Day)
+                var cycleSucceeded = true;
+                foreach (int playerId in observedPlayers)
                 {
                     try
                     {
-                        for (var i = 0; i <= 3; i++)
-                        {
-                            var sendText = BuildDailyStatisticsSendText((Playmode)i, dailyStatistics);
-                            await _botClient.SendMessage(_adminTelegramId, sendText, ParseMode.Html, linkPreviewOptions: new LinkPreviewOptions { IsDisabled = true }, cancellationToken: stoppingToken);
-                            await Task.Delay(1000, stoppingToken);
-                        }
+                        await ObservePlayer(playerId, stoppingToken);
                     }
-                    catch (Exception e)
+                    catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
                     {
-                        _logger.LogError(e, "Error while sending final daily statistics");
+                        throw;
+                    }
+                    catch (Exception exception)
+                    {
+                        cycleSucceeded = false;
+                        logger.LogError(exception, "Failed to observe best scores for osu! user {PlayerId}", playerId);
                     }
 
-                    dailyStatistics = new DailyStatistics { CountryCode = CountryCode.Uzbekistan, DayOfStatistic = DateTime.UtcNow.ChangeTimezone(Country.Uzbekistan).DateTime };
-                    _database.DailyStatistics.Add(dailyStatistics);
-                    _database.SaveChanges();
+                    await Task.Delay(_configuration.UserPollDelay, stoppingToken);
                 }
 
-                if (getStdScoresResponse != null) getStdScoresCursor = getStdScoresResponse.CursorString;
-                if (getTaikoScoresResponse != null) getTaikoScoresCursor = getTaikoScoresResponse.CursorString;
-                if (getFruitsScoresResponse != null) getFruitsScoresCursor = getFruitsScoresResponse.CursorString;
-                if (getManiaScoresResponse != null) getManiaScoresCursor = getManiaScoresResponse.CursorString;
-
-                if (getStdScoresResponse?.Scores?.Length >= 1000 || getTaikoScoresResponse?.Scores?.Length >= 1000 || getFruitsScoresResponse?.Scores?.Length >= 1000 || getManiaScoresResponse?.Scores?.Length >= 1000)
-                {
-                    _logger.LogWarning("GetScores returned 1000+ scores in one mode. std={Std} taiko={Taiko} fruits={Fruits} mania={Mania}",
-                        getStdScoresResponse?.Scores?.Length, getTaikoScoresResponse?.Scores?.Length, getFruitsScoresResponse?.Scores?.Length, getManiaScoresResponse?.Scores?.Length);
-                }
-
-                int stdScoresCount = Math.Max(1, getStdScoresResponse?.Scores?.Length ?? 1);
-                int delay = 3000 + 1000 * (1000 / stdScoresCount);
-                int clampedDelay = Math.Clamp(delay, 3000, 55_000);
-                _logger.LogInformation("Processed {Count} std scores. Next GetScores in {Delay}ms.", stdScoresCount, clampedDelay);
-                await _database.SaveChangesAsync(stoppingToken);
-
-                await Task.Delay(clampedDelay, stoppingToken);
-                counter++;
+                metrics.RecordPoll("tracked_best", cycleSucceeded);
             }
-            catch (HttpRequestException httpRequestException)
+            catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
             {
-                const int waitMs = 20_000;
-                _logger.LogWarning("[{Service}]: status code {StatusCode}. Message: {Message}. Waiting {WaitMs}ms...",
-                    nameof(ScoresObserverBackgroundService), httpRequestException.StatusCode, httpRequestException.Message, waitMs);
-                await Task.Delay(waitMs, stoppingToken);
+                break;
             }
-            catch (OperationCanceledException)
+            catch (Exception exception)
             {
-                throw;
+                metrics.RecordPoll("tracked_best", false);
+                logger.LogError(exception, "Unexpected error in tracked-score polling cycle");
+                await Task.Delay(_configuration.ErrorDelay, stoppingToken);
             }
-            catch (Exception e)
-            {
-                _logger.LogError(e, "[ObserveScoresGetScores] Unexpected exception");
-            }
+        }
     }
 
-    private async Task ObserveScores(CancellationToken stoppingToken)
+    private async Task<IReadOnlyList<int>> GetObservedPlayers(CancellationToken cancellationToken)
     {
-        const int scoresLimit = 50;
-        Dictionary<int, GetUserScoresResponse> scores = new();
+        List<int> trackedPlayers;
+        await using (AsyncServiceScope scope = scopeFactory.CreateAsyncScope())
+        {
+            BotContext database = scope.ServiceProvider.GetRequiredService<BotContext>();
+            await SynchronizeTrackedPlayerSubscriptions(database, cancellationToken);
+            trackedPlayers = await database.TrackedPlayerSubscriptions
+                .AsNoTracking()
+                .Select(subscription => subscription.PlayerId)
+                .Distinct()
+                .ToListAsync(cancellationToken);
+        }
+
+        if (DateTimeOffset.UtcNow >= _nextLeaderboardRefreshUtc)
+            await RefreshLeaderboardPlayers(cancellationToken);
+
+        return trackedPlayers
+            .Concat(_leaderboardPlayers)
+            .Distinct()
+            .ToArray();
+    }
+
+    private static async Task SynchronizeTrackedPlayerSubscriptions(
+        BotContext database,
+        CancellationToken cancellationToken)
+    {
+        DateTimeOffset now = DateTimeOffset.UtcNow;
+        await using var transaction = await database.Database.BeginTransactionAsync(cancellationToken);
+        await database.Database.ExecuteSqlInterpolatedAsync(
+            $$"""
+              INSERT INTO "TrackedPlayerSubscriptions" ("ChatId", "PlayerId", "StartedAtUtc")
+              SELECT chat."ChatId", player."PlayerId", {{now}}
+              FROM "TelegramChats" AS chat
+              CROSS JOIN LATERAL unnest(chat."TrackedPlayers") AS player("PlayerId")
+              WHERE chat."TrackedPlayers" IS NOT NULL
+              ON CONFLICT ("ChatId", "PlayerId") DO NOTHING
+              """,
+            cancellationToken);
+        await database.Database.ExecuteSqlRawAsync(
+            """
+            DELETE FROM "TrackedPlayerSubscriptions" AS subscription
+            WHERE NOT EXISTS (
+                SELECT 1
+                FROM "TelegramChats" AS chat
+                WHERE chat."ChatId" = subscription."ChatId"
+                  AND chat."TrackedPlayers" IS NOT NULL
+                  AND subscription."PlayerId" = ANY(chat."TrackedPlayers")
+            )
+            """,
+            cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
+    }
+
+    private async Task MarkUnobservedCheckpointsInactive(
+        IReadOnlyCollection<int> observedPlayers,
+        CancellationToken cancellationToken)
+    {
+        int[] observedPlayerIds = observedPlayers.ToArray();
+        await using AsyncServiceScope scope = scopeFactory.CreateAsyncScope();
+        BotContext database = scope.ServiceProvider.GetRequiredService<BotContext>();
+        int changed = await database.TrackedPlayerCheckpoints
+            .Where(checkpoint => checkpoint.IsActive)
+            .Where(checkpoint => !observedPlayerIds.Contains(checkpoint.PlayerId))
+            .ExecuteUpdateAsync(
+                setters => setters.SetProperty(checkpoint => checkpoint.IsActive, false),
+                cancellationToken);
+
+        if (changed > 0)
+            logger.LogInformation("Marked {CheckpointCount} unobserved player checkpoints inactive", changed);
+    }
+
+    private async Task RefreshLeaderboardPlayers(CancellationToken cancellationToken)
+    {
+        try
+        {
+            Task<UserStatistics[]> countryPlayersTask = GetBestPlayers("uz", cancellationToken);
+            Task<UserStatistics[]> globalPlayersTask = GetBestPlayers(null, cancellationToken);
+            await Task.WhenAll(countryPlayersTask, globalPlayersTask);
+
+            _leaderboardPlayers = countryPlayersTask.Result
+                .Concat(globalPlayersTask.Result)
+                .Take(_configuration.LeaderboardPlayers * 2)
+                .Select(statistics => statistics.User?.Id)
+                .Where(id => id.HasValue)
+                .Select(id => id!.Value)
+                .ToHashSet();
+            _nextLeaderboardRefreshUtc = DateTimeOffset.UtcNow + _configuration.LeaderboardRefreshInterval;
+            logger.LogInformation("Refreshed leaderboard observer list with {PlayerCount} players",
+                _leaderboardPlayers.Count);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception exception)
+        {
+            _nextLeaderboardRefreshUtc = DateTimeOffset.UtcNow + TimeSpan.FromMinutes(5);
+            logger.LogWarning(exception,
+                "Could not refresh leaderboard players; retaining {PlayerCount} previous entries",
+                _leaderboardPlayers.Count);
+        }
+    }
+
+    private async Task<UserStatistics[]> GetBestPlayers(string? countryCode, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        Rankings? rankings = await _osuApi.Rankings.GetRanking(
+            Ruleset.Osu,
+            RankingType.Performance,
+            new GetRankingQueryParameters { Country = countryCode, Filter = Filter.All });
+        cancellationToken.ThrowIfCancellationRequested();
+
+        if (rankings?.Ranking is null)
+            throw new InvalidOperationException($"osu! ranking response was empty for country '{countryCode ?? "global"}'");
+
+        return rankings.Ranking.Take(_configuration.LeaderboardPlayers).ToArray();
+    }
+
+    private async Task ObservePlayer(int playerId, CancellationToken cancellationToken)
+    {
+        GetUserScoresResponse? response = await _osuApi.Users.GetUserScores(
+            playerId,
+            ScoreType.Best,
+            new GetUserScoreQueryParameters { Limit = _configuration.ScoresLimit });
+        cancellationToken.ThrowIfCancellationRequested();
+
+        if (response?.Scores is not { Length: > 0 } bestScores)
+        {
+            logger.LogDebug("osu! user {PlayerId} has no best scores", playerId);
+            return;
+        }
+
+        (int scoreCount, int deliveryCount) = await PersistTrackedScores(playerId, bestScores, cancellationToken);
+        metrics.RecordTrackedScores(scoreCount, deliveryCount);
+        if (scoreCount > 0)
+        {
+            logger.LogInformation(
+                "Persisted {ScoreCount} new tracked scores for player {PlayerId} and queued {DeliveryCount} deliveries",
+                scoreCount,
+                playerId,
+                deliveryCount);
+        }
+    }
+
+    private async Task<(int ScoreCount, int DeliveryCount)> PersistTrackedScores(
+        int playerId,
+        IReadOnlyCollection<Score> bestScores,
+        CancellationToken cancellationToken)
+    {
+        long[] currentScoreIds = bestScores
+            .Where(score => score.Id.HasValue)
+            .Select(score => score.Id!.Value)
+            .Distinct()
+            .ToArray();
+        int? currentMode = bestScores.FirstOrDefault()?.ModeInt;
+        DateTimeOffset now = DateTimeOffset.UtcNow;
+
+        await using AsyncServiceScope scope = scopeFactory.CreateAsyncScope();
+        BotContext database = scope.ServiceProvider.GetRequiredService<BotContext>();
+        await using var transaction = await database.Database.BeginTransactionAsync(cancellationToken);
+
+        List<TrackedPlayerSubscription> subscriptions = await database.TrackedPlayerSubscriptions
+            .AsNoTracking()
+            .Where(subscription => subscription.PlayerId == playerId)
+            .ToListAsync(cancellationToken);
+
+        TrackedPlayerCheckpoint? checkpoint = await database.TrackedPlayerCheckpoints
+            .SingleOrDefaultAsync(item => item.PlayerId == playerId, cancellationToken);
+        bool needsBaseline = checkpoint is null || !checkpoint.IsActive;
+        if (checkpoint is null)
+        {
+            checkpoint = new TrackedPlayerCheckpoint
+            {
+                PlayerId = playerId,
+                Mode = currentMode,
+                BestScoreIds = currentScoreIds.ToList(),
+                UpdatedAtUtc = now,
+                IsActive = true
+            };
+            database.TrackedPlayerCheckpoints.Add(checkpoint);
+        }
+
+        HashSet<long> previousScoreIds = checkpoint.BestScoreIds.ToHashSet();
+        bool modeChanged = checkpoint.Mode != currentMode;
+        DateTimeOffset earliestNewScore = checkpoint.UpdatedAtUtc - TimeSpan.FromMinutes(5);
+
+        Score[] newScores;
+        if (modeChanged)
+        {
+            newScores = [];
+        }
+        else if (needsBaseline)
+        {
+            DateTimeOffset? earliestSubscription = subscriptions.Count == 0
+                ? null
+                : subscriptions.Min(subscription => subscription.StartedAtUtc);
+            newScores = earliestSubscription is null
+                ? []
+                : bestScores
+                    .Where(score => score.Id.HasValue && score.EndedAt.HasValue)
+                    .Where(score => score.EndedAt!.Value >= earliestSubscription.Value)
+                    .OrderBy(score => score.EndedAt)
+                    .ToArray();
+        }
+        else
+        {
+            newScores = bestScores
+                .Where(score => score.Id.HasValue && !previousScoreIds.Contains(score.Id.Value))
+                .Where(score => score.EndedAt is null || score.EndedAt.Value >= earliestNewScore)
+                .OrderBy(score => score.EndedAt)
+                .ToArray();
+        }
+
+        checkpoint.Mode = currentMode;
+        checkpoint.BestScoreIds = currentScoreIds.ToList();
+        checkpoint.UpdatedAtUtc = now;
+        checkpoint.IsActive = true;
+
+        if (needsBaseline)
+        {
+            logger.LogInformation(
+                "Initialized score checkpoint for player {PlayerId}; {CandidateCount} post-subscription scores will be persisted",
+                playerId,
+                newScores.Length);
+        }
+
+        if (modeChanged)
+        {
+            logger.LogInformation(
+                "Player {PlayerId} changed the default ruleset; refreshed checkpoint without creating notifications",
+                playerId);
+        }
+
+        if (newScores.Length == 0)
+        {
+            await database.SaveChangesAsync(cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
+            return (0, 0);
+        }
+
+        if (!_configuration.CreateDeliveries)
+        {
+            await database.SaveChangesAsync(cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
+            logger.LogInformation(
+                "Advanced player {PlayerId} checkpoint across {ScoreCount} scores while delivery creation is disabled",
+                playerId,
+                newScores.Length);
+            return (0, 0);
+        }
+
+        long? adminChatId = await database.OsuUsers
+            .AsNoTracking()
+            .Where(user => user.IsAdmin)
+            .Select(user => (long?)user.TelegramId)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        long[] newScoreIds = newScores.Select(score => score.Id!.Value).ToArray();
+        Dictionary<long, TrackedScoreEvent> existingEvents = await database.TrackedScoreEvents
+            .Include(scoreEvent => scoreEvent.Deliveries)
+            .Where(scoreEvent => newScoreIds.Contains(scoreEvent.ScoreId))
+            .ToDictionaryAsync(scoreEvent => scoreEvent.ScoreId, cancellationToken);
+
+        var deliveryCount = 0;
+        foreach (Score score in newScores)
+        {
+            long scoreId = score.Id!.Value;
+            DateTimeOffset occurredAt = score.EndedAt?.ToUniversalTime() ?? now;
+            if (!existingEvents.TryGetValue(scoreId, out TrackedScoreEvent? scoreEvent))
+            {
+                scoreEvent = new TrackedScoreEvent
+                {
+                    ScoreId = scoreId,
+                    PlayerId = playerId,
+                    ScoreJson = score,
+                    OccurredAtUtc = occurredAt,
+                    DetectedAtUtc = now
+                };
+                database.TrackedScoreEvents.Add(scoreEvent);
+                existingEvents.Add(scoreId, scoreEvent);
+            }
+
+            Dictionary<long, bool> recipients = subscriptions
+                .Where(subscription => subscription.StartedAtUtc <= occurredAt)
+                .ToDictionary(subscription => subscription.ChatId, _ => false);
+            if (adminChatId.HasValue)
+                recipients[adminChatId.Value] = true;
+
+            foreach ((long chatId, bool isAdminRecipient) in recipients)
+            {
+                if (scoreEvent.Deliveries.Any(delivery => delivery.ChatId == chatId))
+                    continue;
+
+                scoreEvent.Deliveries.Add(new TrackedScoreDelivery
+                {
+                    ScoreId = scoreId,
+                    ChatId = chatId,
+                    IsAdminRecipient = isAdminRecipient,
+                    CreatedAtUtc = now,
+                    AvailableAtUtc = now
+                });
+                deliveryCount++;
+            }
+        }
+
+        await database.SaveChangesAsync(cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
+        return (newScores.Length, deliveryCount);
+    }
+
+    private async Task ObserveCountryScores(CancellationToken stoppingToken)
+    {
+        Dictionary<string, string?> cursors = await LoadScoreFeedCursors(stoppingToken);
+        ulong iteration = 0;
 
         while (!stoppingToken.IsCancellationRequested)
+        {
             try
             {
-                foreach (int userId in ObservedUsers)
+                await _userStatisticsCache.CacheIfNeeded(stoppingToken);
+
+                ScoresResponse? stdResponse = await _osuApi.Scores.GetScores(new ScoresQueryParameters
                 {
-                    GetUserScoresResponse? userBestScores = await _osuApi.Users.GetUserScores(userId, ScoreType.Best,
-                        new GetUserScoreQueryParameters { Limit = scoresLimit });
-                    if (userBestScores == null)
+                    CursorString = cursors.GetValueOrDefault(StandardFeed),
+                    Ruleset = Ruleset.Osu
+                });
+                ScoresResponse? taikoResponse = iteration % 8 == 0
+                    ? await _osuApi.Scores.GetScores(new ScoresQueryParameters
                     {
-                        _logger.LogWarning("{UserId} has no scores!", userId);
-                        continue;
-                    }
-
-                    if (scores.ContainsKey(userId) && !scores[userId].Scores.Any(m => m.ModeInt != userBestScores.Scores.FirstOrDefault()?.ModeInt))
+                        CursorString = cursors.GetValueOrDefault(TaikoFeed),
+                        Ruleset = Ruleset.Taiko
+                    })
+                    : null;
+                ScoresResponse? fruitsResponse = iteration % 12 == 0
+                    ? await _osuApi.Scores.GetScores(new ScoresQueryParameters
                     {
-                        Score[] newScores = userBestScores.Scores.Except(scores[userId].Scores, ScoreComparer).ToArray();
+                        CursorString = cursors.GetValueOrDefault(FruitsFeed),
+                        Ruleset = Ruleset.Fruits
+                    })
+                    : null;
+                ScoresResponse? maniaResponse = iteration % 4 == 0
+                    ? await _osuApi.Scores.GetScores(new ScoresQueryParameters
+                    {
+                        CursorString = cursors.GetValueOrDefault(ManiaFeed),
+                        Ruleset = Ruleset.Mania
+                    })
+                    : null;
+                stoppingToken.ThrowIfCancellationRequested();
 
-                        if (newScores.Length != scoresLimit)
-                        {
-                            _ = Task.Run(async () =>
-                            {
-                                foreach (Score score in newScores)
-                                {
-                                    try
-                                    {
-                                        int waitMs = 1000 + Random.Shared.Next(500, 1500);
-                                        string msg = $"<b>{score.User?.Username}</b> set a <b>{score.Pp}pp</b> {GetScoreUrlWrappedInString(score.Id!.Value, "score!")}";
+                List<Score> allScores = [];
+                AddScores(allScores, stdResponse, Ruleset.Osu, Playmode.Osu);
+                AddScores(allScores, taikoResponse, Ruleset.Taiko, Playmode.Taiko);
+                AddScores(allScores, fruitsResponse, Ruleset.Fruits, Playmode.Catch);
+                AddScores(allScores, maniaResponse, Ruleset.Mania, Playmode.Mania);
 
-                                        await _botClient.SendMessage(_adminTelegramId, msg, ParseMode.Html,
-                                            linkPreviewOptions: new LinkPreviewOptions { IsDisabled = true }, cancellationToken: stoppingToken);
-                                        await Task.Delay(waitMs, stoppingToken);
+                DateTime tashkentToday = DateTime.UtcNow.ChangeTimezone(Country.Uzbekistan).Date;
+                Score[] countryScores = allScores
+                    .Where(score => score.UserId.HasValue && score.EndedAt.HasValue)
+                    .Where(score => score.EndedAt!.Value.ChangeTimezone(Country.Uzbekistan).Date >= tashkentToday)
+                    .Where(score => _userStatisticsCache.ContainsUserStatistics(score.UserId!.Value))
+                    .ToArray();
 
-                                        IQueryable<TelegramChat> chatsToSend = _database.TelegramChats.Where(m => m.TrackedPlayers != null && m.TrackedPlayers.Contains(userId));
-                                        foreach (TelegramChat? chat in chatsToSend)
-                                        {
-                                            await _botClient.SendMessage(chat.ChatId, msg, ParseMode.Html,
-                                                linkPreviewOptions: new LinkPreviewOptions { IsDisabled = true }, cancellationToken: stoppingToken);
-                                            await Task.Delay(waitMs, stoppingToken);
-                                        }
-                                    }
-                                    catch (Exception e)
-                                    {
-                                        _logger.LogError(e, "Error while sending new score notification");
-                                    }
-                                }
-                            }, stoppingToken).ConfigureAwait(false);
-                        }
-                    }
-
-                    scores[userId] = userBestScores;
-                    await Task.Delay(5000, stoppingToken);
-                }
-            }
-            catch (HttpRequestException httpRequestException)
-            {
-                const int waitMs = 10_000;
-                _logger.LogWarning("[{Service}]: status code {StatusCode}. Message: {Message}. Waiting {WaitMs}ms...",
-                    nameof(ScoresObserverBackgroundService), httpRequestException.StatusCode, httpRequestException.Message, waitMs);
-                await Task.Delay(waitMs, stoppingToken);
-            }
-            catch (OperationCanceledException)
-            {
-                throw;
-            }
-            catch (Exception e)
-            {
-                _logger.LogError(e, "Unexpected exception");
-            }
-    }
-
-    private async Task<UserStatistics[]> GetBestPlayersFor(string? countryCode = null)
-    {
-        Rankings? rankings = await _osuApi.Rankings.GetRanking(Ruleset.Osu, RankingType.Performance,
-            new GetRankingQueryParameters { Country = countryCode, Filter = Filter.All });
-        if (rankings == null)
-        {
-            _logger.LogError("Ranking is null. {CountryCode}", countryCode);
-            throw new Exception("Ranking is null. See logs for details");
-        }
-
-        return rankings.Ranking!;
-    }
-
-    private async Task AddPlayersToObserverListFromSpecificCountryLeaderboard(string? countryCode = null, int count = 50)
-    {
-        UserStatistics[] bestPlayersStatistics = (await GetBestPlayersFor(countryCode)).Take(count).ToArray();
-        foreach (UserStatistics? playerStatistics in bestPlayersStatistics) ObservedUsers.Add(playerStatistics.User!.Id.Value);
-    }
-
-    public static async Task AddPlayersToObserverList(int[] playerIds)
-    {
-        try
-        {
-            await Semaphore.WaitAsync();
-            foreach (var osuUserId in playerIds)
-            {
-                if (!ObservedUsers.Contains(osuUserId))
+                var scoresWithUsers = new List<(Score Score, UserStatistics UserStatistics)>();
+                foreach (Score score in countryScores)
                 {
-                    ObservedUsers.Add(osuUserId);
+                    UserStatistics? userStatistics = await _userStatisticsCache.GetUserStatistics(
+                        score.UserId!.Value,
+                        stoppingToken);
+                    if (userStatistics?.User is not null)
+                        scoresWithUsers.Add((score, userStatistics));
                 }
+
+                Dictionary<string, string?> cursorUpdates = [];
+                AddCursorUpdate(cursorUpdates, StandardFeed, stdResponse);
+                AddCursorUpdate(cursorUpdates, TaikoFeed, taikoResponse);
+                AddCursorUpdate(cursorUpdates, FruitsFeed, fruitsResponse);
+                AddCursorUpdate(cursorUpdates, ManiaFeed, maniaResponse);
+
+                await PersistDailyScores(tashkentToday, scoresWithUsers, cursorUpdates, stoppingToken);
+                foreach ((string source, string? cursor) in cursorUpdates)
+                    cursors[source] = cursor;
+                metrics.RecordPoll("global_scores", true);
+
+                int stdScoreCount = Math.Max(1, stdResponse?.Scores?.Length ?? 1);
+                int delayMilliseconds = Math.Clamp(3000 + 1000 * (1000 / stdScoreCount), 3000, 55_000);
+                await Task.Delay(delayMilliseconds, stoppingToken);
+                iteration++;
+            }
+            catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+            {
+                break;
+            }
+            catch (HttpRequestException exception)
+            {
+                metrics.RecordPoll("global_scores", false);
+                logger.LogWarning(exception,
+                    "Global score feed returned HTTP status {StatusCode}; retrying after {Delay}",
+                    exception.StatusCode,
+                    _configuration.ErrorDelay);
+                await Task.Delay(_configuration.ErrorDelay, stoppingToken);
+            }
+            catch (Exception exception)
+            {
+                metrics.RecordPoll("global_scores", false);
+                logger.LogError(exception, "Unexpected error while processing the global score feed");
+                await Task.Delay(_configuration.ErrorDelay, stoppingToken);
             }
         }
-        finally
-        {
-            Semaphore.Release();
-        }
     }
 
-    public static async Task RemovePlayersFromObserverList(IEnumerable<int> playerIds)
+    private async Task<Dictionary<string, string?>> LoadScoreFeedCursors(CancellationToken cancellationToken)
     {
-        try
-        {
-            await Semaphore.WaitAsync();
-            ObservedUsers = new ConcurrentBag<int>(ObservedUsers.Except(playerIds));
-        }
-        finally
-        {
-            Semaphore.Release();
-        }
+        await using AsyncServiceScope scope = scopeFactory.CreateAsyncScope();
+        BotContext database = scope.ServiceProvider.GetRequiredService<BotContext>();
+        return await database.ScoreFeedCheckpoints
+            .AsNoTracking()
+            .ToDictionaryAsync(checkpoint => checkpoint.Source, checkpoint => checkpoint.Cursor, cancellationToken);
     }
 
-    public static List<DailyStatistics> AllDailyStatistics = [];
-
-    private static readonly string CacheDirectory = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "cache", "daily_statistics");
-    private static readonly string CachePath = Path.Combine(CacheDirectory, "statistics.cache");
-
-    private async Task SaveDailyStatistics()
+    private static void AddCursorUpdate(
+        IDictionary<string, string?> updates,
+        string source,
+        ScoresResponse? response)
     {
-        if (!Directory.Exists(CacheDirectory)) Directory.CreateDirectory(CacheDirectory);
-        await File.WriteAllTextAsync(CachePath, JsonSerializer.Serialize(AllDailyStatistics));
+        if (!string.IsNullOrWhiteSpace(response?.CursorString))
+            updates[source] = response.CursorString;
     }
 
-    private async Task LoadDailyStatistics()
+    private static void AddScores(
+        ICollection<Score> target,
+        ScoresResponse? response,
+        string ruleset,
+        Playmode playmode)
     {
-        if (!File.Exists(CachePath)) return;
+        if (response?.Scores is null) return;
+        foreach (Score score in response.Scores)
+            target.Add(score with { Mode = ruleset, ModeInt = (int)playmode });
+    }
 
-        List<DailyStats>? list = JsonSerializer.Deserialize<List<DailyStats>>(await File.ReadAllTextAsync(CachePath));
-        if (list == null) return;
+    private async Task PersistDailyScores(
+        DateTime day,
+        IReadOnlyCollection<(Score Score, UserStatistics UserStatistics)> scores,
+        IReadOnlyDictionary<string, string?> cursorUpdates,
+        CancellationToken cancellationToken)
+    {
+        await using AsyncServiceScope scope = scopeFactory.CreateAsyncScope();
+        BotContext database = scope.ServiceProvider.GetRequiredService<BotContext>();
+        await using var transaction = await database.Database.BeginTransactionAsync(cancellationToken);
 
-        AllDailyStatistics = list.Select(m => new DailyStatistics
+        DailyStatistics? dailyStatistics = await database.DailyStatistics
+            .Include(statistics => statistics.ActiveUsers)
+            .Where(statistics => statistics.CountryCode == Models.CountryCode.Uzbekistan)
+            .Where(statistics => statistics.DayOfStatistic == day)
+            .OrderByDescending(statistics => statistics.Id)
+            .FirstOrDefaultAsync(cancellationToken);
+        if (dailyStatistics is null)
         {
-            CountryCode = m.CountryCode,
-            DayOfStatistic = m.DayOfStatistic,
-            ActiveUsers = m.ActiveUsers.Select(u => new UserEntity { UserId = u.Id!.Value, UserJson = u }).ToList(),
-            Scores = m.Scores.Select(s => new ScoreEntity { ScoreId = s.Id!.Value, ScoreJson = s }).ToList(),
-            BeatmapsPlayed = m.BeatmapsPlayed
-        }).ToList();
-    }
-
-    private static string GetScoreUrlWrappedInString(long scoreId, string text)
-        => $"<a href=\"https://osu.ppy.sh/scores/{scoreId}\">{text}</a>";
-
-    private static string BuildDailyStatisticsSendText(Playmode playmode, DailyStatistics dailyStatistics)
-    {
-        var passedScores = dailyStatistics.Scores.Where(m => m.ScoreJson.ModeInt == (int)playmode).ToList();
-        var activeUsers = dailyStatistics.ActiveUsers
-            .Where(u => passedScores.Any(s => s.ScoreJson.UserId == u.UserId))
-            .ToList();
-
-        var topActive = activeUsers
-            .Select(u => new
+            dailyStatistics = new DailyStatistics
             {
-                User = u,
-                Count = passedScores.Count(s => s.ScoreJson.UserId == u.UserId),
-                MaxPp = passedScores.Where(s => s.ScoreJson.UserId == u.UserId).Max(s => s.ScoreJson.Pp ?? 0)
-            })
-            .OrderByDescending(x => x.Count)
-            .ThenByDescending(x => x.MaxPp)
-            .Take(5)
-            .ToArray();
+                CountryCode = Models.CountryCode.Uzbekistan,
+                DayOfStatistic = day
+            };
+            database.DailyStatistics.Add(dailyStatistics);
+            await database.SaveChangesAsync(cancellationToken);
+        }
 
-        var topPp = activeUsers
-            .Select(u => new
-            {
-                User = u,
-                MaxPp = passedScores.Where(s => s.ScoreJson.UserId == u.UserId).Max(s => s.ScoreJson.Pp ?? 0)
-            })
-            .OrderByDescending(x => x.MaxPp)
-            .Take(5)
+        long[] scoreIds = scores
+            .Where(item => item.Score.Id.HasValue)
+            .Select(item => item.Score.Id!.Value)
+            .Distinct()
             .ToArray();
+        Dictionary<long, ScoreEntity> existingScores = await database.ScoreEntity
+            .Where(score => scoreIds.Contains(score.ScoreId))
+            .ToDictionaryAsync(score => score.ScoreId, cancellationToken);
 
-        IGrouping<int, ScoreEntity>[] topMaps = passedScores
-            .Where(s => s.ScoreJson.BeatmapId.HasValue)
-            .GroupBy(s => s.ScoreJson.BeatmapId!.Value)
-            .OrderByDescending(g => g.Count())
-            .Take(5)
+        int[] userIds = scores
+            .Select(item => item.UserStatistics.User?.Id)
+            .Where(id => id.HasValue)
+            .Select(id => id!.Value)
+            .Distinct()
             .ToArray();
+        Dictionary<int, UserEntity> existingUsers = await database.UserEntity
+            .Where(user => userIds.Contains(user.UserId))
+            .ToDictionaryAsync(user => user.UserId, cancellationToken);
+        HashSet<int> activeUserIds = dailyStatistics.ActiveUsers.Select(user => user.UserId).ToHashSet();
 
-        string modeName = playmode switch
+        foreach ((Score score, UserStatistics userStatistics) in scores)
         {
-            Playmode.Osu => "osu!std",
-            Playmode.Taiko => "osu!taiko",
-            Playmode.Catch => "osu!catch",
-            Playmode.Mania => "osu!mania",
-            _ => playmode.ToString()
-        };
+            if (!score.Id.HasValue || userStatistics.User?.Id is not int userId)
+                continue;
 
-        var topPpText = topPp.Length == 0
-            ? ":("
-            : string.Join("\n", topPp.Select((x, i) => $"{i + 1}. <b>{x.User.UserJson.Username}</b> — <i>{x.MaxPp:N0}pp</i>"));
+            if (existingScores.TryGetValue(score.Id.Value, out ScoreEntity? existingScore))
+            {
+                existingScore.ScoreJson = score;
+                existingScore.DailyStatisticsId ??= dailyStatistics.Id;
+            }
+            else
+            {
+                var scoreEntity = new ScoreEntity
+                {
+                    ScoreId = score.Id.Value,
+                    ScoreJson = score,
+                    DailyStatisticsId = dailyStatistics.Id
+                };
+                database.ScoreEntity.Add(scoreEntity);
+                existingScores.Add(scoreEntity.ScoreId, scoreEntity);
+            }
 
-        var topActiveText = topActive.Length == 0
-            ? ":("
-            : string.Join("\n", topActive.Select((x, i) => $"{i + 1}. <b>{x.User.UserJson.Username}</b> — {x.Count} scores, max <i>{x.MaxPp:N0}pp</i>"));
+            if (!existingUsers.TryGetValue(userId, out UserEntity? userEntity))
+            {
+                userEntity = new UserEntity { UserId = userId, UserJson = userStatistics.User };
+                database.UserEntity.Add(userEntity);
+                existingUsers.Add(userId, userEntity);
+            }
+            else
+            {
+                userEntity.UserJson = userStatistics.User;
+            }
 
-        var topMapsText = topMaps.Length == 0
-            ? ":("
-            : string.Join("\n", topMaps.Select((x, i) => $"{i + 1}. <a href=\"https://osu.ppy.sh/beatmaps/{x.Key}\">beatmap {x.Key}</a> — <b>{x.Count()} scores</b>"));
+            if (activeUserIds.Add(userId))
+                dailyStatistics.ActiveUsers.Add(userEntity);
 
-        return
-            $"<b>🇺🇿 Report ({modeName}) since {dailyStatistics.DayOfStatistic:dd.MM.yyyy HH:mm}:</b>\n\n" +
-            $"<b>Active players:</b> {activeUsers.Count}\n" +
-            $"<b>Passed scores:</b> {passedScores.Count}\n" +
-            $"<b>Unique played maps:</b> {passedScores.Select(s => s.ScoreJson.BeatmapId).Distinct().Count()}\n\n" +
-            $"<b>💅 Top-5 farmers:</b>\n{topPpText}\n\n" +
-            $"<b>🔥 Top-5 active players:</b>\n{topActiveText}\n\n" +
-            $"<b>🎯 Top-5 played maps:</b>\n{topMapsText}";
+            if (score.BeatmapId.HasValue && !dailyStatistics.BeatmapsPlayed.Contains(score.BeatmapId.Value))
+                dailyStatistics.BeatmapsPlayed.Add(score.BeatmapId.Value);
+        }
+
+        DateTimeOffset now = DateTimeOffset.UtcNow;
+        foreach ((string source, string? cursor) in cursorUpdates)
+        {
+            ScoreFeedCheckpoint? checkpoint = await database.ScoreFeedCheckpoints
+                .SingleOrDefaultAsync(item => item.Source == source, cancellationToken);
+            if (checkpoint is null)
+            {
+                database.ScoreFeedCheckpoints.Add(new ScoreFeedCheckpoint
+                {
+                    Source = source,
+                    Cursor = cursor,
+                    UpdatedAtUtc = now
+                });
+            }
+            else
+            {
+                checkpoint.Cursor = cursor;
+                checkpoint.UpdatedAtUtc = now;
+            }
+        }
+
+        await database.SaveChangesAsync(cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
     }
 }

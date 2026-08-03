@@ -6,13 +6,16 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Npgsql;
 using OsuApi.BanchoV2;
 using Polly;
 using SosuBot.Configuration;
 using SosuBot.Database;
 using SosuBot.Database.Models;
+using SosuBot.Graphics;
 using SosuBot.Helpers;
 using SosuBot.Logging;
+using SosuBot.Monitoring;
 using SosuBot.Services;
 using SosuBot.Services.BackgroundServices;
 using SosuBot.Services.StartupServices;
@@ -36,13 +39,42 @@ internal class Program
 
         // Configuration
         var configurationFileName = "appsettings.json";
-        if (!File.Exists(configurationFileName))
+        bool requestedMigrateOnly = builder.Configuration.GetValue("Database:MigrateOnly", false);
+        if (!requestedMigrateOnly && !File.Exists(configurationFileName))
             throw new FileNotFoundException($"{configurationFileName} was not found!", configurationFileName);
 
         // Logging
         var loggingFileName = "logs/{Date}.log";
         builder.Logging.AddFile(loggingFileName, LogLevel.Warning);
         builder.Logging.AddConsoleFormatter<CustomConsoleFormatter, CustomConsoleFormatterOptions>();
+
+        string? sentryDsn = builder.Configuration["Sentry:Dsn"];
+        if (!string.IsNullOrWhiteSpace(sentryDsn))
+        {
+            builder.Logging.AddSentry(options =>
+            {
+                options.Dsn = sentryDsn;
+                options.Environment = builder.Configuration["Sentry:Environment"] ?? builder.Environment.EnvironmentName;
+                options.Release = builder.Configuration["Sentry:Release"];
+                options.MinimumBreadcrumbLevel = LogLevel.Error;
+                options.MinimumEventLevel = LogLevel.Error;
+                options.SendDefaultPii = false;
+                options.IsEnvironmentUser = false;
+                options.AttachStacktrace = true;
+                options.EnableLogs = builder.Configuration.GetValue("Sentry:EnableLogs", false);
+                options.TracesSampleRate = builder.Configuration.GetValue("Sentry:TracesSampleRate", 0.1);
+                options.CaptureFailedRequests = false;
+                options.TracePropagationTargets.Clear();
+                options.MaxBreadcrumbs = 50;
+                options.SetBeforeSend(sentryEvent =>
+                    sentryEvent.Exception is OperationCanceledException ? null : sentryEvent);
+                options.ConfigureScope(scope =>
+                {
+                    scope.SetTag("service", "sosubot");
+                    scope.SetTag("runtime", ".NET 10 Generic Host");
+                });
+            });
+        }
 
         // Policy
         IAsyncPolicy<HttpResponseMessage> pollyPolicies = PollyPolicies.GetCombinedPolicy();
@@ -55,6 +87,11 @@ internal class Program
         builder.Services.Configure<OsuApiV2Configuration>(builder.Configuration.GetSection(nameof(OsuApiV2Configuration)));
         builder.Services.Configure<OpenAiConfiguration>(builder.Configuration.GetSection(nameof(OpenAiConfiguration)));
         builder.Services.Configure<RenderConfiguration>(renderConfig);
+        builder.Services.Configure<MonitoringConfiguration>(builder.Configuration.GetSection("Monitoring"));
+        builder.Services.AddSingleton<BotMetrics>();
+        builder.Services.AddSingleton<CommandUsageRecorder>();
+        builder.Services.AddHostedService<MetricsServerHostedService>();
+        builder.Services.AddHostedService<MetricsSnapshotBackgroundService>();
         builder.Services.AddCustomHttpClient(nameof(ITelegramBotClient), 32_767)
                         .AddTypedClient<ITelegramBotClient>((httpClient, sp) =>
                         {
@@ -67,6 +104,7 @@ internal class Program
                         .AddPolicyHandler(pollyPolicies);
         builder.Services.AddCustomHttpClient(BeatmapsService.HttpClientName, 300)
                         .AddPolicyHandler(pollyPolicies);
+        builder.Services.AddCustomHttpClient(nameof(ReplayRenderService), 32_767, TimeSpan.FromMinutes(10));
 
         builder.Services.AddSingleton(provider =>
         {
@@ -78,15 +116,23 @@ internal class Program
 
         builder.Services.AddSingleton<CachingHelper>();
         builder.Services.AddSingleton<ScoreHelper>();
+        builder.Services.AddSingleton<PlayerSkillCalculator>();
+        builder.Services.AddSingleton<ProfileCardGenerator>();
+        builder.Services.AddSingleton<ScorePreviewGenerator>();
+        builder.Services.AddSingleton<OsuCardService>();
+        builder.Services.AddSingleton<VideoPreviewService>();
         builder.Services.AddSingleton<UpdateQueueService>();
         builder.Services.AddSingleton(serviceProvider =>
         {
             ILogger<ReplayRenderService> logger = serviceProvider.GetRequiredService<ILogger<ReplayRenderService>>();
+            HttpClient httpClient = serviceProvider.GetRequiredService<IHttpClientFactory>()
+                .CreateClient(nameof(ReplayRenderService));
             return new ReplayRenderService(
                 new(renderConfig[nameof(RenderConfiguration.RenderUrl)]!),
                 int.Parse(renderConfig[nameof(RenderConfiguration.ClientId)]!),
                 renderConfig[nameof(RenderConfiguration.ClientSecret)]!,
-                logger);
+                logger,
+                httpClient);
         });
         builder.Services.AddSingleton<OpenAiService>();
         builder.Services.AddSingleton<BeatmapFileCache>();
@@ -135,22 +181,46 @@ internal class Program
         builder.Services.AddHostedService<ConfigureBotService>();
         builder.Services.AddHostedService<PollingBackgroundService>();
         builder.Services.AddHostedService<UpdateHandlerBackgroundService>();
-        builder.Services.AddHostedService<ScoresObserverBackgroundService>();
+        builder.Services.AddHostedService<TrackedScoreNotificationBackgroundService>();
+        builder.Services.AddHostedService<DailyStatisticsReportDeliveryBackgroundService>();
 
         // Database
-        var connectionString = builder.Configuration.GetConnectionString("Postgres")!;
-        Log($"Using the following connection string: {connectionString.Substring(0, connectionString.IndexOf("Password") + 9)}********");
+        string configuredConnectionString = builder.Configuration.GetConnectionString("Postgres")
+            ?? throw new InvalidOperationException("Connection string 'Postgres' is not configured.");
+        var connectionStringBuilder = new NpgsqlConnectionStringBuilder(configuredConnectionString);
+        string? databasePasswordFile = builder.Configuration["Database:PasswordFile"];
+        if (!string.IsNullOrWhiteSpace(databasePasswordFile))
+        {
+            if (!File.Exists(databasePasswordFile))
+                throw new FileNotFoundException("PostgreSQL password file was not found.", databasePasswordFile);
+
+            connectionStringBuilder.Password = File.ReadAllText(databasePasswordFile).Trim();
+        }
+
+        string connectionString = connectionStringBuilder.ConnectionString;
+        Log($"Using PostgreSQL at {connectionStringBuilder.Host}:{connectionStringBuilder.Port}/" +
+            $"{connectionStringBuilder.Database} as {connectionStringBuilder.Username}");
         builder.Services.AddDbContextPool<BotContext>(options =>
             options.UseLazyLoadingProxies()
                 .UseNpgsql(connectionString, (m) => m.MapEnum<Playmode>())
                 .ConfigureWarnings(m => m.Ignore(RelationalEventId.PendingModelChangesWarning)));
 
         IHost app = builder.Build();
-        using (IServiceScope scope = app.Services.CreateScope())
+        bool migrateOnly = requestedMigrateOnly;
+        bool migrateOnStartup = builder.Configuration.GetValue("Database:MigrateOnStartup", true);
+        if (migrateOnly || migrateOnStartup)
         {
-            BotContext db = scope.ServiceProvider.GetRequiredService<BotContext>();
-            db.Database.Migrate();
+            using IServiceScope scope = app.Services.CreateScope();
+            BotContext database = scope.ServiceProvider.GetRequiredService<BotContext>();
+            database.Database.Migrate();
         }
+
+        if (migrateOnly)
+        {
+            Log("Database migrations completed; exiting migration-only mode");
+            return;
+        }
+
         app.Run();
     }
 

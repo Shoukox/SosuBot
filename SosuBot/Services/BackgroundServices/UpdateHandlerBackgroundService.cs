@@ -19,10 +19,13 @@ public sealed class UpdateHandlerBackgroundService(IServiceProvider serviceProvi
     {
         if (EnableStressTestUsingConsole) _ = Task.Run(() => StressTestUsingConsole(stoppingToken));
 
-        _logger.LogInformation($"Starting {_workersCount} workers to handle updates.");
+        _logger.LogInformation("Starting {WorkerCount} workers to handle updates", _workersCount);
 
         ThreadPool.GetAvailableThreads(out int workerThreads, out int completionPortThreads);
-        _logger.LogDebug($"Available worker threads: {workerThreads}, available completion port threads: {completionPortThreads}");
+        _logger.LogDebug(
+            "Available worker threads: {WorkerThreads}, available completion port threads: {CompletionPortThreads}",
+            workerThreads,
+            completionPortThreads);
 
         try
         {
@@ -32,9 +35,9 @@ public sealed class UpdateHandlerBackgroundService(IServiceProvider serviceProvi
 
             await Task.WhenAll(workers);
         }
-        catch (OperationCanceledException)
+        catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
         {
-            _logger.LogWarning("Operation cancelled");
+            _logger.LogInformation("Update workers are stopping");
         }
 
         _logger.LogInformation("Finished its work");
@@ -47,7 +50,7 @@ public sealed class UpdateHandlerBackgroundService(IServiceProvider serviceProvi
             try
             {
                 Update update = await _updateQueue.DequeueUpdateAsync(stoppingToken);
-                _logger.LogInformation("Worker dequeueing an update.");
+                _logger.LogDebug("Worker dequeued an update");
 
                 await using AsyncServiceScope scope = serviceProvider.CreateAsyncScope();
                 UpdateHandler updateHandler = scope.ServiceProvider.GetRequiredService<UpdateHandler>();
@@ -57,10 +60,18 @@ public sealed class UpdateHandlerBackgroundService(IServiceProvider serviceProvi
                 {
                     await updateHandler.HandleUpdateAsync(bot, update, stoppingToken);
                 }
+                catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+                {
+                    break;
+                }
                 catch (Exception ex)
                 {
                     await updateHandler.HandleErrorAsync(bot, ex, HandleErrorSource.HandleUpdateError, stoppingToken);
                 }
+            }
+            catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+            {
+                break;
             }
             catch (Exception ex)
             {

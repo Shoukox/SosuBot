@@ -37,5 +37,6 @@ public record ScoreEntity
     [Key]
     [DatabaseGenerated(DatabaseGeneratedOption.None)]
     public required long ScoreId { get; set; }
+    public int? DailyStatisticsId { get; set; }
     public Score ScoreJson { get; set; } = null!;
 }

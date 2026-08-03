@@ -11,7 +11,7 @@ namespace SosuBot.Services
 {
     public sealed class ReplayRenderService
     {
-        private static readonly HttpClient _httpClient = new() { Timeout = TimeSpan.FromMinutes(10) };
+        private readonly HttpClient _httpClient;
         private static readonly ConcurrentDictionary<int, byte> _cancelledJobs = new();
         private readonly Uri _serverUri;
         private readonly int _clientId;
@@ -21,12 +21,18 @@ namespace SosuBot.Services
         private JwtTokenResponse? _jwtToken;
         private DateTimeOffset _jwtTokenExpiresAt = DateTimeOffset.MinValue;
 
-        public ReplayRenderService(Uri serverUri, int clientId, string clientSecret, ILogger<ReplayRenderService> logger)
+        public ReplayRenderService(
+            Uri serverUri,
+            int clientId,
+            string clientSecret,
+            ILogger<ReplayRenderService> logger,
+            HttpClient httpClient)
         {
             _serverUri = serverUri;
             _clientId = clientId;
             _clientSecret = clientSecret;
             _logger = logger;
+            _httpClient = httpClient;
         }
 
         public Uri ServerUri => _serverUri;
@@ -64,6 +70,11 @@ namespace SosuBot.Services
                 var expiresIn = _jwtToken.ExpiresIn > 60 ? _jwtToken.ExpiresIn - 60 : Math.Max(1, _jwtToken.ExpiresIn / 2);
                 _jwtTokenExpiresAt = DateTimeOffset.UtcNow.AddSeconds(expiresIn);
                 return _jwtToken.AccessToken;
+            }
+            catch (OperationCanceledException)
+            {
+                _logger.LogWarning("ReplayRenderService token acquisition timed out");
+                return null;
             }
             catch (Exception ex)
             {
@@ -128,6 +139,11 @@ namespace SosuBot.Services
 
                 return await response.Content.ReadFromJsonAsync<T>();
             }
+            catch (OperationCanceledException)
+            {
+                _logger.LogWarning("ReplayRenderService request timed out");
+                return default;
+            }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "ReplayRenderService");
@@ -150,6 +166,11 @@ namespace SosuBot.Services
 
                 using HttpResponseMessage response = await _httpClient.SendAsync(request);
                 return response.IsSuccessStatusCode;
+            }
+            catch (OperationCanceledException)
+            {
+                _logger.LogWarning("ReplayRenderService request timed out");
+                return false;
             }
             catch (Exception ex)
             {

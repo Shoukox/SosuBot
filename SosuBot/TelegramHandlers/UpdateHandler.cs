@@ -5,6 +5,7 @@ using SosuBot.Configuration;
 using SosuBot.Database;
 using SosuBot.Database.Models;
 using SosuBot.Extensions;
+using SosuBot.Monitoring;
 using SosuBot.TelegramHandlers.Abstract;
 using SosuBot.TelegramHandlers.Commands;
 using SosuBot.TelegramHandlers.Text;
@@ -21,9 +22,12 @@ public class UpdateHandler(
     BotContext database,
     IOptions<BotConfiguration> botConfig,
     ILogger<UpdateHandler> logger,
+    BotMetrics metrics,
+    CommandUsageRecorder commandUsageRecorder,
     IServiceProvider serviceProvider) : IUpdateHandler
 {
     public static Dictionary<string, Func<CommandBase<Message>>> Commands { get; set; } = new();
+    public static Dictionary<string, string> CommandMetricNames { get; set; } = new();
     public static Dictionary<string, Func<CommandBase<CallbackQuery>>> Callbacks { get; set; } = new();
 
     public Task HandleErrorAsync(ITelegramBotClient botClient, Exception exception, HandleErrorSource source,
@@ -36,21 +40,33 @@ public class UpdateHandler(
     public async Task HandleUpdateAsync(ITelegramBotClient botClient, Update update,
         CancellationToken cancellationToken)
     {
-        cancellationToken.ThrowIfCancellationRequested();
-
-        Task eventHandler = update switch
-        {
-            { Message: { } message } => OnMessage(botClient, message, cancellationToken),
-            { CallbackQuery: { } callbackQuery } => OnCallbackQuery(botClient, callbackQuery, cancellationToken),
-            _ => DoNothing()
-        };
+        cancellationToken.ThrowIfCancellationRequested(); 
+        metrics.RecordUpdateReceived(update);
+        long startedAt = System.Diagnostics.Stopwatch.GetTimestamp();
 
         try
         {
-            await eventHandler;
+            await (update switch
+            {
+                { Message: { } message } => OnMessage(botClient, message, cancellationToken),
+                { CallbackQuery: { } callbackQuery } => OnCallbackQuery(botClient, callbackQuery, cancellationToken),
+                _ => DoNothing()
+            });
+            metrics.RecordUpdateProcessed(update, "success", System.Diagnostics.Stopwatch.GetElapsedTime(startedAt).TotalSeconds);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            metrics.RecordUpdateProcessed(update, "cancelled", System.Diagnostics.Stopwatch.GetElapsedTime(startedAt).TotalSeconds);
+            throw;
+        }
+        catch (Telegram.Bot.Exceptions.ApiRequestException exception) when (IsMessageNotModified(exception))
+        {
+            metrics.RecordUpdateProcessed(update, "ignored", System.Diagnostics.Stopwatch.GetElapsedTime(startedAt).TotalSeconds);
+            logger.LogDebug("Ignored an unchanged Telegram message response");
         }
         catch (Exception e)
         {
+            metrics.RecordUpdateProcessed(update, "error", System.Diagnostics.Stopwatch.GetElapsedTime(startedAt).TotalSeconds);
             await HandleErrorForUpdateAsync(botClient, update, e, HandleErrorSource.HandleUpdateError, cancellationToken);
         }
     }
@@ -58,14 +74,14 @@ public class UpdateHandler(
     private async Task HandleErrorForUpdateAsync(ITelegramBotClient botClient, Update update, Exception exception,
         HandleErrorSource source, CancellationToken cancellationToken)
     {
-        logger.LogError(exception, "HandleError (source: {Source})", source);
-
         // Telegram Bot API error 400: Bad Request: message is not modified: specified new message content and reply markup are exactly the same as a current content and reply markup of the message
-        if (exception is Telegram.Bot.Exceptions.ApiRequestException apiEx && apiEx.Message.Contains("message is not modified"))
+        if (exception is Telegram.Bot.Exceptions.ApiRequestException apiEx && IsMessageNotModified(apiEx))
         {
-            logger.LogInformation(exception, "Ignoring the previous error (source: {Source})", source);
+            logger.LogDebug("Ignored an unchanged Telegram message response (source: {Source})", source);
             return;
         }
+
+        logger.LogError(exception, "Failed to handle Telegram update (source: {Source})", source);
 
         // if a text-command message
         if (update.Message is { Text: string } msg && msg.Text.IsCommand())
@@ -88,7 +104,7 @@ public class UpdateHandler(
     private async Task OnMessage(ITelegramBotClient botClient, Message msg, CancellationToken cancellationToken)
     {
         // Add new chat and update chat members
-        await database.AddOrUpdateTelegramChat(msg);
+        await database.AddOrUpdateTelegramChat(msg, logger, cancellationToken);
 
         if (msg.Text == null)
         {
@@ -136,8 +152,14 @@ public class UpdateHandler(
     private async Task OnCommand(ITelegramBotClient botClient, Message msg, CancellationToken cancellationToken)
     {
         var command = msg.Text!.GetCommand().RemoveUsernamePostfix(botConfig.Value.Username);
-        Func<CommandBase<Message>> commandFactory = Commands.GetValueOrDefault(command, () => new DummyCommand());
+        bool isKnownCommand = Commands.TryGetValue(command, out Func<CommandBase<Message>>? commandFactory);
+        commandFactory ??= () => new DummyCommand();
         CommandBase<Message> executableCommand = commandFactory();
+        string recordedCommand = isKnownCommand
+            ? CommandMetricNames.GetValueOrDefault(command, command)
+            : "unknown";
+        long startedAt = System.Diagnostics.Stopwatch.GetTimestamp();
+        string status = "success";
 
         executableCommand.SetContext(
             new CommandContext<Message>(
@@ -146,9 +168,35 @@ public class UpdateHandler(
                 serviceProvider,
                 cancellationToken));
 
-        await executableCommand.BeforeExecuteAsync();
-        await executableCommand.ExecuteAsync();
-        await database.SaveChangesAsync(cancellationToken);
+        try
+        {
+            await executableCommand.BeforeExecuteAsync();
+            await executableCommand.ExecuteAsync();
+            await database.SaveChangesAsync(cancellationToken);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            status = "cancelled";
+            throw;
+        }
+        catch (Telegram.Bot.Exceptions.ApiRequestException exception) when (IsMessageNotModified(exception))
+        {
+            status = "success";
+            throw;
+        }
+        catch
+        {
+            status = "error";
+            throw;
+        }
+        finally
+        {
+            await commandUsageRecorder.RecordAsync(
+                recordedCommand,
+                status,
+                System.Diagnostics.Stopwatch.GetElapsedTime(startedAt),
+                cancellationToken);
+        }
     }
 
     private async Task OnText(ITelegramBotClient botClient, Message msg, CancellationToken cancellationToken)
@@ -170,5 +218,8 @@ public class UpdateHandler(
     {
         return Task.CompletedTask;
     }
+
+    private static bool IsMessageNotModified(Telegram.Bot.Exceptions.ApiRequestException exception) =>
+        exception.Message.Contains("message is not modified", StringComparison.OrdinalIgnoreCase);
 }
 

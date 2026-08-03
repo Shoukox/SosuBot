@@ -3,7 +3,7 @@
     "SosuBot.ScoresObserver": {
       "commandName": "Project",
       "environmentVariables": {
-        "DB_PASSWORD_FILE": "C:\\Users\\shach\\Desktop\\SosuBot\\.secrets\\db_password",
+        "Database__PasswordFile": "../.secrets/.db_password",
         "DOTNET_ENVIRONMENT": "Development"
       }
     },

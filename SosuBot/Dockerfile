@@ -10,6 +10,7 @@ ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
 COPY ["SosuBot/SosuBot.csproj", "SosuBot/"]
 COPY ["SosuBot.Database/SosuBot.Database.csproj", "SosuBot.Database/"]
+COPY ["SosuBot.Graphics/SosuBot.Graphics.csproj", "SosuBot.Graphics/"]
 COPY ["SosuBot.Localization/SosuBot.Localization.csproj", "SosuBot.Localization/"]
 COPY ["SosuBot.PerformanceCalculator/SosuBot.PerformanceCalculator.csproj", "SosuBot.PerformanceCalculator/"]
 RUN dotnet restore "./SosuBot/SosuBot.csproj"
