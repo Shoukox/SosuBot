@@ -14,6 +14,7 @@ public sealed class OsuChatstatsIncludeCommand : CommandBase<Message>
     private BotContext _database = null!;
 
     public static readonly string[] Commands = ["/include"];
+    public static readonly string Description = "[username] включить пользователя обратно в /chatstats";
 
     public override async Task BeforeExecuteAsync()
     {
@@ -44,7 +45,7 @@ public sealed class OsuChatstatsIncludeCommand : CommandBase<Message>
         var parameters = Context.Update.Text!.GetCommandParameters()!;
         if (parameters.Length == 0)
         {
-            await waitMessage.EditAsync(Context.BotClient, language.error_nameIsEmpty);
+            await waitMessage.EditAsync(Context.BotClient, language.command_include_usage);
             return;
         }
 

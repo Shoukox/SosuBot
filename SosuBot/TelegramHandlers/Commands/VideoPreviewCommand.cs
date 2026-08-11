@@ -20,6 +20,7 @@ public sealed class VideoPreviewCommand(
     ILogger<VideoPreviewCommand> logger) : CommandBase<Message>
 {
     public static readonly string[] Commands = ["/videopreview"];
+    public static readonly string Description = "превью видео для osu! score";
 
     public override async Task ExecuteAsync()
     {

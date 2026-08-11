@@ -18,6 +18,7 @@ namespace SosuBot.TelegramHandlers.Commands;
 public sealed class OsuScoreCommand : CommandBase<Message>
 {
     public static readonly string[] Commands = ["/score", "/s"];
+    public static readonly string Description = "[beatmap_link или beatmap_id] ваши рекорды на карте";
     private BanchoApiV2 _osuApiV2 = null!;
     private ScoreHelper _scoreHelper = null!;
     private CachingHelper _cachingHelper = null!;
@@ -157,13 +158,13 @@ public sealed class OsuScoreCommand : CommandBase<Message>
         }
         else
         {
-            await waitMessage.EditAsync(Context.BotClient, language.error_argsLength);
+            await waitMessage.EditAsync(Context.BotClient, language.command_score_usage);
             return;
         }
 
         if (beatmapId is null)
         {
-            await waitMessage.EditAsync(Context.BotClient, language.error_baseMessage);
+            await waitMessage.EditAsync(Context.BotClient, language.command_score_usage);
             return;
         }
 

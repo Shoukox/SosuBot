@@ -32,10 +32,43 @@ jobs:
         with:
           submodules: recursive
 
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: 1.94.0
+          components: clippy,rustfmt
+
+      - name: Cache Cargo dependencies
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: SosuBot.PerformanceCalculator/native/rosu-pp-native -> target
+
+      - name: Test and build native wrapper
+        working-directory: SosuBot.PerformanceCalculator/native/rosu-pp-native
+        run: |
+          cargo fmt --check
+          cargo clippy --all-targets -- -D warnings
+          cargo test --locked
+          cargo build --release --locked
+
+      - name: Stage Linux native asset
+        run: |
+          install -D -m 0755 \
+            SosuBot.PerformanceCalculator/native/rosu-pp-native/target/release/librosu_pp_native.so \
+            SosuBot.PerformanceCalculator/runtimes/linux-x64/native/librosu_pp_native.so
+
       - name: Set up .NET
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 10.0.x
+
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('**/*.csproj') }}
+          restore-keys: |
+            nuget-${{ runner.os }}-
 
       - name: Restore dependencies
         run: dotnet restore SosuBot.sln
@@ -52,6 +85,24 @@ jobs:
           --verbosity normal
           --logger "trx;LogFileName=test-results.trx"
           --results-directory TestResults
+
+      - name: Run native smoke executable
+        run: >-
+          dotnet run
+          --project tests/SosuBot.PerformanceCalculator.Smoke/SosuBot.PerformanceCalculator.Smoke.csproj
+          --configuration Release
+          --no-build
+          --no-restore
+
+      - name: Verify publish contains native asset
+        run: |
+          dotnet publish \
+            tests/SosuBot.PerformanceCalculator.Smoke/SosuBot.PerformanceCalculator.Smoke.csproj \
+            --configuration Release \
+            --no-restore \
+            --output PublishSmoke \
+            /p:UseAppHost=false
+          test -f PublishSmoke/runtimes/linux-x64/native/librosu_pp_native.so
 
       - name: Upload test results
         if: always()

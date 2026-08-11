@@ -15,6 +15,7 @@ namespace SosuBot.TelegramHandlers.Commands;
 public sealed class TrackCommand : CommandBase<Message>
 {
     public static readonly string[] Commands = ["/track"];
+    public static readonly string Description = "включить или выключить отслеживание игрока";
     private BanchoApiV2 _osuApiV2 = null!;
     private RateLimiterFactory _rateLimiterFactory = null!;
     private BotContext _database = null!;
@@ -47,7 +48,7 @@ public sealed class TrackCommand : CommandBase<Message>
         var parameters = Context.Update.Text!.GetCommandParameters()!;
         if (parameters.Length == 0)
         {
-            await waitMessage.EditAsync(Context.BotClient, language.error_argsLength + $"\n{language.track_usage}");
+            await waitMessage.EditAsync(Context.BotClient, language.track_usage);
             return;
         }
 

@@ -8,6 +8,7 @@ namespace SosuBot.TelegramHandlers.Commands;
 public sealed class HelpCommand : CommandBase<Message>
 {
     public static readonly string[] Commands = ["/help"];
+    public static readonly string Description = "список доступных команд";
 
     public override async Task ExecuteAsync()
     {

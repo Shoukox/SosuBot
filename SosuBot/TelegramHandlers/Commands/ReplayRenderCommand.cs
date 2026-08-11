@@ -22,6 +22,7 @@ namespace SosuBot.TelegramHandlers.Commands;
 public sealed class ReplayRenderCommand : CommandBase<Message>
 {
     public static readonly string[] Commands = ["/render"];
+    public static readonly string Description = "отрендерить osu! реплей";
     private BanchoApiV2 _osuApiV2 = null!;
     private ReplayRenderService _replayRenderService = null!;
     private RateLimiterFactory _rateLimiterFactory = null!;

@@ -14,6 +14,7 @@ public sealed class OsuChatstatsExcludeCommand : CommandBase<Message>
     private BotContext _database = null!;
 
     public static readonly string[] Commands = ["/exclude"];
+    public static readonly string Description = "[username] исключить пользователя из /chatstats";
 
     public override async Task BeforeExecuteAsync()
     {
@@ -44,7 +45,7 @@ public sealed class OsuChatstatsExcludeCommand : CommandBase<Message>
         var parameters = Context.Update.Text!.GetCommandParameters()!;
         if (parameters.Length == 0)
         {
-            await waitMessage.EditAsync(Context.BotClient, language.error_nameIsEmpty);
+            await waitMessage.EditAsync(Context.BotClient, language.command_exclude_usage);
             return;
         }
 

@@ -10,12 +10,14 @@ using Npgsql;
 using OsuApi.BanchoV2;
 using Polly;
 using SosuBot.Configuration;
+using SosuBot.Calculators.Official;
 using SosuBot.Database;
 using SosuBot.Database.Models;
 using SosuBot.Graphics;
 using SosuBot.Helpers;
 using SosuBot.Logging;
 using SosuBot.Monitoring;
+using SosuBot.PerformanceCalculator;
 using SosuBot.Services;
 using SosuBot.Services.BackgroundServices;
 using SosuBot.Services.StartupServices;
@@ -89,6 +91,7 @@ internal class Program
         builder.Services.Configure<RenderConfiguration>(renderConfig);
         builder.Services.Configure<MonitoringConfiguration>(builder.Configuration.GetSection("Monitoring"));
         builder.Services.AddSingleton<BotMetrics>();
+        builder.Services.AddSingleton<IPerformanceCalculator, PPCalculator>();
         builder.Services.AddSingleton<CommandUsageRecorder>();
         builder.Services.AddHostedService<MetricsServerHostedService>();
         builder.Services.AddHostedService<MetricsSnapshotBackgroundService>();
@@ -102,6 +105,9 @@ internal class Program
                         .AddPolicyHandler(pollyPolicies);
         builder.Services.AddCustomHttpClient("CustomHttpClient", 300)
                         .AddPolicyHandler(pollyPolicies);
+        builder.Services.AddCustomHttpClient("OsuApiHttpClient", 300)
+                        .AddHttpMessageHandler(() => new OsuApiAvailabilityHandler())
+                        .AddPolicyHandler(pollyPolicies);
         builder.Services.AddCustomHttpClient(BeatmapsService.HttpClientName, 300)
                         .AddPolicyHandler(pollyPolicies);
         builder.Services.AddCustomHttpClient(nameof(ReplayRenderService), 32_767, TimeSpan.FromMinutes(10));
@@ -109,13 +115,14 @@ internal class Program
         builder.Services.AddSingleton(provider =>
         {
             OsuApiV2Configuration config = builder.Configuration.GetSection(nameof(OsuApiV2Configuration)).Get<OsuApiV2Configuration>()!;
-            HttpClient httpClient = provider.GetRequiredService<IHttpClientFactory>().CreateClient("CustomHttpClient");
+            HttpClient httpClient = provider.GetRequiredService<IHttpClientFactory>().CreateClient("OsuApiHttpClient");
             ILogger<BanchoApiV2> logger = provider.GetRequiredService<ILogger<BanchoApiV2>>();
             return new BanchoApiV2(config.ClientId, config.ClientSecret, httpClient);
         });
 
         builder.Services.AddSingleton<CachingHelper>();
         builder.Services.AddSingleton<ScoreHelper>();
+        builder.Services.AddSingleton<OfficialPerformanceHelper>();
         builder.Services.AddSingleton<PlayerSkillCalculator>();
         builder.Services.AddSingleton<ProfileCardGenerator>();
         builder.Services.AddSingleton<ScorePreviewGenerator>();

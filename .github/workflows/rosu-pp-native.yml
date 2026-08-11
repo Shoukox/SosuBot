@@ -1,0 +1,79 @@
+name: rosu-pp native artifacts
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - "SosuBot.PerformanceCalculator/Calculators/Rosu/native/**"
+      - "SosuBot.PerformanceCalculator/Calculators/Rosu/runtimes/**"
+      - ".github/workflows/rosu-pp-native.yml"
+  pull_request:
+    branches: [master]
+    paths:
+      - "SosuBot.PerformanceCalculator/Calculators/Rosu/native/**"
+      - "SosuBot.PerformanceCalculator/Calculators/Rosu/runtimes/**"
+      - ".github/workflows/rosu-pp-native.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  CARGO_TERM_COLOR: always
+  CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER: aarch64-linux-gnu-gcc
+
+jobs:
+  build:
+    name: Build ${{ matrix.rid }}
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - rid: linux-x64
+            runner: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            artifact: librosu_pp_native.so
+          - rid: linux-arm64
+            runner: ubuntu-latest
+            target: aarch64-unknown-linux-gnu
+            artifact: librosu_pp_native.so
+          - rid: win-x64
+            runner: windows-latest
+            target: x86_64-pc-windows-msvc
+            artifact: rosu_pp_native.dll
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install ARM64 linker
+        if: matrix.rid == 'linux-arm64'
+        run: sudo apt-get update && sudo apt-get install --yes gcc-aarch64-linux-gnu
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: 1.94.0
+          targets: ${{ matrix.target }}
+
+      - name: Cache Cargo dependencies
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: SosuBot.PerformanceCalculator/Calculators/Rosu/native/rosu-pp-native -> target
+          key: ${{ matrix.target }}
+
+      - name: Build release library
+        working-directory: SosuBot.PerformanceCalculator/Calculators/Rosu/native/rosu-pp-native
+        run: cargo build --release --locked --target ${{ matrix.target }}
+
+      - name: Upload native library
+        uses: actions/upload-artifact@v4
+        with:
+          name: rosu-pp-native-${{ matrix.rid }}-v0.1.0
+          path: SosuBot.PerformanceCalculator/Calculators/Rosu/native/rosu-pp-native/target/${{ matrix.target }}/release/${{ matrix.artifact }}
+          if-no-files-found: error
+          retention-days: 14

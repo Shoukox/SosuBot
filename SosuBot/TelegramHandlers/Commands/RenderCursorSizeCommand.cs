@@ -12,6 +12,7 @@ namespace SosuBot.TelegramHandlers.Commands;
 public sealed class RenderCursorSizeCommand : CommandBase<Message>
 {
     public static readonly string[] Commands = ["/cursor"];
+    public static readonly string Description = "изменить размер курсора для рендера";
     private BotContext _database = null!;
 
     public override async Task BeforeExecuteAsync()

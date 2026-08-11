@@ -78,6 +78,18 @@ public sealed class Russian : ILocalization
 
     public string command_userbest => Shared.CommandUserBest;
 
+    public string command_set_usage => "Примеры:\n<b>/set mrekk</b>\n<b>/set Blue_Archive</b>";
+    public string command_mode_usage => "Примеры:\n<b>/mode osu</b>\n<b>/mode mania</b>";
+    public string command_user_usage => "Примеры:\n<b>/user mrekk</b>\n<b>/user mrekk mode=mania</b>";
+    public string command_userId_usage => "Пример: <b>/userid 12345678</b>";
+    public string command_userbest_usage => "Примеры:\n<b>/userbest mrekk</b>\n<b>/userbest mrekk mania</b>";
+    public string command_compare_usage => "Примеры:\n<b>/compare mrekk whitecat</b>\n<b>/compare mrekk whitecat osu</b>";
+    public string command_score_usage => "Примеры:\n<b>/score https://osu.ppy.sh/beatmaps/123456</b>\n<b>/score</b> ответом на сообщение со ссылкой на карту";
+    public string command_exclude_usage => "Пример: <b>/exclude mrekk</b>";
+    public string command_include_usage => "Пример: <b>/include mrekk</b>";
+    public string command_lastPassed_usage => "Пример: <b>/lastpassed mrekk 5</b>";
+    public string command_lastBest_usage => "Пример: <b>/lastbest mrekk 5</b>";
+
     public string randomBeatmap_noCachedBeatmaps => "В локальном хранилище не найдено карт режима <b>{}</b>.";
     public string randomBeatmap_usage => "/rnd [osu/mania/taiko/catch]";
     public string osuCard_usage => "/osucard [nickname] [osu/mania/taiko/catch]\n" +
@@ -146,6 +158,8 @@ public sealed class Russian : ILocalization
     public string error_userWasNotExcluded => "Этот пользователь и так не был исключен из /chatstats";
     public string error_beatmapNotFound => "Карта не найдена";
     public string error_dontUseTelegramUsername => "Тебе нужно вписать юзернейм игрока из osu!";
+    public string error_osuServerUnavailable =>
+        $"{error_baseMessage}\nСервера osu! временно недоступны. Попробуй ещё раз позже.";
 
     public string common_rateLimitSlowDown => "Давай не так быстро!";
     public string common_back => "Назад";

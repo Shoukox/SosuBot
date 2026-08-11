@@ -30,12 +30,80 @@ namespace SosuBot.TelegramHandlers.Commands;
 public sealed class CustomCommand : CommandBase<Message>
 {
     public static readonly string[] Commands = ["/c"];
+    public static readonly string Description = "служебные команды администратора";
+
+    private const string MarkdownExamples = """
+        *MarkdownV2* \- примеры синтаксиса Telegram
+
+        *Жирный текст*
+        _Курсивный текст_
+        __Подчёркнутый текст__
+        ~Зачёркнутый текст~
+        ||Спойлер||
+        *Жирный _курсив_ ~зачёркнутый~ текст*
+
+        Ссылки и специальные сущности:
+        [Ссылка](https://example.com/)
+        [Упоминание](tg://user?id=123456789)
+        ![👍](tg://emoji?id=5368324170671202286)
+        ![22:45 завтра](tg://time?unix=1647531900&format=wDT)
+        ![22:45 завтра](tg://time?unix=1647531900&format=t)
+        ![22:45 завтра](tg://time?unix=1647531900&format=r)
+        ![22:45 завтра](tg://time?unix=1647531900)
+
+        Моноширинный текст:
+        `inline fixed-width code`
+
+        Блок кода:
+        ```
+        pre-formatted fixed-width code block
+        ```
+
+        Блок кода с указанием языка:
+        ```python
+        print("Hello, Telegram!")
+        ```
+
+        Обычная цитата:
+        >Block quotation started
+        >Block quotation continued
+        >The last line of the block quotation
+
+        Разворачиваемая цитата:
+        **>The expandable block quotation started
+        >Expandable block quotation continued
+        >Hidden by default part of the expandable block quotation
+        >The last line of the expandable block quotation||
+
+        Синтаксис для копирования:
+        `*bold text*`
+        `_italic text_`
+        `__underline__`
+        `~strikethrough~`
+        `||spoiler||`
+        `*bold _italic bold ~italic bold strikethrough ||spoiler||~ __underline italic bold___ bold*`
+        `[inline URL](https://www.example.com/)`
+        `[inline mention](tg://user?id=123456789)`
+        `![👍](tg://emoji?id=5368324170671202286)`
+        `![22:45 tomorrow](tg://time?unix=1647531900&format=wDT)`
+        \`inline fixed-width code\`
+        `inline fixed-width code`
+        \`\`\`python
+        pre-formatted fixed-width code block
+        \`\`\`
+        `>Block quotation started`
+        `**>Expandable block quotation started ...||`
+
+        В обычном тексте специальные символы нужно экранировать обратной косой чертой.
+        """;
+
     private OpenAiService _openaiService = null!;
     private BanchoApiV2 _osuApiV2 = null!;
     private ScoreHelper _scoreHelper = null!;
     private BeatmapsService _beatmapsService = null!;
     private BotContext _database = null!;
     private ILogger<CustomCommand> _logger = null!;
+    private IPerformanceCalculator _performanceCalculator = null!;
 
     public override async Task BeforeExecuteAsync()
     {
@@ -46,6 +114,7 @@ public sealed class CustomCommand : CommandBase<Message>
         _beatmapsService = Context.ServiceProvider.GetRequiredService<BeatmapsService>();
         _database = Context.ServiceProvider.GetRequiredService<BotContext>();
         _logger = Context.ServiceProvider.GetRequiredService<ILogger<CustomCommand>>();
+        _performanceCalculator = Context.ServiceProvider.GetRequiredService<IPerformanceCalculator>();
     }
 
     public override async Task ExecuteAsync()
@@ -58,6 +127,19 @@ public sealed class CustomCommand : CommandBase<Message>
         }
 
         var parameters = Context.Update.Text!.GetCommandParameters()!;
+        if (parameters.Length == 0)
+        {
+            await Context.Update.ReplyAsync(Context.BotClient,
+                "Примеры: /c markdown\n/c json\n/c ai текст");
+            return;
+        }
+
+        if (parameters[0].Equals("markdown", StringComparison.OrdinalIgnoreCase))
+        {
+            await Context.Update.ReplyAsync(Context.BotClient, MarkdownExamples, parseMode: ParseMode.MarkdownV2);
+            return;
+        }
+
         if (parameters[0] == "json")
         {
             var result = JsonConvert.SerializeObject(Context.Update,
@@ -200,8 +282,6 @@ public sealed class CustomCommand : CommandBase<Message>
         }
         else if (parameters[0] == "test1")
         {
-            var ppCalculator = new PPCalculator();
-
             int beatmapId = 970048;
             Stopwatch sw = Stopwatch.StartNew();
 
@@ -210,35 +290,18 @@ public sealed class CustomCommand : CommandBase<Message>
             {
                 using Stream beatmapFile = _beatmapsService
                     .DownloadOrCacheBeatmapAsync(beatmapId, Context.CancellationToken).GetAwaiter().GetResult();
-                PPCalculationResult? calculatedPp = ppCalculator.CalculatePpAsync(
-                    beatmapId: beatmapId,
-                    beatmapFile: beatmapFile,
+                _performanceCalculator.CalculatePpAsync(
+                    beatmapId,
+                    beatmapFile,
                     accuracy: 0.9889,
                     scoreMaxCombo: 1466,
-                    passed: true,
                     scoreMods: [new OsuModClassic()],
-                    scoreStatistics: null,
                     rulesetId: (int)Playmode.Osu,
-                    cancellationToken: Context.CancellationToken).Result;
+                    cancellationToken: Context.CancellationToken).GetAwaiter().GetResult();
             });
             sw.Stop();
 
             await Context.Update.ReplyAsync(Context.BotClient, $"pp calculation of {count} scores: {sw.ElapsedMilliseconds}ms");
-            //for (var i = 1; i <= 1000; i++)
-            //{
-            //    var beatmapFile = await _beatmapsService.DownloadOrCacheBeatmapAsync(beatmapId);
-            //    var calculatedPp = await ppCalculator.CalculatePpAsync(
-            //        beatmapId: beatmapId, 
-            //        beatmapFile: beatmapFile,
-            //        accuracy: 0.9889,
-            //        scoreMaxCombo: 1466,
-            //        passed: true,
-            //        scoreMods: [new OsuModClassic()],
-            //        scoreStatistics: null,
-            //        rulesetId: (int)Playmode.Osu,
-            //        cancellationToken: Context.CancellationToken);
-            //    await Task.Delay(1000);
-            //}
         }
         else if (parameters[0] == "fix28112025_distinctscores")
         {

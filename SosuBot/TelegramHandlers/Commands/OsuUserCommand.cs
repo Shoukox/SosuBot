@@ -17,6 +17,7 @@ namespace SosuBot.TelegramHandlers.Commands;
 public class OsuUserCommand(bool includeIdInSearch = false) : CommandBase<Message>
 {
     public static readonly string[] Commands = ["/user", "/u"];
+    public static readonly string Description = "[user] краткая информация об игроке";
     private BanchoApiV2 _osuApiV2 = null!;
     private ScoreHelper _scoreHelper = null!;
     private RateLimiterFactory _rateLimiterFactory = null!;
@@ -62,7 +63,8 @@ public class OsuUserCommand(bool includeIdInSearch = false) : CommandBase<Messag
         {
             if (osuUserInDatabase is null)
             {
-                await waitMessage.EditAsync(Context.BotClient, language.error_userNotSetHimself);
+                await waitMessage.EditAsync(Context.BotClient,
+                    includeIdInSearch ? language.command_userId_usage : language.command_user_usage);
                 return;
             }
 
@@ -83,7 +85,8 @@ public class OsuUserCommand(bool includeIdInSearch = false) : CommandBase<Messag
         }
         else
         {
-            await waitMessage.EditAsync(Context.BotClient, language.error_argsLength);
+            await waitMessage.EditAsync(Context.BotClient,
+                includeIdInSearch ? language.command_userId_usage : language.command_user_usage);
             return;
         }
 

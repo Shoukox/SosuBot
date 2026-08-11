@@ -14,6 +14,7 @@ namespace SosuBot.TelegramHandlers.Commands;
 public sealed class GetRankingCommand : CommandBase<Message>
 {
     public static readonly string[] Commands = ["/ranking"];
+    public static readonly string Description = "показать рейтинг игроков";
     private BanchoApiV2 _osuApiV2 = null!;
     private RateLimiterFactory _rateLimiterFactory = null!;
 

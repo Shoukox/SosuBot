@@ -17,6 +17,7 @@ namespace SosuBot.TelegramHandlers.Commands;
 public sealed class MsgCommand : CommandBase<Message>
 {
     public static readonly string[] Commands = ["/msg"];
+    public static readonly string Description = "отправить сообщение пользователю";
     private BotContext _database = null!;
     private ILogger<MsgCommand> _logger = null!;
 

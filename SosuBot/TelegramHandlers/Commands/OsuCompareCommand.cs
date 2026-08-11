@@ -15,6 +15,7 @@ namespace SosuBot.TelegramHandlers.Commands;
 public sealed class OsuCompareCommand : CommandBase<Message>
 {
     public static readonly string[] Commands = ["/compare", "/cmp"];
+    public static readonly string Description = "[user1] [user2] [mode] сравнить игроков";
     private BanchoApiV2 _osuApiV2 = null!;
     private BotContext _database = null!;
 
@@ -42,7 +43,7 @@ public sealed class OsuCompareCommand : CommandBase<Message>
 
         if (parameters.Length == 0 || (parameters.Length == 1 && osuUserInDatabase == null) || parameters.Length > 3)
         {
-            await waitMessage.EditAsync(Context.BotClient, language.error_argsLength);
+            await waitMessage.EditAsync(Context.BotClient, language.command_compare_usage);
             return;
         }
 

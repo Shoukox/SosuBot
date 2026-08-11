@@ -12,6 +12,7 @@ namespace SosuBot.TelegramHandlers.Commands;
 public sealed class RenderSettingsCommand : CommandBase<Message>
 {
     public static readonly string[] Commands = ["/settings"];
+    public static readonly string Description = "настройки рендера";
     private RateLimiterFactory _rateLimiterFactory = null!;
     private BotContext _database = null!;
 

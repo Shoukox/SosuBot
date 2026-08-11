@@ -17,6 +17,7 @@ namespace SosuBot.TelegramHandlers.Commands;
 public sealed class OsuUserbestCommand : CommandBase<Message>
 {
     public static readonly string[] Commands = ["/userbest", "/best"];
+    public static readonly string Description = "[user] [mode] лучшие игры игрока";
     private BanchoApiV2 _osuApiV2 = null!;
     private ScoreHelper _scoreHelper = null!;
     private RateLimiterFactory _rateLimiterFactory = null!;
@@ -60,13 +61,18 @@ public sealed class OsuUserbestCommand : CommandBase<Message>
         {
             if (osuUserInDatabase is null)
             {
-                await waitMessage.EditAsync(Context.BotClient, language.error_userNotSetHimself);
+                await waitMessage.EditAsync(Context.BotClient, language.command_userbest_usage);
                 return;
             }
 
             ruleset = osuUserInDatabase.OsuMode.ToRuleset();
             osuUsernameForUserbest = osuUserInDatabase.OsuUsername;
             osuUserIdForUserbest = osuUserInDatabase.OsuUserId;
+        }
+        else if (parameters.Length > 2)
+        {
+            await waitMessage.EditAsync(Context.BotClient, language.command_userbest_usage);
+            return;
         }
         else
         {

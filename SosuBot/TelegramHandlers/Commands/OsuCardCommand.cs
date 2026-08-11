@@ -24,6 +24,7 @@ public sealed class OsuCardCommand(
     ILogger<OsuCardCommand> logger) : CommandBase<Message>
 {
     public static readonly string[] Commands = ["/osucard"];
+    public static readonly string Description = "[user] [mode] карточка навыков игрока osu!";
 
     public override async Task ExecuteAsync()
     {
@@ -39,8 +40,7 @@ public sealed class OsuCardCommand(
         ParsedArguments? arguments = ParseArguments(Context.Update.Text!);
         if (arguments is null)
         {
-            await Context.Update.ReplyAsync(Context.BotClient,
-                $"{language.error_argsLength}\n{language.osuCard_usage}");
+            await Context.Update.ReplyAsync(Context.BotClient, language.osuCard_usage);
             return;
         }
 
@@ -54,7 +54,7 @@ public sealed class OsuCardCommand(
         {
             if (registeredUser is null)
             {
-                await Context.Update.ReplyAsync(Context.BotClient, language.error_userNotSetHimself);
+                await Context.Update.ReplyAsync(Context.BotClient, language.osuCard_usage);
                 return;
             }
 

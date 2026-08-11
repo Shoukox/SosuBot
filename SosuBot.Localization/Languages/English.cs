@@ -78,6 +78,18 @@ public sealed class English : ILocalization
 
     public string command_userbest => Shared.CommandUserBest;
 
+    public string command_set_usage => "Examples:\n<b>/set mrekk</b>\n<b>/set Blue_Archive</b>";
+    public string command_mode_usage => "Examples:\n<b>/mode osu</b>\n<b>/mode mania</b>";
+    public string command_user_usage => "Examples:\n<b>/user mrekk</b>\n<b>/user mrekk mode=mania</b>";
+    public string command_userId_usage => "Example: <b>/userid 12345678</b>";
+    public string command_userbest_usage => "Examples:\n<b>/userbest mrekk</b>\n<b>/userbest mrekk mania</b>";
+    public string command_compare_usage => "Examples:\n<b>/compare mrekk whitecat</b>\n<b>/compare mrekk whitecat osu</b>";
+    public string command_score_usage => "Examples:\n<b>/score https://osu.ppy.sh/beatmaps/123456</b>\n<b>/score</b> as a reply to a message with a beatmap link";
+    public string command_exclude_usage => "Example: <b>/exclude mrekk</b>";
+    public string command_include_usage => "Example: <b>/include mrekk</b>";
+    public string command_lastPassed_usage => "Example: <b>/lastpassed mrekk 5</b>";
+    public string command_lastBest_usage => "Example: <b>/lastbest mrekk 5</b>";
+
     public string randomBeatmap_noCachedBeatmaps => "No <b>{}</b> beatmaps were found in local storage.";
     public string randomBeatmap_usage => "/rnd [osu/mania/taiko/catch]";
     public string osuCard_usage => "/osucard [nickname] [osu/mania/taiko/catch]\n" +
@@ -146,6 +158,8 @@ public sealed class English : ILocalization
     public string error_userWasNotExcluded => "This user was not excluded from /chatstats";
     public string error_beatmapNotFound => "Beatmap not found";
     public string error_dontUseTelegramUsername => "You need to enter the osu! player's username";
+    public string error_osuServerUnavailable =>
+        $"{error_baseMessage}\nosu! servers are temporarily unavailable. Please try again later.";
 
     public string common_rateLimitSlowDown => "Slow down a bit!";
     public string common_back => "Back";

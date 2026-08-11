@@ -15,6 +15,7 @@ namespace SosuBot.TelegramHandlers.Commands;
 public sealed class GetDailyStatisticsCommand : CommandBase<Message>
 {
     public static readonly string[] Commands = ["/get", "/daily_stats"];
+    public static readonly string Description = "показать ежедневную статистику";
     private BanchoApiV2 _osuApiV2 = null!;
     private ILogger<GetDailyStatisticsCommand> _logger = null!;
     private ScoreHelper _scoreHelper = null!;
@@ -50,7 +51,7 @@ public sealed class GetDailyStatisticsCommand : CommandBase<Message>
         string sendText;
         if (parameters.Length == 0)
         {
-            sendText = language.error_argsLength + $"\n{language.command_dailyStats_usage}";
+            sendText = language.command_dailyStats_usage;
             await waitMessage.EditAsync(Context.BotClient, sendText);
             return;
         }

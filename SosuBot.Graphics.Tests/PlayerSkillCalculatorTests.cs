@@ -1,4 +1,6 @@
 using System.Buffers.Binary;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.PixelFormats;
 using SosuBot.Graphics.Models;
 using Xunit;
 
@@ -77,6 +79,46 @@ public sealed class PlayerSkillCalculatorTests
         Assert.Equal(new byte[] { 137, 80, 78, 71, 13, 10, 26, 10 }, png[..8]);
         Assert.Equal(ProfileCardGenerator.CardWidth, BinaryPrimitives.ReadInt32BigEndian(png.AsSpan(16, 4)));
         Assert.Equal(ProfileCardGenerator.CardHeight, BinaryPrimitives.ReadInt32BigEndian(png.AsSpan(20, 4)));
+
+        using Image<Rgba32> decoded = Image.Load<Rgba32>(png);
+        Assert.Equal(255, decoded[ProfileCardGenerator.CardWidth / 2, 0].A);
+        Assert.Equal(255, decoded[0, ProfileCardGenerator.CardHeight / 2].A);
+    }
+
+    [Fact]
+    public void ProfileCardGenerator_RendersEveryGameMode()
+    {
+        ProfileCardGenerator generator = new();
+
+        foreach (OsuGameMode mode in Enum.GetValues<OsuGameMode>())
+        {
+            using MemoryStream card = generator.Generate(new ProfileCardData
+            {
+                Username = "Shoukko",
+                Mode = mode,
+                Skills = new PlayerSkills(623, 607, 592, 6.4, 50),
+                Avatar = null
+            });
+            using Image<Rgba32> decoded = Image.Load<Rgba32>(card.ToArray());
+
+            Assert.Equal(ProfileCardGenerator.CardWidth, decoded.Width);
+            Assert.Equal(ProfileCardGenerator.CardHeight, decoded.Height);
+        }
+    }
+
+    [Fact]
+    public void PlayerSkills_UsesModeSpecificMetrics()
+    {
+        PlayerSkills skills = new(623, 607, 592, 6.4, 50);
+
+        Assert.Equal(["Aim", "Speed", "Accuracy"],
+            skills.GetMetrics(OsuGameMode.Osu).Select(metric => metric.Label));
+        Assert.Equal(["Speed", "Accuracy"],
+            skills.GetMetrics(OsuGameMode.Taiko).Select(metric => metric.Label));
+        Assert.Equal(["Aim", "Accuracy"],
+            skills.GetMetrics(OsuGameMode.Catch).Select(metric => metric.Label));
+        Assert.Equal(["Finger Control", "Speed", "Accuracy"],
+            skills.GetMetrics(OsuGameMode.Mania).Select(metric => metric.Label));
     }
 
     public static TheoryData<PlayerScoreSkillInput, PlayerSkills> LegacyModeFixtures => new()

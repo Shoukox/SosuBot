@@ -72,8 +72,13 @@ public sealed class BeatmapsService
             }
         }
 
-        throw new AggregateException($"Could not download beatmap {beatmapId} from any configured source.",
+        var aggregateException = new AggregateException(
+            $"Could not download beatmap {beatmapId} from any configured source.",
             failures);
+        if (failures.Count > 0 && failures.All(IsTransportFailure))
+            throw new OsuApiUnavailableException(aggregateException.Message, aggregateException);
+
+        throw aggregateException;
     }
 
     private async Task<byte[]> DownloadBeatmapAsync(DownloadSource source, int beatmapId,
@@ -96,6 +101,13 @@ public sealed class BeatmapsService
     {
         return new MemoryStream(content, writable: false);
     }
+
+    private static bool IsTransportFailure(Exception exception) => exception switch
+    {
+        HttpRequestException or TaskCanceledException or TimeoutException => true,
+        AggregateException aggregate => aggregate.InnerExceptions.All(IsTransportFailure),
+        _ => false,
+    };
 
     private sealed record DownloadSource(string Name, Uri BaseUri);
 }
