@@ -13,6 +13,7 @@ public sealed class OsuChatstatsCommand : CommandBase<Message>
     private BotContext _database = null!;
 
     public static readonly string[] Commands = ["/chatstats", "/stats"];
+    public static readonly string Description = "топ-10 игроков в чате";
 
     public override async Task BeforeExecuteAsync()
     {
@@ -28,6 +29,11 @@ public sealed class OsuChatstatsCommand : CommandBase<Message>
             return;
         }
         TelegramChat? chatInDatabase = await _database.TelegramChats.FindAsync(Context.Update.Chat.Id);
+        if (chatInDatabase is null)
+        {
+            await Context.Update.ReplyAsync(Context.BotClient, language.error_baseMessage);
+            return;
+        }
 
         var parameters = Context.Update.Text!.GetCommandParameters()!;
 
@@ -49,16 +55,28 @@ public sealed class OsuChatstatsCommand : CommandBase<Message>
             playmode = ruleset.ParseRulesetToPlaymode();
         }
 
+        List<long> memberIds = (chatInDatabase.ChatMembers ?? []).Distinct().ToList();
+        if (chatInDatabase.ChatMembers is null || !chatInDatabase.ChatMembers.SequenceEqual(memberIds))
+            chatInDatabase.ChatMembers = memberIds;
+
         var foundChatMembers = new List<OsuUser>();
-        chatInDatabase!.ExcludeFromChatstats = chatInDatabase.ExcludeFromChatstats ?? new List<long>();
-        foreach (var memberId in chatInDatabase.ChatMembers!)
+        chatInDatabase.ExcludeFromChatstats ??= [];
+        foreach (long memberId in memberIds)
         {
             OsuUser? foundMember = await _database.OsuUsers.FindAsync(memberId);
             if (foundMember != null && !chatInDatabase.ExcludeFromChatstats.Contains(foundMember.OsuUserId))
                 foundChatMembers.Add(foundMember);
         }
 
-        foundChatMembers = foundChatMembers.DistinctBy(m => m.OsuUserId).OrderByDescending(m => m.GetPP(playmode)).Take(10)
+        foundChatMembers = foundChatMembers
+            .GroupBy(m => m.OsuUserId > 0 ? $"osu:{m.OsuUserId}" : $"telegram:{m.TelegramId}")
+            .Select(group => group.OrderByDescending(m => m.GetPP(playmode)).First())
+            .GroupBy(m => string.IsNullOrWhiteSpace(m.OsuUsername)
+                ? $"telegram:{m.TelegramId}"
+                : m.OsuUsername.Trim(), StringComparer.OrdinalIgnoreCase)
+            .Select(group => group.OrderByDescending(m => m.GetPP(playmode)).First())
+            .OrderByDescending(m => m.GetPP(playmode))
+            .Take(10)
             .ToList();
 
         var sendText = LocalizationMessageHelper.ChatstatsTitle(language, playmode.ToGamemode());

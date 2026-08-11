@@ -19,12 +19,14 @@ namespace SosuBot.TelegramHandlers.Commands;
 public class OsuCalcCommand : CommandBase<Message>
 {
     public static readonly string[] Commands = ["/calculate", "/calcstd", "/calcosu", "/calc"];
+    public static readonly string Description = "[300] [100] [50] [misses] [mods] рассчитать PP osu!standard";
     private BanchoApiV2 _osuApiV2 = null!;
     private ScoreHelper _scoreHelper = null!;
     private CachingHelper _cachingHelper = null!;
     private RateLimiterFactory _rateLimiterFactory = null!;
     private BeatmapsService _beatmapsService = null!;
     private BotContext _database = null!;
+    private IPerformanceCalculator _performanceCalculator = null!;
 
     public override async Task BeforeExecuteAsync()
     {
@@ -35,6 +37,7 @@ public class OsuCalcCommand : CommandBase<Message>
         _rateLimiterFactory = Context.ServiceProvider.GetRequiredService<RateLimiterFactory>();
         _beatmapsService = Context.ServiceProvider.GetRequiredService<BeatmapsService>();
         _database = Context.ServiceProvider.GetRequiredService<BotContext>();
+        _performanceCalculator = Context.ServiceProvider.GetRequiredService<IPerformanceCalculator>();
     }
 
     public override async Task ExecuteAsync()
@@ -56,7 +59,7 @@ public class OsuCalcCommand : CommandBase<Message>
         var parameters = Context.Update.Text!.GetCommandParameters()!.ToArray();
         if (parameters.Length <= 2 || parameters.Length >= 5)
         {
-            await waitMessage.EditAsync(Context.BotClient, language.error_argsLength);
+            await waitMessage.EditAsync(Context.BotClient, language.calc_std_usage);
             return;
         }
 
@@ -134,30 +137,26 @@ public class OsuCalcCommand : CommandBase<Message>
         scoreStatistics[HitResult.Miss] = missCount;
         scoreStatistics[HitResult.Great] = scoreStatistics[HitResult.Great] - scoreStatistics[HitResult.Ok] - scoreStatistics[HitResult.Meh] - scoreStatistics[HitResult.Miss];
 
-        var ppCalculator = new PPCalculator();
         using Stream beatmapFile = await _beatmapsService.DownloadOrCacheBeatmapAsync(beatmap.Id!.Value,
             Context.CancellationToken);
-        PPCalculationResult? ppLazer = await ppCalculator.CalculatePpAsync(
-                             beatmapId: beatmap.Id!.Value,
-                             beatmapFile: beatmapFile,
-                             accuracy: null,
-                             scoreMaxCombo: beatmap.MaxCombo,
-                             passed: true,
-                             scoreMods: modsFromMessage,
-                             scoreStatistics: scoreStatistics,
-                             rulesetId: (int)playmode,
-                             cancellationToken: Context.CancellationToken);
-
-        PPCalculationResult? ppClassic = await ppCalculator.CalculatePpAsync(
-                             beatmapId: beatmap.Id!.Value,
-                             beatmapFile: beatmapFile,
-                             accuracy: null,
-                             scoreMaxCombo: beatmap.MaxCombo,
-                             passed: true,
-                             scoreMods: modsFromMessage.Append(new OsuModClassic()).ToArray(),
-                             scoreStatistics: scoreStatistics,
-                             rulesetId: (int)playmode,
-                             cancellationToken: Context.CancellationToken);
+        osu.Game.Rulesets.Mods.Mod[] classicMods = modsFromMessage
+            .Concat([new OsuModClassic()])
+            .Distinct()
+            .ToArray();
+        PPCalculationResult? ppLazer = await _performanceCalculator.CalculatePpAsync(
+            beatmap.Id.Value,
+            beatmapFile,
+            scoreMods: modsFromMessage,
+            scoreStatistics: scoreStatistics,
+            rulesetId: (int)playmode,
+            cancellationToken: Context.CancellationToken);
+        PPCalculationResult? ppClassic = await _performanceCalculator.CalculatePpAsync(
+            beatmap.Id.Value,
+            beatmapFile,
+            scoreMods: classicMods,
+            scoreStatistics: scoreStatistics,
+            rulesetId: (int)playmode,
+            cancellationToken: Context.CancellationToken);
 
         if (ppLazer is null || ppClassic is null)
         {
@@ -177,5 +176,3 @@ public class OsuCalcCommand : CommandBase<Message>
         await waitMessage.EditAsync(Context.BotClient, textToSend);
     }
 }
-
-

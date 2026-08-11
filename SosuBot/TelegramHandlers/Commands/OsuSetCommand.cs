@@ -15,6 +15,7 @@ namespace SosuBot.TelegramHandlers.Commands;
 public sealed class OsuSetCommand : CommandBase<Message>
 {
     public static readonly string[] Commands = ["/set"];
+    public static readonly string Description = "[user] добавить/изменить свой ник в боте";
     private BanchoApiV2 _osuApiV2 = null!;
     private BotContext _database = null!;
 
@@ -35,7 +36,7 @@ public sealed class OsuSetCommand : CommandBase<Message>
 
         if (string.IsNullOrEmpty(osuUsername))
         {
-            await Context.Update.ReplyAsync(Context.BotClient, language.error_nameIsEmpty);
+            await Context.Update.ReplyAsync(Context.BotClient, language.command_set_usage);
             return;
         }
 

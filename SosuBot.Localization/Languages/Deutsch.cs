@@ -78,6 +78,18 @@ public sealed class Deutsch : ILocalization
 
     public string command_userbest => Shared.CommandUserBest;
 
+    public string command_set_usage => "Beispiele:\n<b>/set mrekk</b>\n<b>/set Blue_Archive</b>";
+    public string command_mode_usage => "Beispiele:\n<b>/mode osu</b>\n<b>/mode mania</b>";
+    public string command_user_usage => "Beispiele:\n<b>/user mrekk</b>\n<b>/user mrekk mode=mania</b>";
+    public string command_userId_usage => "Beispiel: <b>/userid 12345678</b>";
+    public string command_userbest_usage => "Beispiele:\n<b>/userbest mrekk</b>\n<b>/userbest mrekk mania</b>";
+    public string command_compare_usage => "Beispiele:\n<b>/compare mrekk whitecat</b>\n<b>/compare mrekk whitecat osu</b>";
+    public string command_score_usage => "Beispiele:\n<b>/score https://osu.ppy.sh/beatmaps/123456</b>\n<b>/score</b> als Antwort auf eine Nachricht mit Beatmap-Link";
+    public string command_exclude_usage => "Beispiel: <b>/exclude mrekk</b>";
+    public string command_include_usage => "Beispiel: <b>/include mrekk</b>";
+    public string command_lastPassed_usage => "Beispiel: <b>/lastpassed mrekk 5</b>";
+    public string command_lastBest_usage => "Beispiel: <b>/lastbest mrekk 5</b>";
+
     public string randomBeatmap_noCachedBeatmaps => "Im lokalen Speicher wurden keine <b>{}</b>-Beatmaps gefunden.";
     public string randomBeatmap_usage => "/rnd [osu/mania/taiko/catch]";
     public string osuCard_usage => "/osucard [nickname] [osu/mania/taiko/catch]\n" +
@@ -139,6 +151,8 @@ public sealed class Deutsch : ILocalization
     public string error_userWasNotExcluded => "Dieser Benutzer war nicht aus /chatstats ausgeschlossen";
     public string error_beatmapNotFound => "Beatmap nicht gefunden";
     public string error_dontUseTelegramUsername => "Du musst den Benutzernamen des osu! Spielers eingeben.";
+    public string error_osuServerUnavailable =>
+        $"{error_baseMessage}\nDie osu!-Server sind vorübergehend nicht erreichbar. Bitte später erneut versuchen.";
 
     public string common_rateLimitSlowDown => "Etwas langsamer bitte!";
     public string common_back => "Zurück";

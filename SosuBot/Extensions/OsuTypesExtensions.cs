@@ -80,17 +80,11 @@ public static class OsuTypesExtensions
 
             Type modType = foundMod.GetType();
             var osuMod = Activator.CreateInstance(modType) as Mod;
-            if (osuMod is ModRateAdjust rateAdjustMod && mod.Settings?.SpeedChange != null)
-            {
-                rateAdjustMod.SpeedChange.Value = mod.Settings.SpeedChange.Value;
-                osuMod = rateAdjustMod;
-            }
-            else if (osuMod is IHasSeed seedMode && mod.Settings?.Seed != null)
-            {
-                seedMode.Seed.Value = mod.Settings.Seed.Value;
-            }
+            if (osuMod is not null)
+                OsuModSettingsHelper.Apply(mod.Settings, osuMod);
 
-            osuMods.Add(osuMod!);
+            if (osuMod is not null)
+                osuMods.Add(osuMod);
         }
 
         return osuMods.ToArray();

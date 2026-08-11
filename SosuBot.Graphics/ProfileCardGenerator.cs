@@ -3,6 +3,7 @@ using System.Reflection;
 using SosuBot.Graphics.Models;
 using SixLabors.Fonts;
 using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.Drawing;
 using SixLabors.ImageSharp.Drawing.Processing;
 using SixLabors.ImageSharp.Formats.Png;
 using SixLabors.ImageSharp.PixelFormats;
@@ -14,6 +15,9 @@ public sealed class ProfileCardGenerator
 {
     public const int CardWidth = 400;
     public const int CardHeight = 600;
+
+    private const float CardEdgeBlurRadius = 18;
+    private const float AvatarCornerRadius = 16;
 
     private static readonly Assembly Assembly = typeof(ProfileCardGenerator).Assembly;
     private static readonly string[] ResourceNames = Assembly.GetManifestResourceNames();
@@ -32,7 +36,7 @@ public sealed class ProfileCardGenerator
         ArgumentNullException.ThrowIfNull(data);
         ArgumentException.ThrowIfNullOrWhiteSpace(data.Username);
 
-        using Image<Rgba32> card = LoadImage($"Assets/OsuCard/Card/{GetCardName(data.Skills.Accuracy)}.png");
+        using Image<Rgba32> card = LoadCard(GetCardName(data.Skills.Accuracy));
         using Image<Rgba32> modeIcon = LoadImage($"Assets/OsuCard/Icon/bancho_{GetModeSuffix(data.Mode)}.png");
         using Image<Rgba32> fullStar = LoadImage("Assets/OsuCard/Star/full_star.png");
         using Image<Rgba32> halfStar = LoadImage("Assets/OsuCard/Star/half_star.png");
@@ -45,22 +49,22 @@ public sealed class ProfileCardGenerator
             Mode = ResizeMode.Crop,
             Position = AnchorPositionMode.Center
         }));
+        using Image<Rgba32> roundedAvatar = CreateRoundedAvatar(avatar);
         fullStar.Mutate(context => context.Resize(32, 31));
         halfStar.Mutate(context => context.Resize(32, 31));
 
         Font usernameFont = FitFont(data.Username, 32, 17, 220);
         Font statsFont = _fontFamily.CreateFont(28);
+        Font starRatingFont = _fontFamily.CreateFont(14);
 
         card.Mutate(context =>
         {
             context.DrawImage(modeIcon, new Point(20, 20), 1);
-            context.DrawImage(avatar, new Point(40, 110), 1);
+            context.DrawImage(roundedAvatar, new Point(40, 110), 1);
             DrawCenteredText(context, data.Username, usernameFont, 150, 45, 220);
 
-            DrawStat(context, "Aim:", data.Skills.Aim, statsFont, 444);
-            DrawStat(context, "Speed:", data.Skills.Speed, statsFont, 477);
-            DrawStat(context, "Accuracy:", data.Skills.Accuracy, statsFont, 510);
-            DrawStars(context, data.Skills.Stars, fullStar, halfStar);
+            DrawStats(context, data.Skills.GetMetrics(data.Mode), statsFont);
+            DrawStars(context, data.Skills.Stars, fullStar, halfStar, starRatingFont);
         });
 
         MemoryStream output = new();
@@ -79,6 +83,76 @@ public sealed class ProfileCardGenerator
         _ => "common_osu"
     };
 
+    private static Image<Rgba32> LoadCard(string cardName)
+    {
+        Image<Rgba32> card = LoadImage($"Assets/OsuCard/Card/{cardName}.png");
+
+        if (card.Width != CardWidth || card.Height != CardHeight)
+        {
+            card.Mutate(context => context.Resize(CardWidth, CardHeight));
+        }
+
+        Rectangle contentBounds = FindContentBounds(card);
+        if (contentBounds is { X: 0, Y: 0, Width: CardWidth, Height: CardHeight })
+            return card;
+
+        // Keep the original card sharp and use a blurred, enlarged copy of its
+        // own content to fill the transparent edge. This prevents Telegram's
+        // white background from becoming a visible frame around the card.
+        Image<Rgba32> blurredBackground = card.Clone(context => context
+            .Crop(contentBounds)
+            .Resize(CardWidth, CardHeight)
+            .GaussianBlur(CardEdgeBlurRadius));
+        MakeOpaque(blurredBackground);
+        blurredBackground.Mutate(context => context.DrawImage(card, Point.Empty, 1));
+        card.Dispose();
+
+        return blurredBackground;
+    }
+
+    private static Rectangle FindContentBounds(Image<Rgba32> image)
+    {
+        int left = image.Width;
+        int top = image.Height;
+        int right = -1;
+        int bottom = -1;
+
+        image.ProcessPixelRows(accessor =>
+        {
+            for (int y = 0; y < image.Height; y++)
+            {
+                Span<Rgba32> row = accessor.GetRowSpan(y);
+                for (int x = 0; x < row.Length; x++)
+                {
+                    if (row[x].A == 0)
+                        continue;
+
+                    left = Math.Min(left, x);
+                    top = Math.Min(top, y);
+                    right = Math.Max(right, x);
+                    bottom = Math.Max(bottom, y);
+                }
+            }
+        });
+
+        return right < 0
+            ? new Rectangle(0, 0, image.Width, image.Height)
+            : new Rectangle(left, top, right - left + 1, bottom - top + 1);
+    }
+
+    private static void MakeOpaque(Image<Rgba32> image)
+    {
+        image.ProcessPixelRows(accessor =>
+        {
+            for (int y = 0; y < image.Height; y++)
+            {
+                Span<Rgba32> row = accessor.GetRowSpan(y);
+                for (int x = 0; x < row.Length; x++)
+                    row[x].A = byte.MaxValue;
+            }
+        });
+    }
+
     private static string GetModeSuffix(OsuGameMode mode) => mode switch
     {
         OsuGameMode.Osu => "std",
@@ -87,6 +161,44 @@ public sealed class ProfileCardGenerator
         OsuGameMode.Mania => "mania",
         _ => throw new ArgumentOutOfRangeException(nameof(mode), mode, "Unknown osu! mode.")
     };
+
+    private static Image<Rgba32> CreateRoundedAvatar(Image<Rgba32> avatar)
+    {
+        Image<Rgba32> roundedAvatar = new(avatar.Width, avatar.Height, Color.Transparent);
+        IPath roundedRectangle = CreateRoundedRectanglePath(avatar.Width, avatar.Height,
+            Math.Min(AvatarCornerRadius, Math.Min(avatar.Width, avatar.Height) / 2f));
+
+        roundedAvatar.Mutate(context =>
+        {
+            context.SetGraphicsOptions(new GraphicsOptions
+            {
+                Antialias = true,
+                AlphaCompositionMode = PixelAlphaCompositionMode.SrcOver
+            });
+            context.Clip(roundedRectangle, clippedContext => clippedContext.DrawImage(avatar, Point.Empty, 1));
+        });
+
+        return roundedAvatar;
+    }
+
+    private static IPath CreateRoundedRectanglePath(int width, int height, float radius)
+    {
+        float diameter = radius * 2;
+        PathBuilder path = new();
+
+        path.MoveTo(new PointF(radius, 0));
+        path.LineTo(new PointF(width - radius, 0));
+        path.AddArc(new RectangleF(width - diameter, 0, diameter, diameter), 0, -90, 90);
+        path.LineTo(new PointF(width, height - radius));
+        path.AddArc(new RectangleF(width - diameter, height - diameter, diameter, diameter), 0, 0, 90);
+        path.LineTo(new PointF(radius, height));
+        path.AddArc(new RectangleF(0, height - diameter, diameter, diameter), 0, 90, 90);
+        path.LineTo(new PointF(0, radius));
+        path.AddArc(new RectangleF(0, 0, diameter, diameter), 0, 180, 90);
+        path.CloseFigure();
+
+        return path.Build();
+    }
 
     private Font FitFont(string text, float initialSize, float minimumSize, float maximumWidth)
     {
@@ -108,6 +220,18 @@ public sealed class ProfileCardGenerator
         DrawTextWithShadow(context, text, font, position);
     }
 
+    private static void DrawStats(IImageProcessingContext context, IReadOnlyList<PlayerSkillMetric> metrics, Font font)
+    {
+        const float firstRowY = 444;
+        const float rowHeight = 33;
+
+        for (int index = 0; index < metrics.Count; index++)
+        {
+            PlayerSkillMetric metric = metrics[index];
+            DrawStat(context, $"{metric.Label}:", metric.Value, font, firstRowY + index * rowHeight);
+        }
+    }
+
     private static void DrawStat(IImageProcessingContext context, string label, double value, Font font, float y)
     {
         DrawTextWithShadow(context, label, font, new PointF(42, y));
@@ -124,35 +248,39 @@ public sealed class ProfileCardGenerator
     }
 
     private static void DrawStars(IImageProcessingContext context, double stars, Image<Rgba32> fullStar,
-        Image<Rgba32> halfStar)
+        Image<Rgba32> halfStar, Font starRatingFont)
     {
         int fullStars = Math.Clamp((int)Math.Floor(stars), 0, 20);
         bool hasHalfStar = fullStars < 20 && stars - fullStars >= 0.5;
         int count = fullStars + (hasHalfStar ? 1 : 0);
-        if (count == 0)
-            return;
-
-        const int spacing = 2;
-        int width = count * fullStar.Width + (count - 1) * spacing;
-        float scale = Math.Min(1, 370f / width);
-        int starWidth = Math.Max(1, (int)Math.Round(fullStar.Width * scale));
-        int starHeight = Math.Max(1, (int)Math.Round(fullStar.Height * scale));
-        int scaledWidth = count * starWidth + (count - 1) * spacing;
-        int startX = (CardWidth - scaledWidth) / 2;
-        int y = 552 + (31 - starHeight) / 2;
-
-        for (int index = 0; index < count; index++)
+        if (count > 0)
         {
-            Image<Rgba32> source = hasHalfStar && index == count - 1 ? halfStar : fullStar;
-            if (source.Width == starWidth && source.Height == starHeight)
-            {
-                context.DrawImage(source, new Point(startX + index * (starWidth + spacing), y), 1);
-                continue;
-            }
+            const int spacing = 2;
+            int width = count * fullStar.Width + (count - 1) * spacing;
+            float scale = Math.Min(1, 370f / width);
+            int starWidth = Math.Max(1, (int)Math.Round(fullStar.Width * scale));
+            int starHeight = Math.Max(1, (int)Math.Round(fullStar.Height * scale));
+            int scaledWidth = count * starWidth + (count - 1) * spacing;
+            int startX = (CardWidth - scaledWidth) / 2;
+            int y = 552 + (31 - starHeight) / 2;
 
-            using Image<Rgba32> resized = source.Clone(image => image.Resize(starWidth, starHeight));
-            context.DrawImage(resized, new Point(startX + index * (starWidth + spacing), y), 1);
+            for (int index = 0; index < count; index++)
+            {
+                Image<Rgba32> source = hasHalfStar && index == count - 1 ? halfStar : fullStar;
+                if (source.Width == starWidth && source.Height == starHeight)
+                {
+                    context.DrawImage(source, new Point(startX + index * (starWidth + spacing), y), 1);
+                    continue;
+                }
+
+                using Image<Rgba32> resized = source.Clone(image => image.Resize(starWidth, starHeight));
+                context.DrawImage(resized, new Point(startX + index * (starWidth + spacing), y), 1);
+            }
         }
+
+        double displayedStars = double.IsFinite(stars) ? Math.Max(0, stars) : 0;
+        string starRating = displayedStars.ToString("0.00", CultureInfo.InvariantCulture) + "★";
+        DrawCenteredText(context, starRating, starRatingFont, 0, 582, CardWidth);
     }
 
     private Image<Rgba32> LoadAvatar(byte[]? avatarBytes, string username)

@@ -14,6 +14,7 @@ public sealed class DeleteCommand : CommandBase<Message>
     private BotContext _database = null!;
 
     public static readonly string[] Commands = ["/del"];
+    public static readonly string Description = "удалить сообщение";
 
     public override async Task BeforeExecuteAsync()
     {

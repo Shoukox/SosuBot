@@ -19,6 +19,7 @@ namespace SosuBot.TelegramHandlers.Commands;
 public class OsuLastBestCommand : CommandBase<Message>
 {
     public static readonly string[] Commands = ["/lb", "/lastbest"];
+    public static readonly string Description = "[user] [mode] последние лучшие игры игрока";
     private BanchoApiV2 _osuApiV2 = null!;
     private ScoreHelper _scoreHelper = null!;
     private CachingHelper _cachingHelper = null!;
@@ -64,7 +65,7 @@ public class OsuLastBestCommand : CommandBase<Message>
         {
             if (osuUserInDatabase is null)
             {
-                await waitMessage.EditAsync(Context.BotClient, language.error_userNotSetHimself);
+                await waitMessage.EditAsync(Context.BotClient, language.command_lastBest_usage);
                 return;
             }
 
@@ -97,14 +98,14 @@ public class OsuLastBestCommand : CommandBase<Message>
             string numberAsText = Regex.Match(parametersJoined, @" (\d)").Value;
             if (!int.TryParse(numberAsText, out limit))
             {
-                await waitMessage.EditAsync(Context.BotClient, language.error_baseMessage + $"\n{language.last_usage}");
+                await waitMessage.EditAsync(Context.BotClient, language.command_lastBest_usage);
                 return;
             }
             osuUsernameForLastScores = Regex.Match(parametersJoined, @"(\S{3,})").Value;
         }
         else
         {
-            await waitMessage.EditAsync(Context.BotClient, language.error_argsLength);
+            await waitMessage.EditAsync(Context.BotClient, language.command_lastBest_usage);
             return;
         }
 

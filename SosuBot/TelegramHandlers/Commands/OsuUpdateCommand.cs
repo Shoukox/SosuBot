@@ -18,6 +18,7 @@ namespace SosuBot.TelegramHandlers.Commands;
 public sealed class OsuUpdateCommand : CommandBase<Message>
 {
     public static readonly string[] Commands = ["/update", "/upd", "/up", "/info"];
+    public static readonly string Description = "[user] обновить информацию об игроке";
     private BanchoApiV2 _osuApiV2 = null!;
     private RateLimiterFactory _rateLimiterFactory = null!;
     private ScoreHelper _scoreHelper = null!;

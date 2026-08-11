@@ -5,6 +5,7 @@ using OsuApi.BanchoV2.Models;
 using OsuApi.BanchoV2.Users.Models;
 using SosuBot.Database.Models;
 using SosuBot.Extensions;
+using SosuBot.Helpers;
 using SosuBot.Localization;
 using SosuBot.Localization.Languages;
 using Mod = OsuApi.BanchoV2.Models.Mod;
@@ -15,12 +16,8 @@ public class ScoreHelper(CachingHelper cachingHelper)
 {
     public string GetModsText(Mod[] mods)
     {
-        var modsText = "+" + string.Join("", mods.Select(m =>
-        {
-            var speedChangeString = "";
-            if (m.Settings?.SpeedChange.HasValue ?? false) speedChangeString = $"({m.Settings.SpeedChange:0.00}x)";
-            return m.Acronym + speedChangeString;
-        }));
+        var modsText = "+" + string.Join("", (mods ?? []).Select(m =>
+            $"{m.Acronym}{OsuModSettingsHelper.FormatForDisplay(m.Settings)}"));
         if (modsText == "+") modsText += "NM";
         return modsText;
     }

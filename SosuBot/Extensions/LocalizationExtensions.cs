@@ -25,6 +25,11 @@ public static class LocalizationExtensions
             _ => null
         };
 
+        return database.GetLocalization(chatId);
+    }
+
+    public static ILocalization GetLocalization(this BotContext database, long? chatId)
+    {
         if (chatId is null)
             return RussianLocalization;
 

@@ -13,6 +13,7 @@ public sealed class OsuModeCommand : CommandBase<Message>
     private BotContext _database = null!;
 
     public static readonly string[] Commands = ["/mode"];
+    public static readonly string Description = "установить игровой режим по умолчанию";
 
     public override async Task BeforeExecuteAsync()
     {
@@ -28,7 +29,7 @@ public sealed class OsuModeCommand : CommandBase<Message>
         var parameters = msgText.GetCommandParameters()!;
         if (parameters.Length == 0)
         {
-            await Context.Update.ReplyAsync(Context.BotClient, language.error_modeIsEmpty);
+            await Context.Update.ReplyAsync(Context.BotClient, language.command_mode_usage);
             return;
         }
 
@@ -48,7 +49,7 @@ public sealed class OsuModeCommand : CommandBase<Message>
 
         if (string.IsNullOrEmpty(osuMode))
         {
-            await Context.Update.ReplyAsync(Context.BotClient, language.error_modeIsEmpty);
+            await Context.Update.ReplyAsync(Context.BotClient, language.command_mode_usage);
             return;
         }
 

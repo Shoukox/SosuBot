@@ -14,6 +14,17 @@ public interface ILocalization
     public string command_user { get; }
     public string command_compare { get; }
     public string command_userbest { get; }
+    public string command_set_usage { get; }
+    public string command_mode_usage { get; }
+    public string command_user_usage { get; }
+    public string command_userId_usage { get; }
+    public string command_userbest_usage { get; }
+    public string command_compare_usage { get; }
+    public string command_score_usage { get; }
+    public string command_exclude_usage { get; }
+    public string command_include_usage { get; }
+    public string command_lastPassed_usage { get; }
+    public string command_lastBest_usage { get; }
     public string randomBeatmap_noCachedBeatmaps { get; }
     public string randomBeatmap_usage { get; }
     public string osuCard_usage { get; }
@@ -58,6 +69,7 @@ public interface ILocalization
     public string error_userWasNotExcluded { get; }
     public string error_beatmapNotFound { get; }
     public string error_dontUseTelegramUsername { get; }
+    public string error_osuServerUnavailable { get; }
 
     public string common_rateLimitSlowDown { get; }
     public string common_back { get; }

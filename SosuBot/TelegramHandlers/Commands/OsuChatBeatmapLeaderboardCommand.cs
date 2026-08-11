@@ -17,6 +17,7 @@ namespace SosuBot.TelegramHandlers.Commands;
 public sealed class OsuChatBeatmapLeaderboardCommand : CommandBase<Message>
 {
     public static readonly string[] Commands = ["/beatmap_leaderboard", "/bl"];
+    public static readonly string Description = "таблица лидеров чата на карте";
     private BanchoApiV2 _osuApiV2 = null!;
     private ScoreHelper _scoreHelper = null!;
     private CachingHelper _cachingHelper = null!;

@@ -117,6 +117,10 @@ public sealed class VideoPreviewService
         {
             throw;
         }
+        catch (OsuApiUnavailableException)
+        {
+            throw;
+        }
         catch (Exception exception)
         {
             _logger.LogError(exception, "Could not generate video preview for score {ScoreId}", scoreId);

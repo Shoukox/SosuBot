@@ -15,6 +15,7 @@ public sealed class DbCommand : CommandBase<Message>
     private BotContext _database = null!;
 
     public static readonly string[] Commands = ["/db"];
+    public static readonly string Description = "служебная команда базы данных";
 
     public override async Task BeforeExecuteAsync()
     {

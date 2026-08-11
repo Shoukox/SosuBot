@@ -5,7 +5,9 @@ using SosuBot.Configuration;
 using SosuBot.Database;
 using SosuBot.Database.Models;
 using SosuBot.Extensions;
+using SosuBot.Helpers;
 using SosuBot.Monitoring;
+using SosuBot.Localization;
 using SosuBot.TelegramHandlers.Abstract;
 using SosuBot.TelegramHandlers.Commands;
 using SosuBot.TelegramHandlers.Text;
@@ -49,6 +51,7 @@ public class UpdateHandler(
             await (update switch
             {
                 { Message: { } message } => OnMessage(botClient, message, cancellationToken),
+                { ChatMember: { } chatMember } => OnChatMemberUpdated(chatMember, cancellationToken),
                 { CallbackQuery: { } callbackQuery } => OnCallbackQuery(botClient, callbackQuery, cancellationToken),
                 _ => DoNothing()
             });
@@ -82,6 +85,25 @@ public class UpdateHandler(
         }
 
         logger.LogError(exception, "Failed to handle Telegram update (source: {Source})", source);
+
+        if (OsuApiAvailabilityHelper.IsUnavailable(exception))
+        {
+            ILocalization language = database.GetLocalization(
+                update.Message?.Chat.Id ?? update.CallbackQuery?.Message?.Chat.Id);
+            if (update.Message is { } osuMessage)
+            {
+                await osuMessage.ReplyAsync(botClient, language.error_osuServerUnavailable);
+            }
+            else if (update.CallbackQuery is { } osuCallback)
+            {
+                await osuCallback.AnswerAsync(
+                    botClient,
+                    language.error_osuServerUnavailable,
+                    showAlert: true);
+            }
+
+            return;
+        }
 
         // if a text-command message
         if (update.Message is { Text: string } msg && msg.Text.IsCommand())
@@ -126,6 +148,11 @@ public class UpdateHandler(
             await OnCommand(botClient, msg, cancellationToken);
         else
             await OnText(botClient, msg, cancellationToken);
+    }
+
+    private Task OnChatMemberUpdated(ChatMemberUpdated chatMember, CancellationToken cancellationToken)
+    {
+        return database.AddOrUpdateTelegramChat(chatMember, logger, cancellationToken);
     }
 
     private async Task OnCallbackQuery(ITelegramBotClient botClient, CallbackQuery callbackQuery,

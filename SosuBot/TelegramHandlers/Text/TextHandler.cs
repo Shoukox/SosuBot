@@ -7,6 +7,7 @@ using OsuApi.BanchoV2.Clients.Users.HttpIO;
 using OsuApi.BanchoV2.Models;
 using OsuApi.BanchoV2.Users.Models;
 using Serilog.Parsing;
+using SosuBot.Calculators.Official;
 using SosuBot.Configuration;
 using SosuBot.Database;
 using SosuBot.Database.Models;
@@ -32,6 +33,7 @@ public sealed class TextHandler : CommandBase<Message>
     private BeatmapsService _beatmapsService = null!;
     private BotContext _database = null!;
     private ILogger<TextHandler> _logger = null!;
+    private IPerformanceCalculator _performanceCalculator = null!;
 
     private TokenBucketRateLimiter _tokenBucketRateLimiter = null!;
 
@@ -45,6 +47,7 @@ public sealed class TextHandler : CommandBase<Message>
         _database = Context.ServiceProvider.GetRequiredService<BotContext>();
         _botConfig = Context.ServiceProvider.GetRequiredService<IOptions<BotConfiguration>>().Value;
         _logger = Context.ServiceProvider.GetRequiredService<ILogger<TextHandler>>();
+        _performanceCalculator = Context.ServiceProvider.GetRequiredService<IPerformanceCalculator>();
 
         _tokenBucketRateLimiter = _rateLimiterFactory.Get(RateLimiterFactory.RateLimitPolicy.Command);
         return Task.CompletedTask;
@@ -171,7 +174,11 @@ public sealed class TextHandler : CommandBase<Message>
 
         (PPCalculationResult? ClassicSS, PPCalculationResult? Classic99, PPCalculationResult? Classic98, PPCalculationResult? LazerSS, PPCalculationResult? Lazer99, PPCalculationResult? Lazer98) calculatedPp = await CalculateBeatmapPpAsync(beatmap, playmode, classicModsToApply, lazerModsToApply, beatmapContainsTooManyHitObjects);
 
-        int totalLengthConsideringMods = (int)(beatmap.TotalLength!.Value / calculatedPp.LazerSS!.SpeedChangeFactor);
+        double speedChangeFactor = calculatedPp.LazerSS?.SpeedChangeFactor
+                                    ?? OfficialPerformanceHelper.GetClockRate(lazerModsToApply);
+        int totalLengthConsideringMods = speedChangeFactor > 0 && beatmap.TotalLength is { } totalLength
+            ? (int)(totalLength / speedChangeFactor)
+            : beatmap.TotalLength ?? 0;
         var duration = $"{_scoreHelper.GetFormattedNumConsideringNull(totalLengthConsideringMods / 60, round: false, format: "#")}m{_scoreHelper.GetFormattedNumConsideringNull(totalLengthConsideringMods % 60, round: false, format: "00")}s";
         var padLength = 9;
 
@@ -204,7 +211,9 @@ public sealed class TextHandler : CommandBase<Message>
             difficultyRatingForGivenMods = beatmapAttributesResponse?.DifficultyAttributes?.StarRating;
         }
 
-        string ar = beatmap.ModeInt is (int)Playmode.Mania or (int)Playmode.Taiko ? "—" : calculatedPp.LazerSS!.AR.ToString();
+        string ar = beatmap.ModeInt is (int)Playmode.Mania or (int)Playmode.Taiko
+            ? "—"
+            : calculatedPp.LazerSS?.AR.ToString() ?? "—";
 
         var textToSend = LocalizationMessageHelper.SendMapInfo(language,
             $"{playmode.ToGamemode()}",
@@ -257,73 +266,52 @@ public sealed class TextHandler : CommandBase<Message>
         if (beatmapContainsTooManyHitObjects)
             return (null, null, null, null, null, null);
 
-        var ppCalculator = new PPCalculator();
         using Stream beatmapFile = await _beatmapsService.DownloadOrCacheBeatmapAsync(beatmap.Id!.Value,
             Context.CancellationToken);
-
-        PPCalculationResult? classicSS = await ppCalculator.CalculatePpAsync(
-            beatmapId: beatmap.Id.Value,
-            beatmapFile: beatmapFile,
+        PPCalculationResult? classicSS = await _performanceCalculator.CalculatePpAsync(
+            beatmap.Id!.Value,
+            beatmapFile,
             accuracy: 1,
-            scoreMaxCombo: null,
             scoreMods: classicModsToApply,
-            scoreStatistics: null,
             rulesetId: (int)playmode,
             cancellationToken: Context.CancellationToken);
-
-        PPCalculationResult? classic99 = playmode == Playmode.Mania ? null : await ppCalculator.CalculatePpAsync(
-            beatmapId: beatmap.Id.Value,
-            beatmapFile: beatmapFile,
+        PPCalculationResult? classic99 = playmode == Playmode.Mania ? null : await _performanceCalculator.CalculatePpAsync(
+            beatmap.Id.Value,
+            beatmapFile,
             accuracy: 0.99,
-            scoreMaxCombo: null,
             scoreMods: classicModsToApply,
-            scoreStatistics: null,
             rulesetId: (int)playmode,
             cancellationToken: Context.CancellationToken);
-
-        PPCalculationResult? classic98 = playmode == Playmode.Mania ? null : await ppCalculator.CalculatePpAsync(
-            beatmapId: beatmap.Id.Value,
-            beatmapFile: beatmapFile,
+        PPCalculationResult? classic98 = playmode == Playmode.Mania ? null : await _performanceCalculator.CalculatePpAsync(
+            beatmap.Id.Value,
+            beatmapFile,
             accuracy: 0.98,
-            scoreMaxCombo: null,
             scoreMods: classicModsToApply,
-            scoreStatistics: null,
             rulesetId: (int)playmode,
             cancellationToken: Context.CancellationToken);
 
-        PPCalculationResult? lazerSS = await ppCalculator.CalculatePpAsync(
-            beatmapId: beatmap.Id.Value,
-            beatmapFile: beatmapFile,
+        PPCalculationResult? lazerSS = await _performanceCalculator.CalculatePpAsync(
+            beatmap.Id.Value,
+            beatmapFile,
             accuracy: 1,
-            scoreMaxCombo: null,
             scoreMods: lazerModsToApply,
-            scoreStatistics: null,
             rulesetId: (int)playmode,
             cancellationToken: Context.CancellationToken);
-
-        PPCalculationResult? lazer99 = playmode == Playmode.Mania ? null : await ppCalculator.CalculatePpAsync(
-            beatmapId: beatmap.Id.Value,
-            beatmapFile: beatmapFile,
+        PPCalculationResult? lazer99 = playmode == Playmode.Mania ? null : await _performanceCalculator.CalculatePpAsync(
+            beatmap.Id.Value,
+            beatmapFile,
             accuracy: 0.99,
-            scoreMaxCombo: null,
             scoreMods: lazerModsToApply,
-            scoreStatistics: null,
             rulesetId: (int)playmode,
             cancellationToken: Context.CancellationToken);
-
-        PPCalculationResult? lazer98 = playmode == Playmode.Mania ? null : await ppCalculator.CalculatePpAsync(
-            beatmapId: beatmap.Id.Value,
-            beatmapFile: beatmapFile,
+        PPCalculationResult? lazer98 = playmode == Playmode.Mania ? null : await _performanceCalculator.CalculatePpAsync(
+            beatmap.Id.Value,
+            beatmapFile,
             accuracy: 0.98,
-            scoreMaxCombo: null,
             scoreMods: lazerModsToApply,
-            scoreStatistics: null,
             rulesetId: (int)playmode,
             cancellationToken: Context.CancellationToken);
 
         return (classicSS, classic99, classic98, lazerSS, lazer99, lazer98);
     }
 }
-
-
-

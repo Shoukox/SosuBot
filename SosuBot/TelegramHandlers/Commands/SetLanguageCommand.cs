@@ -12,6 +12,7 @@ namespace SosuBot.TelegramHandlers.Commands;
 public sealed class SetLanguageCommand : CommandBase<Message>
 {
     public static readonly string[] Commands = ["/botlang"];
+    public static readonly string Description = "изменить язык бота";
 
     private static Russian _russian = new Russian();
     private static English _english = new English();

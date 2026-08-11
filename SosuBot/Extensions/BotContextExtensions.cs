@@ -18,18 +18,64 @@ public static class BotContextExtensions
         ILogger logger,
         CancellationToken cancellationToken)
     {
-        var chatId = message.Chat.Id;
-        var userId = message.From?.Id;
-        var leftUserId = message.LeftChatMember?.Id;
-        var telegramLanguageCode = message.From?.LanguageCode;
+        await AddOrUpdateTelegramChat(
+            database,
+            message.Chat.Id,
+            message.From?.Id,
+            message.LeftChatMember?.Id,
+            message.NewChatMembers?.Select(member => member.Id) ?? [],
+            message.From?.LanguageCode,
+            message.Chat.Type,
+            logger,
+            cancellationToken);
+    }
+
+    public static async Task AddOrUpdateTelegramChat(
+        this BotContext database,
+        ChatMemberUpdated memberUpdate,
+        ILogger logger,
+        CancellationToken cancellationToken)
+    {
+        long memberId = memberUpdate.NewChatMember.User.Id;
+        bool isInChat = memberUpdate.NewChatMember.IsInChat;
+
+        await AddOrUpdateTelegramChat(
+            database,
+            memberUpdate.Chat.Id,
+            isInChat ? memberId : null,
+            isInChat ? null : memberId,
+            [],
+            memberUpdate.NewChatMember.User.LanguageCode ?? memberUpdate.From.LanguageCode,
+            memberUpdate.Chat.Type,
+            logger,
+            cancellationToken);
+    }
+
+    private static async Task AddOrUpdateTelegramChat(
+        BotContext database,
+        long chatId,
+        long? userId,
+        long? leftUserId,
+        IEnumerable<long> newMemberIds,
+        string? telegramLanguageCode,
+        ChatType chatType,
+        ILogger logger,
+        CancellationToken cancellationToken)
+    {
         var defaultLanguage = Language.English;
+        var membersToAdd = new HashSet<long>(newMemberIds);
+        if (userId is not null)
+            membersToAdd.Add(userId.Value);
+
+        if (leftUserId is not null)
+            membersToAdd.Remove(leftUserId.Value);
 
         try
         {
             TelegramChat? chat = await database.TelegramChats.FindAsync([chatId], cancellationToken);
             if (chat == null)
             {
-                if (message.Chat.Type is ChatType.Private)
+                if (chatType is ChatType.Private)
                 {
                     defaultLanguage = telegramLanguageCode switch
                     {
@@ -39,10 +85,11 @@ public static class BotContextExtensions
                         _ => Language.English
                     };
                 }
+
                 await database.AddAsync(new TelegramChat
                 {
                     ChatId = chatId,
-                    ChatMembers = userId is null ? [] : [userId.Value],
+                    ChatMembers = membersToAdd.ToList(),
                     LastBeatmapId = null,
                     LanguageCode = defaultLanguage
                 }, cancellationToken);
@@ -51,21 +98,34 @@ public static class BotContextExtensions
             }
 
             chat.ChatMembers ??= [];
+            var normalizedMembers = chat.ChatMembers.Distinct().ToList();
+            bool membersChanged = normalizedMembers.Count != chat.ChatMembers.Count;
+            if (membersChanged)
+                chat.ChatMembers = normalizedMembers;
+
+            bool languageChanged = false;
             if (string.IsNullOrWhiteSpace(chat.LanguageCode))
+            {
                 chat.LanguageCode = defaultLanguage;
+                languageChanged = true;
+            }
 
             if (leftUserId is not null)
             {
-                chat.ChatMembers.Remove(leftUserId.Value);
-                await database.SaveChangesAsync(cancellationToken);
-                return;
+                membersChanged |= chat.ChatMembers.RemoveAll(member => member == leftUserId.Value) > 0;
             }
 
-            if (userId is not null && !chat.ChatMembers.Contains(userId.Value))
+            foreach (long newMemberId in membersToAdd)
             {
-                chat.ChatMembers.Add(userId.Value);
-                await database.SaveChangesAsync(cancellationToken);
+                if (chat.ChatMembers.Contains(newMemberId))
+                    continue;
+
+                chat.ChatMembers.Add(newMemberId);
+                membersChanged = true;
             }
+
+            if (membersChanged || languageChanged)
+                await database.SaveChangesAsync(cancellationToken);
         }
         catch (DbUpdateException dbEx) when (dbEx.InnerException is PostgresException pe && pe.SqlState == PostgresErrorCodes.UniqueViolation)
         {

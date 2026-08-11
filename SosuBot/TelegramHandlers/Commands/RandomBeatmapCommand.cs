@@ -17,6 +17,7 @@ public sealed class RandomBeatmapCommand(
     RateLimiterFactory rateLimiterFactory) : CommandBase<Message>
 {
     public static readonly string[] Commands = ["/rnd"];
+    public static readonly string Description = "случайная карта osu! по режиму";
 
     public override async Task ExecuteAsync()
     {

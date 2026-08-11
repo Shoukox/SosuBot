@@ -3,6 +3,7 @@ using OsuApi.BanchoV2;
 using OsuApi.BanchoV2.Clients.Users.HttpIO;
 using OsuApi.BanchoV2.Models;
 using OsuApi.BanchoV2.Users.Models;
+using SosuBot.Calculators.Official;
 using SosuBot.Database.Models;
 using SosuBot.Extensions;
 using SosuBot.Graphics;
@@ -11,7 +12,7 @@ using SosuBot.Helpers;
 using SosuBot.PerformanceCalculator;
 using System.Globalization;
 using System.Text;
-using LazerOsuDifficultyAttributes = osu.Game.Rulesets.Osu.Difficulty.OsuDifficultyAttributes;
+using OfficialOsuDifficultyAttributes = osu.Game.Rulesets.Osu.Difficulty.OsuDifficultyAttributes;
 
 namespace SosuBot.Services;
 
@@ -25,6 +26,7 @@ public sealed class OsuCardService
     private readonly CachingHelper _cachingHelper;
     private readonly ProfileCardGenerator _cardGenerator;
     private readonly PlayerSkillCalculator _skillCalculator;
+    private readonly OfficialPerformanceHelper _officialPerformanceHelper;
     private readonly HttpClient _httpClient;
     private readonly ILogger<OsuCardService> _logger;
 
@@ -34,6 +36,7 @@ public sealed class OsuCardService
         CachingHelper cachingHelper,
         ProfileCardGenerator cardGenerator,
         PlayerSkillCalculator skillCalculator,
+        OfficialPerformanceHelper officialPerformanceHelper,
         IHttpClientFactory httpClientFactory,
         ILogger<OsuCardService> logger)
     {
@@ -42,6 +45,7 @@ public sealed class OsuCardService
         _cachingHelper = cachingHelper;
         _cardGenerator = cardGenerator;
         _skillCalculator = skillCalculator;
+        _officialPerformanceHelper = officialPerformanceHelper;
         _httpClient = httpClientFactory.CreateClient("CustomHttpClient");
         _logger = logger;
     }
@@ -106,6 +110,10 @@ public sealed class OsuCardService
         {
             throw;
         }
+        catch (OsuApiUnavailableException)
+        {
+            throw;
+        }
         catch (Exception exception)
         {
             _logger.LogWarning(exception, "Could not calculate card skill for beatmap {BeatmapId}", score.BeatmapId);
@@ -123,40 +131,45 @@ public sealed class OsuCardService
         if (score.BeatmapId is null || score.Accuracy is null || score.MaxCombo is null)
             return null;
 
+        BeatmapExtended? beatmapInfo = await _cachingHelper.GetOrCacheBeatmap(score.BeatmapId.Value, _osuApi,
+            cancellationToken);
+        if (beatmapInfo is null)
+            return null;
+
         using Stream beatmap = await _beatmapsService.DownloadOrCacheBeatmapAsync(score.BeatmapId.Value,
             cancellationToken);
         double averageBpm = ReadAverageBpm(beatmap);
-        PPCalculationResult? calculation = await new PPCalculator().CalculatePpAsync(
-            beatmapId: score.BeatmapId.Value,
-            beatmapFile: beatmap,
-            accuracy: score.Accuracy.Value,
-            passed: true,
-            scoreMaxCombo: score.MaxCombo.Value,
-            scoreMods: (score.Mods ?? []).ToOsuMods(Playmode.Osu),
-            scoreStatistics: null,
-            rulesetId: (int)Playmode.Osu,
+        OfficialScoreCalculation scoreCalculation = await _officialPerformanceHelper.CalculateScoreAsync(
+            beatmap,
+            score,
+            Playmode.Osu,
+            calculateCurrent: true,
             cancellationToken: cancellationToken);
+        PPCalculationResult? calculation = scoreCalculation.Current;
 
-        if (calculation?.DifficultyAttributes is not LazerOsuDifficultyAttributes difficulty)
+        if (calculation is null)
             return null;
+
+        OfficialOsuDifficultyAttributes? osuDifficulty = calculation.DifficultyAttributes as OfficialOsuDifficultyAttributes;
+        double speedChangeFactor = calculation.SpeedChangeFactor;
 
         return new PlayerScoreSkillInput
         {
             Mode = OsuGameMode.Osu,
-            StarRating = difficulty.StarRating,
+            StarRating = calculation.DifficultyAttributes.StarRating,
             AccuracyPercent = score.Accuracy.Value * 100,
-            Bpm = averageBpm * calculation.SpeedChangeFactor,
+            Bpm = averageBpm > 0 ? averageBpm * speedChangeFactor : (beatmapInfo.BPM ?? 0) * speedChangeFactor,
             CircleSize = calculation.CS,
             ApproachRate = calculation.AR,
             OverallDifficulty = calculation.OD,
             DrainRate = calculation.HP,
             Combo = score.MaxCombo.Value,
             MaximumCombo = calculation.BeatmapMaxCombo,
-            HitCircleCount = difficulty.HitCircleCount,
-            SliderCount = difficulty.SliderCount,
-            AimDifficulty = difficulty.AimDifficulty,
-            SpeedDifficulty = difficulty.SpeedDifficulty,
-            SpeedNoteCount = difficulty.SpeedNoteCount,
+            HitCircleCount = osuDifficulty?.HitCircleCount ?? beatmapInfo.CountCircles ?? 0,
+            SliderCount = osuDifficulty?.SliderCount ?? beatmapInfo.CountSliders ?? 0,
+            AimDifficulty = osuDifficulty?.AimDifficulty ?? 0,
+            SpeedDifficulty = osuDifficulty?.SpeedDifficulty ?? 0,
+            SpeedNoteCount = osuDifficulty?.SpeedNoteCount ?? osuDifficulty?.HitCircleCount ?? 0,
             Mods = GetModAcronyms(score)
         };
     }

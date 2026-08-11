@@ -12,6 +12,7 @@ namespace SosuBot.TelegramHandlers.Commands;
 public sealed class RenderScrollSpeedCommand : CommandBase<Message>
 {
     public static readonly string[] Commands = ["/scroll"];
+    public static readonly string Description = "изменить скорость прокрутки для рендера";
     private BotContext _database = null!;
 
     public override async Task BeforeExecuteAsync()

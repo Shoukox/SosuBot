@@ -15,6 +15,7 @@ namespace SosuBot.TelegramHandlers.Commands;
 public sealed class RenderSkinSetCommand : CommandBase<Message>
 {
     public static readonly string[] Commands = ["/setskin"];
+    public static readonly string Description = "установить скин для рендера";
     private ReplayRenderService _replayRenderService = null!;
     private RateLimiterFactory _rateLimiterFactory = null!;
     private BotContext _database = null!;
