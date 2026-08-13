@@ -1,3 +1,4 @@
+using Microsoft.Extensions.DependencyInjection;
 using System.Globalization;
 using Microsoft.Extensions.Logging;
 using SosuBot.Database;
@@ -13,25 +14,37 @@ using static SosuBot.Services.ReplayRenderService;
 
 namespace SosuBot.TelegramHandlers.Commands;
 
-public sealed class PostVideoCommand(
-    ReplayRenderPreparationService preparationService,
-    ReplayRenderWorkflowService workflowService,
-    ReplayRenderPresentationService presentationService,
-    PostVideoArtifactService artifactService,
-    RateLimiterFactory rateLimiterFactory,
-    BotContext database,
-    ILogger<PostVideoCommand> logger) : CommandBase<Message>
+public sealed class PostVideoCommand : CommandBase<Message>
 {
     private const int VideoWidth = 2560;
     private const int VideoHeight = 1440;
 
     public static readonly string[] Commands = ["/postvideo"];
     public static readonly string Description = "подготовить видео для публикации по score";
+    private ReplayRenderPreparationService _preparationService = null!;
+    private ReplayRenderWorkflowService _workflowService = null!;
+    private ReplayRenderPresentationService _presentationService = null!;
+    private PostVideoArtifactService _artifactService = null!;
+    private RateLimiterFactory _rateLimiterFactory = null!;
+    private BotContext _database = null!;
+    private ILogger<PostVideoCommand> _logger = null!;
+
+    public override async Task BeforeExecuteAsync()
+    {
+        await base.BeforeExecuteAsync();
+        _preparationService = Context.ServiceProvider.GetRequiredService<ReplayRenderPreparationService>();
+        _workflowService = Context.ServiceProvider.GetRequiredService<ReplayRenderWorkflowService>();
+        _presentationService = Context.ServiceProvider.GetRequiredService<ReplayRenderPresentationService>();
+        _artifactService = Context.ServiceProvider.GetRequiredService<PostVideoArtifactService>();
+        _rateLimiterFactory = Context.ServiceProvider.GetRequiredService<RateLimiterFactory>();
+        _database = Context.ServiceProvider.GetRequiredService<BotContext>();
+        _logger = Context.ServiceProvider.GetRequiredService<ILogger<PostVideoCommand>>();
+    }
 
     public override async Task ExecuteAsync()
     {
         ILocalization language = Context.GetLocalization();
-        TokenBucketRateLimiter rateLimiter = rateLimiterFactory.Get(
+        TokenBucketRateLimiter rateLimiter = _rateLimiterFactory.Get(
             RateLimiterFactory.RateLimitPolicy.RenderCommand);
         if (!await rateLimiter.IsAllowedAsync($"{Context.Update.From!.Id}"))
         {
@@ -39,7 +52,7 @@ public sealed class PostVideoCommand(
             return;
         }
 
-        OsuUser? osuUser = await database.OsuUsers.FindAsync(Context.Update.From!.Id);
+        OsuUser? osuUser = await _database.OsuUsers.FindAsync(Context.Update.From!.Id);
         if (osuUser is null)
         {
             await Context.Update.ReplyAsync(Context.BotClient, language.error_userNotSetHimself);
@@ -56,14 +69,14 @@ public sealed class PostVideoCommand(
         }
 
         Message waitMessage = await Context.Update.ReplyAsync(Context.BotClient, language.waiting);
-        ReplayRenderPreparationResult preparation = await preparationService.PrepareScoreAsync(
+        ReplayRenderPreparationResult preparation = await _preparationService.PrepareScoreAsync(
             scoreId,
             scoreLink,
             osuUser.RenderSettings,
             Context.CancellationToken);
         if (preparation.Request is not { } preparedReplay)
         {
-            await presentationService.EditPreparationFailureAsync(
+            await _presentationService.EditPreparationFailureAsync(
                 Context.BotClient,
                 waitMessage,
                 language,
@@ -82,7 +95,7 @@ public sealed class PostVideoCommand(
                 ShowPP = true,
                 HitErrorMeter = true
             };
-            ReplayRenderWorkflowResult render = await workflowService.QueueAndWaitAsync(
+            ReplayRenderWorkflowResult render = await _workflowService.QueueAndWaitAsync(
                 Context.BotClient,
                 waitMessage,
                 language,
@@ -102,7 +115,7 @@ public sealed class PostVideoCommand(
                 scoreId.ToString(CultureInfo.InvariantCulture));
             Directory.CreateDirectory(outputDirectory);
 
-            string? sourceVideoPath = presentationService.ResolveVideoPath(job);
+            string? sourceVideoPath = _presentationService.ResolveVideoPath(job);
             string outputVideoPath = Path.Combine(outputDirectory, "video.mp4");
             if (sourceVideoPath is not null)
             {
@@ -112,7 +125,7 @@ public sealed class PostVideoCommand(
             PostVideoArtifacts? artifacts = null;
             try
             {
-                artifacts = await artifactService.GenerateAsync(
+                artifacts = await _artifactService.GenerateAsync(
                     scoreId,
                     preparedReplay.Score!,
                     outputDirectory,
@@ -125,13 +138,13 @@ public sealed class PostVideoCommand(
             }
             catch (Exception exception)
             {
-                logger.LogWarning(
+                _logger.LogWarning(
                     exception,
                     "Could not generate postvideo artifacts for score {ScoreId}",
                     scoreId);
             }
 
-            await presentationService.SendVideoAsync(
+            await _presentationService.SendVideoAsync(
                 Context.BotClient,
                 render.StatusMessage,
                 job,
@@ -192,7 +205,7 @@ public sealed class PostVideoCommand(
         }
         catch (Exception exception)
         {
-            logger.LogWarning(
+                _logger.LogWarning(
                 exception,
                 "Could not send postvideo artifacts from {Directory}",
                 artifacts.DirectoryPath);

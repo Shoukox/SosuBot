@@ -1,3 +1,4 @@
+using Microsoft.Extensions.DependencyInjection;
 using SosuBot.Database;
 using SosuBot.Database.Database.Models;
 using SosuBot.Database.Models;
@@ -10,20 +11,30 @@ using Telegram.Bot.Types;
 
 namespace SosuBot.TelegramHandlers.Commands;
 
-public sealed class ReplayRenderCommand(
-    ReplayRenderPreparationService preparationService,
-    ReplayRenderWorkflowService workflowService,
-    ReplayRenderPresentationService presentationService,
-    RateLimiterFactory rateLimiterFactory,
-    BotContext database) : CommandBase<Message>
+public sealed class ReplayRenderCommand : CommandBase<Message>
 {
     public static readonly string[] Commands = ["/render"];
     public static readonly string Description = "отрендерить osu! реплей";
+    private ReplayRenderPreparationService _preparationService = null!;
+    private ReplayRenderWorkflowService _workflowService = null!;
+    private ReplayRenderPresentationService _presentationService = null!;
+    private RateLimiterFactory _rateLimiterFactory = null!;
+    private BotContext _database = null!;
+
+    public override async Task BeforeExecuteAsync()
+    {
+        await base.BeforeExecuteAsync();
+        _preparationService = Context.ServiceProvider.GetRequiredService<ReplayRenderPreparationService>();
+        _workflowService = Context.ServiceProvider.GetRequiredService<ReplayRenderWorkflowService>();
+        _presentationService = Context.ServiceProvider.GetRequiredService<ReplayRenderPresentationService>();
+        _rateLimiterFactory = Context.ServiceProvider.GetRequiredService<RateLimiterFactory>();
+        _database = Context.ServiceProvider.GetRequiredService<BotContext>();
+    }
 
     public override async Task ExecuteAsync()
     {
         ILocalization language = Context.GetLocalization();
-        TokenBucketRateLimiter rateLimiter = rateLimiterFactory.Get(
+        TokenBucketRateLimiter rateLimiter = _rateLimiterFactory.Get(
             RateLimiterFactory.RateLimitPolicy.RenderCommand);
         if (!await rateLimiter.IsAllowedAsync($"{Context.Update.From!.Id}"))
         {
@@ -31,7 +42,7 @@ public sealed class ReplayRenderCommand(
             return;
         }
 
-        OsuUser? osuUser = await database.OsuUsers.FindAsync(Context.Update.From!.Id);
+        OsuUser? osuUser = await _database.OsuUsers.FindAsync(Context.Update.From!.Id);
         if (osuUser is null)
         {
             await Context.Update.ReplyAsync(Context.BotClient, language.error_userNotSetHimself);
@@ -39,14 +50,14 @@ public sealed class ReplayRenderCommand(
         }
 
         Message waitMessage = await Context.Update.ReplyAsync(Context.BotClient, language.waiting);
-        ReplayRenderPreparationResult preparation = await preparationService.PrepareMessageAsync(
+        ReplayRenderPreparationResult preparation = await _preparationService.PrepareMessageAsync(
             Context.BotClient,
             Context.Update,
             osuUser.RenderSettings,
             Context.CancellationToken);
         if (preparation.Request is not { } preparedReplay)
         {
-            await presentationService.EditPreparationFailureAsync(
+            await _presentationService.EditPreparationFailureAsync(
                 Context.BotClient,
                 waitMessage,
                 language,
@@ -59,7 +70,7 @@ public sealed class ReplayRenderCommand(
             RenderSettings renderSettings = ReplayRenderPreparationService.CreateRenderSettings(
                 osuUser.RenderSettings,
                 preparedReplay);
-            ReplayRenderWorkflowResult render = await workflowService.QueueAndWaitAsync(
+            ReplayRenderWorkflowResult render = await _workflowService.QueueAndWaitAsync(
                 Context.BotClient,
                 waitMessage,
                 language,
@@ -71,7 +82,7 @@ public sealed class ReplayRenderCommand(
             if (!render.Succeeded)
                 return;
 
-            await presentationService.SendVideoAsync(
+            await _presentationService.SendVideoAsync(
                 Context.BotClient,
                 render.StatusMessage,
                 render.Job!,

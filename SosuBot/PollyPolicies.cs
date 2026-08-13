@@ -1,6 +1,5 @@
 ﻿using Polly;
 using Polly.Contrib.WaitAndRetry;
-using Polly.Extensions.Http;
 using System.Net;
 using System.Net.Http.Headers;
 
@@ -10,8 +9,11 @@ public static class PollyPolicies
 {
     private static IAsyncPolicy<HttpResponseMessage> GetTransientRetryPolicy()
     {
-        return HttpPolicyExtensions
-            .HandleTransientHttpError()
+        return Policy<HttpResponseMessage>
+            .Handle<HttpRequestException>(IsTransientHttpRequestException)
+            .OrResult(response =>
+                response.StatusCode == HttpStatusCode.RequestTimeout ||
+                (int)response.StatusCode >= 500)
             .WaitAndRetryAsync(
                 Backoff.DecorrelatedJitterBackoffV2(TimeSpan.FromSeconds(1), 3),
                 onRetry: (outcome, delay, attempt, context) =>
@@ -30,6 +32,45 @@ public static class PollyPolicies
                         Log($"Transient error (attempt {attempt}). Waiting {delay} before retry.");
                     }
                 });
+    }
+
+    private static bool IsTransientHttpRequestException(HttpRequestException exception)
+    {
+        if (TryGetStatusCode(exception, out HttpStatusCode statusCode))
+        {
+            return statusCode == HttpStatusCode.RequestTimeout ||
+                   statusCode == HttpStatusCode.TooManyRequests ||
+                   (int)statusCode >= 500;
+        }
+
+        // Exceptions without an HTTP status code are normally transport
+        // failures (DNS, connection reset, timeout, etc.).
+        return true;
+    }
+
+    private static bool TryGetStatusCode(HttpRequestException exception, out HttpStatusCode statusCode)
+    {
+        if (exception.StatusCode is { } exceptionStatusCode)
+        {
+            statusCode = exceptionStatusCode;
+            return true;
+        }
+
+        // OsuApi.Core 0.1.0 puts the status code only in the exception text.
+        const string marker = "status code ";
+        int markerIndex = exception.Message.IndexOf(marker, StringComparison.OrdinalIgnoreCase);
+        int statusCodeStart = markerIndex + marker.Length;
+        if (markerIndex >= 0 &&
+            statusCodeStart + 3 <= exception.Message.Length &&
+            int.TryParse(exception.Message.AsSpan(statusCodeStart, 3), out int numericStatusCode) &&
+            Enum.IsDefined(typeof(HttpStatusCode), numericStatusCode))
+        {
+            statusCode = (HttpStatusCode)numericStatusCode;
+            return true;
+        }
+
+        statusCode = default;
+        return false;
     }
 
 

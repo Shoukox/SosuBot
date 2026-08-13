@@ -17,6 +17,7 @@ using SosuBot.Services.Synchronization;
 using SosuBot.TelegramHandlers.Abstract;
 using System.Data;
 using System.Globalization;
+using System.Net;
 using System.Text.RegularExpressions;
 using Telegram.Bot;
 using Telegram.Bot.Types;
@@ -235,16 +236,31 @@ public class OsuLastCommand(bool onlyPassed = false, bool sendCover = false) : C
 
             // Calculate diff rating
             double? difficultyRating = fcPerformanceResult?.DifficultyAttributes.StarRating;
-            if (difficultyRating == null)
+            if (difficultyRating == null && playmode == Playmode.Osu)
             {
-                GetBeatmapAttributesResponse? beatmapAttributesResponse = await _osuApiV2.Beatmaps.GetBeatmapAttributes(beatmap.Id.Value, new() { RulesetId = ((int)playmode).ToString(), Mods = mods });
-
-                int? maxCombo = beatmapAttributesResponse?.DifficultyAttributes?.MaxCombo;
-                if (maxCombo != null && maxCombo != 0)
+                try
                 {
-                    beatmapMaxCombo ??= maxCombo;
+                    GetBeatmapAttributesResponse? beatmapAttributesResponse =
+                        await _osuApiV2.Beatmaps.GetBeatmapAttributes(
+                            beatmap.Id.Value,
+                            new() { Ruleset = playmode.ToRuleset(), Mods = mods },
+                            Context.CancellationToken);
+
+                    int? maxCombo = beatmapAttributesResponse?.DifficultyAttributes?.MaxCombo;
+                    if (maxCombo != null && maxCombo != 0)
+                    {
+                        beatmapMaxCombo ??= maxCombo;
+                    }
+
+                    difficultyRating = beatmapAttributesResponse?.DifficultyAttributes?.StarRating;
                 }
-                difficultyRating = beatmapAttributesResponse?.DifficultyAttributes?.StarRating;
+                catch (HttpRequestException exception) when (IsUnprocessableEntity(exception))
+                {
+                    _logger.LogTrace(
+                        "osu! API rejected beatmap attributes request for beatmap {BeatmapId}; using available difficulty data ({Message})",
+                        beatmap.Id,
+                        exception.Message);
+                }
             }
 
 
@@ -334,5 +350,9 @@ public class OsuLastCommand(bool onlyPassed = false, bool sendCover = false) : C
             await waitMessage.EditAsync(Context.BotClient, textToSend);
         }
     }
+
+    private static bool IsUnprocessableEntity(HttpRequestException exception) =>
+        exception.StatusCode == HttpStatusCode.UnprocessableEntity ||
+        exception.Message.Contains("status code 422", StringComparison.OrdinalIgnoreCase);
 
 }
