@@ -97,21 +97,21 @@ internal class Program
         builder.Services.AddHostedService<MetricsSnapshotBackgroundService>();
         builder.Services.AddSingleton<TelegramUserDirectory>();
         builder.Services.AddSingleton<ChatModerationService>();
-        builder.Services.AddCustomHttpClient(nameof(ITelegramBotClient), 32_767)
+        builder.Services.AddCustomHttpClient(nameof(ITelegramBotClient), 32_767, retryPolicy: pollyPolicies)
                         .AddTypedClient<ITelegramBotClient>((httpClient, sp) =>
                         {
                             IOptions<BotConfiguration> options = sp.GetRequiredService<IOptions<BotConfiguration>>();
                             var telegramOptions = new TelegramBotClientOptions(options.Value.Token, baseUrl: botConfig[nameof(BotConfiguration.ApiServerUrl)]);
                             return new TelegramBotClient(telegramOptions, httpClient);
-                        })
-                        .AddPolicyHandler(pollyPolicies);
-        builder.Services.AddCustomHttpClient("CustomHttpClient", 300)
-                        .AddPolicyHandler(pollyPolicies);
-        builder.Services.AddCustomHttpClient("OsuApiHttpClient", 300)
-                        .AddHttpMessageHandler(() => new OsuApiAvailabilityHandler())
-                        .AddPolicyHandler(pollyPolicies);
-        builder.Services.AddCustomHttpClient(BeatmapsService.HttpClientName, 300)
-                        .AddPolicyHandler(pollyPolicies);
+                        });
+        builder.Services.AddCustomHttpClient("CustomHttpClient", 300, retryPolicy: pollyPolicies);
+        builder.Services.AddCustomHttpClient(
+                        "OsuApiHttpClient",
+                        300,
+                        executionsPerSecond: 7,
+                        retryPolicy: pollyPolicies)
+                        .AddHttpMessageHandler(() => new OsuApiAvailabilityHandler());
+        builder.Services.AddCustomHttpClient(BeatmapsService.HttpClientName, 300, retryPolicy: pollyPolicies);
         builder.Services.AddCustomHttpClient(nameof(ReplayRenderService), 32_767, TimeSpan.FromMinutes(10));
 
         builder.Services.AddSingleton(provider =>

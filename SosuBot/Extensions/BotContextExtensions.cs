@@ -1,7 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using Npgsql;
-using Polly;
 using SosuBot.Database;
 using SosuBot.Database.Models;
 using SosuBot.Localization;
@@ -86,14 +84,17 @@ public static class BotContextExtensions
                     };
                 }
 
-                await database.AddAsync(new TelegramChat
-                {
-                    ChatId = chatId,
-                    ChatMembers = membersToAdd.ToList(),
-                    LastBeatmapId = null,
-                    LanguageCode = defaultLanguage
-                }, cancellationToken);
-                await database.SaveChangesAsync(cancellationToken);
+                long[] chatMembers = membersToAdd.ToArray();
+                int? lastBeatmapId = null;
+                int insertedRows = await database.Database.ExecuteSqlInterpolatedAsync($$"""
+                    INSERT INTO "TelegramChats" ("ChatId", "ChatMembers", "LastBeatmapId", "LanguageCode")
+                    VALUES ({{chatId}}, {{chatMembers}}, {{lastBeatmapId}}, {{defaultLanguage}})
+                    ON CONFLICT ("ChatId") DO NOTHING;
+                    """, cancellationToken);
+
+                if (insertedRows == 0)
+                    logger.LogTrace("Ignored a concurrent Telegram chat insert for {ChatId}", chatId);
+
                 return;
             }
 
@@ -126,13 +127,6 @@ public static class BotContextExtensions
 
             if (membersChanged || languageChanged)
                 await database.SaveChangesAsync(cancellationToken);
-        }
-        catch (DbUpdateException dbEx) when (dbEx.InnerException is PostgresException pe && pe.SqlState == PostgresErrorCodes.UniqueViolation)
-        {
-            foreach (Microsoft.EntityFrameworkCore.ChangeTracking.EntityEntry entry in dbEx.Entries)
-                entry.State = EntityState.Detached;
-
-            logger.LogDebug("Ignored a concurrent Telegram chat insert");
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
