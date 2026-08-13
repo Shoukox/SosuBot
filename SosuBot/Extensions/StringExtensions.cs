@@ -111,10 +111,22 @@ public static class StringExtensions
 
     public static Mod[] ToMods(this string text, Playmode playmode)
     {
-        text = text.Trim().ToUpperInvariant();
+        return ParseMods(text, playmode, out _);
+    }
 
-        var startFrom = 0;
-        if (!char.IsAsciiLetter(text[0])) startFrom = 1;
+    public static bool TryParseMods(this string text, Playmode playmode, out Mod[] mods)
+    {
+        mods = ParseMods(text, playmode, out bool isComplete);
+        return isComplete;
+    }
+
+    private static Mod[] ParseMods(string text, Playmode playmode, out bool isComplete)
+    {
+        string normalized = text.Trim().ToUpperInvariant();
+        if (normalized.StartsWith('+'))
+        {
+            normalized = normalized[1..];
+        }
 
         Mod[] rulesetMods = playmode switch
         {
@@ -125,12 +137,45 @@ public static class StringExtensions
             _ => throw new NotImplementedException()
         };
 
+        // Ruleset-specific classes do not contain all common lazer mods. For
+        // example, ScoreV2, Difficulty Adjust and rate/fun mods are declared
+        // in osu.Game itself. Keep the longest acronym first so values such
+        // as 10K and SV2 are parsed before their shorter prefixes.
+        Mod[] availableMods = rulesetMods
+            .Concat(OsuTypesExtensions.AllMods)
+            .Where(m => !string.IsNullOrWhiteSpace(m.Acronym))
+            .GroupBy(m => m.Acronym, StringComparer.OrdinalIgnoreCase)
+            .Select(group => group.First())
+            .OrderByDescending(m => m.Acronym.Length)
+            .ToArray();
+
         var mods = new List<Mod>();
-        for (var i = startFrom; i < text.Length; i += 2)
+        isComplete = true;
+        int position = 0;
+        while (position < normalized.Length)
         {
-            Mod? currentMod = rulesetMods.FirstOrDefault(m => m.Acronym.ToUpperInvariant() == text.Substring(i, 2));
-            if (currentMod == null) continue;
+            Mod? currentMod = availableMods.FirstOrDefault(mod =>
+                normalized.Length - position >= mod.Acronym.Length &&
+                string.Compare(
+                    normalized,
+                    position,
+                    mod.Acronym,
+                    0,
+                    mod.Acronym.Length,
+                    StringComparison.OrdinalIgnoreCase) == 0);
+
+            if (currentMod is null)
+            {
+                // Preserve the historical ToMods behaviour for callers that
+                // intentionally ignore unknown acronyms, while exposing the
+                // complete parse result through TryParseMods.
+                isComplete = false;
+                position++;
+                continue;
+            }
+
             mods.Add(currentMod);
+            position += currentMod.Acronym.Length;
         }
 
         return mods.ToArray();

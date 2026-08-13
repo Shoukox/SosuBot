@@ -18,7 +18,7 @@ namespace SosuBot.TelegramHandlers.Commands;
 
 public class OsuLastBestCommand : CommandBase<Message>
 {
-    public static readonly string[] Commands = ["/lb", "/lastbest"];
+    public static readonly string[] Commands = ["/lastbest", "/lb"];
     public static readonly string Description = "[user] [mode] последние лучшие игры игрока";
     private BanchoApiV2 _osuApiV2 = null!;
     private ScoreHelper _scoreHelper = null!;

@@ -242,9 +242,10 @@ public sealed class Deutsch : ILocalization
     public string replayRender_noRenderers => "Derzeit keine freien Renderer verfügbar. Bitte später erneut versuchen.";
     public string replayRender_scoreNotFound => "<a href=\"{}\">Score</a> wurde nicht gefunden";
     public string replayRender_scoreHasNoReplay => "<a href=\"{}\">Score</a> hat kein Replay";
-    public string replayRender_usage => "Nutze diesen Befehl auf eine Replay-Datei oder einen Score mit Replay.\nOder gib nach dem Befehl einen Score-Link an.";
+    public string replayRender_usage => "Antworte mit /render auf eine .osr-Datei, einen Score-Link oder osu!-Beatmap-Link für Autoplay.\nDu kannst auch /render auto +DTHD verwenden (Mods nach dem Befehl).";
+    public string replayRender_invalidReplay => "Die hochgeladene Datei ist kein gültiges osu!-Replay (.osr) oder beschädigt.";
     public string replayRender_skinNotFound => "Dein gewählter Skin wurde auf dem Server vermutlich nicht gefunden. Wähle einen anderen.";
-    public string replayRender_beatmapNotFound => "Die Beatmap aus diesem Replay ist weder auf den Spiegelseiten noch auf der osu! Website zu finden. Vielleicht handelt es sich um eine lokale Karte?";
+    public string replayRender_beatmapNotFound => "Die angeforderte Beatmap ist weder auf den Spiegelseiten noch auf der osu!-Website zu finden. Vielleicht handelt es sich um eine lokale Karte?";
     public string replayRender_statusButton => "Status";
     public string replayRender_cancelButton => "Abbrechen";
     public string replayRender_settingsAd => "Benutze /settings, um deinen Renderer einzustellen.";
@@ -260,6 +261,8 @@ public sealed class Deutsch : ILocalization
     public string replayRender_finishedWithLink => "Render abgeschlossen.\n<a href=\"{}\">Videolink</a>";
     public string replayRender_cancelled => "Render abgebrochen.";
     public string replayRender_beatmapLengthTooLong => "Die Karte in diesem Replay dauert zu lange. Probiere eine Karte aus, die weniger als 30 Minuten dauert. Für den experimentellen Renderer ist die Obergrenze auf 20 Minuten festgelegt.";
+
+    public string postVideo_usage => "Verwende /postvideo mit einem osu!-Score-Link oder antworte mit diesem Befehl auf eine Score-Nachricht.";
     
     public string text_songPreviewButton => "Song preview";
     public string text_tooManyObjectsNoPp => "Beatmap hat zu viele Objekte; pp-Berechnung wird übersprungen.";

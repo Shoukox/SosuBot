@@ -95,6 +95,8 @@ internal class Program
         builder.Services.AddSingleton<CommandUsageRecorder>();
         builder.Services.AddHostedService<MetricsServerHostedService>();
         builder.Services.AddHostedService<MetricsSnapshotBackgroundService>();
+        builder.Services.AddSingleton<TelegramUserDirectory>();
+        builder.Services.AddSingleton<ChatModerationService>();
         builder.Services.AddCustomHttpClient(nameof(ITelegramBotClient), 32_767)
                         .AddTypedClient<ITelegramBotClient>((httpClient, sp) =>
                         {
@@ -128,6 +130,10 @@ internal class Program
         builder.Services.AddSingleton<ScorePreviewGenerator>();
         builder.Services.AddSingleton<OsuCardService>();
         builder.Services.AddSingleton<VideoPreviewService>();
+        builder.Services.AddSingleton<PostVideoArtifactService>();
+        builder.Services.AddSingleton<ReplayRenderPreparationService>();
+        builder.Services.AddSingleton<ReplayRenderWorkflowService>();
+        builder.Services.AddSingleton<ReplayRenderPresentationService>();
         builder.Services.AddSingleton<UpdateQueueService>();
         builder.Services.AddSingleton(serviceProvider =>
         {

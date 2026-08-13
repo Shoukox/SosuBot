@@ -249,9 +249,10 @@ public sealed class English : ILocalization
     public string replayRender_noRenderers => "No available renderers right now. Please try again later.";
     public string replayRender_scoreNotFound => "<a href=\"{}\">Score</a> was not found";
     public string replayRender_scoreHasNoReplay => "<a href=\"{}\">Score</a> has no replay";
-    public string replayRender_usage => "Use this command on a replay file or a score with replay.\nOr provide a score link after the command.";
+    public string replayRender_usage => "Reply with /render to a .osr file, score link, or osu! beatmap link for autoplay.\nYou can also use: /render auto +DTHD (mods after the command).";
+    public string replayRender_invalidReplay => "The uploaded file is not a valid osu! replay (.osr) or is corrupted.";
     public string replayRender_skinNotFound => "Your selected skin was likely not found on the server. Choose another one.";
-    public string replayRender_beatmapNotFound => "The beatmap from this replay can't be found on any mirrors or on the osu! website. Maybe it's a local map?";
+    public string replayRender_beatmapNotFound => "The requested beatmap can't be found on any mirrors or on the osu! website. Maybe it's a local map?";
     public string replayRender_statusButton => "Status";
     public string replayRender_cancelButton => "Cancel";
     public string replayRender_settingsAd => "Use /settings to configure your renderer.";
@@ -267,6 +268,8 @@ public sealed class English : ILocalization
     public string replayRender_finishedWithLink => "Render completed.\n<a href=\"{}\">Video link</a>";
     public string replayRender_cancelled => "Render was cancelled.";
     public string replayRender_beatmapLengthTooLong => "The map in this replay is too long. Try a map that lasts less than 30 minutes. The limit for the experimental renderer is 20 minutes.";
+
+    public string postVideo_usage => "Use /postvideo with an osu! score link, or reply to a score message with this command.";
 
     public string text_songPreviewButton => "Song preview";
     public string text_tooManyObjectsNoPp => "Beatmap has too many objects; pp calculation is skipped.";

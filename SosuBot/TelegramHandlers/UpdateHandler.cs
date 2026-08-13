@@ -8,6 +8,7 @@ using SosuBot.Extensions;
 using SosuBot.Helpers;
 using SosuBot.Monitoring;
 using SosuBot.Localization;
+using SosuBot.Services;
 using SosuBot.TelegramHandlers.Abstract;
 using SosuBot.TelegramHandlers.Commands;
 using SosuBot.TelegramHandlers.Text;
@@ -26,7 +27,8 @@ public class UpdateHandler(
     ILogger<UpdateHandler> logger,
     BotMetrics metrics,
     CommandUsageRecorder commandUsageRecorder,
-    IServiceProvider serviceProvider) : IUpdateHandler
+    IServiceProvider serviceProvider,
+    TelegramUserDirectory userDirectory) : IUpdateHandler
 {
     public static Dictionary<string, Func<CommandBase<Message>>> Commands { get; set; } = new();
     public static Dictionary<string, string> CommandMetricNames { get; set; } = new();
@@ -125,6 +127,11 @@ public class UpdateHandler(
 
     private async Task OnMessage(ITelegramBotClient botClient, Message msg, CancellationToken cancellationToken)
     {
+        userDirectory.Remember(msg.From);
+        userDirectory.Remember(msg.ReplyToMessage?.From);
+        foreach (User newMember in msg.NewChatMembers ?? [])
+            userDirectory.Remember(newMember);
+
         // Add new chat and update chat members
         await database.AddOrUpdateTelegramChat(msg, logger, cancellationToken);
 
@@ -152,6 +159,7 @@ public class UpdateHandler(
 
     private Task OnChatMemberUpdated(ChatMemberUpdated chatMember, CancellationToken cancellationToken)
     {
+        userDirectory.Remember(chatMember.NewChatMember.User);
         return database.AddOrUpdateTelegramChat(chatMember, logger, cancellationToken);
     }
 

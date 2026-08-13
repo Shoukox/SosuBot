@@ -1,309 +1,83 @@
-﻿using Microsoft.EntityFrameworkCore.Metadata;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Primitives;
-using OsuApi.BanchoV2;
-using OsuApi.BanchoV2.Models;
-using OsuParsers.Replays;
 using SosuBot.Database;
+using SosuBot.Database.Database.Models;
 using SosuBot.Database.Models;
 using SosuBot.Extensions;
 using SosuBot.Localization;
 using SosuBot.Services;
 using SosuBot.Services.Synchronization;
 using SosuBot.TelegramHandlers.Abstract;
-using Telegram.Bot;
 using Telegram.Bot.Types;
-using Telegram.Bot.Types.ReplyMarkups;
-using static SosuBot.Services.ReplayRenderService;
 
 namespace SosuBot.TelegramHandlers.Commands;
 
-public sealed class ReplayRenderCommand : CommandBase<Message>
+public sealed class ReplayRenderCommand(
+    ReplayRenderPreparationService preparationService,
+    ReplayRenderWorkflowService workflowService,
+    ReplayRenderPresentationService presentationService,
+    RateLimiterFactory rateLimiterFactory,
+    BotContext database) : CommandBase<Message>
 {
     public static readonly string[] Commands = ["/render"];
     public static readonly string Description = "отрендерить osu! реплей";
-    private BanchoApiV2 _osuApiV2 = null!;
-    private ReplayRenderService _replayRenderService = null!;
-    private RateLimiterFactory _rateLimiterFactory = null!;
-    private BotContext _database = null!;
-    private ILogger<ReplayRenderCommand> _logger = null!;
-
-    public override async Task BeforeExecuteAsync()
-    {
-        await base.BeforeExecuteAsync();
-        _osuApiV2 = Context.ServiceProvider.GetRequiredService<BanchoApiV2>();
-        _replayRenderService = Context.ServiceProvider.GetRequiredService<ReplayRenderService>();
-        _rateLimiterFactory = Context.ServiceProvider.GetRequiredService<RateLimiterFactory>();
-        _database = Context.ServiceProvider.GetRequiredService<BotContext>();
-        _logger = Context.ServiceProvider.GetRequiredService<ILogger<ReplayRenderCommand>>();
-    }
 
     public override async Task ExecuteAsync()
     {
         ILocalization language = Context.GetLocalization();
-        TokenBucketRateLimiter rateLimiter = _rateLimiterFactory.Get(RateLimiterFactory.RateLimitPolicy.RenderCommand);
+        TokenBucketRateLimiter rateLimiter = rateLimiterFactory.Get(
+            RateLimiterFactory.RateLimitPolicy.RenderCommand);
         if (!await rateLimiter.IsAllowedAsync($"{Context.Update.From!.Id}"))
         {
             await Context.Update.ReplyAsync(Context.BotClient, language.replayRender_rateLimit);
             return;
         }
 
-        TelegramChat? chatInDatabase = await _database.TelegramChats.FindAsync(Context.Update.Chat.Id);
-
-        OsuUser? osuUserInDatabase = await _database.OsuUsers.FindAsync(Context.Update.From!.Id);
-        if (osuUserInDatabase is null)
+        OsuUser? osuUser = await database.OsuUsers.FindAsync(Context.Update.From!.Id);
+        if (osuUser is null)
         {
             await Context.Update.ReplyAsync(Context.BotClient, language.error_userNotSetHimself);
             return;
         }
 
         Message waitMessage = await Context.Update.ReplyAsync(Context.BotClient, language.waiting);
-
-        // Fake 500ms wait
-        await Task.Delay(500);
-
-
-        OnlineRenderer[]? onlineRenderers = null;
-        onlineRenderers = await _replayRenderService.GetOnlineRenderers();
-        if (onlineRenderers is null)
+        ReplayRenderPreparationResult preparation = await preparationService.PrepareMessageAsync(
+            Context.BotClient,
+            Context.Update,
+            osuUser.RenderSettings,
+            Context.CancellationToken);
+        if (preparation.Request is not { } preparedReplay)
         {
-            await waitMessage.EditAsync(Context.BotClient, language.replayRender_serverDown);
-            return;
-        }
-        //catch (HttpRequestException ex) when (ex.InnerException is SocketException socketException && socketException.ErrorCode == 10061)
-
-        int onlineRenderersCount = onlineRenderers!.Length;
-        if (onlineRenderers == null || onlineRenderers.Length == 0)
-        {
-            await waitMessage.EditAsync(Context.BotClient, language.replayRender_noRenderers);
+            await presentationService.EditPreparationFailureAsync(
+                Context.BotClient,
+                waitMessage,
+                language,
+                preparation);
             return;
         }
 
-        var parameters = Context.Update.Text!.GetCommandParameters()!.ToArray();
-        RenderQueuedResponse? renderQueueResponse = null;
-        Stream replayStream = new MemoryStream();
-
-        if (Context.Update.ReplyToMessage?.Document != null &&
-            Context.Update.ReplyToMessage?.Document.FileName![^4..] == ".osr")
+        using (preparedReplay)
         {
-            TGFile tgfile = await Context.BotClient.GetFile(Context.Update.ReplyToMessage.Document.FileId);
-
-            await Context.BotClient.DownloadFileConsideringLocalServer(tgfile, replayStream);
-            replayStream.Position = 0;
-        }
-        else if (Context.Update.Document != null &&
-            Context.Update.Document.FileName![^4..] == ".osr")
-        {
-            TGFile tgfile = await Context.BotClient.GetFile(Context.Update.Document!.FileId);
-
-            await Context.BotClient.DownloadFileConsideringLocalServer(tgfile, replayStream);
-            replayStream.Position = 0;
-        }
-        else if (parameters.Length > 0 && OsuHelper.ParseOsuScoreLink([parameters[0]], out var scoreId) is { } scoreLink && scoreId != null)
-        {
-            Score? score = await _osuApiV2.Scores.GetScore(scoreId.Value);
-            if (score is null)
-            {
-                await waitMessage.EditAsync(Context.BotClient, LocalizationMessageHelper.ReplayScoreNotFound(language, $"{scoreLink}"));
+            RenderSettings renderSettings = ReplayRenderPreparationService.CreateRenderSettings(
+                osuUser.RenderSettings,
+                preparedReplay);
+            ReplayRenderWorkflowResult render = await workflowService.QueueAndWaitAsync(
+                Context.BotClient,
+                waitMessage,
+                language,
+                preparedReplay.AutoRequested ? null : preparedReplay.ReplayStream,
+                renderSettings,
+                $"telegram-user:{Context.Update.From!.Id}",
+                preparedReplay.IsRulesetNotStd,
+                Context.CancellationToken);
+            if (!render.Succeeded)
                 return;
-            }
-            if (!score.HasReplay!.Value)
-            {
-                await waitMessage.EditAsync(Context.BotClient, LocalizationMessageHelper.ReplayScoreHasNoReplay(language, $"{scoreLink}"));
-                return;
-            }
 
-            replayStream = await _osuApiV2.Scores.DownloadScoreReplay(scoreId.Value);
-        }
-        else if (Context.Update.ReplyToMessage != null && OsuHelper.ParseOsuScoreLink(Context.Update.ReplyToMessage.GetAllLinks(), out scoreId) is { } scoreLinkFromReply && scoreId != null)
-        {
-            Score? score = await _osuApiV2.Scores.GetScore(scoreId.Value);
-            if (score is null)
-            {
-                await waitMessage.EditAsync(Context.BotClient, LocalizationMessageHelper.ReplayScoreNotFound(language, $"{scoreLinkFromReply}"));
-                return;
-            }
-            if (!score.HasReplay!.Value)
-            {
-                await waitMessage.EditAsync(Context.BotClient, LocalizationMessageHelper.ReplayScoreHasNoReplay(language, $"{scoreLinkFromReply}"));
-                return;
-            }
-
-            replayStream = await _osuApiV2.Scores.DownloadScoreReplay(scoreId.Value);
-        }
-        else
-        {
-            await waitMessage.EditAsync(Context.BotClient, language.replayRender_usage);
-            return;
-        }
-
-        // Check replay ruleset and beatmap length
-        using var copyStream = new MemoryStream();
-        replayStream.CopyTo(copyStream);
-        copyStream.Position = 0;
-        replayStream.Position = 0;
-
-        Replay replayInfo = OsuParsers.Decoders.ReplayDecoder.Decode(copyStream);
-
-        bool useExperimentalRenderer = osuUserInDatabase.RenderSettings.UseExperimentalRenderer;
-        bool isRulesetNotStd = replayInfo.Ruleset != OsuParsers.Enums.Ruleset.Standard;
-        if (isRulesetNotStd)
-        {
-            useExperimentalRenderer = true;
-        }
-
-        int beatmapLengthInSeconds = replayInfo.ReplayFrames.Max(m => m.Time) / 1000;
-        if (beatmapLengthInSeconds > 20 * 60 && osuUserInDatabase.RenderSettings.UseExperimentalRenderer
-            || beatmapLengthInSeconds > 30 * 60 && !osuUserInDatabase.RenderSettings.UseExperimentalRenderer)
-        {
-            await waitMessage.EditAsync(Context.BotClient, language.replayRender_beatmapLengthTooLong);
-            return;
-        }
-
-        // Queue replay
-        var requestedBy = $"telegram-user:{Context.Update.From!.Id}";
-        renderQueueResponse = await _replayRenderService.QueueReplay(replayStream, osuUserInDatabase.RenderSettings with { UseExperimentalRenderer = useExperimentalRenderer }, requestedBy);
-        if (renderQueueResponse is null)
-        {
-            await waitMessage.EditAsync(Context.BotClient, language.replayRender_skinNotFound);
-            return;
-        }
-        replayStream.Close();
-
-        var ik = new InlineKeyboardMarkup(
-        [
-            [InlineKeyboardButton.WithCallbackData(language.replayRender_statusButton, $"render-status {renderQueueResponse!.JobId}"),
-                InlineKeyboardButton.WithCallbackData(language.replayRender_cancelButton, $"render-cancel {renderQueueResponse!.JobId}")]
-        ]);
-        Message message = await waitMessage.EditAsync(Context.BotClient, LocalizationMessageHelper.ReplayOnlineQueueSearching(language, $"{onlineRenderersCount}", $"{await _replayRenderService.GetWaitqueueLength(renderQueueResponse!.JobId)}"), replyMarkup: ik);
-
-        int timeoutSeconds = 600;
-        DateTime startedWaiting = DateTime.Now;
-        RenderJob? jobInfo = null;
-
-        bool rendererGotThisJob = false;
-        try
-        {
-            string helpText = string.Empty;
-            if (isRulesetNotStd)
-            {
-                helpText += "\n\n" + language.replayRender_usingExperimentalRenderer;
-            }
-            while (!Context.CancellationToken.IsCancellationRequested)
-            {
-                if (_replayRenderService.IsRenderCancelled(renderQueueResponse!.JobId))
-                {
-                    await message.EditAsync(Context.BotClient, language.replayRender_cancelled);
-                    return;
-                }
-
-                OnlineRenderer[]? currentOnlineRenderers = await _replayRenderService.GetOnlineRenderers();
-                if (currentOnlineRenderers is null || onlineRenderersCount != currentOnlineRenderers!.Length)
-                {
-                    onlineRenderersCount = currentOnlineRenderers?.Length ?? 0;
-                    if (onlineRenderersCount == 0)
-                    {
-                        await message.EditAsync(Context.BotClient, language.replayRender_noRenderersLeft);
-                        return;
-                    }
-                    else if (!rendererGotThisJob)
-                    {
-                        await Task.Delay(3000 + Random.Shared.Next(500, 1500));
-                        await message.EditAsync(Context.BotClient, LocalizationMessageHelper.ReplayOnlineQueueSearchingAgain(language, $"{onlineRenderersCount}", $"{await _replayRenderService.GetWaitqueueLength(renderQueueResponse!.JobId)}"), replyMarkup: ik);
-                    }
-                }
-
-                jobInfo = await _replayRenderService.GetRenderJobInfo(renderQueueResponse!.JobId);
-                if (!rendererGotThisJob && jobInfo!.RenderingBy != -1)
-                {
-                    startedWaiting = DateTime.Now;
-                    rendererGotThisJob = true;
-
-                    OnlineRenderer currentRenderer = currentOnlineRenderers!.First(m => m.RendererId == jobInfo.RenderingBy);
-                    await Task.Delay(1000 + Random.Shared.Next(500, 1500));
-                    await message.EditAsync(Context.BotClient, LocalizationMessageHelper.ReplayRendererInProcess(language, $"{onlineRenderersCount}", currentRenderer.RendererName, currentRenderer.UsedGPU) + helpText, replyMarkup: ik);
-                }
-
-                if (rendererGotThisJob && jobInfo!.RenderingBy == -1)
-                {
-                    rendererGotThisJob = false;
-                    await Task.Delay(1000 + Random.Shared.Next(500, 1500));
-                    await message.EditAsync(Context.BotClient, LocalizationMessageHelper.ReplaySearchingNewRenderer(language, $"{onlineRenderersCount}") + helpText, replyMarkup: ik);
-                }
-
-                if (rendererGotThisJob && DateTime.Now - startedWaiting >= TimeSpan.FromSeconds(timeoutSeconds))
-                {
-                    await Task.Delay(1000 + Random.Shared.Next(500, 1500));
-                    await message.EditAsync(Context.BotClient, LocalizationMessageHelper.ReplayTimeout(language, $"{timeoutSeconds}") + helpText, linkPreviewEnabled: true);
-                    return;
-                }
-
-                if ((jobInfo!.IsComplete || jobInfo.IsSuccess) && jobInfo.FailureReason != "Cancelled")
-                    break;
-
-                await Task.Delay(2000, Context.CancellationToken);
-            }
-        }
-        finally
-        {
-            _replayRenderService.ClearCancelledRender(renderQueueResponse!.JobId);
-        }
-
-        if (!jobInfo!.IsSuccess)
-        {
-            if (jobInfo.FailureReason == "ruleset")
-            {
-                await message.EditAsync(Context.BotClient, language.replayRender_onlyOsuStd);
-                return;
-            }
-            else if (jobInfo.FailureReason == "beatmap_not_found")
-            {
-                await message.EditAsync(Context.BotClient, language.replayRender_beatmapNotFound);
-                return;
-            }
-            else
-            {
-                await message.EditAsync(Context.BotClient, LocalizationMessageHelper.ReplayErrorWithReason(language, jobInfo.FailureReason));
-                return;
-            }
-        }
-
-        string watchUrl = jobInfo!.VideoUri.Replace("/videos/", "/watch/");
-        if (watchUrl.EndsWith(".mp4"))
-        {
-            watchUrl = watchUrl[..^4];
-        }
-
-        _logger.LogInformation("jobInfo.VideoThumbnailUri: {VideoThumbnailUri}", jobInfo.VideoThumbnailUri);
-
-        string videoPath = File.Exists(jobInfo.VideoLocalPath) ? jobInfo.VideoLocalPath : $"./videos/{new Uri(jobInfo.VideoUri).Segments.Last()}";
-        using var fs = new FileStream(jobInfo.VideoLocalPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-
-        string textOrCaption = LocalizationMessageHelper.ReplayFinishedWithLink(language, $"{watchUrl}");
-        InputMediaVideo video = new InputMediaVideo(new InputFileStream(fs))
-        {
-            Caption = textOrCaption,
-            ParseMode = Telegram.Bot.Types.Enums.ParseMode.Html,
-            SupportsStreaming = true,
-            Width = osuUserInDatabase.RenderSettings.VideoWidth,
-            Height = osuUserInDatabase.RenderSettings.VideoHeight,
-            Duration = jobInfo.VideoDuration
-        };
-        if (!string.IsNullOrEmpty(jobInfo.VideoThumbnailUri))
-        {
-            video.Thumbnail = new InputFileUrl(jobInfo.VideoThumbnailUri.Replace("http://", "https://"));
-            video.Cover = new InputFileUrl(jobInfo.VideoThumbnailUri.Replace("http://", "https://"));
-        }
-
-        try
-        {
-            await Context.BotClient.EditMessageMedia(message.Chat.Id, message.Id, video);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error while sending video, sending link instead");
-            await message.EditAsync(Context.BotClient, textOrCaption, linkPreviewEnabled: true);
+            await presentationService.SendVideoAsync(
+                Context.BotClient,
+                render.StatusMessage,
+                render.Job!,
+                renderSettings,
+                language,
+                Context.CancellationToken);
         }
     }
 }

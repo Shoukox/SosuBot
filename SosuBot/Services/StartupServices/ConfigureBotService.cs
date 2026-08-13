@@ -33,7 +33,6 @@ public class ConfigureBotService(IServiceProvider serviceProvider) : IHostedServ
         CreateBotCommand(OsuChatstatsCommand.Commands[0], OsuChatstatsCommand.Description),
         CreateBotCommand(OsuChatstatsExcludeCommand.Commands[0], OsuChatstatsExcludeCommand.Description),
         CreateBotCommand(OsuChatstatsIncludeCommand.Commands[0], OsuChatstatsIncludeCommand.Description),
-        CreateBotCommand(OsuLastCommand.Commands[0], OsuLastCommand.Description),
         CreateBotCommand(OsuLastBestCommand.Commands[0], OsuLastBestCommand.Description),
         CreateBotCommand(OsuUpdateCommand.Commands[0], OsuUpdateCommand.Description),
         CreateBotCommand(OsuChatBeatmapLeaderboardCommand.Commands[0], OsuChatBeatmapLeaderboardCommand.Description),
@@ -53,10 +52,6 @@ public class ConfigureBotService(IServiceProvider serviceProvider) : IHostedServ
         CreateBotCommand(HelpCommand.Commands[0], HelpCommand.Description),
         CreateBotCommand(SetLanguageCommand.Commands[0], SetLanguageCommand.Description),
         CreateBotCommand(StartCommand.Commands[0], StartCommand.Description),
-        CreateBotCommand(MsgCommand.Commands[0], MsgCommand.Description),
-        CreateBotCommand(DbCommand.Commands[0], DbCommand.Description),
-        CreateBotCommand(CustomCommand.Commands[0], CustomCommand.Description),
-        CreateBotCommand(DeleteCommand.Commands[0], DeleteCommand.Description),
     ];
 
     private static BotCommand CreateBotCommand(string command, string description) =>
@@ -115,6 +110,7 @@ public class ConfigureBotService(IServiceProvider serviceProvider) : IHostedServ
         RegisterCommand<RandomBeatmapCommand>(RandomBeatmapCommand.Commands);
         RegisterCommand<OsuCardCommand>(OsuCardCommand.Commands);
         RegisterCommand<VideoPreviewCommand>(VideoPreviewCommand.Commands);
+        RegisterCommand<PostVideoCommand>(PostVideoCommand.Commands);
 
         // Register callbacks
         RegisterCallback<OsuUserCallback>(OsuUserCallback.Command);

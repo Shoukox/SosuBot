@@ -104,6 +104,7 @@ public sealed class CustomCommand : CommandBase<Message>
     private BotContext _database = null!;
     private ILogger<CustomCommand> _logger = null!;
     private IPerformanceCalculator _performanceCalculator = null!;
+    private ChatModerationService _chatModerationService = null!;
 
     public override async Task BeforeExecuteAsync()
     {
@@ -115,22 +116,42 @@ public sealed class CustomCommand : CommandBase<Message>
         _database = Context.ServiceProvider.GetRequiredService<BotContext>();
         _logger = Context.ServiceProvider.GetRequiredService<ILogger<CustomCommand>>();
         _performanceCalculator = Context.ServiceProvider.GetRequiredService<IPerformanceCalculator>();
+        _chatModerationService = Context.ServiceProvider.GetRequiredService<ChatModerationService>();
     }
 
     public override async Task ExecuteAsync()
     {
-        OsuUser? osuUserInDatabase = await _database.OsuUsers.FindAsync(Context.Update.From!.Id);
-        if (osuUserInDatabase is null || !osuUserInDatabase.IsAdmin)
-        {
-            await Context.Update.ReplyAsync(Context.BotClient, "Пшол вон!");
-            return;
-        }
-
         var parameters = Context.Update.Text!.GetCommandParameters()!;
         if (parameters.Length == 0)
         {
             await Context.Update.ReplyAsync(Context.BotClient,
-                "Примеры: /c markdown\n/c json\n/c ai текст");
+                "Примеры: /c markdown\n/c json\n/c ai текст\n/c kick (ответом на сообщение)");
+            return;
+        }
+
+        // Chat moderation is intentionally restricted to the creator's exact
+        // Telegram ID. Other users with the legacy IsAdmin flag must not be
+        // able to acquire moderation powers through /c.
+        if (ChatModerationService.IsModerationCommand(parameters[0]))
+        {
+            if (!ChatModerationService.IsCreator(Context.Update.From!.Id))
+            {
+                await Context.Update.ReplyAsync(Context.BotClient, "Пшол вон!");
+                return;
+            }
+
+            await _chatModerationService.ExecuteAsync(
+                Context.BotClient,
+                Context.Update,
+                parameters,
+                Context.CancellationToken);
+            return;
+        }
+
+        OsuUser? osuUserInDatabase = await _database.OsuUsers.FindAsync(Context.Update.From!.Id);
+        if (osuUserInDatabase is null || !osuUserInDatabase.IsAdmin)
+        {
+            await Context.Update.ReplyAsync(Context.BotClient, "Пшол вон!");
             return;
         }
 

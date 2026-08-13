@@ -17,10 +17,9 @@ namespace SosuBot.TelegramHandlers.Commands;
 
 public sealed class OsuUpdateCommand : CommandBase<Message>
 {
-    public static readonly string[] Commands = ["/update", "/upd", "/up", "/info"];
+    public static readonly string[] Commands = ["/info", "/update", "/upd", "/up"];
     public static readonly string Description = "[user] обновить информацию об игроке";
     private BanchoApiV2 _osuApiV2 = null!;
-    private RateLimiterFactory _rateLimiterFactory = null!;
     private ScoreHelper _scoreHelper = null!;
     private BotContext _database = null!;
     private HybridCache _cache = null!;
@@ -29,7 +28,6 @@ public sealed class OsuUpdateCommand : CommandBase<Message>
     {
         await base.BeforeExecuteAsync();
         _osuApiV2 = Context.ServiceProvider.GetRequiredService<BanchoApiV2>();
-        _rateLimiterFactory = Context.ServiceProvider.GetRequiredService<RateLimiterFactory>();
         _scoreHelper = Context.ServiceProvider.GetRequiredService<ScoreHelper>();
         _database = Context.ServiceProvider.GetRequiredService<BotContext>();
         _cache = Context.ServiceProvider.GetRequiredService<HybridCache>();
