@@ -179,13 +179,19 @@ namespace SosuBot.Services
             }
         }
 
-        public async Task<RenderQueuedResponse?> QueueReplay(Stream replayFile, RenderSettings danserConfiguration, string requestedBy)
+        public async Task<RenderQueuedResponse?> QueueReplay(Stream? replayFile, RenderSettings danserConfiguration, string requestedBy)
         {
-            var multipart = new MultipartFormDataContent()
+            using var multipart = new MultipartFormDataContent();
+            if (replayFile is not null)
             {
-                { new StreamContent(replayFile), "file", "replay.osr" },
-                { new StringContent(JsonConvert.SerializeObject(danserConfiguration, Formatting.None), System.Text.Encoding.UTF8, MediaTypeNames.Application.Json), "config" }
-            };
+                multipart.Add(new StreamContent(replayFile), "file", "replay.osr");
+            }
+
+            multipart.Add(new StringContent(
+                JsonConvert.SerializeObject(danserConfiguration, Formatting.None),
+                System.Text.Encoding.UTF8,
+                MediaTypeNames.Application.Json),
+                "config");
             var headers = new Dictionary<string, string>()
             {
                 ["Requested-By"] = requestedBy

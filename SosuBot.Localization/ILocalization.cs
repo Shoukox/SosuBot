@@ -160,6 +160,7 @@ public interface ILocalization
     public string replayRender_scoreNotFound { get; }
     public string replayRender_scoreHasNoReplay { get; }
     public string replayRender_usage { get; }
+    public string replayRender_invalidReplay { get; }
     public string replayRender_skinNotFound { get; }
     public string replayRender_beatmapNotFound { get; }
     public string replayRender_statusButton { get; }
@@ -177,6 +178,8 @@ public interface ILocalization
     public string replayRender_finishedWithLink { get; }
     public string replayRender_cancelled { get; }
     public string replayRender_beatmapLengthTooLong { get; }
+
+    public string postVideo_usage { get; }
 
     public string text_songPreviewButton { get; }
     public string text_tooManyObjectsNoPp { get; }

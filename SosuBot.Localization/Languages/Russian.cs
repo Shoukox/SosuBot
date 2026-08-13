@@ -249,9 +249,10 @@ public sealed class Russian : ILocalization
     public string replayRender_noRenderers => "Нету ни одного доступного рендерера для рендера реплеев. Попробуй в другой раз";
     public string replayRender_scoreNotFound => "<a href=\"{}\">Скор</a> не найден";
     public string replayRender_scoreHasNoReplay => "<a href=\"{}\">Скор</a> не имеет реплея";
-    public string replayRender_usage => "Используй эту команду на реплей файл или на скор с реплеем.\nЛибо укажи ссылку на скор после команды.";
+    public string replayRender_usage => "Ответь /render на сообщение с .osr, ссылкой на скор или картой osu! для autoplay.\nТакже можно: /render auto +DTHD (моды указываются после команды).";
+    public string replayRender_invalidReplay => "Отправленный файл не является корректным osu! реплеем (.osr) или повреждён.";
     public string replayRender_skinNotFound => "Вероятно, твой выбранный скин не был найден на сервере - выбери другой.";
-    public string replayRender_beatmapNotFound => "Карта из этого реплея не найдена ни на зеркалах, ни на сайте осу. Может быть, это локальная карта?";
+    public string replayRender_beatmapNotFound => "Указанная карта не найдена ни на зеркалах, ни на сайте osu!. Возможно, это локальная карта?";
     public string replayRender_statusButton => "Статус";
     public string replayRender_cancelButton => "Отменить";
     public string replayRender_settingsAd => "Используй /settings для настройки рендерера.";
@@ -267,6 +268,8 @@ public sealed class Russian : ILocalization
     public string replayRender_finishedWithLink => "Рендер завершен.\n<a href=\"{}\">Ссылка на видео</a>";
     public string replayRender_cancelled => "Рендер был отменен.";
     public string replayRender_beatmapLengthTooLong => "Карта в этом реплее длится слишком долго. Попробуй карту, которая длится менее 30 минут. Для экспериментального рендерера лимит установлен на 20 минутах.";
+
+    public string postVideo_usage => "Используй /postvideo со ссылкой на скор osu! или ответь этой командой на сообщение со ссылкой на скор.";
 
     public string text_songPreviewButton => "Song preview";
     public string text_tooManyObjectsNoPp => "В карте слишком много объектов, пп расчет не будет проведен.";

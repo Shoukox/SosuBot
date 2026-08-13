@@ -29,5 +29,12 @@
         public bool UseExperimentalRenderer { get; set; } = false;
         public double ManiaScrollSpeed { get; set; } = 25.0;
         public bool ManiaScrollDirectionUp { get; set; } = false;
+
+        // These properties are populated only for a single autoplay render job.
+        // They are kept in the per-user settings JSON for backwards-compatible
+        // transport to the render server.
+        public bool UseAutoPlay { get; set; } = false;
+        public int? AutoBeatmapId { get; set; }
+        public string[] AutoMods { get; set; } = [];
     }
 }
