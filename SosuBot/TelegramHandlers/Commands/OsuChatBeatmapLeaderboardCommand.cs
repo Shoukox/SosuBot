@@ -44,14 +44,12 @@ public sealed class OsuChatBeatmapLeaderboardCommand : CommandBase<Message>
             return;
         }
 
-        OsuUser? osuUserInDatabase = await _database.OsuUsers.FindAsync(Context.Update.From!.Id);
-        if (osuUserInDatabase is null || !osuUserInDatabase.IsAdmin)
-        {
-            await Context.Update.ReplyAsync(Context.BotClient, language.beatmapLeaderboard_adminOnly);
-            return;
-        }
-
-
+        // OsuUser? osuUserInDatabase = await _database.OsuUsers.FindAsync(Context.Update.From!.Id);
+        // if (osuUserInDatabase is null || !osuUserInDatabase.IsAdmin)
+        // {
+        //     await Context.Update.ReplyAsync(Context.BotClient, language.beatmapLeaderboard_adminOnly);
+        //     return;
+        // }
         TelegramChat? chatInDatabase = await _database.TelegramChats.FindAsync(Context.Update.Chat.Id);
         Message waitMessage = await Context.Update.ReplyAsync(Context.BotClient, language.waiting);
 
@@ -96,7 +94,7 @@ public sealed class OsuChatBeatmapLeaderboardCommand : CommandBase<Message>
         // Fake delay to avoid hitting rate limits
         await Task.Delay(1000);
 
-        int delayPerUser = 1000; // 1 second per user
+        int delayPerUser = 1500; // 1 second per user
         int delay = delayPerUser * foundChatMembers.Count;
         await waitMessage.EditAsync(Context.BotClient, LocalizationMessageHelper.BeatmapLeaderboardProgress(language,
             $"{foundChatMembers.Count}",

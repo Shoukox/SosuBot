@@ -14,6 +14,7 @@ using System.Globalization;
 using Telegram.Bot;
 using Telegram.Bot.Exceptions;
 using Telegram.Bot.Types;
+#pragma warning disable CS9113 // Parameter is unread.
 
 namespace SosuBot.TelegramHandlers.Commands;
 
@@ -36,98 +37,101 @@ public sealed class OsuCardCommand(
             await Context.Update.ReplyAsync(Context.BotClient, language.common_rateLimitSlowDown);
             return;
         }
+        
+        await Context.Update.ReplyAsync(Context.BotClient, "В разработке...");
+        return;
 
-        ParsedArguments? arguments = ParseArguments(Context.Update.Text!);
-        if (arguments is null)
-        {
-            await Context.Update.ReplyAsync(Context.BotClient, language.osuCard_usage);
-            return;
-        }
-
-        BotContext database = Context.ServiceProvider.GetRequiredService<BotContext>();
-        OsuUser? registeredUser = await database.OsuUsers.FindAsync(
-            [Context.Update.From!.Id], Context.CancellationToken);
-        string username;
-        Playmode? playmode;
-
-        if (string.IsNullOrWhiteSpace(arguments.Username))
-        {
-            if (registeredUser is null)
-            {
-                await Context.Update.ReplyAsync(Context.BotClient, language.osuCard_usage);
-                return;
-            }
-
-            username = registeredUser.OsuUsername;
-            playmode = arguments.Playmode ?? registeredUser.OsuMode;
-        }
-        else
-        {
-            if (arguments.Username.StartsWith('@'))
-            {
-                await Context.Update.ReplyAsync(Context.BotClient, language.error_dontUseTelegramUsername);
-                return;
-            }
-
-            username = arguments.Username;
-            playmode = arguments.Playmode;
-        }
-
-        Message waitMessage = await Context.Update.ReplyAsync(Context.BotClient, language.waiting);
-        GetUserResponse? userResponse = playmode is { } selectedPlaymode
-            ? await osuApi.Users.GetUser(
-                $"@{username}",
-                new GetUserQueryParameters(),
-                selectedPlaymode.ToRuleset(),
-                Context.CancellationToken)
-            : await osuApi.Users.GetUser($"@{username}", new GetUserQueryParameters(),
-                cancellationToken: Context.CancellationToken);
-        UserExtend? user = userResponse?.UserExtend;
-        if (user is null)
-        {
-            await waitMessage.EditAsync(Context.BotClient, language.error_userNotFound);
-            return;
-        }
-
-        playmode ??= user.Playmode is { } userRuleset
-            ? userRuleset.ParseRulesetToPlaymode()
-            : Playmode.Osu;
-        OsuCardGenerationResult result = await cardService.GenerateAsync(user, playmode.Value,
-            Context.CancellationToken);
-        if (result.Failure == OsuCardGenerationFailure.NoScores)
-        {
-            await waitMessage.EditAsync(Context.BotClient, language.error_noBestScores);
-            return;
-        }
-
-        if (result.Failure != OsuCardGenerationFailure.None || result.Image is null || result.Skills is null)
-        {
-            await waitMessage.EditAsync(Context.BotClient, language.osuCard_calculationFailed);
-            return;
-        }
-
-        string caption = language.osuCard_caption.Fill([
-            user.Username!.EncodeHtml()!,
-            playmode.Value.ToGamemode(),
-            result.Skills.CalculatedScores.ToString(CultureInfo.InvariantCulture),
-            result.RequestedScores.ToString(CultureInfo.InvariantCulture)
-        ]);
-
-        using MemoryStream image = new(result.Image, writable: false);
-        await Context.Update.ReplyPhotoAsync(
-            Context.BotClient,
-            new InputFileStream(image, "osucard.png"),
-            caption);
-
-        try
-        {
-            await Context.BotClient.DeleteMessage(waitMessage.Chat.Id, waitMessage.MessageId,
-                Context.CancellationToken);
-        }
-        catch (ApiRequestException exception)
-        {
-            logger.LogDebug(exception, "Could not delete the /osucard progress message");
-        }
+        // ParsedArguments? arguments = ParseArguments(Context.Update.Text!);
+        // if (arguments is null)
+        // {
+        //     await Context.Update.ReplyAsync(Context.BotClient, language.osuCard_usage);
+        //     return;
+        // }
+        //
+        // BotContext database = Context.ServiceProvider.GetRequiredService<BotContext>();
+        // OsuUser? registeredUser = await database.OsuUsers.FindAsync(
+        //     [Context.Update.From!.Id], Context.CancellationToken);
+        // string username;
+        // Playmode? playmode;
+        //
+        // if (string.IsNullOrWhiteSpace(arguments.Username))
+        // {
+        //     if (registeredUser is null)
+        //     {
+        //         await Context.Update.ReplyAsync(Context.BotClient, language.osuCard_usage);
+        //         return;
+        //     }
+        //
+        //     username = registeredUser.OsuUsername;
+        //     playmode = arguments.Playmode ?? registeredUser.OsuMode;
+        // }
+        // else
+        // {
+        //     if (arguments.Username.StartsWith('@'))
+        //     {
+        //         await Context.Update.ReplyAsync(Context.BotClient, language.error_dontUseTelegramUsername);
+        //         return;
+        //     }
+        //
+        //     username = arguments.Username;
+        //     playmode = arguments.Playmode;
+        // }
+        //
+        // Message waitMessage = await Context.Update.ReplyAsync(Context.BotClient, language.waiting);
+        // GetUserResponse? userResponse = playmode is { } selectedPlaymode
+        //     ? await osuApi.Users.GetUser(
+        //         $"@{username}",
+        //         new GetUserQueryParameters(),
+        //         selectedPlaymode.ToRuleset(),
+        //         Context.CancellationToken)
+        //     : await osuApi.Users.GetUser($"@{username}", new GetUserQueryParameters(),
+        //         cancellationToken: Context.CancellationToken);
+        // UserExtend? user = userResponse?.UserExtend;
+        // if (user is null)
+        // {
+        //     await waitMessage.EditAsync(Context.BotClient, language.error_userNotFound);
+        //     return;
+        // }
+        //
+        // playmode ??= user.Playmode is { } userRuleset
+        //     ? userRuleset.ParseRulesetToPlaymode()
+        //     : Playmode.Osu;
+        // OsuCardGenerationResult result = await cardService.GenerateAsync(user, playmode.Value,
+        //     Context.CancellationToken);
+        // if (result.Failure == OsuCardGenerationFailure.NoScores)
+        // {
+        //     await waitMessage.EditAsync(Context.BotClient, language.error_noBestScores);
+        //     return;
+        // }
+        //
+        // if (result.Failure != OsuCardGenerationFailure.None || result.Image is null || result.Skills is null)
+        // {
+        //     await waitMessage.EditAsync(Context.BotClient, language.osuCard_calculationFailed);
+        //     return;
+        // }
+        //
+        // string caption = language.osuCard_caption.Fill([
+        //     user.Username!.EncodeHtml()!,
+        //     playmode.Value.ToGamemode(),
+        //     result.Skills.CalculatedScores.ToString(CultureInfo.InvariantCulture),
+        //     result.RequestedScores.ToString(CultureInfo.InvariantCulture)
+        // ]);
+        //
+        // using MemoryStream image = new(result.Image, writable: false);
+        // await Context.Update.ReplyPhotoAsync(
+        //     Context.BotClient,
+        //     new InputFileStream(image, "osucard.png"),
+        //     caption);
+        //
+        // try
+        // {
+        //     await Context.BotClient.DeleteMessage(waitMessage.Chat.Id, waitMessage.MessageId,
+        //         Context.CancellationToken);
+        // }
+        // catch (ApiRequestException exception)
+        // {
+        //     logger.LogDebug(exception, "Could not delete the /osucard progress message");
+        // }
     }
 
     private static ParsedArguments? ParseArguments(string messageText)

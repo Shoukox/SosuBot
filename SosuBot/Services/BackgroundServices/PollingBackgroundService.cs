@@ -42,6 +42,10 @@ public sealed class PollingBackgroundService(IServiceProvider serviceProvider) :
             _logger.LogInformation("Polling background service stopped during startup");
             return;
         }
+        catch (TaskCanceledException exception) when (!stoppingToken.IsCancellationRequested)
+        {
+            _logger.LogWarning(exception, "Timed out while inspecting pending Telegram updates; polling will retry");
+        }
         catch (ApiRequestException exception)
         {
             _logger.LogWarning(
@@ -87,6 +91,15 @@ public sealed class PollingBackgroundService(IServiceProvider serviceProvider) :
             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
             {
                 break;
+            }
+            catch (TaskCanceledException exception) when (!stoppingToken.IsCancellationRequested)
+            {
+                consecutiveFailures++;
+                _logger.LogWarning(
+                    exception,
+                    "Telegram polling timed out; retry {FailureCount}",
+                    consecutiveFailures);
+                await DelayAfterFailure(consecutiveFailures, stoppingToken);
             }
             catch (ApiRequestException exception)
             {

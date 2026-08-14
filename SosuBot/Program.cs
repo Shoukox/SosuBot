@@ -80,6 +80,7 @@ internal class Program
 
         // Policy
         IAsyncPolicy<HttpResponseMessage> pollyPolicies = PollyPolicies.GetCombinedPolicy();
+        IAsyncPolicy<HttpResponseMessage> telegramPollyPolicy = PollyPolicies.GetTelegramPolicy();
 
         // Services
         IConfigurationSection botConfig = builder.Configuration.GetSection(nameof(BotConfiguration));
@@ -97,7 +98,12 @@ internal class Program
         builder.Services.AddHostedService<MetricsSnapshotBackgroundService>();
         builder.Services.AddSingleton<TelegramUserDirectory>();
         builder.Services.AddSingleton<ChatModerationService>();
-        builder.Services.AddCustomHttpClient(nameof(ITelegramBotClient), 32_767, retryPolicy: pollyPolicies)
+        builder.Services.AddCustomHttpClient(
+                            nameof(ITelegramBotClient),
+                            32_767,
+                            timeout: TimeSpan.FromSeconds(45),
+                            retryPolicy: telegramPollyPolicy,
+                            connectTimeout: TimeSpan.FromSeconds(8))
                         .AddTypedClient<ITelegramBotClient>((httpClient, sp) =>
                         {
                             IOptions<BotConfiguration> options = sp.GetRequiredService<IOptions<BotConfiguration>>();
@@ -126,6 +132,13 @@ internal class Program
         builder.Services.AddSingleton<ScoreHelper>();
         builder.Services.AddSingleton<OfficialPerformanceHelper>();
         builder.Services.AddSingleton<PlayerSkillCalculator>();
+        builder.Services.AddSingleton<OsuStandardSkillCalculator>(_ =>
+        {
+            SkillRatingOptions options = builder.Configuration
+                .GetSection("SkillRating")
+                .Get<SkillRatingOptions>() ?? new SkillRatingOptions();
+            return new OsuStandardSkillCalculator(options);
+        });
         builder.Services.AddSingleton<ProfileCardGenerator>();
         builder.Services.AddSingleton<ScorePreviewGenerator>();
         builder.Services.AddSingleton<OsuCardService>();

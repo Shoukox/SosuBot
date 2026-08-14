@@ -6,7 +6,7 @@
 
 services:
   sosubot-service:
-    image: "${SOSUBOT_IMAGE:-shoukko/sosubot:latest}"
+    image: "${SOSUBOT_IMAGE:-registry.sh.n1.0x79.net/sosubot:latest}"
     build:
       context: .
       dockerfile: ./SosuBot/Dockerfile
@@ -54,7 +54,7 @@ services:
     stop_grace_period: 30s
 
   scores-observer-service:
-    image: "${SCORES_OBSERVER_IMAGE:-shoukko/sosubot-scores-observer:latest}"
+    image: "${SCORES_OBSERVER_IMAGE:-registry.sh.n1.0x79.net/sosubot_observer:latest}"
     build:
       context: .
       dockerfile: ./SosuBot.ScoresObserver/Dockerfile
@@ -65,8 +65,7 @@ services:
       Monitoring__Enabled: "true"
       Monitoring__Port: "9090"
       ScoresObserverConfiguration__CreateDeliveries: "${SCORES_OBSERVER_CREATE_DELIVERIES:-true}"
-      ConnectionStrings__Postgres: "Host=db-service;Port=5432;Database=${POSTGRES_DB:-sosubot};Username=${POSTGRES_USER:-sosubot}"
-      Database__PasswordFile: /run/sosubot-secrets/db-password
+      Database__PasswordFile: /run/secrets/db-password
       Sentry__Dsn: "${SENTRY_DSN:-}"
       Sentry__Environment: "${SENTRY_ENVIRONMENT:-production}"
       Sentry__Release: "${SENTRY_OBSERVER_RELEASE:-sosubot-scores-observer-local}"
