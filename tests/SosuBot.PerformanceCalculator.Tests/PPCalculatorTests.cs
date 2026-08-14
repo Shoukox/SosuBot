@@ -1,4 +1,5 @@
 using osu.Game.Rulesets.Scoring;
+using osu.Game.Rulesets.Osu.Difficulty;
 using osu.Game.Rulesets.Osu.Mods;
 using SosuBot.PerformanceCalculator;
 using Xunit;
@@ -25,6 +26,9 @@ public sealed class PPCalculatorTests
         Assert.True(result!.PP > 0);
         Assert.Equal(1, result.CalculatedAccuracy);
         Assert.Equal(result.BeatmapHitObjectsCount, result.ScoreHitResultsCount);
+        Assert.IsType<OsuPerformanceAttributes>(result.PerformanceAttributes);
+        Assert.True(((OsuPerformanceAttributes)result.PerformanceAttributes).Aim > 0);
+        Assert.True(((OsuPerformanceAttributes)result.PerformanceAttributes).Accuracy > 0);
     }
 
     [Fact]

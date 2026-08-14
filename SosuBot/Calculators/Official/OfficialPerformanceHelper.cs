@@ -21,6 +21,7 @@ public sealed class OfficialPerformanceHelper(
         Score score,
         Playmode playmode,
         bool calculateCurrent = true,
+        bool calculatePerfect = false,
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(beatmapFile);
@@ -50,21 +51,38 @@ public sealed class OfficialPerformanceHelper(
                     cancellationToken)
                 : null;
 
-            double fcAccuracy = playmode is Playmode.Mania or Playmode.Taiko
-                ? 1
-                : score.Accuracy ?? current?.CalculatedAccuracy ?? 1;
-            PPCalculationResult? ifFc = await CalculateAsync(
-                beatmapFile,
-                score.BeatmapId.Value,
-                fcAccuracy,
-                passed: true,
-                scoreMaxCombo: null,
-                mods,
-                scoreStatistics: null,
-                playmode,
-                cancellationToken);
+            PPCalculationResult? ifFc = null;
+            if (!calculatePerfect)
+            {
+                double fcAccuracy = playmode is Playmode.Mania or Playmode.Taiko
+                    ? 1
+                    : score.Accuracy ?? current?.CalculatedAccuracy ?? 1;
+                ifFc = await CalculateAsync(
+                    beatmapFile,
+                    score.BeatmapId.Value,
+                    fcAccuracy,
+                    passed: true,
+                    scoreMaxCombo: null,
+                    mods,
+                    scoreStatistics: null,
+                    playmode,
+                    cancellationToken);
+            }
 
-            return new OfficialScoreCalculation(current, ifFc);
+            PPCalculationResult? perfect = calculatePerfect
+                ? await CalculateAsync(
+                    beatmapFile,
+                    score.BeatmapId.Value,
+                    accuracy: 1,
+                    passed: true,
+                    scoreMaxCombo: null,
+                    mods,
+                    scoreStatistics: null,
+                    playmode,
+                    cancellationToken)
+                : null;
+
+            return new OfficialScoreCalculation(current, ifFc, perfect);
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
@@ -152,4 +170,5 @@ public sealed class OfficialPerformanceHelper(
 
 public sealed record OfficialScoreCalculation(
     PPCalculationResult? Current,
-    PPCalculationResult? IfFc);
+    PPCalculationResult? IfFc,
+    PPCalculationResult? Perfect = null);

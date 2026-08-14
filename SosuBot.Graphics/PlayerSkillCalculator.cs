@@ -3,9 +3,9 @@ using SosuBot.Graphics.Models;
 namespace SosuBot.Graphics;
 
 /// <summary>
-/// Ports the player skill formulas from TinyBot's calc_player_skill.js.
-/// Values shown on a card are the average skill across at most 50 best scores,
-/// multiplied by 100 in the same way as the original card command.
+/// Legacy skill formulas for non-standard osu! modes. osu!standard cards use
+/// <see cref="OsuStandardSkillCalculator"/>, which compares actual and SS
+/// osu!lazer performance components.
 /// </summary>
 public sealed class PlayerSkillCalculator
 {
@@ -35,9 +35,6 @@ public sealed class PlayerSkillCalculator
 
             switch (input.Mode)
             {
-                case OsuGameMode.Osu:
-                    CalculateOsu(input, ref aimTotal, ref speedTotal, ref accuracyTotal);
-                    break;
                 case OsuGameMode.Taiko:
                     CalculateTaiko(input, ref speedTotal, ref accuracyTotal);
                     break;
@@ -47,6 +44,9 @@ public sealed class PlayerSkillCalculator
                 case OsuGameMode.Mania:
                     CalculateMania(input, ref aimTotal, ref speedTotal, ref accuracyTotal);
                     break;
+                case OsuGameMode.Osu:
+                    throw new InvalidOperationException(
+                        "osu!standard skill calculation must use OsuStandardSkillCalculator.");
                 default:
                     throw new ArgumentOutOfRangeException(nameof(input.Mode), input.Mode, "Unknown osu! mode.");
             }
@@ -59,51 +59,6 @@ public sealed class PlayerSkillCalculator
             Accuracy: Sanitize(accuracyTotal / count * 100),
             Stars: Sanitize(starTotal / count),
             CalculatedScores: inputs.Length);
-    }
-
-    private static void CalculateOsu(PlayerScoreSkillInput input, ref double aimTotal, ref double speedTotal,
-        ref double accuracyTotal)
-    {
-        double aim = input.AimDifficulty
-                     * Math.Pow(input.CircleSize, 0.1) / Math.Pow(4, 0.1)
-                     * 2;
-        double speed = input.SpeedDifficulty
-                       * Math.Pow(input.Bpm, 0.09) / Math.Pow(180, 0.09)
-                       * Math.Pow(input.ApproachRate, 0.1) / Math.Pow(6, 0.1)
-                       * 2;
-
-        // TinyBot adds the unadjusted aim/speed values to their averages. The DT/NC
-        // unbalance adjustment affects only the accuracy-skill expression below.
-        aimTotal += Sanitize(aim);
-        speedTotal += Sanitize(speed);
-
-        double combinedSkill = aim + speed;
-        bool isUnbalanced = combinedSkill > 0
-                            && Math.Abs(aim - speed) >
-                            Math.Pow(5, Math.Log(combinedSkill) / Math.Log(1.7)) / 2940;
-        if (HasAnyMod(input, "DT", "NC") && isUnbalanced)
-        {
-            aim /= 1.06;
-            speed /= 1.06;
-        }
-
-        double accuracyRatio = Math.Pow(input.AccuracyPercent, 2.5) / Math.Pow(100, 2.5);
-        double speedNotes = Math.Max(input.SpeedNoteCount, 1);
-        double noteFactor = Math.Log10(speedNotes * 900_000_000);
-        double comboRatio = Math.Clamp((double)input.Combo / Math.Max(input.MaximumCombo, 1), 0, 1);
-
-        double aimExponent = accuracyRatio
-                             * (0.083 * noteFactor * (Math.Pow(1.42, comboRatio) - 0.3));
-        double speedExponent = accuracyRatio
-                               * (0.0945 * noteFactor * (Math.Pow(1.35, comboRatio) - 0.3));
-        double accuracy = (Math.Pow(aim / 2, aimExponent) + Math.Pow(speed / 2, speedExponent))
-                          * Math.Pow(input.OverallDifficulty, 0.02) / Math.Pow(6, 0.02)
-                          * Math.Pow(input.DrainRate, 0.02) / Math.Pow(6, 0.02);
-
-        if (HasAnyMod(input, "FL"))
-            accuracy *= 0.095 * noteFactor;
-
-        accuracyTotal += Sanitize(accuracy);
     }
 
     private static void CalculateTaiko(PlayerScoreSkillInput input, ref double speedTotal,
@@ -166,9 +121,6 @@ public sealed class PlayerSkillCalculator
         return Sanitize(Math.Pow(value, Math.Log(bpm) / denominator));
     }
 
-    private static bool HasAnyMod(PlayerScoreSkillInput input, params string[] acronyms) =>
-        input.Mods.Any(mod => acronyms.Contains(mod, StringComparer.OrdinalIgnoreCase));
-
     private static bool IsUsable(PlayerScoreSkillInput input) =>
         input.StarRating > 0
         && input.AccuracyPercent is >= 0 and <= 100
@@ -189,4 +141,5 @@ public sealed class PlayerSkillCalculator
         && double.IsFinite(input.SpeedNoteCount);
 
     private static double Sanitize(double value) => double.IsFinite(value) && value >= 0 ? value : 0;
+
 }

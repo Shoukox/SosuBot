@@ -14,7 +14,8 @@ public static class ServiceCollectionExtensions
         int executionsPerMinute,
         TimeSpan? timeout = null,
         int? executionsPerSecond = null,
-        IAsyncPolicy<HttpResponseMessage>? retryPolicy = null)
+        IAsyncPolicy<HttpResponseMessage>? retryPolicy = null,
+        TimeSpan? connectTimeout = null)
     {
         IHttpClientBuilder builder = services.AddHttpClient(name);
 
@@ -22,11 +23,21 @@ public static class ServiceCollectionExtensions
         if (retryPolicy is not null)
             builder.AddPolicyHandler(retryPolicy);
 
+        if (connectTimeout is { } configuredConnectTimeout)
+        {
+            if (configuredConnectTimeout <= TimeSpan.Zero)
+                throw new ArgumentOutOfRangeException(nameof(connectTimeout));
+
+            builder.ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler
+            {
+                ConnectTimeout = configuredConnectTimeout
+            });
+        }
+
         return builder
             .ConfigureHttpClient(client =>
             {
                 client.Timeout = timeout ?? TimeSpan.FromSeconds(120);
-                client.DefaultRequestHeaders.ConnectionClose = true;
             })
             .AddHttpMessageHandler(sp => new OutboundHttpMetricsHandler(
                 sp.GetRequiredService<BotMetrics>(),

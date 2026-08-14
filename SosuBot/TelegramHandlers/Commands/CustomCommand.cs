@@ -33,14 +33,14 @@ public sealed class CustomCommand : CommandBase<Message>
     public static readonly string Description = "служебные команды администратора";
 
     private const string MarkdownExamples = """
-        *MarkdownV2* \- примеры синтаксиса Telegram
+        *MarkdownV2* \- все возможности форматирования Telegram
 
         *Жирный текст*
         _Курсивный текст_
         __Подчёркнутый текст__
         ~Зачёркнутый текст~
         ||Спойлер||
-        *Жирный _курсив_ ~зачёркнутый~ текст*
+        *bold _italic bold ~italic bold strikethrough ||italic bold strikethrough spoiler||~ __underline italic bold___ bold*
 
         Ссылки и специальные сущности:
         [Ссылка](https://example.com/)
@@ -86,15 +86,12 @@ public sealed class CustomCommand : CommandBase<Message>
         `[inline mention](tg://user?id=123456789)`
         `![👍](tg://emoji?id=5368324170671202286)`
         `![22:45 tomorrow](tg://time?unix=1647531900&format=wDT)`
-        \`inline fixed-width code\`
         `inline fixed-width code`
-        \`\`\`python
-        pre-formatted fixed-width code block
-        \`\`\`
         `>Block quotation started`
         `**>Expandable block quotation started ...||`
 
-        В обычном тексте специальные символы нужно экранировать обратной косой чертой.
+        Экранирование специальных символов:
+        \\ \_ \* \[ \] \( \) \~ \` \> \# \+ \- \= \| \{ \} \. \!
         """;
 
     private OpenAiService _openaiService = null!;

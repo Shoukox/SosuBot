@@ -10,34 +10,6 @@ public sealed class PlayerSkillCalculatorTests
 {
     private readonly PlayerSkillCalculator _calculator = new();
 
-    [Fact]
-    public void Calculate_OsuFormulaMatchesTinyBot()
-    {
-        PlayerSkills result = _calculator.Calculate([
-            CreateScore(OsuGameMode.Osu) with
-            {
-                StarRating = 6.4,
-                AimDifficulty = 3.1,
-                SpeedDifficulty = 2.8,
-                CircleSize = 4.2,
-                Bpm = 190,
-                ApproachRate = 9.5,
-                AccuracyPercent = 98.2,
-                Combo = 1000,
-                MaximumCombo = 1200,
-                OverallDifficulty = 9,
-                DrainRate = 6,
-                SpeedNoteCount = 250,
-                Mods = ["HD"]
-            }
-        ]);
-
-        AssertClose(623.0323816830773, result.Aim);
-        AssertClose(606.8701630903861, result.Speed);
-        AssertClose(591.8445808148624, result.Accuracy);
-        AssertClose(6.4, result.Stars);
-    }
-
     [Theory]
     [MemberData(nameof(LegacyModeFixtures))]
     public void Calculate_LegacyModeFormulasMatchTinyBot(PlayerScoreSkillInput input, PlayerSkills expected)

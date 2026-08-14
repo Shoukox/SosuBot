@@ -242,7 +242,10 @@ public sealed class ReplayRenderPreparationService(
             replayStream.Position = 0;
             try
             {
-                replayInfo = OsuParsers.Decoders.ReplayDecoder.Decode(replayStream);
+                // ReplayDecoder disposes the stream it receives. Decode a copy so
+                // that the original stream can still be passed to the renderer.
+                using MemoryStream decoderStream = new(replayStream.ToArray(), writable: false);
+                replayInfo = OsuParsers.Decoders.ReplayDecoder.Decode(decoderStream);
                 replayStream.Position = 0;
             }
             catch (Exception exception) when (exception is not OperationCanceledException)

@@ -7,15 +7,36 @@ namespace SosuBot;
 
 public static class PollyPolicies
 {
+    private static readonly TimeSpan[] TelegramRetryDelays =
+    [
+        TimeSpan.Zero,
+        TimeSpan.FromMilliseconds(500),
+        TimeSpan.FromSeconds(1.5)
+    ];
+
     private static IAsyncPolicy<HttpResponseMessage> GetTransientRetryPolicy()
     {
-        return Policy<HttpResponseMessage>
+        return CreateTransientRetryPolicy(
+            Backoff.DecorrelatedJitterBackoffV2(TimeSpan.FromSeconds(1), 3));
+    }
+
+    private static IAsyncPolicy<HttpResponseMessage> CreateTransientRetryPolicy(
+        IEnumerable<TimeSpan> retryDelays,
+        bool handleTimeoutCancellation = false)
+    {
+        PolicyBuilder<HttpResponseMessage> policy = Policy<HttpResponseMessage>
             .Handle<HttpRequestException>(IsTransientHttpRequestException)
             .OrResult(response =>
                 response.StatusCode == HttpStatusCode.RequestTimeout ||
                 (int)response.StatusCode >= 500)
-            .WaitAndRetryAsync(
-                Backoff.DecorrelatedJitterBackoffV2(TimeSpan.FromSeconds(1), 3),
+            .Or<TaskCanceledException>(exception =>
+                handleTimeoutCancellation &&
+                (exception.InnerException is TimeoutException ||
+                 !exception.CancellationToken.IsCancellationRequested))
+            .Or<TimeoutException>(_ => handleTimeoutCancellation);
+
+        return policy.WaitAndRetryAsync(
+                retryDelays,
                 onRetry: (outcome, delay, attempt, context) =>
                 {
                     if (outcome.Exception != null)
@@ -107,6 +128,16 @@ public static class PollyPolicies
     public static IAsyncPolicy<HttpResponseMessage> GetCombinedPolicy()
     {
         IAsyncPolicy<HttpResponseMessage> transientRetryPolicy = GetTransientRetryPolicy();
+        IAsyncPolicy<HttpResponseMessage> retryAfterPolicy = GetRetryAfterPolicy();
+
+        return Policy.WrapAsync(transientRetryPolicy, retryAfterPolicy);
+    }
+
+    public static IAsyncPolicy<HttpResponseMessage> GetTelegramPolicy()
+    {
+        IAsyncPolicy<HttpResponseMessage> transientRetryPolicy = CreateTransientRetryPolicy(
+            TelegramRetryDelays,
+            handleTimeoutCancellation: true);
         IAsyncPolicy<HttpResponseMessage> retryAfterPolicy = GetRetryAfterPolicy();
 
         return Policy.WrapAsync(transientRetryPolicy, retryAfterPolicy);
