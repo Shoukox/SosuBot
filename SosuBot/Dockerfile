@@ -2,7 +2,7 @@
 
 # Build the stateless rosu-pp C ABI wrapper on Debian/glibc. The Rust SDK does
 # not flow into the final image.
-FROM rust:1.94.0-bookworm AS native-build
+FROM rust:1.97.1-bookworm AS native-build
 WORKDIR /src/rosu-pp-native
 COPY ["SosuBot.PerformanceCalculator/Calculators/Rosu/native/rosu-pp-native/Cargo.toml", "SosuBot.PerformanceCalculator/Calculators/Rosu/native/rosu-pp-native/Cargo.lock", "SosuBot.PerformanceCalculator/Calculators/Rosu/native/rosu-pp-native/rust-toolchain.toml", "./"]
 COPY ["SosuBot.PerformanceCalculator/Calculators/Rosu/native/rosu-pp-native/src", "./src"]
