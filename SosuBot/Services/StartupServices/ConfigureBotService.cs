@@ -46,7 +46,6 @@ public class ConfigureBotService(IServiceProvider serviceProvider) : IHostedServ
         CreateBotCommand(RenderSkinSetCommand.Commands[0], RenderSkinSetCommand.Description),
         CreateBotCommand(RenderCursorSizeCommand.Commands[0], RenderCursorSizeCommand.Description),
         CreateBotCommand(RenderScrollSpeedCommand.Commands[0], RenderScrollSpeedCommand.Description),
-        CreateBotCommand(VideoPreviewCommand.Commands[0], VideoPreviewCommand.Description),
         CreateBotCommand(GetRankingCommand.Commands[0], GetRankingCommand.Description),
         CreateBotCommand(GetDailyStatisticsCommand.Commands[0], GetDailyStatisticsCommand.Description),
         CreateBotCommand(HelpCommand.Commands[0], HelpCommand.Description),

@@ -20,6 +20,17 @@ public record OsuUser
     public double TaikoPPValue { get; set; }
     public double CatchPPValue { get; set; }
     public double ManiaPPValue { get; set; }
+
+    // Nullable values distinguish a missing historical snapshot from a real zero.
+    public double? StdAccuracyValue { get; set; }
+    public double? TaikoAccuracyValue { get; set; }
+    public double? CatchAccuracyValue { get; set; }
+    public double? ManiaAccuracyValue { get; set; }
+    public long? StdPlayTimeValue { get; set; }
+    public long? TaikoPlayTimeValue { get; set; }
+    public long? CatchPlayTimeValue { get; set; }
+    public long? ManiaPlayTimeValue { get; set; }
+
     public bool IsAdmin { get; set; }
     public RenderSettings RenderSettings { get; set; } = new();
 }

@@ -18,6 +18,7 @@
     </ItemGroup>
 
     <ItemGroup>
+        <ProjectReference Include="../../SosuBot.Graphics/SosuBot.Graphics.csproj" />
         <ProjectReference Include="../../SosuBot.PerformanceCalculator/SosuBot.PerformanceCalculator.csproj" />
         <None Include="../../SosuBot.PerformanceCalculator/Calculators/Rosu/testdata/*.osu"
               Link="testdata/%(Filename)%(Extension)"

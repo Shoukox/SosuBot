@@ -17,7 +17,8 @@ public sealed record PlayerSkills(
         ],
         OsuGameMode.Taiko =>
         [
-            new("Speed", Speed),
+            // Speed is kept as the public/API property name; for taiko it stores Stamina.
+            new("Stamina", Speed),
             new("Accuracy", Accuracy)
         ],
         OsuGameMode.Catch =>
@@ -27,8 +28,8 @@ public sealed record PlayerSkills(
         ],
         OsuGameMode.Mania =>
         [
-            new("Finger Control", Aim),
-            new("Speed", Speed),
+            new("Density", Aim),
+            new("Finger Control", Speed),
             new("Accuracy", Accuracy)
         ],
         _ => throw new ArgumentOutOfRangeException(nameof(mode), mode, "Unknown osu! mode.")

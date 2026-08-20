@@ -10,6 +10,7 @@ namespace SosuBot.Services.Synchronization
         private readonly LuaScript _luaScript;
         private readonly int _bucketCapacity;
         private readonly double _refillRatePerSecond;
+        private readonly SemaphoreSlim _waitLock = new(1, 1);
 
         public TokenBucketRateLimiter(
             IConnectionMultiplexer connectionMultiplexer,
@@ -79,6 +80,27 @@ namespace SosuBot.Services.Synchronization
             {
                 _logger.LogError(ex, "Token bucket rate limiter failed");
                 return true; // fail-open strategy
+            }
+        }
+
+        public async Task WaitAsync(string key, CancellationToken cancellationToken = default)
+        {
+            await _waitLock.WaitAsync(cancellationToken);
+            try
+            {
+                while (true)
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+
+                    if (await IsAllowedAsync(key))
+                        return;
+
+                    await Task.Delay(TimeSpan.FromMilliseconds(250), cancellationToken);
+                }
+            }
+            finally
+            {
+                _waitLock.Release();
             }
         }
     }

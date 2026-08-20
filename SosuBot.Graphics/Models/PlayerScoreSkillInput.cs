@@ -14,6 +14,7 @@ public sealed record PlayerScoreSkillInput
     public required int MaximumCombo { get; init; }
     public required int HitCircleCount { get; init; }
     public required int SliderCount { get; init; }
+    public required int HitLength { get; init; }
     public required double AimDifficulty { get; init; }
     public required double SpeedDifficulty { get; init; }
     public required double SpeedNoteCount { get; init; }

@@ -208,7 +208,7 @@ public sealed class OsuScoreCommand : CommandBase<Message>
                 (Playmode)(await _cachingHelper.GetOrCacheBeatmap(beatmapId.Value, _osuApiV2))!.ModeInt!.Value;
 
         Score[] scores = scoresResponse.Scores!.GroupBy(s => string.Join("", s.Mods!.Select(m => m.Acronym)))
-            .Select(m => m.MaxBy(s => s.Pp)!).OrderByDescending(m => m.Pp).ToArray();
+            .Select(m => m.MaxBy(s => s.TotalScore)!).OrderByDescending(m => m.TotalScore).ToArray();
 
         if (scores.Length == 0)
         {

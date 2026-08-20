@@ -7,21 +7,88 @@ using Telegram.Bot.Types.ReplyMarkups;
 
 namespace SosuBot.Helpers.OutputText;
 
+public readonly record struct UserProfileDifferenceTexts(
+    string Pp,
+    string Accuracy,
+    string PlayTime);
+
 public static class UserHelper
 {
+    public static async Task<UserProfileDifferenceTexts> GetProfileDifferenceTextsAsync(
+        BotContext database,
+        UserExtend user,
+        Playmode playmode)
+    {
+        if (user.Statistics is null ||
+            await database.OsuUsers.FirstOrDefaultAsync(u => u.OsuUsername == user.Username) is not { } userInDatabase)
+        {
+            return new UserProfileDifferenceTexts(string.Empty, string.Empty, string.Empty);
+        }
+
+        double? currentAccuracy = user.Statistics.HitAccuracy is { } accuracy
+            ? Convert.ToDouble(accuracy)
+            : null;
+        long? currentPlayTime = user.Statistics.PlayTime is { } playTime
+            ? Convert.ToInt64(playTime)
+            : null;
+
+        return new UserProfileDifferenceTexts(
+            FormatPpDifference(user.Statistics.Pp, userInDatabase.GetPP(playmode)),
+            FormatAccuracyDifference(currentAccuracy, userInDatabase.GetAccuracy(playmode)),
+            FormatPlayTimeDifference(currentPlayTime, userInDatabase.GetPlayTime(playmode)));
+    }
+
     public static async Task<string> GetPpDifferenceTextAsync(BotContext database, UserExtend user, Playmode playmode,
         double? currentPp)
     {
-        var ppDifferenceText = string.Empty;
-        if (await database.OsuUsers.FirstOrDefaultAsync(u => u.OsuUsername == user.Username) is { } userInDatabase)
-        {
-            var savedPpInDatabase = userInDatabase.GetPP(playmode);
+        if (await database.OsuUsers.FirstOrDefaultAsync(u => u.OsuUsername == user.Username) is not { } userInDatabase)
+            return string.Empty;
 
-            var difference = currentPp!.Value - savedPpInDatabase;
-            ppDifferenceText = difference.ToString("(+0.00);(-#.##)");
+        return FormatPpDifference(currentPp, userInDatabase.GetPP(playmode));
+    }
+
+    private static string FormatPpDifference(double? currentValue, double savedValue)
+    {
+        if (!currentValue.HasValue)
+            return string.Empty;
+
+        var difference = currentValue.Value - savedValue;
+        return difference.ToString("(+0.00);(-#.##)");
+    }
+
+    private static string FormatAccuracyDifference(double? currentValue, double? savedValue)
+    {
+        if (!currentValue.HasValue || !savedValue.HasValue)
+            return string.Empty;
+
+        var difference = currentValue.Value - savedValue.Value;
+        return $"({difference.ToString("+0.00;-0.00")})";
+    }
+
+    private static string FormatPlayTimeDifference(long? currentValue, long? savedValue)
+    {
+        if (!currentValue.HasValue || !savedValue.HasValue)
+            return string.Empty;
+
+        var difference = currentValue.Value - savedValue.Value;
+        if (difference == 0)
+            return "(+0m)";
+
+        var sign = difference > 0 ? "+" : "-";
+        var duration = TimeSpan.FromSeconds(Math.Abs(difference));
+
+        if (duration.TotalHours >= 1)
+        {
+            var hours = (long)duration.TotalHours;
+            return duration.Minutes == 0
+                ? $"({sign}{hours}h)"
+                : $"({sign}{hours}h {duration.Minutes}m)";
         }
 
-        return ppDifferenceText;
+        if (duration.TotalMinutes >= 1)
+            return $"({sign}{duration.Minutes}m)";
+
+        return $"({sign}{duration.Seconds}s)";
     }
 
     public static string CountryCodeToFlag(string countryCode)

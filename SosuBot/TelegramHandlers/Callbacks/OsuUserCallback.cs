@@ -43,7 +43,8 @@ public class OsuUserCallback : CommandBase<CallbackQuery>
             playmode.ToRuleset()))!.UserExtend!;
 
         double? currentPp = user.Statistics!.Pp;
-        var ppDifferenceText = await UserHelper.GetPpDifferenceTextAsync(_database, user, playmode, currentPp);
+        var profileDifferenceTexts =
+            await UserHelper.GetProfileDifferenceTextsAsync(_database, user, playmode);
 
         var textToSend = LocalizationMessageHelper.UserProfileText(
             language,
@@ -51,7 +52,9 @@ public class OsuUserCallback : CommandBase<CallbackQuery>
             user,
             playmode,
             currentPp,
-            ppDifferenceText,
+            profileDifferenceTexts.Pp,
+            profileDifferenceTexts.Accuracy,
+            profileDifferenceTexts.PlayTime,
             $"{OsuConstants.TotalAchievementsCount}");
 
         InlineKeyboardMarkup ik = UserHelper.BuildUserModeKeyboard(user.Username!);

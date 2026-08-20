@@ -24,9 +24,9 @@ namespace SosuBot.Localization.Languages
             "<i>{}</i>\n\n" +
             "🌐<b>rank</b>: <i>#{} (#{} {})</i>\n" +
             "💪<b>pp</b>: <i>{} {}</i>\n" +
-            "🎯<b>accuracy</b>: <i>{}</i>\n" +
+            "🎯<b>accuracy</b>: <i>{} {}</i>\n" +
             "🔢<b>playcount</b>: <i>{}</i>\n" +
-            "⏱️<b>playtime</b>: <i>{}h</i>\n" +
+            "⏱️<b>playtime</b>: <i>{}h {}</i>\n" +
             "📍<b>registered</b>: <i>{}</i>\n" +
             "🏆<b>achievements</b>: <i>{}/{}</i>\n\n" +
             "<i>{}</i> <b>SSH</b>⚪️ - <i>{}</i> <b>SH</b>⚪️\n" +
