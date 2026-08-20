@@ -149,14 +149,26 @@ namespace SosuBot.Migrations
                     b.Property<long>("TelegramId")
                         .HasColumnType("bigint");
 
+                    b.Property<double?>("CatchAccuracyValue")
+                        .HasColumnType("double precision");
+
                     b.Property<double>("CatchPPValue")
                         .HasColumnType("double precision");
+
+                    b.Property<long?>("CatchPlayTimeValue")
+                        .HasColumnType("bigint");
 
                     b.Property<bool>("IsAdmin")
                         .HasColumnType("boolean");
 
+                    b.Property<double?>("ManiaAccuracyValue")
+                        .HasColumnType("double precision");
+
                     b.Property<double>("ManiaPPValue")
                         .HasColumnType("double precision");
+
+                    b.Property<long?>("ManiaPlayTimeValue")
+                        .HasColumnType("bigint");
 
                     b.Property<Playmode>("OsuMode")
                         .HasColumnType("playmode");
@@ -173,11 +185,23 @@ namespace SosuBot.Migrations
                         .IsRequired()
                         .HasColumnType("jsonb");
 
+                    b.Property<double?>("StdAccuracyValue")
+                        .HasColumnType("double precision");
+
                     b.Property<double>("StdPPValue")
+                        .HasColumnType("double precision");
+
+                    b.Property<long?>("StdPlayTimeValue")
+                        .HasColumnType("bigint");
+
+                    b.Property<double?>("TaikoAccuracyValue")
                         .HasColumnType("double precision");
 
                     b.Property<double>("TaikoPPValue")
                         .HasColumnType("double precision");
+
+                    b.Property<long?>("TaikoPlayTimeValue")
+                        .HasColumnType("bigint");
 
                     b.HasKey("TelegramId");
 

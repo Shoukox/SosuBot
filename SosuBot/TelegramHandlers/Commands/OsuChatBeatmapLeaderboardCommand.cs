@@ -18,10 +18,12 @@ public sealed class OsuChatBeatmapLeaderboardCommand : CommandBase<Message>
 {
     public static readonly string[] Commands = ["/beatmap_leaderboard", "/bl"];
     public static readonly string Description = "таблица лидеров чата на карте";
+    private const string BeatmapLeaderboardApiRateLimitKey = "command:beatmap-leaderboard:osu-api";
     private BanchoApiV2 _osuApiV2 = null!;
     private ScoreHelper _scoreHelper = null!;
     private CachingHelper _cachingHelper = null!;
     private RateLimiterFactory _rateLimiterFactory = null!;
+    private TokenBucketRateLimiter _beatmapLeaderboardApiRateLimiter = null!;
     private BotContext _database = null!;
 
     public override async Task BeforeExecuteAsync()
@@ -31,6 +33,8 @@ public sealed class OsuChatBeatmapLeaderboardCommand : CommandBase<Message>
         _scoreHelper = Context.ServiceProvider.GetRequiredService<ScoreHelper>();
         _cachingHelper = Context.ServiceProvider.GetRequiredService<CachingHelper>();
         _rateLimiterFactory = Context.ServiceProvider.GetRequiredService<RateLimiterFactory>();
+        _beatmapLeaderboardApiRateLimiter =
+            _rateLimiterFactory.Get(RateLimiterFactory.RateLimitPolicy.BeatmapLeaderboard);
         _database = Context.ServiceProvider.GetRequiredService<BotContext>();
     }
 
@@ -54,6 +58,7 @@ public sealed class OsuChatBeatmapLeaderboardCommand : CommandBase<Message>
         Message waitMessage = await Context.Update.ReplyAsync(Context.BotClient, language.waiting);
 
         int? beatmapId = chatInDatabase!.LastBeatmapId;
+        BeatmapsetExtended? beatmapset = null;
         if (Context.Update.ReplyToMessage != null)
         {
             // bl with reply
@@ -62,7 +67,8 @@ public sealed class OsuChatBeatmapLeaderboardCommand : CommandBase<Message>
             {
                 if (beatmapId is null && beatmapsetId is not null)
                 {
-                    BeatmapsetExtended? beatmapset = await _cachingHelper.GetOrCacheBeatmapset(beatmapsetId.Value, _osuApiV2);
+                    await WaitForBeatmapLeaderboardApiRequestAsync();
+                    beatmapset = await _cachingHelper.GetOrCacheBeatmapset(beatmapsetId.Value, _osuApiV2);
                     beatmapId = beatmapset!.Beatmaps![0].Id;
                 }
             }
@@ -74,11 +80,18 @@ public sealed class OsuChatBeatmapLeaderboardCommand : CommandBase<Message>
             return;
         }
 
+        await WaitForBeatmapLeaderboardApiRequestAsync();
         BeatmapExtended? beatmap = await _cachingHelper.GetOrCacheBeatmap(beatmapId!.Value, _osuApiV2);
         if (beatmap == null)
         {
             await waitMessage.EditAsync(Context.BotClient, language.beatmapLeaderboard_failedBeatmapInfo);
             return;
+        }
+
+        if (beatmapset is null && beatmap.BeatmapsetId is { } beatmapsetIdForTitle)
+        {
+            await WaitForBeatmapLeaderboardApiRequestAsync();
+            beatmapset = await _cachingHelper.GetOrCacheBeatmapset(beatmapsetIdForTitle, _osuApiV2);
         }
 
         var foundChatMembers = new List<OsuUser>();
@@ -91,31 +104,33 @@ public sealed class OsuChatBeatmapLeaderboardCommand : CommandBase<Message>
         }
         foundChatMembers = foundChatMembers.DistinctBy(m => m.OsuUserId).ToList();
 
-        // Fake delay to avoid hitting rate limits
-        await Task.Delay(1000);
-
-        int delayPerUser = 1500; // 1 second per user
-        int delay = delayPerUser * foundChatMembers.Count;
+        int estimatedSeconds = foundChatMembers.Count + (beatmapset is null ? 0 : 1);
         await waitMessage.EditAsync(Context.BotClient, LocalizationMessageHelper.BeatmapLeaderboardProgress(language,
             $"{foundChatMembers.Count}",
-            $"{delay / 1000f:N0}"
+            $"{estimatedSeconds:N0}"
         ));
 
         Playmode playmode = (Playmode)(beatmap.ModeInt ?? 0);
         string ruleset = playmode.ToRuleset();
-        string sendMessage = "";
         List<OsuApi.BanchoV2.Models.Score> foundScores = new();
         foreach (OsuUser osuUser in foundChatMembers)
         {
+            await WaitForBeatmapLeaderboardApiRequestAsync();
             GetUserBeatmapScoreResponse? scores = await _osuApiV2.Beatmaps.GetUserBeatmapScore(beatmapId.Value, osuUser.OsuUserId, new() { Mode = ruleset });
             if (scores?.BeatmapUserScore?.Score is { } score)
             {
                 foundScores.Add(score);
             }
-
-            await Task.Delay(delayPerUser); // Delay between each user to avoid rate limits
         }
         foundScores = foundScores.OrderByDescending(s => s.TotalScore).ToList();
+
+        string beatmapTitle = beatmapset?.Title?.EncodeHtml() ?? "—";
+        string beatmapDifficulty = beatmap.Version?.EncodeHtml() ?? "—";
+        string beatmapStars = _scoreHelper.GetFormattedNumConsideringNull(
+            beatmap.DifficultyRating,
+            format: "N2",
+            round: false);
+        string sendMessage = $"<i>({ruleset.ParseRulesetToGamemode()})</i> <b>{beatmapTitle} [{beatmapDifficulty}]</b> — <b>{beatmapStars}⭐️</b>\n\n";
 
         for (int i = 0; i < foundScores.Count; i++)
         {
@@ -125,10 +140,14 @@ public sealed class OsuChatBeatmapLeaderboardCommand : CommandBase<Message>
 
         if (foundScores.Count == 0)
         {
-            sendMessage = language.beatmapLeaderboard_noScoresFromChat;
+            sendMessage += language.beatmapLeaderboard_noScoresFromChat;
         }
 
-        await Task.Delay(delayPerUser);
         await waitMessage.EditAsync(Context.BotClient, sendMessage);
     }
+
+    private Task WaitForBeatmapLeaderboardApiRequestAsync() =>
+        _beatmapLeaderboardApiRateLimiter.WaitAsync(
+            BeatmapLeaderboardApiRateLimitKey,
+            Context.CancellationToken);
 }

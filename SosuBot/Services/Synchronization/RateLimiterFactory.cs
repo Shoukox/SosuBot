@@ -14,6 +14,9 @@ namespace SosuBot.Services.Synchronization
                 [RateLimitPolicy.Command] =
                     new TokenBucketRateLimiter(redis, logger, 5, 1.0), // 5 per 1 second
 
+                [RateLimitPolicy.BeatmapLeaderboard] =
+                    new TokenBucketRateLimiter(redis, logger, 1, 1.0), // 1 osu! API request per second for /bl
+
                 [RateLimitPolicy.RenderCommand] =
                     new TokenBucketRateLimiter(redis, logger, 10, 10.0 / 3600.0), // 10 per 1 hour
             };
@@ -25,6 +28,7 @@ namespace SosuBot.Services.Synchronization
         public enum RateLimitPolicy
         {
             Command,
+            BeatmapLeaderboard,
             RenderCommand
         }
     }

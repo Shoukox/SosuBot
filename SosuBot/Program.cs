@@ -132,13 +132,6 @@ internal class Program
         builder.Services.AddSingleton<ScoreHelper>();
         builder.Services.AddSingleton<OfficialPerformanceHelper>();
         builder.Services.AddSingleton<PlayerSkillCalculator>();
-        builder.Services.AddSingleton<OsuStandardSkillCalculator>(_ =>
-        {
-            SkillRatingOptions options = builder.Configuration
-                .GetSection("SkillRating")
-                .Get<SkillRatingOptions>() ?? new SkillRatingOptions();
-            return new OsuStandardSkillCalculator(options);
-        });
         builder.Services.AddSingleton<ProfileCardGenerator>();
         builder.Services.AddSingleton<ScorePreviewGenerator>();
         builder.Services.AddSingleton<OsuCardService>();

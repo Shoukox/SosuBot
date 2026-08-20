@@ -122,8 +122,8 @@ public class OsuUserCommand(bool includeIdInSearch = false) : CommandBase<Messag
         }
 
         double? currentPp = user.Statistics!.Pp;
-        var ppDifferenceText =
-            await UserHelper.GetPpDifferenceTextAsync(_database, user, playmode, currentPp);
+        var profileDifferenceTexts =
+            await UserHelper.GetProfileDifferenceTextsAsync(_database, user, playmode);
 
         UserHelper.UpdateOsuUsers(_database, user, playmode);
 
@@ -136,7 +136,9 @@ public class OsuUserCommand(bool includeIdInSearch = false) : CommandBase<Messag
             user,
             playmode,
             currentPp,
-            ppDifferenceText,
+            profileDifferenceTexts.Pp,
+            profileDifferenceTexts.Accuracy,
+            profileDifferenceTexts.PlayTime,
             achievementsTotalText);
 
         await waitMessage.EditAsync(Context.BotClient, textToSend, replyMarkup: UserHelper.BuildUserModeKeyboard(user.Username!));

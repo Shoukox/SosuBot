@@ -10,8 +10,9 @@ using SosuBot.Graphics;
 using SosuBot.Graphics.Models;
 using SosuBot.Helpers;
 using SosuBot.PerformanceCalculator;
+using System.Globalization;
+using System.Text;
 using OfficialOsuDifficultyAttributes = osu.Game.Rulesets.Osu.Difficulty.OsuDifficultyAttributes;
-using OfficialOsuPerformanceAttributes = osu.Game.Rulesets.Osu.Difficulty.OsuPerformanceAttributes;
 
 namespace SosuBot.Services;
 
@@ -25,7 +26,6 @@ public sealed class OsuCardService
     private readonly CachingHelper _cachingHelper;
     private readonly ProfileCardGenerator _cardGenerator;
     private readonly PlayerSkillCalculator _skillCalculator;
-    private readonly OsuStandardSkillCalculator _osuStandardSkillCalculator;
     private readonly OfficialPerformanceHelper _officialPerformanceHelper;
     private readonly HttpClient _httpClient;
     private readonly ILogger<OsuCardService> _logger;
@@ -36,7 +36,6 @@ public sealed class OsuCardService
         CachingHelper cachingHelper,
         ProfileCardGenerator cardGenerator,
         PlayerSkillCalculator skillCalculator,
-        OsuStandardSkillCalculator osuStandardSkillCalculator,
         OfficialPerformanceHelper officialPerformanceHelper,
         IHttpClientFactory httpClientFactory,
         ILogger<OsuCardService> logger)
@@ -46,7 +45,6 @@ public sealed class OsuCardService
         _cachingHelper = cachingHelper;
         _cardGenerator = cardGenerator;
         _skillCalculator = skillCalculator;
-        _osuStandardSkillCalculator = osuStandardSkillCalculator;
         _officialPerformanceHelper = officialPerformanceHelper;
         _httpClient = httpClientFactory.CreateClient("CustomHttpClient");
         _logger = logger;
@@ -64,91 +62,40 @@ public sealed class OsuCardService
             ScoreType.Best,
             new GetUserScoreQueryParameters
             {
-                Limit = OsuStandardSkillCalculator.MaximumScoreCount,
+                Limit = PlayerSkillCalculator.MaximumScoreCount,
                 Mode = playmode.ToRuleset(),
                 IncludeFails = 0
             },
             cancellationToken);
 
-        Score[] scores = response?.Scores.Take(OsuStandardSkillCalculator.MaximumScoreCount).ToArray() ?? [];
+        Score[] scores = response?.Scores.Take(PlayerSkillCalculator.MaximumScoreCount).ToArray() ?? [];
         if (scores.Length == 0)
             return OsuCardGenerationResult.NoScores();
 
-        PlayerSkills skills;
-        OsuSkillRating? osuSkillRating = null;
+        using SemaphoreSlim semaphore = new(MaximumParallelCalculations);
+        Task<PlayerScoreSkillInput?>[] calculations = scores
+            .Select(score => CreateSkillInputWithLimitAsync(score, playmode, semaphore, cancellationToken))
+            .ToArray();
+        PlayerScoreSkillInput[] inputs = (await Task.WhenAll(calculations))
+            .OfType<PlayerScoreSkillInput>()
+            .ToArray();
 
-        if (playmode == Playmode.Osu)
-        {
-            using SemaphoreSlim semaphore = new(MaximumParallelCalculations);
-            Task<OsuStandardScoreSkillInput?>[] calculations = scores
-                .Select(score => CreateOsuSkillInputWithLimitAsync(score, semaphore, cancellationToken))
-                .ToArray();
-            OsuStandardScoreSkillInput[] inputs = (await Task.WhenAll(calculations))
-                .OfType<OsuStandardScoreSkillInput>()
-                .ToArray();
+        if (inputs.Length == 0)
+            return OsuCardGenerationResult.CalculationFailed(scores.Length);
 
-            if (inputs.Length == 0)
-                return OsuCardGenerationResult.CalculationFailed(scores.Length);
-
-            osuSkillRating = _osuStandardSkillCalculator.Calculate(inputs);
-            skills = osuSkillRating.ToPlayerSkills();
-        }
-        else
-        {
-            using SemaphoreSlim semaphore = new(MaximumParallelCalculations);
-            Task<PlayerScoreSkillInput?>[] calculations = scores
-                .Select(score => CreateSkillInputWithLimitAsync(score, playmode, semaphore, cancellationToken))
-                .ToArray();
-            PlayerScoreSkillInput[] inputs = (await Task.WhenAll(calculations))
-                .OfType<PlayerScoreSkillInput>()
-                .ToArray();
-
-            if (inputs.Length == 0)
-                return OsuCardGenerationResult.CalculationFailed(scores.Length);
-
-            skills = _skillCalculator.Calculate(inputs);
-        }
+        PlayerSkills skills = _skillCalculator.Calculate(inputs);
 
         byte[]? avatar = await DownloadAvatarAsync(user.AvatarUrl, cancellationToken);
         using MemoryStream image = _cardGenerator.Generate(new ProfileCardData
         {
             Username = user.Username,
+            PlayerId = user.Id.Value,
             Mode = (OsuGameMode)(int)playmode,
             Skills = skills,
             Avatar = avatar
         });
 
-        return OsuCardGenerationResult.Success(image.ToArray(), skills, scores.Length, osuSkillRating);
-    }
-
-    private async Task<OsuStandardScoreSkillInput?> CreateOsuSkillInputWithLimitAsync(
-        Score score,
-        SemaphoreSlim semaphore,
-        CancellationToken cancellationToken)
-    {
-        await semaphore.WaitAsync(cancellationToken);
-        try
-        {
-            return await CreateOsuSkillInputAsync(score, cancellationToken);
-        }
-        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
-        {
-            throw;
-        }
-        catch (OsuApiUnavailableException)
-        {
-            throw;
-        }
-        catch (Exception exception)
-        {
-            _logger.LogWarning(exception, "Could not calculate osu!standard skill for beatmap {BeatmapId}",
-                score.BeatmapId);
-            return null;
-        }
-        finally
-        {
-            semaphore.Release();
-        }
+        return OsuCardGenerationResult.Success(image.ToArray(), skills, scores.Length);
     }
 
     private async Task<PlayerScoreSkillInput?> CreateSkillInputWithLimitAsync(Score score, Playmode playmode,
@@ -157,7 +104,9 @@ public sealed class OsuCardService
         await semaphore.WaitAsync(cancellationToken);
         try
         {
-            return await CreateLegacyModeSkillInputAsync(score, playmode, cancellationToken);
+            return playmode == Playmode.Osu
+                ? await CreateOsuSkillInputAsync(score, cancellationToken)
+                : await CreateLegacyModeSkillInputAsync(score, playmode, cancellationToken);
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
@@ -178,7 +127,7 @@ public sealed class OsuCardService
         }
     }
 
-    private async Task<OsuStandardScoreSkillInput?> CreateOsuSkillInputAsync(Score score,
+    private async Task<PlayerScoreSkillInput?> CreateOsuSkillInputAsync(Score score,
         CancellationToken cancellationToken)
     {
         if (score.BeatmapId is null || score.Accuracy is null || score.MaxCombo is null)
@@ -186,53 +135,38 @@ public sealed class OsuCardService
 
         using Stream beatmap = await _beatmapsService.DownloadOrCacheBeatmapAsync(score.BeatmapId.Value,
             cancellationToken);
+        double averageBpm = ReadAverageBpm(beatmap);
+        int hitLength = ReadHitLength(beatmap);
         OfficialScoreCalculation scoreCalculation = await _officialPerformanceHelper.CalculateScoreAsync(
             beatmap,
             score,
             Playmode.Osu,
             calculateCurrent: true,
-            calculatePerfect: true,
             cancellationToken: cancellationToken);
         PPCalculationResult? calculation = scoreCalculation.Current;
-        PPCalculationResult? perfectCalculation = scoreCalculation.Perfect;
 
-        if (calculation is null || perfectCalculation is null)
+        if (calculation?.DifficultyAttributes is not OfficialOsuDifficultyAttributes difficulty)
             return null;
 
-        if (calculation.DifficultyAttributes is not OfficialOsuDifficultyAttributes osuDifficulty
-            || calculation.PerformanceAttributes is not OfficialOsuPerformanceAttributes actualPerformance
-            || perfectCalculation.PerformanceAttributes is not OfficialOsuPerformanceAttributes perfectPerformance)
-            return null;
-
-        osu.Game.Rulesets.Mods.Mod[] mods = (score.Mods ?? []).ToOsuMods(Playmode.Osu);
-
-        return new OsuStandardScoreSkillInput
+        return new PlayerScoreSkillInput
         {
-            BeatmapId = score.BeatmapId.Value,
-            ModSignature = score.Mods is { Length: > 0 }
-                ? string.Join("", score.Mods.Select(mod => mod.Acronym?.ToUpperInvariant()).OfType<string>())
-                : "NM",
-            StarRating = calculation.DifficultyAttributes.StarRating,
-            AimDifficulty = osuDifficulty.AimDifficulty,
-            AimDifficultSliderCount = osuDifficulty.AimDifficultSliderCount,
-            AimDifficultStrainCount = osuDifficulty.AimDifficultStrainCount,
-            SpeedDifficulty = osuDifficulty.SpeedDifficulty,
-            SpeedNoteCount = osuDifficulty.SpeedNoteCount,
-            SpeedDifficultStrainCount = osuDifficulty.SpeedDifficultStrainCount,
-            ReadingDifficulty = osuDifficulty.ReadingDifficulty,
-            HitCircleCount = osuDifficulty.HitCircleCount,
-            SliderCount = osuDifficulty.SliderCount,
-            SpinnerCount = osuDifficulty.SpinnerCount,
-            TotalHitObjects = calculation.BeatmapHitObjectsCount,
-            OverallDifficulty = calculation.OD,
+            Mode = OsuGameMode.Osu,
+            StarRating = difficulty.StarRating,
+            AccuracyPercent = score.Accuracy.Value * 100,
+            Bpm = averageBpm * calculation.SpeedChangeFactor,
+            CircleSize = calculation.CS,
             ApproachRate = calculation.AR,
-            ClockRate = OfficialPerformanceHelper.GetClockRate(mods),
-            ActualAimPerformance = actualPerformance.Aim,
-            ActualSpeedPerformance = actualPerformance.Speed,
-            ActualAccuracyPerformance = actualPerformance.Accuracy,
-            PerfectAimPerformance = perfectPerformance.Aim,
-            PerfectSpeedPerformance = perfectPerformance.Speed,
-            PerfectAccuracyPerformance = perfectPerformance.Accuracy
+            OverallDifficulty = calculation.OD,
+            DrainRate = calculation.HP,
+            Combo = score.MaxCombo.Value,
+            MaximumCombo = calculation.BeatmapMaxCombo,
+            HitCircleCount = difficulty.HitCircleCount,
+            SliderCount = difficulty.SliderCount,
+            HitLength = (int)(hitLength / calculation.SpeedChangeFactor),
+            AimDifficulty = difficulty.AimDifficulty,
+            SpeedDifficulty = difficulty.SpeedDifficulty,
+            SpeedNoteCount = difficulty.SpeedNoteCount,
+            Mods = GetModAcronyms(score)
         };
     }
 
@@ -263,6 +197,9 @@ public sealed class OsuCardService
             MaximumCombo = beatmap.MaxCombo ?? Math.Max(score.MaxCombo.Value, 1),
             HitCircleCount = beatmap.CountCircles ?? 0,
             SliderCount = beatmap.CountSliders ?? 0,
+            HitLength = beatmap.HitLength ?? 0,
+            // ПРИБЛИЗИТЕЛЬНО: нет данных о паттерне/синкопации в DTO; taiko
+            // per-mode values are unavailable, so no genuine Rhythm metric is calculated.
             AimDifficulty = 0,
             SpeedDifficulty = 0,
             SpeedNoteCount = 0,
@@ -422,6 +359,104 @@ public sealed class OsuCardService
     private static bool HasAnyMod(string[] mods, params string[] acronyms) =>
         mods.Any(mod => acronyms.Contains(mod, StringComparer.OrdinalIgnoreCase));
 
+    private static double ReadAverageBpm(Stream beatmap)
+    {
+        if (!beatmap.CanSeek)
+            throw new InvalidOperationException("The beatmap stream must be seekable to calculate BPM.");
+
+        beatmap.Position = 0;
+        using StreamReader reader = new(beatmap, Encoding.UTF8, detectEncodingFromByteOrderMarks: true,
+            bufferSize: 4096, leaveOpen: true);
+        bool timingPointsSection = false;
+        double bpmTotal = 0;
+        int timingPointCount = 0;
+
+        while (reader.ReadLine() is { } line)
+        {
+            string trimmed = line.Trim();
+            if (trimmed.StartsWith('['))
+            {
+                timingPointsSection = trimmed.Equals("[TimingPoints]", StringComparison.Ordinal);
+                continue;
+            }
+
+            if (!timingPointsSection || trimmed.Length == 0 || trimmed.StartsWith("//", StringComparison.Ordinal))
+                continue;
+
+            string[] values = trimmed.Split(',');
+            if (values.Length < 2
+                || !double.TryParse(values[1], NumberStyles.Float, CultureInfo.InvariantCulture,
+                    out double millisecondsPerBeat)
+                || millisecondsPerBeat <= 0)
+                continue;
+
+            bpmTotal += 60_000 / millisecondsPerBeat;
+            timingPointCount++;
+        }
+
+        beatmap.Position = 0;
+        if (timingPointCount == 0)
+            return 0;
+
+        // JavaScript's Math.round() is equivalent to floor(x + 0.5) for positive BPM values.
+        return Math.Floor(bpmTotal / timingPointCount + 0.5);
+    }
+
+    private static int ReadHitLength(Stream beatmap)
+    {
+        if (!beatmap.CanSeek)
+            throw new InvalidOperationException("The beatmap stream must be seekable to calculate hit length.");
+
+        beatmap.Position = 0;
+        using StreamReader reader = new(beatmap, Encoding.UTF8, detectEncodingFromByteOrderMarks: true,
+            bufferSize: 4096, leaveOpen: true);
+        bool hitObjectsSection = false;
+        double firstObjectTime = double.PositiveInfinity;
+        double lastObjectEndTime = double.NegativeInfinity;
+
+        while (reader.ReadLine() is { } line)
+        {
+            string trimmed = line.Trim();
+            if (trimmed.StartsWith('['))
+            {
+                hitObjectsSection = trimmed.Equals("[HitObjects]", StringComparison.Ordinal);
+                continue;
+            }
+
+            if (!hitObjectsSection || trimmed.Length == 0 || trimmed.StartsWith("//", StringComparison.Ordinal))
+                continue;
+
+            string[] values = trimmed.Split(',');
+            if (values.Length < 4
+                || !double.TryParse(values[2], NumberStyles.Float, CultureInfo.InvariantCulture,
+                    out double startTime)
+                || !int.TryParse(values[3], NumberStyles.Integer, CultureInfo.InvariantCulture, out int type))
+                continue;
+
+            double endTime = startTime;
+            if ((type & 8) != 0 && values.Length > 5)
+            {
+                // Spinner end time.
+                double.TryParse(values[5], NumberStyles.Float, CultureInfo.InvariantCulture, out endTime);
+            }
+            else if ((type & 128) != 0 && values.Length > 5)
+            {
+                // Mania hold end time is the first value before the ':' separator.
+                string holdEndTime = values[5].Split(':', 2)[0];
+                double.TryParse(holdEndTime, NumberStyles.Float, CultureInfo.InvariantCulture, out endTime);
+            }
+
+            firstObjectTime = Math.Min(firstObjectTime, startTime);
+            lastObjectEndTime = Math.Max(lastObjectEndTime, endTime);
+        }
+
+        beatmap.Position = 0;
+        if (!double.IsFinite(firstObjectTime) || !double.IsFinite(lastObjectEndTime))
+            return 0;
+
+        return Math.Max(0, (int)Math.Ceiling((lastObjectEndTime - firstObjectTime) / 1000));
+    }
+
     private sealed record LegacyBeatmapValues(
         double StarRating,
         double Bpm,
@@ -435,15 +470,10 @@ public sealed record OsuCardGenerationResult(
     byte[]? Image,
     PlayerSkills? Skills,
     int RequestedScores,
-    OsuCardGenerationFailure Failure,
-    OsuSkillRating? SkillRating = null)
+    OsuCardGenerationFailure Failure)
 {
-    public static OsuCardGenerationResult Success(
-        byte[] image,
-        PlayerSkills skills,
-        int requestedScores,
-        OsuSkillRating? skillRating = null) =>
-        new(image, skills, requestedScores, OsuCardGenerationFailure.None, skillRating);
+    public static OsuCardGenerationResult Success(byte[] image, PlayerSkills skills, int requestedScores) =>
+        new(image, skills, requestedScores, OsuCardGenerationFailure.None);
 
     public static OsuCardGenerationResult NoScores() =>
         new(null, null, 0, OsuCardGenerationFailure.NoScores);

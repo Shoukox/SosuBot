@@ -118,6 +118,8 @@ public static class LocalizationMessageHelper
         Playmode playmode,
         double? currentPp,
         string ppDifferenceText,
+        string accuracyDifferenceText,
+        string playTimeDifferenceText,
         string achievementsTotalText)
     {
         DateTime.TryParse(user.JoinDate?.Value, out DateTime registerDateTime);
@@ -132,8 +134,10 @@ public static class LocalizationMessageHelper
             $"{scoreHelper.GetFormattedNumConsideringNull(currentPp)}",
             $"{ppDifferenceText}",
             $"{user.Statistics.HitAccuracy:N2}%",
+            $"{accuracyDifferenceText}",
             $"{user.Statistics.PlayCount:N0}",
             $"{user.Statistics.PlayTime / 3600}",
+            $"{playTimeDifferenceText}",
             $"{registerDateTime:dd.MM.yyyy HH:mm:ss}",
             $"{achievementsCount}",
             achievementsTotalText,

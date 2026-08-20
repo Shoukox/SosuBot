@@ -279,17 +279,17 @@ public class OsuLastCommand(bool onlyPassed = false, bool sendCover = false) : C
 
             var scoreEndedMinutesAgoText = LocalizationMessageHelper.LastScoreEndedAgo(language, score.EndedAt!.Value);
 
-            // A passed score has completed the map. For a fail, combo is the
-            // stable cross-ruleset completion approximation available without
-            // reparsing the map a second time for hit-result totals.
+            // A passed score has completed the map. For a fail, use the number
+            // of hit results recorded in the score and the total object count
+            // from the beatmap instead of estimating completion from combo.
             double? completion = passed
                 ? 100
-                : beatmapMaxCombo is > 0 && score.MaxCombo is >= 0
-                    ? Math.Clamp((double)score.MaxCombo.Value / beatmapMaxCombo.Value * 100, 0, 100)
+                : score.Statistics is not null && hitobjectsSum is > 0
+                    ? Math.Clamp((double)score.CalculateSumOfHitResults(playmode) / hitobjectsSum.Value * 100, 0, 100)
                     : null;
 
             string globalRankText = "";
-            if (score.RankGlobal != null && score.RankGlobal is > 0 and <= 2000)
+            if (score.RankGlobal is > 0 and <= 2000)
             {
                 globalRankText = $"<b>Global #{score.RankGlobal}</b>\n";
             }

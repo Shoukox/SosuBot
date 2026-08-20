@@ -13,14 +13,48 @@ namespace SosuBot.Graphics;
 
 public sealed class ProfileCardGenerator
 {
-    public const int CardWidth = 400;
-    public const int CardHeight = 600;
+    private const int RenderScale = 2;
 
-    private const float CardEdgeBlurRadius = 18;
-    private const float AvatarCornerRadius = 16;
+    public const int CardWidth = 400 * RenderScale;
+    public const int CardHeight = 600 * RenderScale;
+
+    private const float CardEdgeBlurRadius = 18 * RenderScale;
+    private const float AvatarCornerRadius = 16 * RenderScale;
 
     private static readonly Assembly Assembly = typeof(ProfileCardGenerator).Assembly;
     private static readonly string[] ResourceNames = Assembly.GetManifestResourceNames();
+    private static readonly HashSet<(long PlayerId, OsuGameMode Mode)> LegendaryPlayers =
+    [
+        (50265, OsuGameMode.Osu),
+        (2558286, OsuGameMode.Osu),
+        (5339515, OsuGameMode.Osu),
+        (4650315, OsuGameMode.Osu),
+        (58710, OsuGameMode.Osu),
+        (211278, OsuGameMode.Osu),
+        (352328, OsuGameMode.Osu),
+        (713266, OsuGameMode.Osu),
+        (4787150, OsuGameMode.Osu),
+        (7562902, OsuGameMode.Osu),
+        (2774767, OsuGameMode.Taiko),
+        (6170507, OsuGameMode.Taiko),
+        (11199742, OsuGameMode.Taiko),
+        (983349, OsuGameMode.Taiko),
+        (214187, OsuGameMode.Catch),
+        (533210, OsuGameMode.Catch),
+        (3885626, OsuGameMode.Catch),
+        (4447639, OsuGameMode.Catch),
+        (140148, OsuGameMode.Mania),
+        (259972, OsuGameMode.Mania)
+    ];
+
+    private static readonly IReadOnlyDictionary<(long PlayerId, OsuGameMode Mode), string> SpecialStarNames =
+        new Dictionary<(long PlayerId, OsuGameMode Mode), string>
+        {
+            [(124493, OsuGameMode.Osu)] = "chocomint",
+            [(7990747, OsuGameMode.Osu)] = "diamond",
+            [(8926244, OsuGameMode.Osu)] = "shooting_star",
+            [(2611813, OsuGameMode.Osu)] = "paw"
+        };
 
     private readonly FontFamily _fontFamily;
 
@@ -36,32 +70,47 @@ public sealed class ProfileCardGenerator
         ArgumentNullException.ThrowIfNull(data);
         ArgumentException.ThrowIfNullOrWhiteSpace(data.Username);
 
-        using Image<Rgba32> card = LoadCard(GetCardName(data.Skills.Accuracy));
+        using Image<Rgba32> card = LoadCard(GetCardName(data.Skills.Accuracy, data.PlayerId, data.Mode));
         using Image<Rgba32> modeIcon = LoadImage($"Assets/OsuCard/Icon/bancho_{GetModeSuffix(data.Mode)}.png");
-        using Image<Rgba32> fullStar = LoadImage("Assets/OsuCard/Star/full_star.png");
-        using Image<Rgba32> halfStar = LoadImage("Assets/OsuCard/Star/half_star.png");
+        string starName = GetStarName(data.PlayerId, data.Mode);
+        using Image<Rgba32> fullStar = LoadImage($"Assets/OsuCard/Star/full_{starName}.png");
+        using Image<Rgba32> halfStar = LoadImage($"Assets/OsuCard/Star/half_{starName}.png");
         using Image<Rgba32> avatar = LoadAvatar(data.Avatar, data.Username);
 
-        modeIcon.Mutate(context => context.Resize(80, 80));
+        modeIcon.Mutate(context => context.Resize(new ResizeOptions
+        {
+            Size = new Size(80 * RenderScale, 80 * RenderScale),
+            Sampler = KnownResamplers.Lanczos3
+        }));
         avatar.Mutate(context => context.Resize(new ResizeOptions
         {
-            Size = new Size(320, 320),
+            Size = new Size(320 * RenderScale, 320 * RenderScale),
             Mode = ResizeMode.Crop,
-            Position = AnchorPositionMode.Center
+            Position = AnchorPositionMode.Center,
+            Sampler = KnownResamplers.Lanczos3
         }));
         using Image<Rgba32> roundedAvatar = CreateRoundedAvatar(avatar);
-        fullStar.Mutate(context => context.Resize(32, 31));
-        halfStar.Mutate(context => context.Resize(32, 31));
+        fullStar.Mutate(context => context.Resize(new ResizeOptions
+        {
+            Size = new Size(32 * RenderScale, 31 * RenderScale),
+            Sampler = KnownResamplers.Lanczos3
+        }));
+        halfStar.Mutate(context => context.Resize(new ResizeOptions
+        {
+            Size = new Size(32 * RenderScale, 31 * RenderScale),
+            Sampler = KnownResamplers.Lanczos3
+        }));
 
-        Font usernameFont = FitFont(data.Username, 32, 17, 220);
-        Font statsFont = _fontFamily.CreateFont(28);
-        Font starRatingFont = _fontFamily.CreateFont(14);
+        Font usernameFont = FitFont(data.Username, 32 * RenderScale, 17 * RenderScale, 220 * RenderScale);
+        Font statsFont = _fontFamily.CreateFont(28 * RenderScale);
+        Font starRatingFont = _fontFamily.CreateFont(14 * RenderScale);
 
         card.Mutate(context =>
         {
-            context.DrawImage(modeIcon, new Point(20, 20), 1);
-            context.DrawImage(roundedAvatar, new Point(40, 110), 1);
-            DrawCenteredText(context, data.Username, usernameFont, 150, 45, 220);
+            context.DrawImage(modeIcon, new Point(20 * RenderScale, 20 * RenderScale), 1);
+            context.DrawImage(roundedAvatar, new Point(40 * RenderScale, 110 * RenderScale), 1);
+            DrawCenteredText(context, data.Username, usernameFont, 150 * RenderScale, 45 * RenderScale,
+                220 * RenderScale);
 
             DrawStats(context, data.Skills.GetMetrics(data.Mode), statsFont);
             DrawStars(context, data.Skills.Stars, fullStar, halfStar, starRatingFont);
@@ -73,15 +122,44 @@ public sealed class ProfileCardGenerator
         return output;
     }
 
-    private static string GetCardName(double accuracySkill) => accuracySkill switch
+    private static string GetCardName(double accuracySkill, long? playerId, OsuGameMode mode)
     {
-        >= 900 => "master_osu",
-        >= 825 => "ultra_rare_osu",
-        >= 700 => "super_rare_osu",
-        >= 525 => "elite_osu",
-        >= 300 => "rare_osu",
-        _ => "common_osu"
-    };
+        if (playerId is { } id)
+        {
+            string playerCardName = id.ToString(CultureInfo.InvariantCulture);
+            
+            // -_HateP_-
+            if (playerCardName == "15160962")
+            {
+                return playerCardName;
+            }
+            
+            if (mode == OsuGameMode.Osu && ResourceExists($"Assets/OsuCard/Card/{playerCardName}.png"))
+                return playerCardName;
+            
+            if (mode == OsuGameMode.Mania && ResourceExists($"Assets/OsuCard/Card/{playerCardName}_mania.png"))
+                return playerCardName + "_mania";
+            
+            if (LegendaryPlayers.Contains((id, mode)))
+                return "legendary_osu";
+        }
+
+        return accuracySkill switch
+        {
+            >= 1100 => "legendary_osu",
+            >= 900 => "master_osu",
+            >= 825 => "ultra_rare_osu",
+            >= 700 => "super_rare_osu",
+            >= 525 => "elite_osu",
+            >= 300 => "rare_osu",
+            _ => "common_osu"
+        };
+    }
+
+    private static string GetStarName(long? playerId, OsuGameMode mode) =>
+        playerId is { } id && SpecialStarNames.TryGetValue((id, mode), out string? starName)
+            ? starName
+            : "star";
 
     private static Image<Rgba32> LoadCard(string cardName)
     {
@@ -89,7 +167,11 @@ public sealed class ProfileCardGenerator
 
         if (card.Width != CardWidth || card.Height != CardHeight)
         {
-            card.Mutate(context => context.Resize(CardWidth, CardHeight));
+            card.Mutate(context => context.Resize(new ResizeOptions
+            {
+                Size = new Size(CardWidth, CardHeight),
+                Sampler = KnownResamplers.Lanczos3
+            }));
         }
 
         Rectangle contentBounds = FindContentBounds(card);
@@ -222,8 +304,8 @@ public sealed class ProfileCardGenerator
 
     private static void DrawStats(IImageProcessingContext context, IReadOnlyList<PlayerSkillMetric> metrics, Font font)
     {
-        const float firstRowY = 444;
-        const float rowHeight = 33;
+        const float firstRowY = 444 * RenderScale;
+        const float rowHeight = 33 * RenderScale;
 
         for (int index = 0; index < metrics.Count; index++)
         {
@@ -234,16 +316,17 @@ public sealed class ProfileCardGenerator
 
     private static void DrawStat(IImageProcessingContext context, string label, double value, Font font, float y)
     {
-        DrawTextWithShadow(context, label, font, new PointF(42, y));
+        DrawTextWithShadow(context, label, font, new PointF(42 * RenderScale, y));
 
         string formattedValue = value.ToString("0", CultureInfo.InvariantCulture);
         float valueWidth = TextMeasurer.MeasureSize(formattedValue, new TextOptions(font)).Width;
-        DrawTextWithShadow(context, formattedValue, font, new PointF(350 - valueWidth, y));
+        DrawTextWithShadow(context, formattedValue, font, new PointF(350 * RenderScale - valueWidth, y));
     }
 
     private static void DrawTextWithShadow(IImageProcessingContext context, string text, Font font, PointF position)
     {
-        context.DrawText(text, font, Color.FromRgba(0, 0, 0, 170), new PointF(position.X + 2, position.Y + 2));
+        context.DrawText(text, font, Color.FromRgba(0, 0, 0, 170),
+            new PointF(position.X + 2 * RenderScale, position.Y + 2 * RenderScale));
         context.DrawText(text, font, Color.White, position);
     }
 
@@ -255,14 +338,14 @@ public sealed class ProfileCardGenerator
         int count = fullStars + (hasHalfStar ? 1 : 0);
         if (count > 0)
         {
-            const int spacing = 2;
+            const int spacing = 2 * RenderScale;
             int width = count * fullStar.Width + (count - 1) * spacing;
-            float scale = Math.Min(1, 370f / width);
+            float scale = Math.Min(1, 370f * RenderScale / width);
             int starWidth = Math.Max(1, (int)Math.Round(fullStar.Width * scale));
             int starHeight = Math.Max(1, (int)Math.Round(fullStar.Height * scale));
             int scaledWidth = count * starWidth + (count - 1) * spacing;
             int startX = (CardWidth - scaledWidth) / 2;
-            int y = 552 + (31 - starHeight) / 2;
+            int y = 552 * RenderScale + (31 * RenderScale - starHeight) / 2;
 
             for (int index = 0; index < count; index++)
             {
@@ -273,14 +356,18 @@ public sealed class ProfileCardGenerator
                     continue;
                 }
 
-                using Image<Rgba32> resized = source.Clone(image => image.Resize(starWidth, starHeight));
+                using Image<Rgba32> resized = source.Clone(image => image.Resize(new ResizeOptions
+                {
+                    Size = new Size(starWidth, starHeight),
+                    Sampler = KnownResamplers.Lanczos3
+                }));
                 context.DrawImage(resized, new Point(startX + index * (starWidth + spacing), y), 1);
             }
         }
 
         double displayedStars = double.IsFinite(stars) ? Math.Max(0, stars) : 0;
         string starRating = displayedStars.ToString("0.00", CultureInfo.InvariantCulture) + "★";
-        DrawCenteredText(context, starRating, starRatingFont, 0, 582, CardWidth);
+        DrawCenteredText(context, starRating, starRatingFont, 0, 582 * RenderScale, CardWidth);
     }
 
     private Image<Rgba32> LoadAvatar(byte[]? avatarBytes, string username)
@@ -297,10 +384,11 @@ public sealed class ProfileCardGenerator
             }
         }
 
-        Image<Rgba32> placeholder = new(320, 320, Color.ParseHex("#2a2238"));
-        Font initialFont = _fontFamily.CreateFont(120);
+        Image<Rgba32> placeholder = new(320 * RenderScale, 320 * RenderScale, Color.ParseHex("#2a2238"));
+        Font initialFont = _fontFamily.CreateFont(120 * RenderScale);
         string initial = username[..1].ToUpperInvariant();
-        placeholder.Mutate(context => DrawCenteredText(context, initial, initialFont, 0, 82, 320));
+        placeholder.Mutate(context =>
+            DrawCenteredText(context, initial, initialFont, 0, 82 * RenderScale, 320 * RenderScale));
         return placeholder;
     }
 
@@ -309,6 +397,9 @@ public sealed class ProfileCardGenerator
         using Stream resource = OpenResource(path);
         return Image.Load<Rgba32>(resource);
     }
+
+    private static bool ResourceExists(string path) => ResourceNames.Any(name =>
+        name.EndsWith(path.Replace('/', '.').Replace('\\', '.'), StringComparison.OrdinalIgnoreCase));
 
     private static Stream OpenResource(string path)
     {

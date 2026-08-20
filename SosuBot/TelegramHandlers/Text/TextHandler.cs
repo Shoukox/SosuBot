@@ -113,7 +113,8 @@ public sealed class TextHandler : CommandBase<Message>
 
         Playmode playmode = user.Playmode!.ParseRulesetToPlaymode();
         double? currentPp = user.Statistics!.Pp;
-        var ppDifferenceText = await UserHelper.GetPpDifferenceTextAsync(_database, user, playmode, currentPp);
+        var profileDifferenceTexts =
+            await UserHelper.GetProfileDifferenceTextsAsync(_database, user, playmode);
 
         var textToSend = LocalizationMessageHelper.UserProfileText(
             language,
@@ -121,7 +122,9 @@ public sealed class TextHandler : CommandBase<Message>
             user,
             playmode,
             currentPp,
-            ppDifferenceText,
+            profileDifferenceTexts.Pp,
+            profileDifferenceTexts.Accuracy,
+            profileDifferenceTexts.PlayTime,
             $"{OsuConstants.TotalAchievementsCount}");
 
         await Context.Update.ReplyAsync(Context.BotClient, textToSend, replyMarkup: UserHelper.BuildUserModeKeyboard(user.Username!));
