@@ -38,9 +38,23 @@ namespace SosuBot.Services
 
         public Uri ServerUri => _serverUri;
 
-        public Uri BuildSkinUrl(string skinName)
+        public Uri BuildSkinUrl(string skinName, string? videoUri = null)
         {
             string skinFileName = Convert.ToHexString(Encoding.ASCII.GetBytes(skinName)) + ".osk";
+
+            if (Uri.TryCreate(videoUri, UriKind.Absolute, out Uri? parsedVideoUri) &&
+                (parsedVideoUri.Scheme.Equals(Uri.UriSchemeHttp, StringComparison.OrdinalIgnoreCase) ||
+                 parsedVideoUri.Scheme.Equals(Uri.UriSchemeHttps, StringComparison.OrdinalIgnoreCase)))
+            {
+                UriBuilder publicUri = new(parsedVideoUri)
+                {
+                    Path = $"/skins/{skinFileName}",
+                    Query = string.Empty,
+                    Fragment = string.Empty
+                };
+                return publicUri.Uri;
+            }
+
             return new Uri(_serverUri, $"skins/{skinFileName}");
         }
 

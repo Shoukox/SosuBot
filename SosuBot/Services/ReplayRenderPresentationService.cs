@@ -51,7 +51,7 @@ public sealed class ReplayRenderPresentationService(
         string watchUrl = BuildWatchUrl(job.VideoUri);
         string? skinUrl = renderSettings.SkinName.Equals("default", StringComparison.OrdinalIgnoreCase)
             ? null
-            : replayRenderService.BuildSkinUrl(renderSettings.SkinName).ToString();
+            : replayRenderService.BuildSkinUrl(renderSettings.SkinName, job.VideoUri).ToString();
         string textOrCaption = LocalizationMessageHelper.ReplayFinishedWithLink(language, watchUrl, skinUrl);
         videoPath ??= ResolveVideoPath(job);
         if (videoPath is null)

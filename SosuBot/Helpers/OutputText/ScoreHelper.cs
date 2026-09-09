@@ -141,7 +141,8 @@ public class ScoreHelper(CachingHelper cachingHelper)
     }
 
     public async Task<string> GetDailyStatisticsSendText(Playmode playmode, DailyStatistics dailyStatistics,
-        BanchoApiV2 osuApi, ILocalization? language = null)
+        BanchoApiV2 osuApi, ILocalization? language = null,
+        DateTime? periodStart = null, DateTime? periodEnd = null)
     {
         language ??= new Russian();
 
@@ -217,8 +218,11 @@ public class ScoreHelper(CachingHelper cachingHelper)
         var beatmapsPlayed = usersAndTheirScores.SelectMany(m => m.Item2).DistinctBy(m => m.ScoreJson.BeatmapId).Count();
 
         DateTime tashkentNow = dailyStatistics.DayOfStatistic;
+        string periodText = periodStart is { } start && periodEnd is { } end
+            ? $"{start:dd.MM.yyyy HH:mm} - {end:dd.MM.yyyy HH:mm}"
+            : $"{tashkentNow:dd.MM.yyyy HH:mm}";
         var sendText = language.send_dailyStatistic.Fill([
-            $"{tashkentNow:dd.MM.yyyy HH:mm} {language.daily_stats_tashkent_time}",
+            $"{periodText} {language.daily_stats_tashkent_time}",
             $"{activePlayersCount}",
             $"{passedScoresCount}",
             $"{beatmapsPlayed}",

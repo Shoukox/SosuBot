@@ -118,7 +118,7 @@ public sealed class Russian : ILocalization
     public string send_mapInfo => Shared.MapInfo;
 
     public string send_dailyStatistic =>
-        "<b>🇺🇿 Отчёт с момента {}:</b>\n\n" +
+        "<b>🇺🇿 Отчёт {}:</b>\n\n" +
         "<b>Активных игроков:</b> {}\n" +
         "<b>Пасснутых скоров:</b> {}\n" +
         "<b>Сыгранных уникальных карт:</b> {}\n\n" +
