@@ -55,6 +55,28 @@ public sealed class PPCalculatorTests
         Assert.True(result.PP > 0);
     }
 
+    [Theory]
+    [InlineData(0)]
+    [InlineData(1)]
+    [InlineData(2)]
+    [InlineData(3)]
+    public async Task CalculatesDifficultyForEveryRulesetFromTheLocalBeatmap(int rulesetId)
+    {
+        var calculator = new PPCalculator();
+
+        PPCalculationResult? result = await calculator.CalculatePpAsync(
+            beatmapId: 3 + rulesetId,
+            beatmapFile: new MemoryStream(Beatmap, writable: false),
+            accuracy: 1,
+            rulesetId: rulesetId,
+            cancellationToken: CancellationToken.None);
+
+        Assert.NotNull(result);
+        Assert.True(double.IsFinite(result!.DifficultyAttributes.StarRating));
+        Assert.True(result.BeatmapHitObjectsCount > 0);
+        Assert.True(result.BeatmapMaxCombo > 0);
+    }
+
     [Fact]
     public void CacheKeyIncludesSettingsOmittedFromSettingDescription()
     {

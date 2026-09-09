@@ -36,14 +36,14 @@ public sealed class Deutsch : ILocalization
         $"/exclude [nickname] - Spieler aus Chat Top 10 ausschließen.\n" +
         $"/include [nickname] - Spieler wieder in Chat Top 10 aufnehmen.\n" +
         $"/ranking [RU/UZ/country_code] - Top 20 Spieler eines Landes (oder global).\n" +
-        $"/daily_stats - exklusiv für Usbekistan: tägliche Score-Statistik.\n" +
+        $"/daily_stats, /weekly_stats, /monthly_stats - Score-Statistik für Tag, Woche oder Monat.\n" +
         $"/track [users1-3] - Benachrichtigung über neue Top50-Scores dieser Spieler.\n" +
         $"/render - Replay-Rendering.\n" +
+        $"/getskin - den im gerenderten Video verwendeten Skin herunterladen.\n" +
         $"/settings - Renderer-Einstellungen.\n" +
         $"/setskin - deinen Skin an den Bot senden.\n" +
         $"/info - letzte Infos zu deinem osu!-Profil vom Bot.\n" +
-        $"/calc [x100] [x50] [xMiss] [mods] - Rechner für die PP der ausgewählten Std Map mit diesen Werten.\n" +
-        $"/calcmania [x300] [x200] [x100] [x50] [xMiss] [mods] - Rechner für die PP der ausgewählten Mania Map mit diesen Werten.\n" +
+        $"/calc [Statistik oder Accuracy] [Mods] - PP-Rechner für die ausgewählte Map; das Format hängt vom Modus ab.\n" +
         $"\n" +
         $"Wenn du einen Beatmap-Link sendest, schickt der Bot kurze Map-Infos.\n" +
         $"Um das zu verhindern, hänge ein Minus ans Linkende ('-').\n" +
@@ -83,7 +83,7 @@ public sealed class Deutsch : ILocalization
     public string command_user_usage => "Beispiele:\n<b>/user mrekk</b>\n<b>/user mrekk mode=mania</b>";
     public string command_userId_usage => "Beispiel: <b>/userid 12345678</b>";
     public string command_userbest_usage => "Beispiele:\n<b>/userbest mrekk</b>\n<b>/userbest mrekk mania</b>";
-    public string command_compare_usage => "Beispiele:\n<b>/compare mrekk whitecat</b>\n<b>/compare mrekk whitecat osu</b>";
+    public string command_compare_usage => "Beispiele:\n<b>/compare mrekk whitecat</b>\n<b>/compare - HateP - | whitecat</b>\n<b>/compare mrekk whitecat osu</b>";
     public string command_score_usage => "Beispiele:\n<b>/score https://osu.ppy.sh/beatmaps/123456</b>\n<b>/score</b> als Antwort auf eine Nachricht mit Beatmap-Link";
     public string command_exclude_usage => "Beispiel: <b>/exclude mrekk</b>";
     public string command_include_usage => "Beispiel: <b>/include mrekk</b>";
@@ -166,7 +166,8 @@ public sealed class Deutsch : ILocalization
     public string callback_renderFinishedPercent => "Render ist zu {} abgeschlossen";
     public string callback_rendererUploadingVideo => "Renderer lädt Video hoch...";
 
-    public string command_dailyStats_usage => "/daily_stats osu/catch/taiko/mania";
+    public string command_dailyStats_usage => "/daily_stats osu/catch/taiko/mania [dd.MM.yyyy[-dd.MM.yyyy]]\n/weekly_stats osu/catch/taiko/mania\n/monthly_stats osu/catch/taiko/mania\nBeispiel: /daily_stats osu 31.08.2026-06.09.2026";
+    public string command_dailyStats_validDateRange => "Verfügbarer Datumsbereich: {} — {}";
     public string command_ranking_title => "Top-Spieler in {}:\n\n";
 
     public string render_settings_title => "Render-Einstellungen";
@@ -214,6 +215,7 @@ public sealed class Deutsch : ILocalization
     public string calc_invalidScoreStats => "Ungültige Score-Statistiken";
     public string calc_std_usage => "/calc x100 x50 xMiss [mods]\nDie ersten drei Parameter müssen Zahlen sein. Mods (HDDT) sind optional";
     public string calc_mania_usage => "/calc x300 x200 x100 x50 xMiss [mods]\nDie ersten Parameter müssen Zahlen sein. Mods (HDDT) sind optional";
+    public string calc_usage => "/calc x100 x50 xMiss [mods] für osu!std\n/calc x100 xMiss [mods] für osu!taiko\n/calc xMiss [mods] für osu!catch\n/calc x300 x200 x100 x50 xMiss [mods] für osu!mania\nAlternativ 99.90 oder 98% anstatt der Hit Statistics";
 
     public string last_usage => "/last nickname count\n/last Shoukko 5";
     public string last_unknownModsNoPp => "Der Score enthält dem Bot unbekannte Mods; pp-Berechnung ist nicht verfügbar.";
@@ -241,7 +243,7 @@ public sealed class Deutsch : ILocalization
     public string replayRender_serverDown => "Sieht aus, als wäre der Server gerade offline. Versuch es später erneut.";
     public string replayRender_noRenderers => "Derzeit keine freien Renderer verfügbar. Bitte später erneut versuchen.";
     public string replayRender_scoreNotFound => "<a href=\"{}\">Score</a> wurde nicht gefunden";
-    public string replayRender_scoreHasNoReplay => "<a href=\"{}\">Score</a> hat kein Replay";
+    public string replayRender_scoreHasNoReplay => "<a href=\"{}\">Dieser Score</a> hat kein Replay";
     public string replayRender_usage => "Antworte mit /render auf eine .osr-Datei, einen Score-Link oder osu!-Beatmap-Link für Autoplay.\nDu kannst auch /render auto +DTHD verwenden (Mods nach dem Befehl).";
     public string replayRender_invalidReplay => "Die hochgeladene Datei ist kein gültiges osu!-Replay (.osr) oder beschädigt.";
     public string replayRender_skinNotFound => "Dein gewählter Skin wurde auf dem Server vermutlich nicht gefunden. Wähle einen anderen.";
@@ -259,6 +261,12 @@ public sealed class Deutsch : ILocalization
     public string replayRender_onlyOsuStd => "Rendering ist nur für osu!std verfügbar";
     public string replayRender_errorWithReason => "Render fehlgeschlagen.\n{}";
     public string replayRender_finishedWithLink => "Render abgeschlossen.\n<a href=\"{}\">Videolink</a>";
+    public string replayRender_skinDownload => "\n<a href=\"{}\">Skin herunterladen</a>";
+    public string replayRender_defaultSkin => "\nDer integrierte Standardskin wurde verwendet.";
+    public string getSkin_replyToRender => "Antworte mit diesem Befehl auf ein nach /render gesendetes Video.";
+    public string getSkin_defaultSkin => "Für dieses Rendering wurde der integrierte Standardskin verwendet; es gibt keine Skin-Datei zum Herunterladen.";
+    public string getSkin_notFound => "Der Skin-Link wurde in diesem Video nicht gefunden oder ist nicht mehr verfügbar.";
+    public string getSkin_downloadError => "Der Skin konnte nicht vom Render-Server heruntergeladen werden.";
     public string replayRender_cancelled => "Render abgebrochen.";
     public string replayRender_beatmapLengthTooLong => "Die Karte in diesem Replay dauert zu lange. Probiere eine Karte aus, die weniger als 30 Minuten dauert. Für den experimentellen Renderer ist die Obergrenze auf 20 Minuten festgelegt.";
 

@@ -6,6 +6,7 @@ using OsuApi.BanchoV2.Users.Models;
 using SosuBot.Database;
 using SosuBot.Database.Models;
 using SosuBot.Extensions;
+using SosuBot.Helpers;
 using SosuBot.Localization;
 using SosuBot.Services.Synchronization;
 using SosuBot.TelegramHandlers.Abstract;
@@ -56,8 +57,15 @@ public sealed class OsuUserbestCommand : CommandBase<Message>
         long osuUserIdForUserbest;
         var ruleset = Ruleset.Osu;
 
-        var parameters = Context.Update.Text!.GetCommandParameters()!;
-        if (parameters.Length == 0)
+        OsuCommandArguments.Parsed? parsedArguments = OsuCommandArguments.Parse(Context.Update.Text!);
+        if (parsedArguments is null)
+        {
+            await waitMessage.EditAsync(Context.BotClient, language.command_userbest_usage);
+            return;
+        }
+
+        string osuUsernameArgument = OsuCommandArguments.JoinUsername(parsedArguments.Parameters);
+        if (osuUsernameArgument.Length == 0)
         {
             if (osuUserInDatabase is null)
             {
@@ -65,34 +73,24 @@ public sealed class OsuUserbestCommand : CommandBase<Message>
                 return;
             }
 
-            ruleset = osuUserInDatabase.OsuMode.ToRuleset();
+            ruleset = parsedArguments.Playmode?.ToRuleset() ?? osuUserInDatabase.OsuMode.ToRuleset();
             osuUsernameForUserbest = osuUserInDatabase.OsuUsername;
             osuUserIdForUserbest = osuUserInDatabase.OsuUserId;
         }
-        else if (parameters.Length > 2)
-        {
-            await waitMessage.EditAsync(Context.BotClient, language.command_userbest_usage);
-            return;
-        }
         else
         {
-            var rulesetAlreadySet = false;
-            if (parameters.Length == 2)
-            {
-                ruleset = parameters[1].ParseToRuleset()!;
-                rulesetAlreadySet = true;
-            }
-
-            GetUserResponse? userResponse = await _osuApiV2.Users.GetUser(parameters[0], new GetUserQueryParameters());
+            GetUserResponse? userResponse = await _osuApiV2.Users.GetUser(
+                osuUsernameArgument, new GetUserQueryParameters());
             if (userResponse is null)
             {
                 await waitMessage.EditAsync(Context.BotClient,
-                    LocalizationMessageHelper.ErrorSpecificUserNotFound(language, parameters[0]) + "\n\n" +
+                    LocalizationMessageHelper.ErrorSpecificUserNotFound(language, osuUsernameArgument) + "\n\n" +
                     language.error_hintReplaceSpaces);
                 return;
             }
 
-            if (!rulesetAlreadySet) ruleset = userResponse.UserExtend!.Playmode!;
+            if (parsedArguments.Playmode is null)
+                ruleset = userResponse.UserExtend!.Playmode!;
             osuUsernameForUserbest = userResponse.UserExtend!.Username!;
             osuUserIdForUserbest = userResponse.UserExtend!.Id.Value;
         }

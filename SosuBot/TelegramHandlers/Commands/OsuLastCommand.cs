@@ -15,10 +15,8 @@ using SosuBot.PerformanceCalculator;
 using SosuBot.Services;
 using SosuBot.Services.Synchronization;
 using SosuBot.TelegramHandlers.Abstract;
-using System.Data;
 using System.Globalization;
 using System.Net;
-using System.Text.RegularExpressions;
 using Telegram.Bot;
 using Telegram.Bot.Types;
 
@@ -70,14 +68,33 @@ public class OsuLastCommand(bool onlyPassed = false, bool sendCover = false) : C
         await Task.Delay(500);
 
         var osuUsernameForLastScores = string.Empty;
-        var keywordParameters = Context.Update.Text!.GetCommandKeywordParameters()!;
-        var parameters = Context.Update.Text!.GetCommandParameters()!.Where(m => !keywordParameters.Contains(m)).ToArray();
+        OsuCommandArguments.Parsed? parsedArguments = OsuCommandArguments.Parse(Context.Update.Text!);
+        if (parsedArguments is null)
+        {
+            await waitMessage.EditAsync(Context.BotClient,
+                _onlyPassed ? language.command_lastPassed_usage : language.last_usage);
+            return;
+        }
 
+        List<string> parameters = parsedArguments.Parameters.ToList();
         var limit = 1;
-        string? ruleset = TextHelper.GetPlaymodeFromParameters(parameters, out parameters)?.ToRuleset();
+        string? ruleset = parsedArguments.Playmode?.ToRuleset();
+
+        if (parameters.Count > 0 && int.TryParse(parameters[^1], out int parsedLimit))
+        {
+            if (parsedLimit <= 0)
+            {
+                await waitMessage.EditAsync(Context.BotClient,
+                    _onlyPassed ? language.command_lastPassed_usage : language.last_usage);
+                return;
+            }
+
+            limit = parsedLimit;
+            parameters.RemoveAt(parameters.Count - 1);
+        }
 
         //l
-        if (parameters.Length == 0)
+        if (parameters.Count == 0)
         {
             if (osuUserInDatabase is null)
             {
@@ -89,56 +106,9 @@ public class OsuLastCommand(bool onlyPassed = false, bool sendCover = false) : C
             osuUsernameForLastScores = osuUserInDatabase.OsuUsername;
             ruleset ??= osuUserInDatabase.OsuMode.ToRuleset();
         }
-        //l 5
-        //l mrekk
-        else if (parameters.Length == 1)
-        {
-            var limitParsed = parameters[0].Length == 1 && int.TryParse(parameters[0][0].ToString(), out limit);
-            if (limitParsed)
-            {
-                if (osuUserInDatabase is null)
-                {
-                    await waitMessage.EditAsync(Context.BotClient, language.error_userNotSetHimself);
-                    return;
-                }
-
-                osuUsernameForLastScores = osuUserInDatabase.OsuUsername;
-                ruleset ??= osuUserInDatabase.OsuMode.ToRuleset();
-            }
-
-            if (!limitParsed) osuUsernameForLastScores = parameters[0];
-        }
-        //l mrekk 5
-        else if (parameters.Length == 2)
-        {
-            string parametersJoined = string.Join(" ", parameters);
-            string numberAsText = Regex.Match(parametersJoined, @" (\d)").Value;
-            if (!int.TryParse(numberAsText, out limit))
-            {
-                await waitMessage.EditAsync(Context.BotClient,
-                    _onlyPassed ? language.command_lastPassed_usage : language.last_usage);
-                return;
-            }
-            osuUsernameForLastScores = Regex.Match(parametersJoined, @"(\S{3,})").Value;
-        }
         else
         {
-            await waitMessage.EditAsync(Context.BotClient,
-                _onlyPassed ? language.command_lastPassed_usage : language.last_usage);
-            return;
-        }
-
-        if (ruleset == null || keywordParameters.Length != 0)
-        {
-            if (keywordParameters.FirstOrDefault(m => m.StartsWith("mode")) is { } keyword)
-            {
-                ruleset = keyword.Split('=')[1].ParseToRuleset();
-                if (ruleset is null)
-                {
-                    await waitMessage.EditAsync(Context.BotClient, language.error_modeIncorrect);
-                    return;
-                }
-            }
+            osuUsernameForLastScores = OsuCommandArguments.JoinUsername(parameters);
         }
 
         // getting osu!player through username

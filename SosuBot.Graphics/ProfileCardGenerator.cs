@@ -128,12 +128,14 @@ public sealed class ProfileCardGenerator
         {
             string playerCardName = id.ToString(CultureInfo.InvariantCulture);
             
-            // -_HateP_-
-            if (playerCardName == "15160962")
+            // independent of the ruleset
+            // 1. -_HateP_-
+            // 2. Shmiklak
+            if (playerCardName is "15160962" or "5504231")
             {
                 return playerCardName;
             }
-            
+
             if (mode == OsuGameMode.Osu && ResourceExists($"Assets/OsuCard/Card/{playerCardName}.png"))
                 return playerCardName;
             
@@ -345,7 +347,7 @@ public sealed class ProfileCardGenerator
             int starHeight = Math.Max(1, (int)Math.Round(fullStar.Height * scale));
             int scaledWidth = count * starWidth + (count - 1) * spacing;
             int startX = (CardWidth - scaledWidth) / 2;
-            int y = 552 * RenderScale + (31 * RenderScale - starHeight) / 2;
+            int y = 540 * RenderScale + (31 * RenderScale - starHeight) / 2;
 
             for (int index = 0; index < count; index++)
             {
@@ -367,7 +369,7 @@ public sealed class ProfileCardGenerator
 
         double displayedStars = double.IsFinite(stars) ? Math.Max(0, stars) : 0;
         string starRating = displayedStars.ToString("0.00", CultureInfo.InvariantCulture) + "★";
-        DrawCenteredText(context, starRating, starRatingFont, 0, 582 * RenderScale, CardWidth);
+        DrawCenteredText(context, starRating, starRatingFont, 0, 570 * RenderScale, CardWidth);
     }
 
     private Image<Rgba32> LoadAvatar(byte[]? avatarBytes, string username)

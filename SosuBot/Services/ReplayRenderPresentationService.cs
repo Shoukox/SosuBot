@@ -10,7 +10,8 @@ using static SosuBot.Services.ReplayRenderService;
 namespace SosuBot.Services;
 
 public sealed class ReplayRenderPresentationService(
-    ILogger<ReplayRenderPresentationService> logger)
+    ILogger<ReplayRenderPresentationService> logger,
+    ReplayRenderService replayRenderService)
 {
     public async Task<bool> EditPreparationFailureAsync(
         ITelegramBotClient botClient,
@@ -48,7 +49,10 @@ public sealed class ReplayRenderPresentationService(
         string? videoPath = null)
     {
         string watchUrl = BuildWatchUrl(job.VideoUri);
-        string textOrCaption = LocalizationMessageHelper.ReplayFinishedWithLink(language, watchUrl);
+        string? skinUrl = renderSettings.SkinName.Equals("default", StringComparison.OrdinalIgnoreCase)
+            ? null
+            : replayRenderService.BuildSkinUrl(renderSettings.SkinName).ToString();
+        string textOrCaption = LocalizationMessageHelper.ReplayFinishedWithLink(language, watchUrl, skinUrl);
         videoPath ??= ResolveVideoPath(job);
         if (videoPath is null)
         {

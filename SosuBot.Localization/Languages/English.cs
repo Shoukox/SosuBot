@@ -36,14 +36,14 @@ public sealed class English : ILocalization
         $"/exclude [nickname] - exclude a user from chat top 10.\n" +
         $"/include [nickname] - include a user back into chat top 10.\n" +
         $"/ranking [RU/UZ/country_code] - top 20 players for a country (or global).\n" +
-        $"/daily_stats - Uzbekistan exclusive: daily stats for all scores from all players in the country.\n" +
+        $"/daily_stats, /weekly_stats, /monthly_stats - statistics for all player scores by day, week, or month.\n" +
         $"/track [users1-3] - bot notifies you about new top50 scores of these players.\n" +
         $"/render - replay rendering.\n" +
+        $"/getskin - download the skin used in a rendered video.\n" +
         $"/settings - replay renderer settings.\n" +
         $"/setskin - send your skin to the bot.\n" +
         $"/info - latest info about your osu profile from the bot.\n" +
-        $"/calc [x100] [x50] [xMiss] [mods] - the pp calculation for the selected std map with these stats.\n" +
-        $"/calcmania [x300] [x200] [x100] [x50] [xMiss] [mods] - the pp calculation for the selected mania map with these stats.\n" +
+        $"/calc [stats or accuracy] [mods] - calculate pp for the selected map; format depends on its ruleset.\n" +
         $"\n" +
         $"If you send a beatmap link, the bot sends short map information.\n" +
         $"To prevent that, add a minus at the end of the link ('-').\n" +
@@ -83,7 +83,7 @@ public sealed class English : ILocalization
     public string command_user_usage => "Examples:\n<b>/user mrekk</b>\n<b>/user mrekk mode=mania</b>";
     public string command_userId_usage => "Example: <b>/userid 12345678</b>";
     public string command_userbest_usage => "Examples:\n<b>/userbest mrekk</b>\n<b>/userbest mrekk mania</b>";
-    public string command_compare_usage => "Examples:\n<b>/compare mrekk whitecat</b>\n<b>/compare mrekk whitecat osu</b>";
+    public string command_compare_usage => "Examples:\n<b>/compare mrekk whitecat</b>\n<b>/compare - HateP - | whitecat</b>\n<b>/compare mrekk whitecat osu</b>";
     public string command_score_usage => "Examples:\n<b>/score https://osu.ppy.sh/beatmaps/123456</b>\n<b>/score</b> as a reply to a message with a beatmap link";
     public string command_exclude_usage => "Example: <b>/exclude mrekk</b>";
     public string command_include_usage => "Example: <b>/include mrekk</b>";
@@ -173,7 +173,8 @@ public sealed class English : ILocalization
     public string callback_renderFinishedPercent => "Render is {} complete";
     public string callback_rendererUploadingVideo => "Renderer is uploading video...";
 
-    public string command_dailyStats_usage => "/daily_stats osu/catch/taiko/mania";
+    public string command_dailyStats_usage => "/daily_stats osu/catch/taiko/mania [dd.MM.yyyy[-dd.MM.yyyy]]\n/weekly_stats osu/catch/taiko/mania\n/monthly_stats osu/catch/taiko/mania\nExample: /daily_stats osu 31.08.2026-06.09.2026";
+    public string command_dailyStats_validDateRange => "Available date range: {} — {}";
     public string command_ranking_title => "Top players in {}:\n\n";
 
     public string render_settings_title => "Render settings";
@@ -221,6 +222,7 @@ public sealed class English : ILocalization
     public string calc_invalidScoreStats => "Invalid score statistics";
     public string calc_std_usage => "/calc x100 x50 xMiss [mods]\nFirst three parameters must be numbers. Mods (HDDT) are optional";
     public string calc_mania_usage => "/calc x300 x200 x100 x50 xMiss [mods]\nFirst parameters must be numbers. Mods (HDDT) are optional";
+    public string calc_usage => "/calc x100 x50 xMiss [mods] for osu!std\n/calc x100 xMiss [mods] for osu!taiko\n/calc xMiss [mods] for osu!catch\n/calc x300 x200 x100 x50 xMiss [mods] for osu!mania\nYou can also use 99.90 or 98% instead of hit statistics";
 
     public string last_usage => "/last nickname count\n/last Shoukko 5";
     public string last_unknownModsNoPp => "Score contains mods unknown to the bot; pp calculation is unavailable.";
@@ -248,7 +250,7 @@ public sealed class English : ILocalization
     public string replayRender_serverDown => "Looks like the server is currently down. Try again later.";
     public string replayRender_noRenderers => "No available renderers right now. Please try again later.";
     public string replayRender_scoreNotFound => "<a href=\"{}\">Score</a> was not found";
-    public string replayRender_scoreHasNoReplay => "<a href=\"{}\">Score</a> has no replay";
+    public string replayRender_scoreHasNoReplay => "<a href=\"{}\">This score</a> has no replay";
     public string replayRender_usage => "Reply with /render to a .osr file, score link, or osu! beatmap link for autoplay.\nYou can also use: /render auto +DTHD (mods after the command).";
     public string replayRender_invalidReplay => "The uploaded file is not a valid osu! replay (.osr) or is corrupted.";
     public string replayRender_skinNotFound => "Your selected skin was likely not found on the server. Choose another one.";
@@ -266,6 +268,12 @@ public sealed class English : ILocalization
     public string replayRender_onlyOsuStd => "Rendering is available only for osu!std";
     public string replayRender_errorWithReason => "Render failed.\n{}";
     public string replayRender_finishedWithLink => "Render completed.\n<a href=\"{}\">Video link</a>";
+    public string replayRender_skinDownload => "\n<a href=\"{}\">Download skin</a>";
+    public string replayRender_defaultSkin => "\nThe built-in default skin was used.";
+    public string getSkin_replyToRender => "Reply to a video sent after /render with this command.";
+    public string getSkin_defaultSkin => "This render used the built-in default skin; there is no skin file to download.";
+    public string getSkin_notFound => "The skin link was not found in this video or is no longer available.";
+    public string getSkin_downloadError => "Could not download the skin from the render server.";
     public string replayRender_cancelled => "Render was cancelled.";
     public string replayRender_beatmapLengthTooLong => "The map in this replay is too long. Try a map that lasts less than 30 minutes. The limit for the experimental renderer is 20 minutes.";
 
