@@ -115,7 +115,8 @@ public class GetDailyStatisticsCommand : CommandBase<Message>
             return;
         }
 
-        sendText = await _scoreHelper.GetDailyStatisticsSendText(playmode, aggregatedStats, _osuApiV2, language);
+        sendText = await _scoreHelper.GetDailyStatisticsSendText(
+            playmode, aggregatedStats, _osuApiV2, language, rangeStart, rangeEnd);
         await waitMessage.EditAsync(Context.BotClient, sendText);
     }
 
