@@ -39,15 +39,17 @@ public class ConfigureBotService(IServiceProvider serviceProvider) : IHostedServ
         CreateBotCommand(OsuCardCommand.Commands[0], OsuCardCommand.Description),
         CreateBotCommand(RandomBeatmapCommand.Commands[0], RandomBeatmapCommand.Description),
         CreateBotCommand(OsuCalcCommand.Commands[0], OsuCalcCommand.Description),
-        CreateBotCommand(OsuCalcManiaCommand.Commands[0], OsuCalcManiaCommand.Description),
         CreateBotCommand(TrackCommand.Commands[0], TrackCommand.Description),
         CreateBotCommand(ReplayRenderCommand.Commands[0], ReplayRenderCommand.Description),
         CreateBotCommand(RenderSettingsCommand.Commands[0], RenderSettingsCommand.Description),
         CreateBotCommand(RenderSkinSetCommand.Commands[0], RenderSkinSetCommand.Description),
+        CreateBotCommand(GetSkinCommand.Commands[0], GetSkinCommand.Description),
         CreateBotCommand(RenderCursorSizeCommand.Commands[0], RenderCursorSizeCommand.Description),
         CreateBotCommand(RenderScrollSpeedCommand.Commands[0], RenderScrollSpeedCommand.Description),
         CreateBotCommand(GetRankingCommand.Commands[0], GetRankingCommand.Description),
         CreateBotCommand(GetDailyStatisticsCommand.Commands[0], GetDailyStatisticsCommand.Description),
+        CreateBotCommand(GetWeeklyStatisticsCommand.Commands[0], GetWeeklyStatisticsCommand.Description),
+        CreateBotCommand(GetMonthlyStatisticsCommand.Commands[0], GetMonthlyStatisticsCommand.Description),
         CreateBotCommand(HelpCommand.Commands[0], HelpCommand.Description),
         CreateBotCommand(SetLanguageCommand.Commands[0], SetLanguageCommand.Description),
         CreateBotCommand(StartCommand.Commands[0], StartCommand.Description),
@@ -95,16 +97,18 @@ public class ConfigureBotService(IServiceProvider serviceProvider) : IHostedServ
         RegisterCommand<CustomCommand>(CustomCommand.Commands);
         RegisterCommand<DeleteCommand>(DeleteCommand.Commands);
         RegisterCommand<GetDailyStatisticsCommand>(GetDailyStatisticsCommand.Commands);
+        RegisterCommand<GetWeeklyStatisticsCommand>(GetWeeklyStatisticsCommand.Commands);
+        RegisterCommand<GetMonthlyStatisticsCommand>(GetMonthlyStatisticsCommand.Commands);
         RegisterCommand<GetRankingCommand>(GetRankingCommand.Commands);
         RegisterCommand<ReplayRenderCommand>(ReplayRenderCommand.Commands);
         RegisterCommand<RenderSkinSetCommand>(RenderSkinSetCommand.Commands);
+        RegisterCommand<GetSkinCommand>(GetSkinCommand.Commands);
         RegisterCommand<RenderCursorSizeCommand>(RenderCursorSizeCommand.Commands);
         RegisterCommand<RenderScrollSpeedCommand>(RenderScrollSpeedCommand.Commands);
         RegisterCommand<RenderSettingsCommand>(RenderSettingsCommand.Commands);
         RegisterCommand<TrackCommand>(TrackCommand.Commands);
         RegisterCommand<OsuChatBeatmapLeaderboardCommand>(OsuChatBeatmapLeaderboardCommand.Commands);
         RegisterCommand<OsuCalcCommand>(OsuCalcCommand.Commands);
-        RegisterCommand<OsuCalcManiaCommand>(OsuCalcManiaCommand.Commands);
         RegisterCommand<OsuUpdateCommand>(OsuUpdateCommand.Commands);
         RegisterCommand<RandomBeatmapCommand>(RandomBeatmapCommand.Commands);
         RegisterCommand<OsuCardCommand>(OsuCardCommand.Commands);

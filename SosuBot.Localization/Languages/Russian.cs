@@ -36,14 +36,14 @@ public sealed class Russian : ILocalization
         $"/exclude [nickname] - исключить юзера из топ10 игроков в чате.\n" +
         $"/include [nickname] - вернуть юзера в топ10 игроков в чате.\n" +
         $"/ranking [RU/UZ/country_code] - топ20 игроков для данной страны (либо глобально).\n" +
-        $"/daily_stats - эксклюзивно для Узбекистана. Ежедневная статистика по всем скорам от всех игроков в стране.\n" +
+        $"/daily_stats, /weekly_stats, /monthly_stats - статистика по всем скорам игроков за день, неделю или месяц.\n" +
         $"/track [users1-3] - бот будет оповещать вас о новых скорах в топ50 данных игроков.\n" +
         $"/render - рендер реплеев.\n" +
+        $"/getskin - скачать скин из видео рендера.\n" +
         $"/settings - настройки рендера реплеев.\n" +
         $"/setskin - отправить в бота свой скин.\n" +
         $"/info - последняя инфа про ваш осу профиль от бота.\n" +
-        $"/calc [x100] [x50] [xMiss] [mods] - калькулятор пп выбранной стд карты с этой статистикой.\n" +
-        $"/calcmania [x300] [x200] [x100] [x50] [xMiss] [mods] - калькулятор пп выбранной мании карты с этой статистикой.\n" +
+        $"/calc [статистика или accuracy] [mods] - калькулятор пп выбранной карты; формат зависит от режима карты.\n" +
         $"\n" +
         $"Если отправить ссылку карты, бот отправит краткую информацию о ней\n" +
         $"Чтобы избежать отправки краткой информации, добавьте в конец ссылки минус ('-')\n" +
@@ -83,7 +83,7 @@ public sealed class Russian : ILocalization
     public string command_user_usage => "Примеры:\n<b>/user mrekk</b>\n<b>/user mrekk mode=mania</b>";
     public string command_userId_usage => "Пример: <b>/userid 12345678</b>";
     public string command_userbest_usage => "Примеры:\n<b>/userbest mrekk</b>\n<b>/userbest mrekk mania</b>";
-    public string command_compare_usage => "Примеры:\n<b>/compare mrekk whitecat</b>\n<b>/compare mrekk whitecat osu</b>";
+    public string command_compare_usage => "Примеры:\n<b>/compare mrekk whitecat</b>\n<b>/compare - HateP - | whitecat</b>\n<b>/compare mrekk whitecat osu</b>";
     public string command_score_usage => "Примеры:\n<b>/score https://osu.ppy.sh/beatmaps/123456</b>\n<b>/score</b> ответом на сообщение со ссылкой на карту";
     public string command_exclude_usage => "Пример: <b>/exclude mrekk</b>";
     public string command_include_usage => "Пример: <b>/include mrekk</b>";
@@ -173,7 +173,8 @@ public sealed class Russian : ILocalization
     public string callback_renderFinishedPercent => "Рендер завершен на {}";
     public string callback_rendererUploadingVideo => "Рендерер загружает видео...";
 
-    public string command_dailyStats_usage => "/daily_stats osu/catch/taiko/mania";
+    public string command_dailyStats_usage => "/daily_stats osu/catch/taiko/mania [dd.MM.yyyy[-dd.MM.yyyy]]\n/weekly_stats osu/catch/taiko/mania\n/monthly_stats osu/catch/taiko/mania\nПример: /daily_stats osu 31.08.2026-06.09.2026";
+    public string command_dailyStats_validDateRange => "Доступный диапазон дат: {} — {}";
     public string command_ranking_title => "Топ игроков в {}:\n\n";
 
     public string render_settings_title => "Настройки рендера";
@@ -221,6 +222,7 @@ public sealed class Russian : ILocalization
     public string calc_invalidScoreStats => "Некорректная статистика скора";
     public string calc_std_usage => "/calc x100 x50 xMiss [mods]\nПервые три параметра - цифры. Моды (HDDT) - опциональны";
     public string calc_mania_usage => "/calc x300 x200 x100 x50 xMiss [mods]\nПервые параметры - цифры. Моды (HDDT) - опциональны";
+    public string calc_usage => "/calc x100 x50 xMiss [mods] для osu!std\n/calc x100 xMiss [mods] для osu!taiko\n/calc xMiss [mods] для osu!catch\n/calc x300 x200 x100 x50 xMiss [mods] для osu!mania\nТакже можно указать 99.90 или 98% вместо статистики";
 
     public string last_usage => "/last nickname count\n/last Shoukko 5";
     public string last_unknownModsNoPp => "В скоре присутствуют неизвестные боту моды, расчет пп невозможен.";
@@ -248,7 +250,7 @@ public sealed class Russian : ILocalization
     public string replayRender_serverDown => "Кажется, сервер сейчас не запущен. Попробуй в другой раз";
     public string replayRender_noRenderers => "Нету ни одного доступного рендерера для рендера реплеев. Попробуй в другой раз";
     public string replayRender_scoreNotFound => "<a href=\"{}\">Скор</a> не найден";
-    public string replayRender_scoreHasNoReplay => "<a href=\"{}\">Скор</a> не имеет реплея";
+    public string replayRender_scoreHasNoReplay => "<a href=\"{}\">Этот скор</a> не имеет реплея";
     public string replayRender_usage => "Ответь /render на сообщение с .osr, ссылкой на скор или картой osu! для autoplay.\nТакже можно: /render auto +DTHD (моды указываются после команды).";
     public string replayRender_invalidReplay => "Отправленный файл не является корректным osu! реплеем (.osr) или повреждён.";
     public string replayRender_skinNotFound => "Вероятно, твой выбранный скин не был найден на сервере - выбери другой.";
@@ -266,6 +268,12 @@ public sealed class Russian : ILocalization
     public string replayRender_onlyOsuStd => "Рендер доступен только для osu!std";
     public string replayRender_errorWithReason => "Ошибка рендера.\n{}";
     public string replayRender_finishedWithLink => "Рендер завершен.\n<a href=\"{}\">Ссылка на видео</a>";
+    public string replayRender_skinDownload => "\n<a href=\"{}\">Скачать скин</a>";
+    public string replayRender_defaultSkin => "\nИспользуется встроенный скин.";
+    public string getSkin_replyToRender => "Ответь этой командой на видео, отправленное после /render.";
+    public string getSkin_defaultSkin => "В этом рендере использовался встроенный скин — скачивать его не нужно.";
+    public string getSkin_notFound => "Ссылка на скин в этом видео не найдена или больше недоступна.";
+    public string getSkin_downloadError => "Не удалось скачать скин с сервера рендера.";
     public string replayRender_cancelled => "Рендер был отменен.";
     public string replayRender_beatmapLengthTooLong => "Карта в этом реплее длится слишком долго. Попробуй карту, которая длится менее 30 минут. Для экспериментального рендерера лимит установлен на 20 минутах.";
 

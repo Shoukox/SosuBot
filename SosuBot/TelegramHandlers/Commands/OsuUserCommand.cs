@@ -43,23 +43,28 @@ public class OsuUserCommand(bool includeIdInSearch = false) : CommandBase<Messag
         }
 
         OsuUser? osuUserInDatabase = await _database.OsuUsers.FindAsync(Context.Update.From!.Id);
-        var keywordParameters = Context.Update.Text!.GetCommandKeywordParameters()!;
-        var parameters = Context.Update.Text!.GetCommandParameters()!.Where(m => !keywordParameters.Contains(m)).ToArray();
 
         Message waitMessage = await Context.Update.ReplyAsync(Context.BotClient, language.waiting);
 
         // Fake 500ms wait
         await Task.Delay(500);
 
+        OsuCommandArguments.Player? arguments = OsuCommandArguments.ParsePlayer(Context.Update.Text!);
+        if (arguments is null)
+        {
+            await waitMessage.EditAsync(Context.BotClient,
+                includeIdInSearch ? language.command_userId_usage : language.command_user_usage);
+            return;
+        }
+
         string username;
         string? ruleset = null;
         Playmode playmode = Playmode.Osu;
-        bool shouldUpdatePlaymode = false;
 
         string searchPrefix = "@";
         if (includeIdInSearch) searchPrefix = "";
 
-        if (parameters.Length == 0)
+        if (string.IsNullOrWhiteSpace(arguments.Username))
         {
             if (osuUserInDatabase is null)
             {
@@ -68,39 +73,20 @@ public class OsuUserCommand(bool includeIdInSearch = false) : CommandBase<Messag
                 return;
             }
 
-            playmode = osuUserInDatabase.OsuMode;
+            playmode = arguments.Playmode ?? osuUserInDatabase.OsuMode;
             username = $"{searchPrefix}{osuUserInDatabase.OsuUsername}";
             ruleset = playmode.ToRuleset();
         }
-        else if (parameters.Length == 1)
+        else
         {
-            if (parameters[0].StartsWith("@"))
+            if (arguments.Username.StartsWith("@"))
             {
                 await waitMessage.EditAsync(Context.BotClient, language.error_dontUseTelegramUsername);
                 return;
             }
 
-            username = $"{searchPrefix}{parameters[0]}";
-            shouldUpdatePlaymode = true;
-        }
-        else
-        {
-            await waitMessage.EditAsync(Context.BotClient,
-                includeIdInSearch ? language.command_userId_usage : language.command_user_usage);
-            return;
-        }
-
-        if (ruleset == null || keywordParameters.Length != 0)
-        {
-            if (keywordParameters.FirstOrDefault(m => m.StartsWith("mode")) is { } keyword)
-            {
-                ruleset = keyword.Split('=')[1].ParseToRuleset();
-                if (ruleset is null)
-                {
-                    await waitMessage.EditAsync(Context.BotClient, language.error_modeIncorrect);
-                    return;
-                }
-            }
+            username = $"{searchPrefix}{arguments.Username}";
+            ruleset = arguments.Playmode?.ToRuleset();
         }
 
         GetUserResponse? userResponse = await _osuApiV2.Users.GetUser(username, new GetUserQueryParameters(), ruleset);
@@ -116,9 +102,13 @@ public class OsuUserCommand(bool includeIdInSearch = false) : CommandBase<Messag
             return;
         }
 
-        if (shouldUpdatePlaymode)
+        if (ruleset == null)
         {
             playmode = user!.Playmode!.ParseRulesetToPlaymode();
+        }
+        else
+        {
+            playmode = ruleset.ParseRulesetToPlaymode();
         }
 
         double? currentPp = user.Statistics!.Pp;

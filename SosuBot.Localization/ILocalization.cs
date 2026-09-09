@@ -84,6 +84,7 @@ public interface ILocalization
     public string callback_rendererUploadingVideo { get; }
 
     public string command_dailyStats_usage { get; }
+    public string command_dailyStats_validDateRange { get; }
     public string command_ranking_title { get; }
 
     public string render_settings_title { get; }
@@ -131,6 +132,7 @@ public interface ILocalization
     public string calc_invalidScoreStats { get; }
     public string calc_std_usage { get; }
     public string calc_mania_usage { get; }
+    public string calc_usage { get; }
 
     public string last_usage { get; }
     public string last_unknownModsNoPp { get; }
@@ -176,6 +178,12 @@ public interface ILocalization
     public string replayRender_onlyOsuStd { get; }
     public string replayRender_errorWithReason { get; }
     public string replayRender_finishedWithLink { get; }
+    public string replayRender_skinDownload { get; }
+    public string replayRender_defaultSkin { get; }
+    public string getSkin_replyToRender { get; }
+    public string getSkin_defaultSkin { get; }
+    public string getSkin_notFound { get; }
+    public string getSkin_downloadError { get; }
     public string replayRender_cancelled { get; }
     public string replayRender_beatmapLengthTooLong { get; }
 

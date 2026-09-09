@@ -1,18 +1,17 @@
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 using OsuApi.BanchoV2;
 using OsuApi.BanchoV2.Clients.Users.HttpIO;
 using OsuApi.BanchoV2.Users.Models;
 using SosuBot.Database;
 using SosuBot.Database.Models;
 using SosuBot.Extensions;
+using SosuBot.Helpers;
 using SosuBot.Localization;
 using SosuBot.Services;
 using SosuBot.Services.Synchronization;
 using SosuBot.TelegramHandlers.Abstract;
 using System.Globalization;
 using Telegram.Bot;
-using Telegram.Bot.Exceptions;
 using Telegram.Bot.Types;
 #pragma warning disable CS9113 // Parameter is unread.
 
@@ -21,8 +20,7 @@ namespace SosuBot.TelegramHandlers.Commands;
 public sealed class OsuCardCommand(
     BanchoApiV2 osuApi,
     OsuCardService cardService,
-    RateLimiterFactory rateLimiterFactory,
-    ILogger<OsuCardCommand> logger) : CommandBase<Message>
+    RateLimiterFactory rateLimiterFactory) : CommandBase<Message>
 {
     public static readonly string[] Commands = ["/osucard"];
     public static readonly string Description = "[user] [mode] карточка навыков игрока osu!";
@@ -38,10 +36,7 @@ public sealed class OsuCardCommand(
             return;
         }
         
-        //await Context.Update.ReplyAsync(Context.BotClient, "В разработке...");
-        //return;
-
-        ParsedArguments? arguments = ParseArguments(Context.Update.Text!);
+        OsuCommandArguments.Player? arguments = OsuCommandArguments.ParsePlayer(Context.Update.Text!);
         if (arguments is null)
         {
             await Context.Update.ReplyAsync(Context.BotClient, language.osuCard_usage);
@@ -118,62 +113,15 @@ public sealed class OsuCardCommand(
         ]);
         
         using MemoryStream image = new(result.Image, writable: false);
-        await Context.Update.ReplyPhotoAsync(
-            Context.BotClient,
-            new InputFileStream(image, "osucard.png"),
-            caption);
-        
-        try
-        {
-            await Context.BotClient.DeleteMessage(waitMessage.Chat.Id, waitMessage.MessageId,
-                Context.CancellationToken);
-        }
-        catch (ApiRequestException exception)
-        {
-            logger.LogDebug(exception, "Could not delete the /osucard progress message");
-        }
+        await Context.BotClient.EditMessageMedia(
+            waitMessage.Chat.Id,
+            waitMessage.MessageId,
+            new InputMediaPhoto(new InputFileStream(image, "osucard.png"))
+            {
+                Caption = caption,
+                ParseMode = Telegram.Bot.Types.Enums.ParseMode.Html
+            },
+            cancellationToken: Context.CancellationToken);
     }
 
-    private static ParsedArguments? ParseArguments(string messageText)
-    {
-        List<string> parameters = (messageText.GetCommandParameters() ?? [])
-            .Where(parameter => !string.IsNullOrWhiteSpace(parameter))
-            .ToList();
-
-        Playmode? playmode = null;
-        string? keywordMode = parameters.FirstOrDefault(parameter =>
-            parameter.StartsWith("mode=", StringComparison.OrdinalIgnoreCase));
-        if (keywordMode is not null)
-        {
-            string? ruleset = keywordMode.ParseToRuleset();
-            if (ruleset is null || parameters.Count(parameter =>
-                    parameter.StartsWith("mode=", StringComparison.OrdinalIgnoreCase)) != 1)
-                return null;
-
-            playmode = ruleset.ParseRulesetToPlaymode();
-            parameters.Remove(keywordMode);
-        }
-
-        if (parameters.Count >= 2 && parameters[^1].ParseToRuleset() is { } trailingRuleset)
-        {
-            if (playmode is not null)
-                return null;
-
-            playmode = trailingRuleset.ParseRulesetToPlaymode();
-            parameters.RemoveAt(parameters.Count - 1);
-        }
-        else if (parameters.Count == 1 && playmode is null && parameters[0].ParseToRuleset() is { } onlyRuleset)
-        {
-            playmode = onlyRuleset.ParseRulesetToPlaymode();
-            parameters.Clear();
-        }
-
-        if (parameters.Any(parameter => parameter.Contains('=')))
-            return null;
-
-        string? username = parameters.Count == 0 ? null : string.Join(' ', parameters);
-        return new ParsedArguments(username, playmode);
-    }
-
-    private sealed record ParsedArguments(string? Username, Playmode? Playmode);
 }

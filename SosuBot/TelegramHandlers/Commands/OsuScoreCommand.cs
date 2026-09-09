@@ -58,7 +58,7 @@ public sealed class OsuScoreCommand : CommandBase<Message>
         Playmode? playmode;
         int? beatmapId;
         var osuUsernameForScore = string.Empty;
-        var parameters = Context.Update.Text!.GetCommandParameters()!;
+        string[] parameters = OsuCommandArguments.GetParameters(Context.Update.Text!);
 
         // s
         if (parameters.Length == 0)
@@ -86,80 +86,70 @@ public sealed class OsuScoreCommand : CommandBase<Message>
             playmode = osuUserInDatabase.OsuMode;
             osuUsernameForScore = osuUserInDatabase.OsuUsername;
         }
-        // s url
-        // s mrekk
-        // s mrekk, with reply
-        else if (parameters.Length == 1)
+        else
         {
-            // s with reply
-            var link = OsuHelper.ParseOsuBeatmapLink(Context.Update.ReplyToMessage?.GetAllLinks(), out var beatmapsetId,
-                out beatmapId);
-            if (link is not null)
+            int? beatmapsetId = null;
+            string? beatmapLink = OsuHelper.ParseOsuBeatmapLink(
+                Context.Update.GetAllLinks(), out beatmapsetId, out beatmapId);
+            bool linkIsInCommand = beatmapLink is not null;
+            int linkParameterIndex = -1;
+
+            if (beatmapLink is not null)
             {
-                if (beatmapId is null && beatmapsetId is not null)
+                linkParameterIndex = Array.FindIndex(parameters,
+                    parameter => parameter.Trim().Equals(beatmapLink.Trim(), StringComparison.OrdinalIgnoreCase) ||
+                                parameter.Contains(beatmapLink, StringComparison.OrdinalIgnoreCase));
+            }
+
+            if (beatmapLink is null)
+            {
+                for (var i = 0; i < parameters.Length; i++)
                 {
-                    beatmapset = await _osuApiV2.Beatmapsets.GetBeatmapset(beatmapsetId.Value);
-                    beatmapId = beatmapset.Beatmaps![0].Id;
+                    beatmapLink = OsuHelper.ParseOsuBeatmapLink([parameters[i]], out beatmapsetId, out beatmapId);
+                    if (beatmapLink is null)
+                        continue;
+
+                    linkIsInCommand = true;
+                    linkParameterIndex = i;
+                    break;
+                }
+            }
+
+            if (beatmapLink is null)
+            {
+                beatmapLink = OsuHelper.ParseOsuBeatmapLink(
+                    Context.Update.ReplyToMessage?.GetAllLinks(), out beatmapsetId, out beatmapId);
+            }
+
+            if (beatmapLink is not null && beatmapId is null && beatmapsetId is not null)
+            {
+                beatmapset = await _cachingHelper.GetOrCacheBeatmapset(beatmapsetId.Value, _osuApiV2);
+                beatmapId = beatmapset!.Beatmaps![0].Id;
+            }
+
+            List<string> usernameParameters = parameters.ToList();
+            if (linkIsInCommand && linkParameterIndex >= 0)
+                usernameParameters.RemoveAt(linkParameterIndex);
+
+            if (usernameParameters.Count == 0)
+            {
+                if (osuUserInDatabase is null)
+                {
+                    await waitMessage.EditAsync(Context.BotClient, language.error_userNotSetHimself);
+                    return;
                 }
 
-                osuUsernameForScore = parameters[0];
-                playmode = null;
+                osuUsernameForScore = osuUserInDatabase.OsuUsername;
+                playmode = osuUserInDatabase.OsuMode;
             }
             else
             {
-                // s url
-                link = OsuHelper.ParseOsuBeatmapLink([parameters[0]], out beatmapsetId, out beatmapId);
-                if (link is not null)
-                {
-                    if (beatmapId is null && beatmapsetId is not null)
-                    {
-                        beatmapset = await _cachingHelper.GetOrCacheBeatmapset(beatmapsetId.Value, _osuApiV2);
-                        beatmapId = beatmapset!.Beatmaps![0].Id;
-                    }
-
-                    if (osuUserInDatabase is null)
-                    {
-                        await waitMessage.EditAsync(Context.BotClient, language.error_userNotSetHimself);
-                        return;
-                    }
-
-                    osuUsernameForScore = osuUserInDatabase.OsuUsername;
-                    playmode = osuUserInDatabase.OsuMode;
-                }
-                // s mrekk
-                else
-                {
-                    osuUsernameForScore = parameters[0];
-                    playmode = null;
-                    beatmapId = chatInDatabase!.LastBeatmapId;
-                }
-            }
-        }
-        // s mrekk url
-        // s url mrekk
-        else if (parameters.Length == 2)
-        {
-            if (OsuHelper.ParseOsuBeatmapLink(Context.Update.GetAllLinks(), out var beatmapsetId, out beatmapId) is
-                { } link)
-            {
-                if (beatmapId is null && beatmapsetId is not null)
-                {
-                    beatmapset = await _cachingHelper.GetOrCacheBeatmapset(beatmapsetId.Value, _osuApiV2);
-                    beatmapId = beatmapset!.Beatmaps![0].Id;
-                }
-
-                if (parameters[0] == link.Trim())
-                    osuUsernameForScore = parameters[1];
-                else
-                    osuUsernameForScore = parameters[0];
+                osuUsernameForScore = OsuCommandArguments.JoinUsername(usernameParameters);
+                playmode = null;
             }
 
-            playmode = null;
-        }
-        else
-        {
-            await waitMessage.EditAsync(Context.BotClient, language.command_score_usage);
-            return;
+            if (beatmapLink is null)
+                beatmapId = chatInDatabase!.LastBeatmapId;
         }
 
         if (beatmapId is null)

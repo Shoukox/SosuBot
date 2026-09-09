@@ -85,7 +85,6 @@ public sealed class PlayerSkillCalculator
             speed *= Math.Pow(input.StarRating / 5, 0.125);
         }
 
-
         // if beatmap is shorter than 90 seconds, nerf aim
         aim *= Math.Min(1, Math.Pow((double)input.HitLength / 90, 0.1));
 

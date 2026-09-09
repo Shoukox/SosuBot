@@ -5,6 +5,7 @@ using System.Collections.Concurrent;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Net.Mime;
+using System.Text;
 using System.Text.Json.Serialization;
 
 namespace SosuBot.Services
@@ -36,6 +37,12 @@ namespace SosuBot.Services
         }
 
         public Uri ServerUri => _serverUri;
+
+        public Uri BuildSkinUrl(string skinName)
+        {
+            string skinFileName = Convert.ToHexString(Encoding.ASCII.GetBytes(skinName)) + ".osk";
+            return new Uri(_serverUri, $"skins/{skinFileName}");
+        }
 
         private async Task<string?> GetAccessToken()
         {
@@ -218,6 +225,67 @@ namespace SosuBot.Services
                 "skins/upload-skin");
         }
 
+        public async Task<SkinDownloadResult?> DownloadSkin(string skinFileName, CancellationToken cancellationToken = default)
+        {
+            if (!IsValidSkinFileName(skinFileName))
+                return null;
+
+            try
+            {
+                Uri skinUri = new(_serverUri, $"skins/{skinFileName}");
+                using HttpResponseMessage response = await _httpClient.GetAsync(skinUri, cancellationToken);
+                if (!response.IsSuccessStatusCode)
+                    return null;
+
+                byte[] content = await response.Content.ReadAsByteArrayAsync(cancellationToken);
+                string fileName = response.Content.Headers.ContentDisposition?.FileNameStar
+                    ?? response.Content.Headers.ContentDisposition?.FileName?.Trim('"')
+                    ?? DecodeSkinFileName(skinFileName);
+                return new SkinDownloadResult(content, fileName);
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                throw;
+            }
+            catch (Exception exception)
+            {
+                _logger.LogWarning(exception, "Could not download skin {SkinFileName}", skinFileName);
+                return null;
+            }
+        }
+
+        public static bool TryGetSkinFileName(Uri uri, out string skinFileName)
+        {
+            skinFileName = string.Empty;
+            string[] pathParts = uri.AbsolutePath.Trim('/').Split('/', StringSplitOptions.RemoveEmptyEntries);
+            if (pathParts.Length != 2 || !pathParts[0].Equals("skins", StringComparison.OrdinalIgnoreCase))
+                return false;
+
+            skinFileName = Uri.UnescapeDataString(pathParts[1]);
+            return IsValidSkinFileName(skinFileName);
+        }
+
+        private static bool IsValidSkinFileName(string fileName)
+        {
+            if (!fileName.EndsWith(".osk", StringComparison.OrdinalIgnoreCase))
+                return false;
+
+            string hex = fileName[..^4];
+            return hex.Length > 0 && hex.Length % 2 == 0 && hex.All(Uri.IsHexDigit);
+        }
+
+        private static string DecodeSkinFileName(string skinFileName)
+        {
+            try
+            {
+                return Encoding.ASCII.GetString(Convert.FromHexString(skinFileName[..^4])) + ".osk";
+            }
+            catch (FormatException)
+            {
+                return "skin.osk";
+            }
+        }
+
         public async Task<RenderJob?> GetRenderJobInfo(int jobId)
         {
             return await MakeRequest<RenderJob>(
@@ -300,6 +368,8 @@ namespace SosuBot.Services
             [JsonPropertyName("location")]
             public string Location { get; set; } = string.Empty;
         }
+
+        public sealed record SkinDownloadResult(byte[] Content, string FileName);
 
         public class OnlineRenderer
         {

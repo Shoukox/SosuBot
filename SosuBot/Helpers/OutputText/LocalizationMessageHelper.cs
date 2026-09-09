@@ -93,8 +93,11 @@ public static class LocalizationMessageHelper
     public static string ReplayErrorWithReason(ILocalization language, string reason)
         => language.replayRender_errorWithReason.Fill([reason]);
 
-    public static string ReplayFinishedWithLink(ILocalization language, string watchUrl)
-        => language.replayRender_finishedWithLink.Fill([watchUrl]);
+    public static string ReplayFinishedWithLink(ILocalization language, string watchUrl, string? skinUrl = null)
+        => language.replayRender_finishedWithLink.Fill([watchUrl]) +
+           (skinUrl is null
+               ? language.replayRender_defaultSkin
+               : language.replayRender_skinDownload.Fill([skinUrl]));
 
     public static string TrackMaxPlayersPerGroup(ILocalization language, string maxArgsCount)
         => language.track_maxPlayersPerGroup.Fill([maxArgsCount]);
