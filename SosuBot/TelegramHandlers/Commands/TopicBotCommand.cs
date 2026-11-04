@@ -67,67 +67,85 @@ public sealed class TopicBotCommand : CommandBase<Message>
         BotContext database,
         ILocalization language)
     {
+        if (!TryResolveTopicId(parameters, language, out int topicId, out string errorMessage))
+        {
+            await Context.Update.ReplyAsync(Context.BotClient, errorMessage);
+            return;
+        }
+
+        chat = GetOrCreateChat(chat, database);
+        List<int> blockedTopicIds = chat.BlockedTopicIds ??= [];
+
+        bool deny = parameters[0].Equals("deny", StringComparison.OrdinalIgnoreCase);
+        string result = UpdateTopicPermission(blockedTopicIds, topicId, deny, language);
+        await Context.Update.ReplyAsync(Context.BotClient, result);
+    }
+
+    private bool TryResolveTopicId(
+        string[] parameters,
+        ILocalization language,
+        out int topicId,
+        out string errorMessage)
+    {
+        errorMessage = string.Empty;
         if (parameters.Length > 2)
         {
-            await Context.Update.ReplyAsync(Context.BotClient, language.topicBot_usage);
-            return;
+            topicId = default;
+            errorMessage = language.topicBot_usage;
+            return false;
         }
 
-        int topicId;
         if (parameters.Length == 2)
         {
-            if (!int.TryParse(parameters[1], NumberStyles.None, CultureInfo.InvariantCulture, out topicId) ||
-                topicId <= 0)
-            {
-                await Context.Update.ReplyAsync(Context.BotClient, language.topicBot_invalidTopicId);
-                return;
-            }
+            if (int.TryParse(parameters[1], NumberStyles.None, CultureInfo.InvariantCulture, out topicId) &&
+                topicId > 0)
+                return true;
+
+            errorMessage = language.topicBot_invalidTopicId;
+            return false;
         }
-        else if (Context.Update.MessageThreadId is { } currentTopicId && currentTopicId > 0)
+
+        if (Context.Update.MessageThreadId is { } currentTopicId && currentTopicId > 0)
         {
             topicId = currentTopicId;
+            return true;
         }
-        else
+
+        topicId = default;
+        errorMessage = language.topicBot_topicRequired;
+        return false;
+    }
+
+    private SosuBot.Database.Models.TelegramChat GetOrCreateChat(
+        SosuBot.Database.Models.TelegramChat? chat,
+        BotContext database)
+    {
+        if (chat is not null)
+            return chat;
+
+        chat = new SosuBot.Database.Models.TelegramChat { ChatId = Context.Update.Chat.Id };
+        database.TelegramChats.Add(chat);
+        return chat;
+    }
+
+    private static string UpdateTopicPermission(
+        List<int> blockedTopicIds,
+        int topicId,
+        bool deny,
+        ILocalization language)
+    {
+        if (deny)
         {
-            await Context.Update.ReplyAsync(Context.BotClient, language.topicBot_topicRequired);
-            return;
+            if (blockedTopicIds.Contains(topicId))
+                return $"{language.topicBot_alreadyBlocked} <code>{topicId}</code>.";
+
+            blockedTopicIds.Add(topicId);
+            return $"{language.topicBot_blocked} <code>{topicId}</code>.";
         }
 
-        if (chat is null)
-        {
-            chat = new SosuBot.Database.Models.TelegramChat { ChatId = Context.Update.Chat.Id };
-            database.TelegramChats.Add(chat);
-        }
-        chat.BlockedTopicIds ??= [];
-
-        if (parameters[0].Equals("deny", StringComparison.OrdinalIgnoreCase))
-        {
-            if (!chat.BlockedTopicIds.Contains(topicId))
-            {
-                chat.BlockedTopicIds.Add(topicId);
-                await Context.Update.ReplyAsync(
-                    Context.BotClient,
-                    $"{language.topicBot_blocked} <code>{topicId}</code>.");
-                return;
-            }
-
-            await Context.Update.ReplyAsync(
-                Context.BotClient,
-                $"{language.topicBot_alreadyBlocked} <code>{topicId}</code>.");
-            return;
-        }
-
-        if (chat.BlockedTopicIds.Remove(topicId))
-        {
-            await Context.Update.ReplyAsync(
-                Context.BotClient,
-                $"{language.topicBot_allowed} <code>{topicId}</code>.");
-            return;
-        }
-
-        await Context.Update.ReplyAsync(
-            Context.BotClient,
-            $"{language.topicBot_notBlocked}: <code>{topicId}</code>.");
+        return blockedTopicIds.Remove(topicId)
+            ? $"{language.topicBot_allowed} <code>{topicId}</code>."
+            : $"{language.topicBot_notBlocked}: <code>{topicId}</code>.";
     }
 
     private async Task ReplyBlockedTopicsAsync(List<int>? blockedTopicIds, ILocalization language)
