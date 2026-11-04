@@ -221,6 +221,9 @@ Command list from the current in-bot `/help` text:
 * `/chatstats [gamemode]` - top 10 players in this chat.
 * `/exclude [nickname]` - exclude a user from chat top 10.
 * `/include [nickname]` - include a user back into chat top 10.
+* `/topicbot deny|allow [topic_id]`, `/topicbot list` - group admins can disable or restore bot
+  replies in individual topics. If no topic ID is given, the current topic is used; by default
+  the bot is enabled in all topics.
 * `/ranking [RU/UZ/country_code]` - top 20 players for a country (or global).
 * `/daily_stats` - Uzbekistan exclusive: daily stats for all scores from all players in the country.
 * `/track [users1-3]` - bot notifies you about new top50 scores of these players.
