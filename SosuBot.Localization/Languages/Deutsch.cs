@@ -35,6 +35,7 @@ public sealed class Deutsch : ILocalization
         $"/chatstats [gamemode] - Top 10 Spieler im Chat.\n" +
         $"/exclude [nickname] - Spieler aus Chat Top 10 ausschließen.\n" +
         $"/include [nickname] - Spieler wieder in Chat Top 10 aufnehmen.\n" +
+        $"/topicbot deny|allow [topic_id], /topicbot list - Bot in Themen einschränken (nur Gruppenadmins).\n" +
         $"/ranking [RU/UZ/country_code] - Top 20 Spieler eines Landes (oder global).\n" +
         $"/daily_stats, /weekly_stats, /monthly_stats - Score-Statistik für Tag, Woche oder Monat.\n" +
         $"/track [users1-3] - Benachrichtigung über neue Top50-Scores dieser Spieler.\n" +
@@ -224,6 +225,17 @@ public sealed class Deutsch : ILocalization
 
     public string group_onlyForGroups => "Nur für Gruppen.";
     public string group_onlyForAdmins => "Nur für Admins.";
+    public string topicBot_usage =>
+        "Verwendung: <code>/topicbot deny [topic_id]</code>, <code>/topicbot allow [topic_id]</code> oder <code>/topicbot list</code>.\n" +
+        "Ohne ID gilt der Befehl für das aktuelle Thema.";
+    public string topicBot_topicRequired => "Gib eine Themen-ID an oder sende den Befehl in einem Thema.";
+    public string topicBot_invalidTopicId => "Die Themen-ID muss eine positive ganze Zahl sein.";
+    public string topicBot_blocked => "Der Bot ist im Thema deaktiviert";
+    public string topicBot_allowed => "Der Bot antwortet wieder im Thema";
+    public string topicBot_alreadyBlocked => "Der Bot ist im Thema bereits deaktiviert";
+    public string topicBot_notBlocked => "Dieses Thema ist nicht eingeschränkt";
+    public string topicBot_noBlockedTopics => "Der Bot antwortet in allen Themen dieses Chats.";
+    public string topicBot_blockedTopics => "Der Bot ist in Themen mit diesen IDs deaktiviert:";
 
     public string beatmapLeaderboard_adminOnly => "Zugriff verweigert.";
     public string beatmapLeaderboard_lastBeatmapNotFound => "Der Bot konnte die letzte Beatmap in diesem Chat nicht finden";
