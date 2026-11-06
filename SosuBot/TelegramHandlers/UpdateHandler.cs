@@ -50,6 +50,15 @@ public class UpdateHandler(
 
         try
         {
+            if (await IsBlockedTopicAsync(update, cancellationToken))
+            {
+                if (update.CallbackQuery is { } blockedCallback)
+                    await blockedCallback.AnswerAsync(botClient);
+
+                metrics.RecordUpdateProcessed(update, "ignored", System.Diagnostics.Stopwatch.GetElapsedTime(startedAt).TotalSeconds);
+                return;
+            }
+
             await (update switch
             {
                 { Message: { } message } => OnMessage(botClient, message, cancellationToken),
@@ -74,6 +83,26 @@ public class UpdateHandler(
             metrics.RecordUpdateProcessed(update, "error", System.Diagnostics.Stopwatch.GetElapsedTime(startedAt).TotalSeconds);
             await HandleErrorForUpdateAsync(botClient, update, e, HandleErrorSource.HandleUpdateError, cancellationToken);
         }
+    }
+
+    private async Task<bool> IsBlockedTopicAsync(Update update, CancellationToken cancellationToken)
+    {
+        Message? message = update.Message ?? update.CallbackQuery?.Message;
+        if (message?.MessageThreadId is not { } topicId)
+            return false;
+
+        string? text = message.Text ?? message.Caption;
+        if (text is not null &&
+            text.IsCommand() &&
+            text.GetCommand().RemoveUsernamePostfix(botConfig.Value.Username)
+                .Equals(TopicBotCommand.Commands[0], StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        TelegramChat? chat = await database.TelegramChats
+            .FirstOrDefaultAsync(chat => chat.ChatId == message.Chat.Id, cancellationToken);
+        return chat?.BlockedTopicIds?.Contains(topicId) == true;
     }
 
     private async Task HandleErrorForUpdateAsync(ITelegramBotClient botClient, Update update, Exception exception,
@@ -257,4 +286,3 @@ public class UpdateHandler(
     private static bool IsMessageNotModified(Telegram.Bot.Exceptions.ApiRequestException exception) =>
         exception.Message.Contains("message is not modified", StringComparison.OrdinalIgnoreCase);
 }
-

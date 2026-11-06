@@ -141,6 +141,15 @@ public interface ILocalization
 
     public string group_onlyForGroups { get; }
     public string group_onlyForAdmins { get; }
+    public string topicBot_usage { get; }
+    public string topicBot_topicRequired { get; }
+    public string topicBot_invalidTopicId { get; }
+    public string topicBot_blocked { get; }
+    public string topicBot_allowed { get; }
+    public string topicBot_alreadyBlocked { get; }
+    public string topicBot_notBlocked { get; }
+    public string topicBot_noBlockedTopics { get; }
+    public string topicBot_blockedTopics { get; }
 
     public string beatmapLeaderboard_adminOnly { get; }
     public string beatmapLeaderboard_lastBeatmapNotFound { get; }

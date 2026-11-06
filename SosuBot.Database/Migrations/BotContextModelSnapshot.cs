@@ -267,6 +267,9 @@ namespace SosuBot.Migrations
                     b.PrimitiveCollection<List<long>>("ChatMembers")
                         .HasColumnType("bigint[]");
 
+                    b.PrimitiveCollection<List<int>>("BlockedTopicIds")
+                        .HasColumnType("integer[]");
+
                     b.PrimitiveCollection<List<long>>("ExcludeFromChatstats")
                         .HasColumnType("bigint[]");
 
