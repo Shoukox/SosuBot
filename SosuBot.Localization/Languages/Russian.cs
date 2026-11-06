@@ -35,6 +35,7 @@ public sealed class Russian : ILocalization
         $"/chatstats [gamemode] - топ10 игроков в чате.\n" +
         $"/exclude [nickname] - исключить юзера из топ10 игроков в чате.\n" +
         $"/include [nickname] - вернуть юзера в топ10 игроков в чате.\n" +
+        $"/topicbot deny|allow [topic_id], /topicbot list - ограничить работу бота в темах (только админы групп).\n" +
         $"/ranking [RU/UZ/country_code] - топ20 игроков для данной страны (либо глобально).\n" +
         $"/daily_stats, /weekly_stats, /monthly_stats - статистика по всем скорам игроков за день, неделю или месяц.\n" +
         $"/track [users1-3] - бот будет оповещать вас о новых скорах в топ50 данных игроков.\n" +
@@ -231,6 +232,17 @@ public sealed class Russian : ILocalization
 
     public string group_onlyForGroups => "Только для групп.";
     public string group_onlyForAdmins => "Только для админов.";
+    public string topicBot_usage =>
+        "Использование: <code>/topicbot deny [topic_id]</code>, <code>/topicbot allow [topic_id]</code> или <code>/topicbot list</code>.\n" +
+        "Если ID не указан, команда применяется к текущей теме.";
+    public string topicBot_topicRequired => "Укажите ID темы или отправьте команду внутри темы.";
+    public string topicBot_invalidTopicId => "ID темы должен быть положительным целым числом.";
+    public string topicBot_blocked => "Бот отключен в теме";
+    public string topicBot_allowed => "Бот снова отвечает в теме";
+    public string topicBot_alreadyBlocked => "Бот уже отключен в теме";
+    public string topicBot_notBlocked => "Для этой темы ограничений нет";
+    public string topicBot_noBlockedTopics => "Бот отвечает во всех темах этого чата.";
+    public string topicBot_blockedTopics => "Бот отключен в темах с ID:";
 
     public string beatmapLeaderboard_adminOnly => "Пшол вон!";
     public string beatmapLeaderboard_lastBeatmapNotFound => "Бот не смог найти последнюю карту в чате";

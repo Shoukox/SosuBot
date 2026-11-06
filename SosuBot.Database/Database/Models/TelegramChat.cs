@@ -13,4 +13,5 @@ public record TelegramChat
     public int? LastBeatmapId { get; set; }
     public string LanguageCode { get; set; } = "ru";
     public List<int>? TrackedPlayers { get; set; }
+    public List<int>? BlockedTopicIds { get; set; }
 }

@@ -33,6 +33,7 @@ public class ConfigureBotService(IServiceProvider serviceProvider) : IHostedServ
         CreateBotCommand(OsuChatstatsCommand.Commands[0], OsuChatstatsCommand.Description),
         CreateBotCommand(OsuChatstatsExcludeCommand.Commands[0], OsuChatstatsExcludeCommand.Description),
         CreateBotCommand(OsuChatstatsIncludeCommand.Commands[0], OsuChatstatsIncludeCommand.Description),
+        CreateBotCommand(TopicBotCommand.Commands[0], TopicBotCommand.Description),
         CreateBotCommand(OsuLastBestCommand.Commands[0], OsuLastBestCommand.Description),
         CreateBotCommand(OsuUpdateCommand.Commands[0], OsuUpdateCommand.Description),
         CreateBotCommand(OsuChatBeatmapLeaderboardCommand.Commands[0], OsuChatBeatmapLeaderboardCommand.Description),
@@ -84,6 +85,7 @@ public class ConfigureBotService(IServiceProvider serviceProvider) : IHostedServ
         RegisterCommand<OsuChatstatsCommand>(OsuChatstatsCommand.Commands);
         RegisterCommand<OsuChatstatsExcludeCommand>(OsuChatstatsExcludeCommand.Commands);
         RegisterCommand<OsuChatstatsIncludeCommand>(OsuChatstatsIncludeCommand.Commands);
+        RegisterCommand<TopicBotCommand>(TopicBotCommand.Commands);
         RegisterCommand<OsuCompareCommand>(OsuCompareCommand.Commands);
         RegisterCommandWithParameters(OsuLastCommand.Commands, () => new OsuLastCommand());
         RegisterCommand<OsuLastBestCommand>(OsuLastBestCommand.Commands);
