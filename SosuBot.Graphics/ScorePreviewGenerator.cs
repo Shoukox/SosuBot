@@ -505,7 +505,7 @@ public sealed class ScorePreviewGenerator
 
         try
         {
-            image = Image.Load<Rgba32>(bytes);
+            image = SafeImageDecoding.Load(bytes);
             return true;
         }
         catch (Exception exception) when (exception is UnknownImageFormatException or InvalidImageContentException)
@@ -517,7 +517,7 @@ public sealed class ScorePreviewGenerator
     private static Image<Rgba32> LoadImage(string path)
     {
         using Stream resource = OpenResource(path);
-        return Image.Load<Rgba32>(resource);
+        return SafeImageDecoding.Load(resource);
     }
 
     private static Stream OpenResource(string path)

@@ -1,0 +1,19 @@
+<Project>
+
+  <!--
+    SixLabors.ImageSharp stays on 3.1.x: every patched release (3.2.0+, 4.x) and ImageSharp.Drawing 2.2.0+/3.x fail
+    Release builds without a Six Labors license key. ppy.osu.Game also depends on ImageSharp 3.1.x.
+    The advisories below are mitigated in SosuBot.Graphics/SafeImageDecoding.cs (no TIFF decoder, metadata/ICC
+    parsing skipped; TIFF encoding and HistogramEqualization are not used). Remove these entries when moving to a
+    licensed ImageSharp release.
+  -->
+  <ItemGroup>
+    <NuGetAuditSuppress Include="https://github.com/advisories/GHSA-j9gm-c75j-xc9q" /> <!-- TIFF CCITT T4 encoder -->
+    <NuGetAuditSuppress Include="https://github.com/advisories/GHSA-jjfr-hcj7-qf5w" /> <!-- TIFF CCITT T6 encoder -->
+    <NuGetAuditSuppress Include="https://github.com/advisories/GHSA-v76p-62qx-wwq2" /> <!-- tiled fax TIFF decoder -->
+    <NuGetAuditSuppress Include="https://github.com/advisories/GHSA-wmxv-xphr-5c9g" /> <!-- BigTIFF IFD decoder -->
+    <NuGetAuditSuppress Include="https://github.com/advisories/GHSA-gwg2-r3hj-4w44" /> <!-- ICC CLUT parsing -->
+    <NuGetAuditSuppress Include="https://github.com/advisories/GHSA-j3p4-wp97-rph4" /> <!-- HistogramEqualization -->
+  </ItemGroup>
+
+</Project>

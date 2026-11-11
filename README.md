@@ -396,16 +396,17 @@ docker compose logs --since 10m database-migrator sosubot-service scores-observe
 Core frameworks and packages currently used in this repository:
 
 * **C# / .NET 10** (`net10.0`)
-* **Telegram.Bot** (`22.10.2.1`)
-* **OsuApi.Core** (`0.0.512`)
-* **Entity Framework Core** (`10.0.10`)
+* **Telegram.Bot** (`22.10.4`)
+* **OsuApi.Core** (`0.1.0`)
+* **Entity Framework Core** (`10.0.15`)
 * **Npgsql.EntityFrameworkCore.PostgreSQL** (`10.0.3`)
-* **Microsoft.Extensions.Http.Polly** (`10.0.10`)
+* **Microsoft.Extensions.Http.Polly** (`10.0.15`)
 * **prometheus-net** (`8.2.1`)
 * **Serilog.Extensions.Logging.File** (`3.0.0`)
-* **Sentry.Extensions.Logging** (`6.8.0`)
-* **System.Threading.RateLimiting** (`10.0.10`)
-* **ppy.osu rulesets** (`2025.1007.0`)
+* **Sentry.Extensions.Logging** (`6.12.1`)
+* **System.Threading.RateLimiting** (`10.0.15`)
+* **SixLabors.ImageSharp** (`3.1.12`) / **ImageSharp.Drawing** (`2.1.7`)
+* **ppy.osu rulesets** (`2026.1026.0`)
 
 > Versions above are taken from the current `.csproj` files and may change over time.
 

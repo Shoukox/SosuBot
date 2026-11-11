@@ -378,7 +378,7 @@ public sealed class ProfileCardGenerator
         {
             try
             {
-                return Image.Load<Rgba32>(avatarBytes);
+                return SafeImageDecoding.Load(avatarBytes);
             }
             catch (Exception exception) when (exception is UnknownImageFormatException or InvalidImageContentException)
             {
@@ -397,7 +397,7 @@ public sealed class ProfileCardGenerator
     private static Image<Rgba32> LoadImage(string path)
     {
         using Stream resource = OpenResource(path);
-        return Image.Load<Rgba32>(resource);
+        return SafeImageDecoding.Load(resource);
     }
 
     private static bool ResourceExists(string path) => ResourceNames.Any(name =>
