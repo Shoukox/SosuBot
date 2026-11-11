@@ -23,8 +23,10 @@ public sealed class Russian : ILocalization
         $"/set [nickname] - добавить\\изменить свой ник в боте.\n" +
         $"/mode [gamemode] - изменить игровой режим по умолчанию.\n" +
         $"/user [nickname] - краткая информация об игроке с данным юзернеймом.\n" +
+        $"/userw [nickname] - то же самое в виде интерактивного виджета (только в личке с ботом).\n" +
         $"/userid [user_id] - краткая информация об игроке с данным user id.\n" +
         $"/last [nickname] [count] - последние сыгранные игры.\n" +
+        $"/lw [nickname] [count] - последние игры в виде rich-сообщения с обложками.\n" +
         $"/lastpassed [nickname] [count] - /last только для пасснутых скоров.\n" +
         $"/score [beatmap_link] - ваши рекорды на этой карте.\n" +
         $"/rnd [osu/mania/taiko/catch] - случайная карта выбранного режима (по умолчанию osu).\n" +
@@ -321,4 +323,19 @@ public sealed class Russian : ILocalization
     public string render_menu_scrollDirection => "Scroll Direction";
     public string render_menu_cursorSize => "Cursor Size";
     public string render_cancel_success => "Рендер успешно отменен.";
+
+    public string userWidget_privateOnly => "Виджеты Telegram пока работают только в личном чате с ботом. Отправь /userw мне в личку: {}";
+    public string userWidget_failed => "Не удалось отправить виджет. Попробуй /user.";
+    public string userWidget_rank => "Ранг";
+    public string userWidget_accuracy => "Точность";
+    public string userWidget_playCount => "Игр";
+    public string userWidget_playTime => "Время в игре";
+    public string userWidget_registered => "Регистрация";
+    public string userWidget_achievements => "Достижения";
+    public string userWidget_maxCombo => "Макс. комбо";
+    public string userWidget_openProfile => "Открыть профиль";
+    public string userWidget_hoursShort => "ч";
+    public string richLast_scoreButton => "Скор";
+    public string richLast_beatmapButton => "Карта";
+    public string richLast_completion => "пройдено";
 }

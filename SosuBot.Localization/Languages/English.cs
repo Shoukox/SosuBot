@@ -23,8 +23,10 @@ public sealed class English : ILocalization
         $"/set [nickname] - add/change your nickname in the bot.\n" +
         $"/mode [gamemode] - change your default game mode.\n" +
         $"/user [nickname] - short info about a player by username.\n" +
+        $"/userw [nickname] - the same as an interactive widget (private chat with the bot only).\n" +
         $"/userid [user_id] - short info about a player by user id.\n" +
         $"/last [nickname] [count] - latest plays.\n" +
+        $"/lw [nickname] [count] - latest plays as a rich message with beatmap covers.\n" +
         $"/lastpassed [nickname] [count] - /last for passed scores only.\n" +
         $"/score [beatmap_link] - your records on this map.\n" +
         $"/rnd [osu/mania/taiko/catch] - random beatmap for a selected mode (osu by default).\n" +
@@ -321,4 +323,19 @@ public sealed class English : ILocalization
     public string render_menu_scrollDirection => "Scroll Direction";
     public string render_menu_cursorSize => "Cursor Size";
     public string render_cancel_success => "The render was successfully cancelled.";
+
+    public string userWidget_privateOnly => "Telegram widgets currently work only in a private chat with the bot. Send /userw to me directly: {}";
+    public string userWidget_failed => "Couldn't send the widget. Try /user instead.";
+    public string userWidget_rank => "Rank";
+    public string userWidget_accuracy => "Accuracy";
+    public string userWidget_playCount => "Play count";
+    public string userWidget_playTime => "Play time";
+    public string userWidget_registered => "Joined";
+    public string userWidget_achievements => "Achievements";
+    public string userWidget_maxCombo => "Max combo";
+    public string userWidget_openProfile => "Open profile";
+    public string userWidget_hoursShort => "h";
+    public string richLast_scoreButton => "Score";
+    public string richLast_beatmapButton => "Beatmap";
+    public string richLast_completion => "completed";
 }

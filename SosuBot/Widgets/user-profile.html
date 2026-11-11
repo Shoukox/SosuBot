@@ -1,0 +1,59 @@
+<style>
+body{margin:0;padding:12px 14px calc(12px + env(safe-area-inset-bottom));font-variant-numeric:tabular-nums}
+.h{display:flex;align-items:center;gap:10px}
+.av{width:44px;height:44px;flex:none;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:700;background:var(--tg-theme-button-color);color:var(--tg-theme-button-text-color)}
+.nm{font-size:17px;font-weight:700}
+.mu{color:var(--tg-theme-hint-color);font-size:13px}
+.t{display:flex;gap:4px;margin:12px 0}
+.t button{flex:1;margin:0;padding:6px 0;border:0;border-radius:8px;font-size:13px;background:var(--tg-theme-secondary-bg-color);color:var(--tg-theme-text-color)}
+.t .on{background:var(--tg-theme-button-color);color:var(--tg-theme-button-text-color)}
+.big{display:flex;justify-content:space-between;align-items:flex-end}
+.pp{font-size:28px;font-weight:800;line-height:1.1}
+.rk{font-size:20px;font-weight:700;text-align:right}
+.bar{height:4px;margin:10px 0 4px;border-radius:2px;background:var(--tg-theme-secondary-bg-color)}
+.bar i{display:block;height:4px;border-radius:2px;background:var(--tg-theme-button-color)}
+.g{display:grid;grid-template-columns:1fr 1fr;gap:8px 12px;margin-top:10px}
+.g b{display:block;font-size:15px}
+.gr{display:flex;gap:6px;margin:12px 0}
+.gr span{flex:1;padding:4px 0;border-radius:8px;text-align:center;font-size:12px;background:var(--tg-theme-secondary-bg-color)}
+.gr b{display:block;font-size:14px}
+.x{color:#9aa7b4}.y{color:#e0a800}.z{color:#4caf50}
+.d{font-size:12px;color:var(--tg-theme-accent-text-color)}
+#o{width:100%;margin-top:12px}
+</style>
+<div class="h"><div class="av" id="av"></div><div><div class="nm" id="nm"></div><div class="mu" id="sb"></div></div></div>
+<div class="t" id="t"></div>
+<div id="b"></div>
+<button id="o"></button>
+<script>
+const W=window.TelegramWidget,L=__L__,$=i=>document.getElementById(i);
+let D=null;try{D=JSON.parse(W&&W.publicData)}catch(e){}
+D=D||{n:'?',s:[]};
+let m=D.m|0;
+const N=(v,f)=>v==null?'—':Number(v).toLocaleString(navigator.language,{maximumFractionDigits:f|0});
+const F=c=>c&&c.length==2?String.fromCodePoint(...[...c.toUpperCase()].map(x=>127397+x.charCodeAt(0))):'';
+const C=(l,v,d)=>'<div><span class="mu">'+l+'</span><b>'+v+(d?' <span class="d">'+d+'</span>':'')+'</b></div>';
+const G=(k,l,v)=>'<span><b class="'+k+'">'+l+'</b>'+N(v)+'</span>';
+function tabs(){
+$('t').replaceChildren(...['osu!','taiko','catch','mania'].map((t,i)=>{
+const b=document.createElement('button');b.textContent=t;b.className=i==m?'on':'';b.disabled=!D.s[i];
+b.onclick=()=>{if(m!=i){m=i;W&&W.HapticFeedback.selectionChanged();draw()}};return b}))}
+function draw(){
+tabs();
+const s=D.s[m],d=m==D.m&&D.d||[];
+if(!s){$('sb').textContent='';$('b').innerHTML='<p class="mu">—</p>';return}
+const[gr,cr,pp,ac,pc,pt,lv,lp,ssh,ss,sh,sx,a,mc]=s;
+$('sb').textContent='#'+N(gr)+' · '+F(D.c)+' #'+N(cr);
+$('b').innerHTML='<div class="big"><div><div class="mu">pp</div><div class="pp">'+N(pp)+(d[0]?' <span class="d">'+d[0]+'</span>':'')+'</div></div>'
++'<div><div class="mu">'+L.rank+'</div><div class="rk">#'+N(gr)+'</div></div></div>'
++'<div class="bar"><i style="width:'+(lp|0)+'%"></i></div><div class="mu">lvl '+N(lv)+' · '+(lp|0)+'%</div>'
++'<div class="g">'+C(L.acc,N(ac,2)+'%',d[1])+C(L.pc,N(pc))+C(L.pt,N(pt)+' '+L.h,d[2])+C(L.mc,N(mc)+'x')+'</div>'
++'<div class="gr">'+G('x','SS',ssh)+G('y','SS',ss)+G('x','S',sh)+G('y','S',sx)+G('z','A',a)+'</div>'
++'<div class="mu">'+L.reg+': '+(D.r||'—')+' · '+L.ach+': '+(D.a||'—')+'</div>'}
+$('av').textContent=(D.n||'?')[0].toUpperCase();
+$('nm').textContent=D.n||'?';
+$('o').textContent=L.open;
+$('o').onclick=()=>{if(W&&D.i)W.openLink('https://osu.ppy.sh/users/'+D.i)};
+if(W)W.onEvent('publicDataChanged',()=>{try{D=JSON.parse(W.publicData)||D}catch(e){}draw()});
+draw();
+</script>

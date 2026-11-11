@@ -13,7 +13,7 @@ Telegram-бот для игроков osu! на .NET 10 (`net10.0`, C#, nullable
 | `SosuBot.Localization` | `ILocalization` и реализации `Russian` / `English` / `Deutsch`. |
 | `SosuBot.Graphics` | Генерация картинок (ImageSharp): `/osucard`, превью видео. |
 | `SosuBot.PerformanceCalculator` | **Git-сабмодуль** (отдельный репозиторий). Расчёт PP: официальные rulesets `ppy.osu.*` и нативная обёртка над rosu-pp на Rust. |
-| `tests/*` | xunit-тесты калькулятора и графики, а также smoke-исполняемый файл для нативной библиотеки. |
+| `tests/*` | xunit-тесты калькулятора, графики и лимитов Telegram-контента, а также smoke-исполняемый файл для нативной библиотеки. |
 
 Поток данных для отслеживания скоров: `osu! API -> ScoresObserver -> PostgreSQL (outbox) -> SosuBot -> Telegram`.
 Доставка работает по схеме at-least-once (lease + `FOR UPDATE SKIP LOCKED`). Активен только один observer, это
@@ -42,6 +42,20 @@ Telegram-бот для игроков osu! на .NET 10 (`net10.0`, C#, nullable
 5. Все пользовательские строки добавлять в `ILocalization` **и во все три языка**, иначе сборка не пройдёт.
    Получать через `Context.GetLocalization()`.
 6. Обновить список команд в `README.md` и текст `/help` в локализации.
+
+### Виджеты и rich-сообщения (Bot API 10.2+ / 10.4)
+
+- `/userw` (`OsuUserWidgetCommand`) отправляет HTML-виджет через `SendWidget`. HTML лежит в
+  `SosuBot/Widgets/user-profile.html` (embedded resource) и не меняется после отправки, данные игрока передаются в
+  `public_data` (JSON, `UserProfileWidget`). Ограничения: не больше 4096 байт HTML после zlib-9, не больше 1024 байт
+  на состояние, никакой сети и внешних картинок (только `data:`/inline SVG), JS работает в песочнице QuickJS. Пока
+  что в проде виджеты работают **только в личке с ботом**. Справочник: https://core.telegram.org/bots/widgets.
+  Лимиты проверяют тесты `TelegramRichContentTests`. Порядок полей в массиве статистики должен совпадать в C# и JS.
+- `/lw` (`OsuLastRichCommand` → `OsuLastCommand(richMessage: true)`) строит Rich HTML в `RichLastScores`. Медиа
+  можно указывать только как отдельный блок с https-URL. Если rich-сообщение не отправилось, команда отвечает
+  обычным текстом `/last`.
+- Бот ходит в собственный Bot API server. Пока сервер не обновлён до версии с этими методами, команды будут
+  срабатывать через fallback.
 
 ## База данных и миграции
 

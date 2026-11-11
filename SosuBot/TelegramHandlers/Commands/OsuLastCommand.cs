@@ -18,11 +18,12 @@ using SosuBot.TelegramHandlers.Abstract;
 using System.Globalization;
 using System.Net;
 using Telegram.Bot;
+using Telegram.Bot.Exceptions;
 using Telegram.Bot.Types;
 
 namespace SosuBot.TelegramHandlers.Commands;
 
-public class OsuLastCommand(bool onlyPassed = false, bool sendCover = false) : CommandBase<Message>
+public class OsuLastCommand(bool onlyPassed = false, bool sendCover = false, bool richMessage = false) : CommandBase<Message>
 {
     public static readonly string[] Commands = ["/ll"];
     public static readonly string Description = "[osuname] [count] последние сыгранные игры";
@@ -93,6 +94,9 @@ public class OsuLastCommand(bool onlyPassed = false, bool sendCover = false) : C
             parameters.RemoveAt(parameters.Count - 1);
         }
 
+        if (richMessage)
+            limit = Math.Min(limit, RichLastScores.MaxScores);
+
         //l
         if (parameters.Count == 0)
         {
@@ -149,6 +153,7 @@ public class OsuLastCommand(bool onlyPassed = false, bool sendCover = false) : C
         var textToSend =
             $"<b>{UserHelper.GetUserProfileUrlWrappedInUsernameString(userResponse.UserExtend!.Id.Value, osuUsernameForLastScores)}</b> (<i>{ruleset.ParseRulesetToGamemode()}</i>)\n\n";
 
+        List<LastScoreEntry> entries = [];
         var playmode = (Playmode)lastScores[0].RulesetId!;
         var beatmapsetIdOfFirstScore = beatmaps[0].BeatmapsetId!.Value;
         for (var i = 0; i <= lastScores.Length - 1; i++)
@@ -287,6 +292,28 @@ public class OsuLastCommand(bool onlyPassed = false, bool sendCover = false) : C
                 $"{_scoreHelper.GetFormattedNumConsideringNull(completion, format: "N1")}"
             );
 
+            entries.Add(new LastScoreEntry(
+                score.RankGlobal is > 0 and <= 2000 ? score.RankGlobal : null,
+                scoreRank,
+                beatmap.Id!.Value,
+                beatmap.BeatmapsetId!.Value,
+                $"{score.Beatmapset?.Title.EncodeHtml()}",
+                $"{beatmap.Version.EncodeHtml()}",
+                $"{beatmap.Status}",
+                _scoreHelper.GetFormattedNumConsideringNull(difficultyRating, format: "N2", round: false),
+                _scoreHelper.GetScoreStatisticsText(score.Statistics!, playmode),
+                score.Statistics!.Miss,
+                _scoreHelper.GetFormattedNumConsideringNull(score.Accuracy * 100, round: false),
+                _scoreHelper.GetModsText(mods),
+                score.MaxCombo,
+                _scoreHelper.GetFormattedNumConsideringNull(beatmapMaxCombo, format: "F0"),
+                scorePpText,
+                scoreIfFcPpText,
+                _scoreHelper.GetScoreUrl(score.Id!.Value),
+                scoreEndedMinutesAgoText,
+                _scoreHelper.GetFormattedNumConsideringNull(completion, format: "N1"),
+                beatmapContainsTooManyHitObjects));
+
             if (lastScoresContainsOnlyOneScore)
             {
                 if (score.HasReplay == true)
@@ -299,6 +326,18 @@ public class OsuLastCommand(bool onlyPassed = false, bool sendCover = false) : C
                 textToSend += $"\n{language.last_tooManyObjectsLimitedInfo}";
 
             textToSend += "\n\n";
+        }
+
+        if (richMessage)
+        {
+            string richHtml = RichLastScores.BuildHtml(
+                language,
+                userResponse.UserExtend!.Id.Value,
+                osuUsernameForLastScores.EncodeHtml()!,
+                ruleset.ParseRulesetToGamemode(),
+                entries);
+            await SendRichOrTextAsync(waitMessage, richHtml, textToSend);
+            return;
         }
 
         if (sendCover)
@@ -320,6 +359,41 @@ public class OsuLastCommand(bool onlyPassed = false, bool sendCover = false) : C
             await waitMessage.EditAsync(Context.BotClient, textToSend);
         }
     }
+
+    /// <summary>
+    ///     Turns the wait message into the rich message; if Telegram (or an outdated local Bot API server) refuses
+    ///     that, posts it as a new reply instead, and as the last resort falls back to the regular /last text.
+    /// </summary>
+    private async Task SendRichOrTextAsync(Message waitMessage, string richHtml, string fallbackText)
+    {
+        var richMessage = new InputRichMessage { Html = richHtml };
+        try
+        {
+            await Context.BotClient.EditMessageText(waitMessage.Chat.Id, waitMessage.Id, null!,
+                richMessage: richMessage, cancellationToken: Context.CancellationToken);
+            return;
+        }
+        catch (ApiRequestException exception) when (!IsMessageNotModified(exception))
+        {
+            _logger.LogDebug(exception, "[/lw] Could not edit the wait message into a rich message");
+        }
+
+        try
+        {
+            await Context.BotClient.SendRichMessage(waitMessage.Chat.Id, richMessage,
+                replyParameters: new ReplyParameters { MessageId = Context.Update.MessageId },
+                cancellationToken: Context.CancellationToken);
+            await Context.BotClient.DeleteMessage(waitMessage.Chat.Id, waitMessage.Id, Context.CancellationToken);
+        }
+        catch (ApiRequestException exception)
+        {
+            _logger.LogWarning(exception, "[/lw] Failed to send the rich message; falling back to text");
+            await waitMessage.EditAsync(Context.BotClient, fallbackText);
+        }
+    }
+
+    private static bool IsMessageNotModified(ApiRequestException exception) =>
+        exception.Message.Contains("message is not modified", StringComparison.OrdinalIgnoreCase);
 
     private static bool IsUnprocessableEntity(HttpRequestException exception) =>
         exception.StatusCode == HttpStatusCode.UnprocessableEntity ||

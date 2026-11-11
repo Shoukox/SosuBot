@@ -40,6 +40,10 @@
     </ItemGroup>
 
     <ItemGroup>
+        <EmbeddedResource Include="Widgets\*.html" />
+    </ItemGroup>
+
+    <ItemGroup>
         <None Update="appsettings.Development1.json">
           <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </None>
