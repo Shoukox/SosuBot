@@ -228,4 +228,19 @@ public interface ILocalization
     public string render_menu_scrollDirection { get; }
     public string render_menu_cursorSize { get; }
     public string render_cancel_success { get; }
+
+    public string userWidget_privateOnly { get; }
+    public string userWidget_failed { get; }
+    public string userWidget_rank { get; }
+    public string userWidget_accuracy { get; }
+    public string userWidget_playCount { get; }
+    public string userWidget_playTime { get; }
+    public string userWidget_registered { get; }
+    public string userWidget_achievements { get; }
+    public string userWidget_maxCombo { get; }
+    public string userWidget_openProfile { get; }
+    public string userWidget_hoursShort { get; }
+    public string richLast_scoreButton { get; }
+    public string richLast_beatmapButton { get; }
+    public string richLast_completion { get; }
 }

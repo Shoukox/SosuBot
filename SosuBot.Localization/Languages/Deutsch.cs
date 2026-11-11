@@ -23,8 +23,10 @@ public sealed class Deutsch : ILocalization
         $"/set [nickname] - Nickname im Bot setzen/ändern.\n" +
         $"/mode [gamemode] - Standard-Spielmodus ändern.\n" +
         $"/user [nickname] - Kurzinfos zu einem Spieler per Username.\n" +
+        $"/userw [nickname] - dasselbe als interaktives Widget (nur im privaten Chat mit dem Bot).\n" +
         $"/userid [user_id] - Kurzinfos zu einem Spieler per User-ID.\n" +
         $"/last [nickname] [count] - letzte Plays.\n" +
+        $"/lw [nickname] [count] - letzte Plays als Rich-Nachricht mit Beatmap-Covern.\n" +
         $"/lastpassed [nickname] [count] - /last nur mit bestandenen Scores.\n" +
         $"/score [beatmap_link] - deine Records auf dieser Map.\n" +
         $"/rnd [osu/mania/taiko/catch] - zufällige Beatmap für den gewählten Modus (standardmäßig osu).\n" +
@@ -314,4 +316,19 @@ public sealed class Deutsch : ILocalization
     public string render_menu_scrollDirection => "Scroll Direction";
     public string render_menu_cursorSize => "Cursor Size";
     public string render_cancel_success => "Der Render-Vorgang wurde erfolgreich abgebrochen";
+
+    public string userWidget_privateOnly => "Telegram-Widgets funktionieren derzeit nur im privaten Chat mit dem Bot. Sende /userw direkt an mich: {}";
+    public string userWidget_failed => "Das Widget konnte nicht gesendet werden. Versuche /user.";
+    public string userWidget_rank => "Rang";
+    public string userWidget_accuracy => "Genauigkeit";
+    public string userWidget_playCount => "Spiele";
+    public string userWidget_playTime => "Spielzeit";
+    public string userWidget_registered => "Registriert";
+    public string userWidget_achievements => "Erfolge";
+    public string userWidget_maxCombo => "Max. Combo";
+    public string userWidget_openProfile => "Profil öffnen";
+    public string userWidget_hoursShort => "Std.";
+    public string richLast_scoreButton => "Score";
+    public string richLast_beatmapButton => "Beatmap";
+    public string richLast_completion => "abgeschlossen";
 }

@@ -18,10 +18,13 @@ public class OsuUserCommand(bool includeIdInSearch = false) : CommandBase<Messag
 {
     public static readonly string[] Commands = ["/user", "/u"];
     public static readonly string Description = "[user] краткая информация об игроке";
-    private BanchoApiV2 _osuApiV2 = null!;
-    private ScoreHelper _scoreHelper = null!;
-    private RateLimiterFactory _rateLimiterFactory = null!;
-    private BotContext _database = null!;
+    protected BanchoApiV2 _osuApiV2 = null!;
+    protected ScoreHelper _scoreHelper = null!;
+    protected RateLimiterFactory _rateLimiterFactory = null!;
+    protected BotContext _database = null!;
+
+    /// <summary>A resolved osu! player and the mode the reply should show.</summary>
+    protected sealed record UserLookup(UserExtend User, Playmode Playmode);
 
     public override async Task BeforeExecuteAsync()
     {
@@ -49,67 +52,11 @@ public class OsuUserCommand(bool includeIdInSearch = false) : CommandBase<Messag
         // Fake 500ms wait
         await Task.Delay(500);
 
-        OsuCommandArguments.Player? arguments = OsuCommandArguments.ParsePlayer(Context.Update.Text!);
-        if (arguments is null)
-        {
-            await waitMessage.EditAsync(Context.BotClient,
-                includeIdInSearch ? language.command_userId_usage : language.command_user_usage);
+        if (await LookupUserAsync(language, osuUserInDatabase, waitMessage) is not { } lookup)
             return;
-        }
 
-        string username;
-        string? ruleset = null;
-        Playmode playmode = Playmode.Osu;
-
-        string searchPrefix = "@";
-        if (includeIdInSearch) searchPrefix = "";
-
-        if (string.IsNullOrWhiteSpace(arguments.Username))
-        {
-            if (osuUserInDatabase is null)
-            {
-                await waitMessage.EditAsync(Context.BotClient,
-                    includeIdInSearch ? language.command_userId_usage : language.command_user_usage);
-                return;
-            }
-
-            playmode = arguments.Playmode ?? osuUserInDatabase.OsuMode;
-            username = $"{searchPrefix}{osuUserInDatabase.OsuUsername}";
-            ruleset = playmode.ToRuleset();
-        }
-        else
-        {
-            if (arguments.Username.StartsWith("@"))
-            {
-                await waitMessage.EditAsync(Context.BotClient, language.error_dontUseTelegramUsername);
-                return;
-            }
-
-            username = $"{searchPrefix}{arguments.Username}";
-            ruleset = arguments.Playmode?.ToRuleset();
-        }
-
-        GetUserResponse? userResponse = await _osuApiV2.Users.GetUser(username, new GetUserQueryParameters(), ruleset);
-        if (userResponse is null)
-        {
-            await waitMessage.EditAsync(Context.BotClient, language.error_userNotFound);
-            return;
-        }
-        UserExtend? user = userResponse.UserExtend;
-        if (user == null)
-        {
-            await waitMessage.EditAsync(Context.BotClient, language.error_userNotFound);
-            return;
-        }
-
-        if (ruleset == null)
-        {
-            playmode = user!.Playmode!.ParseRulesetToPlaymode();
-        }
-        else
-        {
-            playmode = ruleset.ParseRulesetToPlaymode();
-        }
+        UserExtend user = lookup.User;
+        Playmode playmode = lookup.Playmode;
 
         double? currentPp = user.Statistics!.Pp;
         var profileDifferenceTexts =
@@ -132,6 +79,77 @@ public class OsuUserCommand(bool includeIdInSearch = false) : CommandBase<Messag
             achievementsTotalText);
 
         await waitMessage.EditAsync(Context.BotClient, textToSend, replyMarkup: UserHelper.BuildUserModeKeyboard(user.Username!));
+    }
+
+    /// <summary>
+    ///     Resolves the player from the command arguments (or the sender's saved profile) and fetches them from osu!.
+    ///     On failure the reason is written into <paramref name="waitMessage" /> and <c>null</c> is returned.
+    /// </summary>
+    protected async Task<UserLookup?> LookupUserAsync(ILocalization language, OsuUser? osuUserInDatabase, Message waitMessage)
+    {
+        OsuCommandArguments.Player? arguments = OsuCommandArguments.ParsePlayer(Context.Update.Text!);
+        if (arguments is null)
+        {
+            await waitMessage.EditAsync(Context.BotClient,
+                includeIdInSearch ? language.command_userId_usage : language.command_user_usage);
+            return null;
+        }
+
+        string username;
+        string? ruleset = null;
+        Playmode playmode = Playmode.Osu;
+
+        string searchPrefix = "@";
+        if (includeIdInSearch) searchPrefix = "";
+
+        if (string.IsNullOrWhiteSpace(arguments.Username))
+        {
+            if (osuUserInDatabase is null)
+            {
+                await waitMessage.EditAsync(Context.BotClient,
+                    includeIdInSearch ? language.command_userId_usage : language.command_user_usage);
+                return null;
+            }
+
+            playmode = arguments.Playmode ?? osuUserInDatabase.OsuMode;
+            username = $"{searchPrefix}{osuUserInDatabase.OsuUsername}";
+            ruleset = playmode.ToRuleset();
+        }
+        else
+        {
+            if (arguments.Username.StartsWith("@"))
+            {
+                await waitMessage.EditAsync(Context.BotClient, language.error_dontUseTelegramUsername);
+                return null;
+            }
+
+            username = $"{searchPrefix}{arguments.Username}";
+            ruleset = arguments.Playmode?.ToRuleset();
+        }
+
+        GetUserResponse? userResponse = await _osuApiV2.Users.GetUser(username, new GetUserQueryParameters(), ruleset);
+        if (userResponse is null)
+        {
+            await waitMessage.EditAsync(Context.BotClient, language.error_userNotFound);
+            return null;
+        }
+        UserExtend? user = userResponse.UserExtend;
+        if (user == null)
+        {
+            await waitMessage.EditAsync(Context.BotClient, language.error_userNotFound);
+            return null;
+        }
+
+        if (ruleset == null)
+        {
+            playmode = user!.Playmode!.ParseRulesetToPlaymode();
+        }
+        else
+        {
+            playmode = ruleset.ParseRulesetToPlaymode();
+        }
+
+        return new UserLookup(user, playmode);
     }
 }
 

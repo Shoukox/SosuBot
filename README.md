@@ -209,8 +209,11 @@ Command list from the current in-bot `/help` text:
 * `/set [nickname]` - add/change your nickname in the bot.
 * `/mode [gamemode]` - change your default game mode.
 * `/user [nickname]` - short info about a player by username.
+* `/userw [nickname]` - the same profile as an interactive Telegram widget with a tab per game mode
+  (Telegram currently delivers widgets only to the private chat with the bot).
 * `/userid [user_id]` - short info about a player by user id.
 * `/last [nickname] [count]` - latest plays.
+* `/lw [nickname] [count]` - latest plays (up to 10) as a Telegram rich message with beatmap covers.
 * `/lastpassed [nickname] [count]` - `/last` for passed scores only.
 * `/score [beatmap_link]` - your records on this map.
 * `/osucard [nickname] [gamemode]` - a profile card with the player's skills.

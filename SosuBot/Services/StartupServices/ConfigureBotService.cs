@@ -24,8 +24,10 @@ public class ConfigureBotService(IServiceProvider serviceProvider) : IHostedServ
         CreateBotCommand(OsuSetCommand.Commands[0], OsuSetCommand.Description),
         CreateBotCommand(OsuModeCommand.Commands[0], OsuModeCommand.Description),
         CreateBotCommand(OsuUserCommand.Commands[0], OsuUserCommand.Description),
+        CreateBotCommand(OsuUserWidgetCommand.Commands[0], OsuUserWidgetCommand.Description),
         CreateBotCommand(OsuUserIdCommand.Commands[0], OsuUserIdCommand.Description),
         CreateBotCommand(OsuLastWithCoverCommand.Commands[0], OsuLastWithCoverCommand.Description),
+        CreateBotCommand(OsuLastRichCommand.Commands[0], OsuLastRichCommand.Description),
         CreateBotCommand(OsuLastPassedCommand.Commands[0], OsuLastPassedCommand.Description),
         CreateBotCommand(OsuScoreCommand.Commands[0], OsuScoreCommand.Description),
         CreateBotCommand(OsuUserbestCommand.Commands[0], OsuUserbestCommand.Description),
@@ -91,8 +93,10 @@ public class ConfigureBotService(IServiceProvider serviceProvider) : IHostedServ
         RegisterCommand<OsuLastBestCommand>(OsuLastBestCommand.Commands);
         RegisterCommand<OsuLastWithCoverCommand>(OsuLastWithCoverCommand.Commands);
         RegisterCommand<OsuLastPassedCommand>(OsuLastPassedCommand.Commands);
+        RegisterCommand<OsuLastRichCommand>(OsuLastRichCommand.Commands);
         RegisterCommandWithParameters(OsuUserCommand.Commands, () => new OsuUserCommand());
         RegisterCommand<OsuUserIdCommand>(OsuUserIdCommand.Commands);
+        RegisterCommand<OsuUserWidgetCommand>(OsuUserWidgetCommand.Commands);
         RegisterCommand<OsuScoreCommand>(OsuScoreCommand.Commands);
         RegisterCommand<MsgCommand>(MsgCommand.Commands);
         RegisterCommand<DbCommand>(DbCommand.Commands);
