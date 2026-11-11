@@ -19,7 +19,6 @@ namespace SosuBot.Services;
 public sealed class OsuCardService
 {
     private const int MaximumParallelCalculations = 4;
-    private const int MaximumAvatarBytes = 5 * 1024 * 1024;
 
     private readonly BanchoApiV2 _osuApi;
     private readonly BeatmapsService _beatmapsService;
@@ -27,7 +26,7 @@ public sealed class OsuCardService
     private readonly ProfileCardGenerator _cardGenerator;
     private readonly PlayerSkillCalculator _skillCalculator;
     private readonly OfficialPerformanceHelper _officialPerformanceHelper;
-    private readonly HttpClient _httpClient;
+    private readonly OsuProfileImageService _profileImages;
     private readonly ILogger<OsuCardService> _logger;
 
     public OsuCardService(
@@ -37,7 +36,7 @@ public sealed class OsuCardService
         ProfileCardGenerator cardGenerator,
         PlayerSkillCalculator skillCalculator,
         OfficialPerformanceHelper officialPerformanceHelper,
-        IHttpClientFactory httpClientFactory,
+        OsuProfileImageService profileImages,
         ILogger<OsuCardService> logger)
     {
         _osuApi = osuApi;
@@ -46,7 +45,7 @@ public sealed class OsuCardService
         _cardGenerator = cardGenerator;
         _skillCalculator = skillCalculator;
         _officialPerformanceHelper = officialPerformanceHelper;
-        _httpClient = httpClientFactory.CreateClient("CustomHttpClient");
+        _profileImages = profileImages;
         _logger = logger;
     }
 
@@ -85,7 +84,7 @@ public sealed class OsuCardService
 
         PlayerSkills skills = _skillCalculator.Calculate(inputs);
 
-        byte[]? avatar = await DownloadAvatarAsync(user.AvatarUrl, cancellationToken);
+        byte[]? avatar = await _profileImages.DownloadAvatarAsync(user, cancellationToken);
         using MemoryStream image = _cardGenerator.Generate(new ProfileCardData
         {
             Username = user.Username,
@@ -365,36 +364,6 @@ public sealed class OsuCardService
         {
             double odMilliseconds = 66.66 - overallDifficulty * 4;
             overallDifficulty = (49.5 - odMilliseconds) / 3;
-        }
-    }
-
-    private async Task<byte[]?> DownloadAvatarAsync(string? avatarUrl, CancellationToken cancellationToken)
-    {
-        if (string.IsNullOrWhiteSpace(avatarUrl))
-            return null;
-
-        if (!Uri.TryCreate(avatarUrl, UriKind.Absolute, out Uri? uri))
-            uri = new Uri(new Uri("https://osu.ppy.sh"), avatarUrl);
-
-        try
-        {
-            using HttpResponseMessage response = await _httpClient.GetAsync(uri, HttpCompletionOption.ResponseHeadersRead,
-                cancellationToken);
-            response.EnsureSuccessStatusCode();
-            if (response.Content.Headers.ContentLength > MaximumAvatarBytes)
-                return null;
-
-            byte[] content = await response.Content.ReadAsByteArrayAsync(cancellationToken);
-            return content.Length <= MaximumAvatarBytes ? content : null;
-        }
-        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
-        {
-            throw;
-        }
-        catch (Exception exception)
-        {
-            _logger.LogWarning(exception, "Could not download osu! avatar from {AvatarUrl}", uri);
-            return null;
         }
     }
 

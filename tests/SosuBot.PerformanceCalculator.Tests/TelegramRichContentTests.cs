@@ -1,7 +1,9 @@
-using System.IO.Compression;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.PixelFormats;
 using System.Text;
 using OsuApi.BanchoV2.Users.Models;
 using SosuBot.Database.Models;
+using SosuBot.Graphics;
 using SosuBot.Helpers.OutputText;
 using SosuBot.Localization;
 using SosuBot.Localization.Languages;
@@ -16,19 +18,61 @@ public sealed class TelegramRichContentTests
 
     [Theory]
     [MemberData(nameof(Languages))]
-    public void WidgetHtmlFitsTelegramCompressedLimit(ILocalization language)
+    public void WidgetWithProfileImagesFitsTelegramCompressedLimit(ILocalization language)
     {
-        string html = UserProfileWidget.BuildHtml(language);
-        byte[] bytes = Encoding.UTF8.GetBytes(html);
+        // Noise barely compresses: the worst case for the embedded avatar and banner.
+        byte[] avatar = NoisePng(256, 256);
+        byte[] banner = NoisePng(1800, 500);
 
-        using var compressed = new MemoryStream();
-        using (var zlib = new ZLibStream(compressed, CompressionLevel.SmallestSize, leaveOpen: true))
-            zlib.Write(bytes);
+        string html = UserProfileWidget.BuildHtml(
+            language,
+            WidgetArtwork.EncodeAvatarCandidates(avatar),
+            WidgetArtwork.EncodeBanner(banner),
+            WidgetArtwork.GetAccentColors(avatar));
 
-        Assert.DoesNotContain("__L__", html);
-        Assert.True(bytes.Length <= 32768, $"{bytes.Length} bytes of HTML");
-        // Telegram counts zlib level 9; keep a margin for zlib implementation differences.
-        Assert.True(compressed.Length <= 3800, $"{compressed.Length} bytes after zlib");
+        Assert.DoesNotContain("__", html);
+        Assert.True(Encoding.UTF8.GetByteCount(html) <= 32768);
+        Assert.True(UserProfileWidget.CompressedSize(html) <= UserProfileWidget.MaxCompressedHtmlBytes,
+            $"{UserProfileWidget.CompressedSize(html)} bytes after zlib");
+        // Even the worst case keeps a real avatar and the banner background.
+        Assert.Equal(2, CountOccurrences(html, "data:image/webp;base64,"));
+    }
+
+    [Fact]
+    public void WidgetWithoutImagesFallsBackToInitialAndThemeColors()
+    {
+        string html = UserProfileWidget.BuildHtml(new Russian(), [], null, null);
+
+        Assert.Contains("A='',B='',K=''", html);
+        Assert.True(UserProfileWidget.CompressedSize(html) <= UserProfileWidget.MaxCompressedHtmlBytes);
+    }
+
+    [Fact]
+    public void AccentColorsAreDarkEnoughForWhiteText()
+    {
+        using var bright = new Image<Rgba32>(32, 32, Color.Yellow);
+        using var stream = new MemoryStream();
+        bright.SaveAsPng(stream);
+
+        (string accent, string shade) = WidgetArtwork.GetAccentColors(stream.ToArray())!.Value;
+
+        Assert.Equal("#8c8c00", accent);
+        Assert.Equal("#383800", shade);
+    }
+
+    private static byte[] NoisePng(int width, int height)
+    {
+        var random = new Random(42);
+        using var image = new Image<Rgba32>(width, height);
+        image.ProcessPixelRows(rows =>
+        {
+            for (var y = 0; y < rows.Height; y++)
+            foreach (ref Rgba32 pixel in rows.GetRowSpan(y))
+                pixel = new Rgba32((byte)random.Next(256), (byte)random.Next(256), (byte)random.Next(256));
+        });
+        using var stream = new MemoryStream();
+        image.SaveAsPng(stream);
+        return stream.ToArray();
     }
 
     [Fact]

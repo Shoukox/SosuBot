@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.IO.Compression;
 using System.Text;
 using System.Text.Encodings.Web;
 using System.Text.Json;
@@ -20,6 +21,15 @@ public static class UserProfileWidget
 
     private const string ResourceSuffix = "Widgets.user-profile.html";
     private const string LabelsPlaceholder = "__L__";
+    private const string AvatarPlaceholder = "__AV__";
+    private const string BannerPlaceholder = "__BG__";
+    private const string AccentPlaceholder = "__AC__";
+
+    /// <summary>
+    ///     Telegram refuses widgets above 4096 bytes after zlib level 9; the margin covers differences between
+    ///     zlib builds (the server's and .NET's).
+    /// </summary>
+    public const int MaxCompressedHtmlBytes = 3900;
 
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
@@ -32,7 +42,51 @@ public static class UserProfileWidget
     /// <summary>Tab order inside the widget; must match the tab labels in the HTML.</summary>
     public static readonly Playmode[] Modes = [Playmode.Osu, Playmode.Taiko, Playmode.Catch, Playmode.Mania];
 
-    public static string BuildHtml(ILocalization language)
+    /// <summary>
+    ///     Builds the widget HTML with the player's images embedded as <c>data:</c> URLs (widgets have no network).
+    ///     Takes the sharpest avatar that keeps the widget within <see cref="MaxCompressedHtmlBytes" />, then drops
+    ///     the avatar and the banner if even that does not fit.
+    /// </summary>
+    /// <param name="avatarCandidates">Avatar data URLs from best to most compact.</param>
+    /// <param name="banner">Blurred profile banner data URL; the card background when present.</param>
+    /// <param name="accentColors">Avatar accent colours; the background gradient when there is no banner.</param>
+    public static string BuildHtml(
+        ILocalization language,
+        IEnumerable<string>? avatarCandidates = null,
+        string? banner = null,
+        (string Accent, string Shade)? accentColors = null)
+    {
+        string code = BuildCode(language);
+        string accent = accentColors is { } colors ? $"{colors.Accent},{colors.Shade}" : "";
+
+        foreach (string avatar in avatarCandidates ?? [])
+        {
+            string html = Render(code, avatar, banner, accent);
+            if (CompressedSize(html) <= MaxCompressedHtmlBytes)
+                return html;
+        }
+
+        string withoutAvatar = Render(code, "", banner, accent);
+        return CompressedSize(withoutAvatar) <= MaxCompressedHtmlBytes
+            ? withoutAvatar
+            : Render(code, "", null, accent);
+    }
+
+    /// <summary>Size of <paramref name="html" /> after zlib at the highest compression level, as Telegram counts it.</summary>
+    public static int CompressedSize(string html)
+    {
+        using var compressed = new MemoryStream();
+        using (var zlib = new ZLibStream(compressed, CompressionLevel.SmallestSize, leaveOpen: true))
+            zlib.Write(Encoding.UTF8.GetBytes(html));
+        return (int)compressed.Length;
+    }
+
+    private static string Render(string code, string avatar, string? banner, string accent) => code
+        .Replace(AvatarPlaceholder, avatar)
+        .Replace(BannerPlaceholder, banner ?? "")
+        .Replace(AccentPlaceholder, accent);
+
+    private static string BuildCode(ILocalization language)
     {
         var labels = new
         {

@@ -51,6 +51,11 @@ Telegram-бот для игроков osu! на .NET 10 (`net10.0`, C#, nullable
   на состояние, никакой сети и внешних картинок (только `data:`/inline SVG), JS работает в песочнице QuickJS. Пока
   что в проде виджеты работают **только в личке с ботом**. Справочник: https://core.telegram.org/bots/widgets.
   Лимиты проверяют тесты `TelegramRichContentTests`. Порядок полей в массиве статистики должен совпадать в C# и JS.
+- Аватар и баннер игрока бот скачивает по `avatar_url`/`cover_url` (`OsuProfileImageService`, общий с `/osucard`) и
+  встраивает в HTML как WebP `data:` URL (`WidgetArtwork`). `UserProfileWidget.BuildHtml` подбирает самый чёткий
+  аватар, при котором виджет укладывается в `MaxCompressedHtmlBytes`. Фон карточки — размытый баннер, без баннера —
+  градиент в акцентный цвет аватара, без обоих — цвета темы. Каждый байт кода в `user-profile.html` уменьшает
+  разрешение аватара.
 - `/lw` (`OsuLastRichCommand` → `OsuLastCommand(richMessage: true)`) строит Rich HTML в `RichLastScores`. Медиа
   можно указывать только как отдельный блок с https-URL. Если rich-сообщение не отправилось, команда отвечает
   обычным текстом `/last`.
