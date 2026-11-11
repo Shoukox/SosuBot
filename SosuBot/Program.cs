@@ -134,6 +134,7 @@ internal class Program
         builder.Services.AddSingleton<PlayerSkillCalculator>();
         builder.Services.AddSingleton<ProfileCardGenerator>();
         builder.Services.AddSingleton<ScorePreviewGenerator>();
+        builder.Services.AddSingleton<OsuProfileImageService>();
         builder.Services.AddSingleton<OsuCardService>();
         builder.Services.AddSingleton<VideoPreviewService>();
         builder.Services.AddSingleton<PostVideoArtifactService>();

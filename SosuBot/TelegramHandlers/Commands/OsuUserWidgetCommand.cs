@@ -6,8 +6,10 @@ using OsuApi.BanchoV2.Users.Models;
 using SosuBot.Configuration;
 using SosuBot.Database.Models;
 using SosuBot.Extensions;
+using SosuBot.Graphics;
 using SosuBot.Helpers;
 using SosuBot.Localization;
+using SosuBot.Services;
 using SosuBot.Services.Synchronization;
 using Telegram.Bot;
 using Telegram.Bot.Exceptions;
@@ -26,12 +28,14 @@ public sealed class OsuUserWidgetCommand : OsuUserCommand
     public new static readonly string Description = "[user] профиль игрока в виде виджета";
 
     private BotConfiguration _botConfig = null!;
+    private OsuProfileImageService _profileImages = null!;
     private ILogger<OsuUserWidgetCommand> _logger = null!;
 
     public override async Task BeforeExecuteAsync()
     {
         await base.BeforeExecuteAsync();
         _botConfig = Context.ServiceProvider.GetRequiredService<IOptions<BotConfiguration>>().Value;
+        _profileImages = Context.ServiceProvider.GetRequiredService<OsuProfileImageService>();
         _logger = Context.ServiceProvider.GetRequiredService<ILogger<OsuUserWidgetCommand>>();
     }
 
@@ -63,16 +67,26 @@ public sealed class OsuUserWidgetCommand : OsuUserCommand
             await UserHelper.GetProfileDifferenceTextsAsync(_database, user, lookup.Playmode);
         UserHelper.UpdateOsuUsers(_database, user, lookup.Playmode);
 
+        Task<byte[]?> avatarTask = _profileImages.DownloadAvatarAsync(user, Context.CancellationToken);
+        Task<byte[]?> bannerTask = _profileImages.DownloadBannerAsync(user, Context.CancellationToken);
         UserStatistics?[] statisticsByMode = await Task.WhenAll(UserProfileWidget.Modes.Select(mode =>
             mode == lookup.Playmode
                 ? Task.FromResult(user.Statistics)
                 : GetStatisticsAsync(user.Id!.Value, mode)));
+        byte[]? avatar = await avatarTask;
+        byte[]? banner = await bannerTask;
+
+        string html = UserProfileWidget.BuildHtml(
+            language,
+            WidgetArtwork.EncodeAvatarCandidates(avatar),
+            WidgetArtwork.EncodeBanner(banner),
+            WidgetArtwork.GetAccentColors(avatar));
 
         try
         {
             await Context.BotClient.SendWidget(
                 Context.Update.Chat.Id,
-                UserProfileWidget.BuildHtml(language),
+                html,
                 publicData: UserProfileWidget.BuildPublicData(user, lookup.Playmode, statisticsByMode, differences),
                 caption: UserProfileWidget.BuildCaption(user, lookup.Playmode, _scoreHelper),
                 parseMode: ParseMode.Html,

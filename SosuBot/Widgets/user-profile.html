@@ -1,32 +1,40 @@
 <style>
-body{margin:0;padding:12px 14px calc(12px + env(safe-area-inset-bottom));font-variant-numeric:tabular-nums}
+:root{--fg:var(--tg-theme-text-color);--mu:var(--tg-theme-hint-color);--ch:var(--tg-theme-secondary-bg-color);--on:var(--tg-theme-button-color);--of:var(--tg-theme-button-text-color);--ac:var(--tg-theme-accent-text-color)}
+.hero{--fg:#fff;--mu:rgba(255,255,255,.72);--ch:rgba(255,255,255,.14);--on:#fff;--of:#111;--ac:#9fe0ff}
+body{margin:0;padding:12px 14px calc(12px + env(safe-area-inset-bottom));color:var(--fg);font-variant-numeric:tabular-nums}
+#bg{position:fixed;top:-16px;left:-16px;right:-16px;bottom:-16px;z-index:-1;background-position:center;background-size:cover}
+.im{filter:blur(6px) brightness(.5)}
 .h{display:flex;align-items:center;gap:10px}
-.av{width:44px;height:44px;flex:none;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:700;background:var(--tg-theme-button-color);color:var(--tg-theme-button-text-color)}
+.av{width:48px;height:48px;flex:none;border-radius:50%;overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:700;background:var(--on);color:var(--of)}
+.hero .av{box-shadow:0 0 0 2px rgba(255,255,255,.85)}
+.av img{width:100%;height:100%;object-fit:cover}
 .nm{font-size:17px;font-weight:700}
-.mu{color:var(--tg-theme-hint-color);font-size:13px}
+.mu{color:var(--mu);font-size:13px}
 .t{display:flex;gap:4px;margin:12px 0}
-.t button{flex:1;margin:0;padding:6px 0;border:0;border-radius:8px;font-size:13px;background:var(--tg-theme-secondary-bg-color);color:var(--tg-theme-text-color)}
-.t .on{background:var(--tg-theme-button-color);color:var(--tg-theme-button-text-color)}
+.t button,#o{margin:0;border:0;border-radius:8px;background:var(--ch);color:var(--fg)}
+.t button{flex:1;padding:6px 0;font-size:13px}
+.t .on{background:var(--on);color:var(--of)}
 .big{display:flex;justify-content:space-between;align-items:flex-end}
 .pp{font-size:28px;font-weight:800;line-height:1.1}
 .rk{font-size:20px;font-weight:700;text-align:right}
-.bar{height:4px;margin:10px 0 4px;border-radius:2px;background:var(--tg-theme-secondary-bg-color)}
-.bar i{display:block;height:4px;border-radius:2px;background:var(--tg-theme-button-color)}
+.bar{height:4px;margin:10px 0 4px;border-radius:2px;background:var(--ch)}
+.bar i{display:block;height:4px;border-radius:2px;background:var(--on)}
 .g{display:grid;grid-template-columns:1fr 1fr;gap:8px 12px;margin-top:10px}
 .g b{display:block;font-size:15px}
 .gr{display:flex;gap:6px;margin:12px 0}
-.gr span{flex:1;padding:4px 0;border-radius:8px;text-align:center;font-size:12px;background:var(--tg-theme-secondary-bg-color)}
+.gr span{flex:1;padding:4px 0;border-radius:8px;text-align:center;font-size:12px;background:var(--ch)}
 .gr b{display:block;font-size:14px}
-.x{color:#9aa7b4}.y{color:#e0a800}.z{color:#4caf50}
-.d{font-size:12px;color:var(--tg-theme-accent-text-color)}
-#o{width:100%;margin-top:12px}
+.x{color:#b8c4cf}.y{color:#f0b90b}.z{color:#5fd068}
+.d{font-size:12px;color:var(--ac)}
+#o{width:100%;margin-top:12px;padding:8px}
 </style>
+<div id="bg"></div>
 <div class="h"><div class="av" id="av"></div><div><div class="nm" id="nm"></div><div class="mu" id="sb"></div></div></div>
 <div class="t" id="t"></div>
 <div id="b"></div>
 <button id="o"></button>
 <script>
-const W=window.TelegramWidget,L=__L__,$=i=>document.getElementById(i);
+const W=window.TelegramWidget,L=__L__,A='__AV__',B='__BG__',K='__AC__'.split(','),$=i=>document.getElementById(i);
 let D=null;try{D=JSON.parse(W&&W.publicData)}catch(e){}
 D=D||{n:'?',s:[]};
 let m=D.m|0;
@@ -50,7 +58,10 @@ $('b').innerHTML='<div class="big"><div><div class="mu">pp</div><div class="pp">
 +'<div class="g">'+C(L.acc,N(ac,2)+'%',d[1])+C(L.pc,N(pc))+C(L.pt,N(pt)+' '+L.h,d[2])+C(L.mc,N(mc)+'x')+'</div>'
 +'<div class="gr">'+G('x','SS',ssh)+G('y','SS',ss)+G('x','S',sh)+G('y','S',sx)+G('z','A',a)+'</div>'
 +'<div class="mu">'+L.reg+': '+(D.r||'—')+' · '+L.ach+': '+(D.a||'—')+'</div>'}
-$('av').textContent=(D.n||'?')[0].toUpperCase();
+if(A){const i=document.createElement('img');i.src=A;$('av').append(i)}else $('av').textContent=(D.n||'?')[0].toUpperCase();
+if(B||K[1]){document.body.className='hero';const g=$('bg').style;
+if(B){g.backgroundImage='url('+B+')';g.backgroundColor=K[1]||'#222';$('bg').className='im'}
+else g.backgroundImage='linear-gradient(135deg,'+K[0]+','+K[1]+')'}
 $('nm').textContent=D.n||'?';
 $('o').textContent=L.open;
 $('o').onclick=()=>{if(W&&D.i)W.openLink('https://osu.ppy.sh/users/'+D.i)};
