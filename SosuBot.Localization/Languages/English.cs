@@ -32,12 +32,14 @@ public sealed class English : ILocalization
         $"/rnd [osu/mania/taiko/catch] - random beatmap for a selected mode (osu by default).\n" +
         $"/osucard [nickname] [gamemode] - a profile card with the player's skills.\n" +
         $"/videopreview &lt;text&gt; - a video thumbnail for the score link in the replied-to message.\n" +
+        $"/postvideo - prepare a video for publication from a score.\n" +
         $"/userbest [nickname] [gamemode] - player's best plays.\n" +
         $"/compare [nickname1] [nickname2] [gamemode] - compare players.\n" +
         $"/chatstats [gamemode] - top 10 players in this chat.\n" +
         $"/exclude [nickname] - exclude a user from chat top 10.\n" +
         $"/include [nickname] - include a user back into chat top 10.\n" +
         $"/topicbot deny|allow [topic_id], /topicbot list - restrict the bot in topics (group admins only).\n" +
+        $"/botlimits - group bot limits panel (group owner only).\n" +
         $"/ranking [RU/UZ/country_code] - top 20 players for a country (or global).\n" +
         $"/daily_stats, /weekly_stats, /monthly_stats - statistics for all player scores by day, week, or month.\n" +
         $"/track [users1-3] - bot notifies you about new top50 scores of these players.\n" +
@@ -245,6 +247,31 @@ public sealed class English : ILocalization
     public string topicBot_notBlocked => "This topic is not restricted";
     public string topicBot_noBlockedTopics => "The bot responds in all topics in this chat.";
     public string topicBot_blockedTopics => "The bot is disabled in topics with these IDs:";
+
+    public string groupLimits_title => "Group bot settings";
+    public string groupLimits_enabled => "Restrictions enabled";
+    public string groupLimits_disabled => "Restrictions disabled";
+    public string groupLimits_enable => "Enable restrictions";
+    public string groupLimits_disable => "Disable restrictions";
+    public string groupLimits_cooldown => "Cooldown: {0} sec.";
+    public string groupLimits_mediaEnabled => "Respond to files: yes";
+    public string groupLimits_mediaDisabled => "Respond to files: no";
+    public string groupLimits_categories => "Commands by category";
+    public string groupLimits_disableCategory => "Disable entire category";
+    public string groupLimits_enableCategory => "Enable entire category";
+    public string groupLimits_categoryPlayer => "Player profiles";
+    public string groupLimits_categoryScores => "Scores and rankings";
+    public string groupLimits_categoryChatStatistics => "Chat statistics";
+    public string groupLimits_categoryGraphics => "Images and rendering";
+    public string groupLimits_categoryUtilities => "Utilities and notifications";
+    public string groupLimits_categoryManagement => "Management";
+    public string groupLimits_noCommands => "There are no commands in this category.";
+    public string groupLimits_commandDisabled => "The group owner disabled <code>{0}</code>.";
+    public string groupLimits_rateLimited => "You have reached the bot request limit. Please try again later.";
+    public string groupLimits_serviceUnavailable => "Could not check the request limit. Please try again later.";
+    public string groupLimits_deleteFailed => "Could not delete the command. Give the bot permission to delete messages.";
+    public string groupLimits_ownerOnly => "Only the group owner can open this panel.";
+    public string groupLimits_closed => "Settings panel closed.";
 
     public string beatmapLeaderboard_adminOnly => "Access denied.";
     public string beatmapLeaderboard_lastBeatmapNotFound => "Bot could not find the last beatmap in this chat";

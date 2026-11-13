@@ -264,14 +264,26 @@ namespace SosuBot.Migrations
                     b.Property<long>("ChatId")
                         .HasColumnType("bigint");
 
+                    b.Property<int>("CommandCooldownSeconds")
+                        .HasColumnType("integer");
+
+                    b.Property<bool>("CommandRestrictionsEnabled")
+                        .HasColumnType("boolean");
+
                     b.PrimitiveCollection<List<long>>("ChatMembers")
                         .HasColumnType("bigint[]");
 
                     b.PrimitiveCollection<List<int>>("BlockedTopicIds")
                         .HasColumnType("integer[]");
 
+                    b.PrimitiveCollection<List<string>>("DisabledCommands")
+                        .HasColumnType("text[]");
+
                     b.PrimitiveCollection<List<long>>("ExcludeFromChatstats")
                         .HasColumnType("bigint[]");
+
+                    b.Property<bool>("IgnoreMedia")
+                        .HasColumnType("boolean");
 
                     b.Property<string>("LanguageCode")
                         .IsRequired()

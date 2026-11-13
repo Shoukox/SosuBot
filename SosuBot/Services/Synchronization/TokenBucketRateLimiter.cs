@@ -76,11 +76,22 @@ namespace SosuBot.Services.Synchronization
                 var result = (int)await _redis.ScriptEvaluateAsync(_luaScript.OriginalScript, redisKeys, redisArgs);
                 return result == 1;
             }
+
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Token bucket rate limiter failed");
                 return true; // fail-open strategy
             }
+        }
+
+        public Task<bool> IsAllowedWithCooldownAsync(string key, int cooldownSeconds)
+        {
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(cooldownSeconds);
+            return _redis.StringSetAsync(
+                $"command_cooldown:{key}",
+                "1",
+                TimeSpan.FromSeconds(cooldownSeconds),
+                When.NotExists);
         }
 
         public async Task WaitAsync(string key, CancellationToken cancellationToken = default)

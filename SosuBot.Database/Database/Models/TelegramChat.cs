@@ -14,4 +14,8 @@ public record TelegramChat
     public string LanguageCode { get; set; } = "ru";
     public List<int>? TrackedPlayers { get; set; }
     public List<int>? BlockedTopicIds { get; set; }
+    public bool CommandRestrictionsEnabled { get; set; }
+    public int CommandCooldownSeconds { get; set; }
+    public List<string>? DisabledCommands { get; set; }
+    public bool IgnoreMedia { get; set; }
 }
