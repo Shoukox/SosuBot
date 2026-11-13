@@ -13,11 +13,12 @@ public static class TelegramUpdateExtensions
     {
         if (splitValue == null)
             return TelegramHelper.SendMessageConsideringTelegramLength(message.Id, message.Chat.Id, botClient, text,
-                parseMode, replyMarkup, false, linkPreviewEnabled);
+                parseMode, replyMarkup, false, linkPreviewEnabled, message.EphemeralMessageId is null);
 
         return TelegramHelper.SendMessageConsideringTelegramLengthAndSplitValue(message.Id, message.Chat.Id, botClient,
             text,
-            parseMode, replyMarkup, false, splitValue, linkPreviewEnabled);
+            parseMode, replyMarkup, false, splitValue, linkPreviewEnabled,
+            replyToMessage: message.EphemeralMessageId is null);
     }
 
     public static Task<Message> ReplyPhotoAsync(this Message message, ITelegramBotClient botClient, InputFile photo,
@@ -25,7 +26,8 @@ public static class TelegramUpdateExtensions
         InlineKeyboardMarkup? replyMarkup = null)
     {
         return botClient.SendPhoto(privateAsnwer ? message.From!.Id : message.Chat.Id, photo, caption,
-            parseMode, new ReplyParameters { MessageId = message.MessageId },
+            parseMode,
+            message.EphemeralMessageId is null ? new ReplyParameters { MessageId = message.MessageId } : null,
             replyMarkup);
     }
 
@@ -34,7 +36,8 @@ public static class TelegramUpdateExtensions
         ParseMode parseMode = ParseMode.Html, InlineKeyboardMarkup? replyMarkup = null)
     {
         return botClient.SendDocument(privateAsnwer ? message.From!.Id : message.Chat.Id, document, caption,
-            parseMode, new ReplyParameters { MessageId = message.MessageId },
+            parseMode,
+            message.EphemeralMessageId is null ? new ReplyParameters { MessageId = message.MessageId } : null,
             replyMarkup);
     }
 

@@ -32,12 +32,14 @@ public sealed class Russian : ILocalization
         $"/rnd [osu/mania/taiko/catch] - случайная карта выбранного режима (по умолчанию osu).\n" +
         $"/osucard [nickname] [gamemode] - профильная карточка с навыками игрока.\n" +
         $"/videopreview &lt;текст&gt; - превью видео для ссылки на скор из сообщения, на которое отвечаешь.\n" +
+        $"/postvideo - подготовить видео для публикации по score.\n" +
         $"/userbest [nickname] [gamemode] - лучшие игры игрока.\n" +
         $"/compare [nickname1] [nickname2] [gamemode] - сравнить игроков.\n" +
         $"/chatstats [gamemode] - топ10 игроков в чате.\n" +
         $"/exclude [nickname] - исключить юзера из топ10 игроков в чате.\n" +
         $"/include [nickname] - вернуть юзера в топ10 игроков в чате.\n" +
         $"/topicbot deny|allow [topic_id], /topicbot list - ограничить работу бота в темах (только админы групп).\n" +
+        $"/botlimits - панель ограничений бота в группе (только владелец).\n" +
         $"/ranking [RU/UZ/country_code] - топ20 игроков для данной страны (либо глобально).\n" +
         $"/daily_stats, /weekly_stats, /monthly_stats - статистика по всем скорам игроков за день, неделю или месяц.\n" +
         $"/track [users1-3] - бот будет оповещать вас о новых скорах в топ50 данных игроков.\n" +
@@ -245,6 +247,31 @@ public sealed class Russian : ILocalization
     public string topicBot_notBlocked => "Для этой темы ограничений нет";
     public string topicBot_noBlockedTopics => "Бот отвечает во всех темах этого чата.";
     public string topicBot_blockedTopics => "Бот отключен в темах с ID:";
+
+    public string groupLimits_title => "Настройки бота в группе";
+    public string groupLimits_enabled => "Ограничения включены";
+    public string groupLimits_disabled => "Ограничения выключены";
+    public string groupLimits_enable => "Включить ограничения";
+    public string groupLimits_disable => "Выключить ограничения";
+    public string groupLimits_cooldown => "Кулдаун: {0} сек.";
+    public string groupLimits_mediaEnabled => "Реагировать на файлы: да";
+    public string groupLimits_mediaDisabled => "Реагировать на файлы: нет";
+    public string groupLimits_categories => "Команды по категориям";
+    public string groupLimits_disableCategory => "Отключить всю категорию";
+    public string groupLimits_enableCategory => "Включить всю категорию";
+    public string groupLimits_categoryPlayer => "Профили игроков";
+    public string groupLimits_categoryScores => "Скоры и рейтинги";
+    public string groupLimits_categoryChatStatistics => "Статистика чата";
+    public string groupLimits_categoryGraphics => "Изображения и рендер";
+    public string groupLimits_categoryUtilities => "Утилиты и уведомления";
+    public string groupLimits_categoryManagement => "Управление";
+    public string groupLimits_noCommands => "В этой категории нет доступных команд.";
+    public string groupLimits_commandDisabled => "Команда <code>{0}</code> отключена владельцем группы.";
+    public string groupLimits_rateLimited => "Вы достигли лимита обращений к боту. Попробуйте позже.";
+    public string groupLimits_serviceUnavailable => "Не удалось проверить лимит. Попробуйте ещё раз позже.";
+    public string groupLimits_deleteFailed => "Не удалось удалить команду. Дайте боту право удалять сообщения.";
+    public string groupLimits_ownerOnly => "Панель доступна только владельцу группы.";
+    public string groupLimits_closed => "Панель настроек закрыта.";
 
     public string beatmapLeaderboard_adminOnly => "Пшол вон!";
     public string beatmapLeaderboard_lastBeatmapNotFound => "Бот не смог найти последнюю карту в чате";

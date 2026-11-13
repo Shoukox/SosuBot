@@ -150,6 +150,30 @@ public interface ILocalization
     public string topicBot_notBlocked { get; }
     public string topicBot_noBlockedTopics { get; }
     public string topicBot_blockedTopics { get; }
+    public string groupLimits_title { get; }
+    public string groupLimits_enabled { get; }
+    public string groupLimits_disabled { get; }
+    public string groupLimits_enable { get; }
+    public string groupLimits_disable { get; }
+    public string groupLimits_cooldown { get; }
+    public string groupLimits_mediaEnabled { get; }
+    public string groupLimits_mediaDisabled { get; }
+    public string groupLimits_categories { get; }
+    public string groupLimits_disableCategory { get; }
+    public string groupLimits_enableCategory { get; }
+    public string groupLimits_categoryPlayer { get; }
+    public string groupLimits_categoryScores { get; }
+    public string groupLimits_categoryChatStatistics { get; }
+    public string groupLimits_categoryGraphics { get; }
+    public string groupLimits_categoryUtilities { get; }
+    public string groupLimits_categoryManagement { get; }
+    public string groupLimits_noCommands { get; }
+    public string groupLimits_commandDisabled { get; }
+    public string groupLimits_rateLimited { get; }
+    public string groupLimits_serviceUnavailable { get; }
+    public string groupLimits_deleteFailed { get; }
+    public string groupLimits_ownerOnly { get; }
+    public string groupLimits_closed { get; }
 
     public string beatmapLeaderboard_adminOnly { get; }
     public string beatmapLeaderboard_lastBeatmapNotFound { get; }

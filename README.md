@@ -219,14 +219,24 @@ Command list from the current in-bot `/help` text:
 * `/osucard [nickname] [gamemode]` - a profile card with the player's skills.
 * `/videopreview <text>` - reply to an osu! score link with this command to generate a video thumbnail.
   The text supports nested `[color=#RRGGBB]...[/color]` and `[glow=0..40]...[/glow]` BB codes.
+* `/postvideo` - prepare a video for publication from a score.
 * `/userbest [nickname] [gamemode]` - player's best plays.
 * `/compare [nickname1] [nickname2] [gamemode]` - compare players.
 * `/chatstats [gamemode]` - top 10 players in this chat.
 * `/exclude [nickname]` - exclude a user from chat top 10.
 * `/include [nickname]` - include a user back into chat top 10.
-* `/topicbot deny|allow [topic_id]`, `/topicbot list` - group admins can disable or restore bot
-  replies in individual topics. If no topic ID is given, the current topic is used; by default
-  the bot is enabled in all topics.
+* `/topicbot deny [topic_id]` / `/topicbot allow [topic_id]` - group admins can disable or restore
+  bot replies and interactive callbacks in a forum topic. `/topicbot list` shows restricted topics.
+  If no topic ID is given, run the command inside the topic to manage it; `/topicbot deny` blocks
+  that topic and `/topicbot allow` restores it. Topics are enabled by default, and `/topicbot`
+  remains available inside a restricted topic so admins can manage its settings.
+* `/botlimits` - group owners can open a private, button-based panel to enable per-chat command
+  restrictions, set a cooldown shared across commands per member, disable command categories or
+  individual commands, and ignore media. Restrictions are off by default; panel changes edit the
+  same private message. In restricted groups, command invocations are ephemeral and removed;
+  limit notices are private, while normal bot replies remain visible in the group. The bot needs
+  to be an administrator with permission to delete group messages. Ephemeral commands and replies
+  require a Telegram Bot API server and Telegram clients that support them.
 * `/ranking [RU/UZ/country_code]` - top 20 players for a country (or global).
 * `/daily_stats` - Uzbekistan exclusive: daily stats for all scores from all players in the country.
 * `/track [users1-3]` - bot notifies you about new top50 scores of these players.

@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using SosuBot.Configuration;
@@ -9,12 +10,16 @@ using SosuBot.Helpers;
 using SosuBot.Monitoring;
 using SosuBot.Localization;
 using SosuBot.Services;
+using SosuBot.Services.Synchronization;
 using SosuBot.TelegramHandlers.Abstract;
+using SosuBot.TelegramHandlers.Callbacks;
 using SosuBot.TelegramHandlers.Commands;
 using SosuBot.TelegramHandlers.Text;
+using StackExchange.Redis;
 using Telegram.Bot;
 using Telegram.Bot.Polling;
 using Telegram.Bot.Types;
+using Telegram.Bot.Types.Enums;
 using DummyCallback = SosuBot.TelegramHandlers.Callbacks.DummyCallback;
 
 // ReSharper disable ConvertTypeCheckPatternToNullCheck
@@ -87,17 +92,26 @@ public class UpdateHandler(
 
     private async Task<bool> IsBlockedTopicAsync(Update update, CancellationToken cancellationToken)
     {
+        if (update.CallbackQuery?.Data?.StartsWith(
+                $"{GroupCommandLimitsCallback.Command} ",
+                StringComparison.Ordinal) == true)
+        {
+            return false;
+        }
+
         Message? message = update.Message ?? update.CallbackQuery?.Message;
         if (message?.MessageThreadId is not { } topicId)
             return false;
 
         string? text = message.Text ?? message.Caption;
-        if (text is not null &&
-            text.IsCommand() &&
-            text.GetCommand().RemoveUsernamePostfix(botConfig.Value.Username)
-                .Equals(TopicBotCommand.Commands[0], StringComparison.OrdinalIgnoreCase))
+        if (text is not null && text.IsCommand())
         {
-            return false;
+            string command = text.GetCommand().RemoveUsernamePostfix(botConfig.Value.Username);
+            if (command.Equals(TopicBotCommand.Commands[0], StringComparison.OrdinalIgnoreCase) ||
+                command.Equals(BotCommandCatalog.LimitsCommand, StringComparison.OrdinalIgnoreCase))
+            {
+                return false;
+            }
         }
 
         TelegramChat? chat = await database.TelegramChats
@@ -164,6 +178,9 @@ public class UpdateHandler(
         // Add new chat and update chat members
         await database.AddOrUpdateTelegramChat(msg, logger, cancellationToken);
 
+        if (await IsMediaIgnoredAsync(msg, cancellationToken))
+            return;
+
         if (msg.Text == null)
         {
             if (msg.Caption != null)
@@ -224,6 +241,13 @@ public class UpdateHandler(
             : "unknown";
         long startedAt = System.Diagnostics.Stopwatch.GetTimestamp();
         string status = "success";
+        TelegramChat? chatSettings = msg.Chat.Type is ChatType.Group or ChatType.Supergroup
+            ? await database.TelegramChats.FirstOrDefaultAsync(
+                chat => chat.ChatId == msg.Chat.Id,
+                cancellationToken)
+            : null;
+        bool restrictionsEnabled = chatSettings?.CommandRestrictionsEnabled == true;
+        string canonicalCommand = BotCommandCatalog.Canonicalize(command);
 
         executableCommand.SetContext(
             new CommandContext<Message>(
@@ -234,6 +258,55 @@ public class UpdateHandler(
 
         try
         {
+            if (restrictionsEnabled)
+            {
+                if (BotCommandCatalog.IsDisabled(command, chatSettings!.DisabledCommands))
+                {
+                    status = "ignored";
+                    await SendEphemeralNoticeAsync(
+                        botClient,
+                        msg,
+                        string.Format(
+                            database.GetLocalization(msg.Chat.Id).groupLimits_commandDisabled,
+                            canonicalCommand));
+                    return;
+                }
+
+                if (chatSettings.CommandCooldownSeconds > 0)
+                {
+                    bool isAllowed;
+                    try
+                    {
+                        TokenBucketRateLimiter rateLimiter = serviceProvider
+                            .GetRequiredService<RateLimiterFactory>()
+                            .Get(RateLimiterFactory.RateLimitPolicy.Command);
+                        isAllowed = await rateLimiter.IsAllowedWithCooldownAsync(
+                            $"{msg.Chat.Id}:{msg.From!.Id}",
+                            chatSettings.CommandCooldownSeconds);
+                    }
+                    catch (RedisException exception)
+                    {
+                        logger.LogError(exception, "Could not check group command cooldown");
+                        status = "ignored";
+                        await SendEphemeralNoticeAsync(
+                            botClient,
+                            msg,
+                            database.GetLocalization(msg.Chat.Id).groupLimits_serviceUnavailable);
+                        return;
+                    }
+
+                    if (!isAllowed)
+                    {
+                        status = "ignored";
+                        await SendEphemeralNoticeAsync(
+                            botClient,
+                            msg,
+                            database.GetLocalization(msg.Chat.Id).groupLimits_rateLimited);
+                        return;
+                    }
+                }
+            }
+
             await executableCommand.BeforeExecuteAsync();
             await executableCommand.ExecuteAsync();
             await database.SaveChangesAsync(cancellationToken);
@@ -255,11 +328,89 @@ public class UpdateHandler(
         }
         finally
         {
-            await commandUsageRecorder.RecordAsync(
-                recordedCommand,
-                status,
-                System.Diagnostics.Stopwatch.GetElapsedTime(startedAt),
-                cancellationToken);
+            try
+            {
+                if (restrictionsEnabled)
+                    await DeleteIncomingCommandAsync(botClient, msg, cancellationToken);
+            }
+            finally
+            {
+                await commandUsageRecorder.RecordAsync(
+                    recordedCommand,
+                    status,
+                    System.Diagnostics.Stopwatch.GetElapsedTime(startedAt),
+                    cancellationToken);
+            }
+        }
+    }
+
+    private async Task<bool> IsMediaIgnoredAsync(Message message, CancellationToken cancellationToken)
+    {
+        if (message.Chat.Type is not (ChatType.Group or ChatType.Supergroup) ||
+            !(message.Animation is not null ||
+              message.Audio is not null ||
+              message.Document is not null ||
+              message.Photo is not null ||
+              message.Sticker is not null ||
+              message.Video is not null ||
+              message.VideoNote is not null ||
+              message.Voice is not null))
+        {
+            return false;
+        }
+
+        TelegramChat? settings = await database.TelegramChats.FirstOrDefaultAsync(
+            chat => chat.ChatId == message.Chat.Id,
+            cancellationToken);
+        return settings?.CommandRestrictionsEnabled == true && settings.IgnoreMedia;
+    }
+
+    private async Task SendEphemeralNoticeAsync(
+        ITelegramBotClient botClient,
+        Message message,
+        string text)
+    {
+        if (message.From is not { } user)
+            return;
+
+        await botClient.SendMessage(
+            message.Chat.Id,
+            text,
+            parseMode: Telegram.Bot.Types.Enums.ParseMode.Html,
+            ephemeralMessageParameters: new Telegram.Bot.Types.EphemeralMessageParameters
+            {
+                ReceiverUserId = user.Id
+            });
+    }
+
+    private async Task DeleteIncomingCommandAsync(
+        ITelegramBotClient botClient,
+        Message message,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            if (message.EphemeralMessageId is { } ephemeralMessageId &&
+                message.ReceiverUser is { } receiver)
+            {
+                await botClient.DeleteEphemeralMessage(
+                    message.Chat.Id,
+                    receiver.Id,
+                    ephemeralMessageId,
+                    cancellationToken);
+            }
+            else
+            {
+                await botClient.DeleteMessage(message.Chat.Id, message.MessageId, cancellationToken);
+            }
+        }
+        catch (Telegram.Bot.Exceptions.ApiRequestException exception)
+        {
+            logger.LogWarning(exception, "Could not delete a group command");
+            await SendEphemeralNoticeAsync(
+                botClient,
+                message,
+                database.GetLocalization(message.Chat.Id).groupLimits_deleteFailed);
         }
     }
 
