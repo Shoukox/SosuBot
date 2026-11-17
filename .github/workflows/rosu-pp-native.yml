@@ -4,13 +4,13 @@ on:
   push:
     branches: [master]
     paths:
-      - "SosuBot.PerformanceCalculator/Calculators/Rosu/native/**"
+      - "SosuBot.PerformanceCalculator/Calculators/Rosu/Native/**"
       - "SosuBot.PerformanceCalculator/Calculators/Rosu/runtimes/**"
       - ".github/workflows/rosu-pp-native.yml"
   pull_request:
     branches: [master]
     paths:
-      - "SosuBot.PerformanceCalculator/Calculators/Rosu/native/**"
+      - "SosuBot.PerformanceCalculator/Calculators/Rosu/Native/**"
       - "SosuBot.PerformanceCalculator/Calculators/Rosu/runtimes/**"
       - ".github/workflows/rosu-pp-native.yml"
   workflow_dispatch:
@@ -63,17 +63,17 @@ jobs:
       - name: Cache Cargo dependencies
         uses: Swatinem/rust-cache@v2
         with:
-          workspaces: SosuBot.PerformanceCalculator/Calculators/Rosu/native/rosu-pp-native -> target
+          workspaces: SosuBot.PerformanceCalculator/Calculators/Rosu/Native/rosu-pp-native -> target
           key: ${{ matrix.target }}
 
       - name: Build release library
-        working-directory: SosuBot.PerformanceCalculator/Calculators/Rosu/native/rosu-pp-native
+        working-directory: SosuBot.PerformanceCalculator/Calculators/Rosu/Native/rosu-pp-native
         run: cargo build --release --locked --target ${{ matrix.target }}
 
       - name: Upload native library
         uses: actions/upload-artifact@v4
         with:
           name: rosu-pp-native-${{ matrix.rid }}-v0.1.0
-          path: SosuBot.PerformanceCalculator/Calculators/Rosu/native/rosu-pp-native/target/${{ matrix.target }}/release/${{ matrix.artifact }}
+          path: SosuBot.PerformanceCalculator/Calculators/Rosu/Native/rosu-pp-native/target/${{ matrix.target }}/release/${{ matrix.artifact }}
           if-no-files-found: error
           retention-days: 14

@@ -103,12 +103,13 @@ Redis 7.4, Prometheus и Grafana. Бот ходит в Telegram через со�
   `Calculators/Rosu/native/rosu-pp-native/` сейчас не отслеживается в сабмодуле, а Dockerfile и CI его ожидают.
 - CI (`.github/workflows/dotnet.yml`) ссылается на `SosuBot.PerformanceCalculator/native/rosu-pp-native` и
   `.../runtimes/linux-x64`, а реальный путь `Calculators/Rosu/native/...` и `Calculators/Rosu/runtimes/...`.
-- **ImageSharp закреплён на 3.1.12 / Drawing 2.1.7.** Начиная с ImageSharp 3.2.0 / 4.x и Drawing 2.2.0 / 3.x
-  Release-сборка требует лицензионный ключ Six Labors (`SixLaborsLicenseKey` или `sixlabors.lic`), иначе падает
-  таргет `SixLabors_ValidateLicense`. Известные CVE версии 3.1.x подавлены в `Directory.Build.props` и закрыты на
-  уровне кода в `SosuBot.Graphics/SafeImageDecoding.cs`: только PNG/JPEG/GIF/WebP, метаданные и ICC не разбираются.
-  Любое декодирование изображений должно идти через `SafeImageDecoding.Load`. Если появится ключ и вы перейдёте на
-  новые версии, удалите подавления. `ppy.osu.Game` тоже использует ImageSharp 3.1.x.
+- **ImageSharp 3.2.0 / Drawing 2.2.0 требуют лицензию Six Labors.** Без ключа Release-сборка `SosuBot.Graphics`
+  (единственного проекта с прямой ссылкой на эти пакеты) падает на таргете `SixLabors_ValidateLicense`. Ключ не
+  коммитится: `Directory.Build.props` берёт его из `$(SixLaborsLicenseKey)` (свойство или переменная окружения) или
+  из `.secrets/sixlabors.lic`. Docker-сборка бота монтирует файл как BuildKit secret `sixlabors_license` (Compose:
+  `build.secrets`, CI: секрет репозитория `SIXLABORS_LICENSE_KEY`). Остаёмся на линейке 3.x, потому что `ppy.osu.Game`
+  собран под ImageSharp 3.1.x. Декодирование изображений всё равно идёт только через `SafeImageDecoding.Load`
+  (только PNG/JPEG/GIF/WebP, без метаданных и ICC).
 - `Directory.Build.props` в корне действует на все проекты, включая сабмодуль. Dockerfile копируют его перед
   `dotnet restore`. При добавлении нового Dockerfile сделай так же.
 - Остаёмся на .NET 10 LTS: EF Core 11 требует `net11.0`, а стабильного `Npgsql.EntityFrameworkCore.PostgreSQL` 11 пока

@@ -87,6 +87,8 @@ jobs:
           file: ${{ matrix.dockerfile }}
           push: false
           tags: sosubot/${{ matrix.name }}:ci
+          secrets: |
+            sixlabors_license=${{ secrets.SIXLABORS_LICENSE_KEY }}
           cache-from: type=gha,scope=${{ matrix.name }}
           cache-to: type=gha,mode=max,scope=${{ matrix.name }}
 
@@ -102,9 +104,12 @@ jobs:
           submodules: recursive
 
       - name: Build smoke image
+        env:
+          SIXLABORS_LICENSE_KEY: ${{ secrets.SIXLABORS_LICENSE_KEY }}
         run: >-
           docker build
           --file SosuBot/Dockerfile
+          --secret id=sixlabors_license,env=SIXLABORS_LICENSE_KEY
           --target calculator-smoke
           --tag sosubot/rosu-pp-smoke:ci
           .

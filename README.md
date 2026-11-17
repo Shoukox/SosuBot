@@ -102,10 +102,18 @@ Start the bot stack with Docker Compose:
 
 First, create `.secrets/.db_password` containing only the PostgreSQL password. Compose mounts
 this file into PostgreSQL and the two application images; the password does not need to be
-duplicated in the container environment. Protect all local secret files:
+duplicated in the container environment.
+
+Also create `.secrets/sixlabors.lic` containing only your Six Labors license key. ImageSharp 3.2+
+refuses to build in Release without it. Local `dotnet build` picks the file up automatically
+(or set the `SixLaborsLicenseKey` environment variable), and Compose passes it to the image build as
+a BuildKit secret, so it never ends up in an image layer. In GitHub Actions, store the key as the
+`SIXLABORS_LICENSE_KEY` repository secret (and as a Dependabot secret if Dependabot PRs should pass CI).
+
+Protect all local secret files:
 
 ```bash
-chmod 600 .secrets/.db_password \
+chmod 600 .secrets/.db_password .secrets/sixlabors.lic \
   SosuBot/appsettings.json \
   SosuBot.ScoresObserver/appsettings.json
 ```
@@ -408,7 +416,7 @@ Core frameworks and packages currently used in this repository:
 * **Serilog.Extensions.Logging.File** (`3.0.0`)
 * **Sentry.Extensions.Logging** (`6.12.1`)
 * **System.Threading.RateLimiting** (`10.0.15`)
-* **SixLabors.ImageSharp** (`3.1.12`) / **ImageSharp.Drawing** (`2.1.7`)
+* **SixLabors.ImageSharp** (`3.2.0`) / **ImageSharp.Drawing** (`2.2.0`)
 * **ppy.osu rulesets** (`2026.1026.0`)
 
 > Versions above are taken from the current `.csproj` files and may change over time.

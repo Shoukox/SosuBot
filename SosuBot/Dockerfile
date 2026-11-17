@@ -4,8 +4,8 @@
 # not flow into the final image.
 FROM rust:1.94.0-bookworm AS native-build
 WORKDIR /src/rosu-pp-native
-COPY ["SosuBot.PerformanceCalculator/Calculators/Rosu/native/rosu-pp-native/Cargo.toml", "SosuBot.PerformanceCalculator/Calculators/Rosu/native/rosu-pp-native/Cargo.lock", "SosuBot.PerformanceCalculator/Calculators/Rosu/native/rosu-pp-native/rust-toolchain.toml", "./"]
-COPY ["SosuBot.PerformanceCalculator/Calculators/Rosu/native/rosu-pp-native/src", "./src"]
+COPY ["SosuBot.PerformanceCalculator/Calculators/Rosu/Native/rosu-pp-native/Cargo.toml", "SosuBot.PerformanceCalculator/Calculators/Rosu/Native/rosu-pp-native/Cargo.lock", "SosuBot.PerformanceCalculator/Calculators/Rosu/Native/rosu-pp-native/rust-toolchain.toml", "./"]
+COPY ["SosuBot.PerformanceCalculator/Calculators/Rosu/Native/rosu-pp-native/src", "./src"]
 RUN --mount=type=cache,target=/usr/local/cargo/registry \
     --mount=type=cache,target=/usr/local/cargo/git \
     cargo build --release --locked
@@ -30,12 +30,15 @@ RUN dotnet restore "./SosuBot/SosuBot.csproj" \
 COPY . .
 COPY --from=native-build /src/rosu-pp-native/target/release/librosu_pp_native.so /src/SosuBot.PerformanceCalculator/Calculators/Rosu/runtimes/linux-x64/native/librosu_pp_native.so
 WORKDIR "/src/SosuBot"
-RUN dotnet build "./SosuBot.csproj" -c $BUILD_CONFIGURATION -o /app/build
+# The Six Labors license is a BuildKit secret, so it never ends up in an image layer.
+RUN --mount=type=secret,id=sixlabors_license,target=/src/.secrets/sixlabors.lic \
+    dotnet build "./SosuBot.csproj" -c $BUILD_CONFIGURATION -o /app/build
 
 # This stage is used to publish the service project to be copied to the final stage
 FROM build AS publish
 ARG BUILD_CONFIGURATION=Release
-RUN dotnet publish "./SosuBot.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
+RUN --mount=type=secret,id=sixlabors_license,target=/src/.secrets/sixlabors.lic \
+    dotnet publish "./SosuBot.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
 
 # Runnable smoke target that uses the same runtime base and native asset as the
 # production image. CI builds and runs this target directly.

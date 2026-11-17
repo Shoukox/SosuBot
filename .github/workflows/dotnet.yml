@@ -19,6 +19,8 @@ env:
   DOTNET_NOLOGO: true
   DOTNET_SKIP_FIRST_TIME_EXPERIENCE: 1
   NUGET_XMLDOC_MODE: skip
+  # Required by SixLabors.ImageSharp 3.2+ for Release builds (read by MSBuild as $(SixLaborsLicenseKey)).
+  SixLaborsLicenseKey: ${{ secrets.SIXLABORS_LICENSE_KEY }}
 
 jobs:
   build-and-test:
