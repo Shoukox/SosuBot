@@ -23,10 +23,8 @@ public sealed class Russian : ILocalization
         $"/set [nickname] - добавить\\изменить свой ник в боте.\n" +
         $"/mode [gamemode] - изменить игровой режим по умолчанию.\n" +
         $"/user [nickname] - краткая информация об игроке с данным юзернеймом.\n" +
-        $"/userw [nickname] - то же самое в виде интерактивного виджета (только в личке с ботом).\n" +
         $"/userid [user_id] - краткая информация об игроке с данным user id.\n" +
         $"/last [nickname] [count] - последние сыгранные игры.\n" +
-        $"/lw [nickname] [count] - последние игры в виде rich-сообщения с обложками.\n" +
         $"/lastpassed [nickname] [count] - /last только для пасснутых скоров.\n" +
         $"/score [beatmap_link] - ваши рекорды на этой карте.\n" +
         $"/rnd [osu/mania/taiko/catch] - случайная карта выбранного режима (по умолчанию osu).\n" +

@@ -23,10 +23,8 @@ public sealed class Deutsch : ILocalization
         $"/set [nickname] - Nickname im Bot setzen/ändern.\n" +
         $"/mode [gamemode] - Standard-Spielmodus ändern.\n" +
         $"/user [nickname] - Kurzinfos zu einem Spieler per Username.\n" +
-        $"/userw [nickname] - dasselbe als interaktives Widget (nur im privaten Chat mit dem Bot).\n" +
         $"/userid [user_id] - Kurzinfos zu einem Spieler per User-ID.\n" +
         $"/last [nickname] [count] - letzte Plays.\n" +
-        $"/lw [nickname] [count] - letzte Plays als Rich-Nachricht mit Beatmap-Covern.\n" +
         $"/lastpassed [nickname] [count] - /last nur mit bestandenen Scores.\n" +
         $"/score [beatmap_link] - deine Records auf dieser Map.\n" +
         $"/rnd [osu/mania/taiko/catch] - zufällige Beatmap für den gewählten Modus (standardmäßig osu).\n" +

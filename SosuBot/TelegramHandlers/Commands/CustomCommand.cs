@@ -118,6 +118,14 @@ public sealed class CustomCommand : CommandBase<Message>
 
     public override async Task ExecuteAsync()
     {
+        // An admin command: like /msg it stays silent for everyone without access, so it does not reveal itself.
+        long senderId = Context.Update.From!.Id;
+        OsuUser? osuUserInDatabase = await _database.OsuUsers.FindAsync(senderId);
+        bool senderIsAdmin = osuUserInDatabase?.IsAdmin == true;
+        bool senderIsCreator = ChatModerationService.IsCreator(senderId);
+        if (!senderIsAdmin && !senderIsCreator)
+            return;
+
         var parameters = Context.Update.Text!.GetCommandParameters()!;
         if (parameters.Length == 0)
         {
@@ -131,11 +139,8 @@ public sealed class CustomCommand : CommandBase<Message>
         // able to acquire moderation powers through /c.
         if (ChatModerationService.IsModerationCommand(parameters[0]))
         {
-            if (!ChatModerationService.IsCreator(Context.Update.From!.Id))
-            {
-                await Context.Update.ReplyAsync(Context.BotClient, "Пшол вон!");
+            if (!senderIsCreator)
                 return;
-            }
 
             await _chatModerationService.ExecuteAsync(
                 Context.BotClient,
@@ -145,12 +150,8 @@ public sealed class CustomCommand : CommandBase<Message>
             return;
         }
 
-        OsuUser? osuUserInDatabase = await _database.OsuUsers.FindAsync(Context.Update.From!.Id);
-        if (osuUserInDatabase is null || !osuUserInDatabase.IsAdmin)
-        {
-            await Context.Update.ReplyAsync(Context.BotClient, "Пшол вон!");
+        if (!senderIsAdmin)
             return;
-        }
 
         if (parameters[0].Equals("markdown", StringComparison.OrdinalIgnoreCase))
         {

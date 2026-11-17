@@ -23,10 +23,8 @@ public sealed class English : ILocalization
         $"/set [nickname] - add/change your nickname in the bot.\n" +
         $"/mode [gamemode] - change your default game mode.\n" +
         $"/user [nickname] - short info about a player by username.\n" +
-        $"/userw [nickname] - the same as an interactive widget (private chat with the bot only).\n" +
         $"/userid [user_id] - short info about a player by user id.\n" +
         $"/last [nickname] [count] - latest plays.\n" +
-        $"/lw [nickname] [count] - latest plays as a rich message with beatmap covers.\n" +
         $"/lastpassed [nickname] [count] - /last for passed scores only.\n" +
         $"/score [beatmap_link] - your records on this map.\n" +
         $"/rnd [osu/mania/taiko/catch] - random beatmap for a selected mode (osu by default).\n" +
