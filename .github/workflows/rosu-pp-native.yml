@@ -71,7 +71,7 @@ jobs:
         run: cargo build --release --locked --target ${{ matrix.target }}
 
       - name: Upload native library
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: rosu-pp-native-${{ matrix.rid }}-v0.1.0
           path: SosuBot.PerformanceCalculator/Calculators/Rosu/Native/rosu-pp-native/target/${{ matrix.target }}/release/${{ matrix.artifact }}
