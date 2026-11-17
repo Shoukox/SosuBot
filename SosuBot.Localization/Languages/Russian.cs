@@ -338,4 +338,8 @@ public sealed class Russian : ILocalization
     public string richLast_completion => "пройдено";
     public string ai_busy => "секу, я ещё прошлое дописываю";
     public string ai_failed => "ой, у меня что-то зависло( напиши чуть позже";
+    public string ai_inDevelopment => "Команда /ai ещё в разработке. Скоро будет доступна!";
+    public string custom_usage =>
+        "Примеры: /c markdown\n/c rich\n/c json\n/c ai текст (или /ai текст)\n/c kick (ответом на сообщение)";
+    public string custom_richFailed => "Telegram не принял rich-сообщение: <code>{}</code>";
 }

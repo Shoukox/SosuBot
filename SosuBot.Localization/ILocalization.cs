@@ -245,4 +245,7 @@ public interface ILocalization
     public string richLast_completion { get; }
     public string ai_busy { get; }
     public string ai_failed { get; }
+    public string ai_inDevelopment { get; }
+    public string custom_usage { get; }
+    public string custom_richFailed { get; }
 }

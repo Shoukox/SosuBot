@@ -331,4 +331,8 @@ public sealed class Deutsch : ILocalization
     public string richLast_completion => "abgeschlossen";
     public string ai_busy => "sekunde, ich schreib noch meine letzte nachricht fertig";
     public string ai_failed => "oh, bei mir hängt gerade was( schreib mir später nochmal";
+    public string ai_inDevelopment => "Der Befehl /ai ist noch in Entwicklung. Bald verfügbar!";
+    public string custom_usage =>
+        "Beispiele: /c markdown\n/c rich\n/c json\n/c ai Text (oder /ai Text)\n/c kick (als Antwort auf eine Nachricht)";
+    public string custom_richFailed => "Telegram hat die Rich-Nachricht abgelehnt: <code>{}</code>";
 }

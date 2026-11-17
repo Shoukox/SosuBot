@@ -338,4 +338,8 @@ public sealed class English : ILocalization
     public string richLast_completion => "completed";
     public string ai_busy => "sec, still finishing my last message";
     public string ai_failed => "oops, something froze on my end( try again a bit later";
+    public string ai_inDevelopment => "The /ai command is still in development. Coming soon!";
+    public string custom_usage =>
+        "Examples: /c markdown\n/c rich\n/c json\n/c ai text (or /ai text)\n/c kick (in reply to a message)";
+    public string custom_richFailed => "Telegram refused the rich message: <code>{}</code>";
 }

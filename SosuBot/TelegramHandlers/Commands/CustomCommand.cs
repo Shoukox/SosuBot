@@ -95,6 +95,51 @@ public sealed class CustomCommand : CommandBase<Message>
         \\ \_ \* \[ \] \( \) \~ \` \> \# \+ \- \= \| \{ \} \. \!
         """;
 
+    /// <summary>Every tag of Telegram's rich HTML (Bot API 10.4 sendRichMessage), for /c rich.</summary>
+    private const string RichExamples = """
+        <u>underlined text</u>, <ins>underlined text</ins>
+        <sub>subscript text</sub>
+        <sup>superscript text</sup>
+        <a name="chapter-1"></a>
+        <aside>Pull quote<cite>The Author</cite></aside>
+        <details open><summary>Title</summary>Content</details>
+        <tg-map lat="41.9" long="12.5" zoom="14"/>
+        <tg-collage><img src="https://telegram.org/example/photo.jpg"/><figcaption>Caption<cite>The Author</cite></figcaption></tg-collage>
+        <tg-slideshow><img src="https://telegram.org/example/photo.jpg"/><video src="https://telegram.org/example/video.mp4"/><figcaption>Slideshow caption<cite>The Author</cite></figcaption></tg-slideshow>
+        <p>Inline buttons:
+          <tg-button type="url" style="success" url="https://t.me">url</tg-button>
+          <tg-button type="url" url="tg://user?id=777000">user</tg-button>
+          <tg-button type="callback_data" style="link" data="callback">callback with the date <tg-time unix="1647531900" format="wDT">22:45 tomorrow</tg-time> and the custom emoji <tg-emoji emoji-id="5368324170671202286">👍</tg-emoji></tg-button>
+          <tg-button type="web_app" style="danger" url="https://telegram.org">Mini App (private chats only)</tg-button>
+          <tg-button type="login_url" url="https://t.me" forward-text="forward text" request-write-access>login (requires domain set up via @BotFather)</tg-button>
+          <tg-button type="switch_inline_query" style="primary" query="inline">inline</tg-button>
+          <tg-button type="switch_inline_query_current_chat" query="inline 2">inline 2</tg-button>
+          <tg-button type="switch_inline_query_chosen_chat" query="inline 3" allow-user-chats allow-bot-chats allow-group-chats allow-channel-chats>inline 3</tg-button>
+          <tg-button type="copy_text" text="...copy">Copy</tg-button>
+          <tg-button type="disabled">Disabled</tg-button>
+        </p>
+        <tg-button-row align="left">
+          <tg-button type="url" url="https://t.me">url</tg-button>
+          <tg-button type="url" style="success" url="tg://user?id=777000">user</tg-button>
+          <tg-button type="callback_data" style="link" data="callback">callback</tg-button>
+        </tg-button-row>
+        <tg-button-row align="center">
+          <tg-button type="web_app" url="https://telegram.org">Mini App (private chats only)</tg-button>
+        </tg-button-row>
+        <tg-button-row align="center">
+          <tg-button type="login_url" style="danger" url="https://t.me" forward-text="forward text" request-write-access>login (requires domain set up via @BotFather)</tg-button>
+        </tg-button-row>
+        <tg-button-row align="right">
+          <tg-button type="switch_inline_query" query="inline">inline</tg-button>
+          <tg-button type="switch_inline_query_current_chat" query="inline 2">inline 2</tg-button>
+          <tg-button type="switch_inline_query_chosen_chat" query="inline 3" allow-user-chats allow-group-chats allow-channel-chats>inline 3</tg-button>
+        </tg-button-row>
+        <tg-button-row>
+          <tg-button type="copy_text" text="...copy">Copy</tg-button>
+          <tg-button type="disabled" style="primary">Disabled</tg-button>
+        </tg-button-row>
+        """;
+
     private AiChatResponder _aiChatResponder = null!;
     private BanchoApiV2 _osuApiV2 = null!;
     private ScoreHelper _scoreHelper = null!;
@@ -130,8 +175,7 @@ public sealed class CustomCommand : CommandBase<Message>
         var parameters = Context.Update.Text!.GetCommandParameters()!;
         if (parameters.Length == 0)
         {
-            await Context.Update.ReplyAsync(Context.BotClient,
-                "Примеры: /c markdown\n/c json\n/c ai текст\n/c kick (ответом на сообщение)");
+            await Context.Update.ReplyAsync(Context.BotClient, Context.GetLocalization().custom_usage);
             return;
         }
 
@@ -157,6 +201,12 @@ public sealed class CustomCommand : CommandBase<Message>
         if (parameters[0].Equals("markdown", StringComparison.OrdinalIgnoreCase))
         {
             await Context.Update.ReplyAsync(Context.BotClient, MarkdownExamples, parseMode: ParseMode.MarkdownV2);
+            return;
+        }
+
+        if (parameters[0].Equals("rich", StringComparison.OrdinalIgnoreCase))
+        {
+            await SendRichExamplesAsync();
             return;
         }
 
@@ -538,6 +588,23 @@ public sealed class CustomCommand : CommandBase<Message>
 
             await _database.SaveChangesAsync();
             await waitMessage.EditAsync(Context.BotClient, $"Done");
+        }
+    }
+
+    /// <summary>Sends <see cref="RichExamples" /> as a rich message; shows Telegram's error if it refuses.</summary>
+    private async Task SendRichExamplesAsync()
+    {
+        try
+        {
+            await Context.BotClient.SendRichMessage(Context.Update.Chat.Id, new InputRichMessage { Html = RichExamples },
+                replyParameters: new ReplyParameters { MessageId = Context.Update.MessageId },
+                cancellationToken: Context.CancellationToken);
+        }
+        catch (ApiRequestException exception)
+        {
+            _logger.LogWarning(exception, "[/c rich] Telegram refused the rich message");
+            await Context.Update.ReplyAsync(Context.BotClient,
+                Context.GetLocalization().custom_richFailed.Fill([exception.Message.EncodeHtml()!]));
         }
     }
 }

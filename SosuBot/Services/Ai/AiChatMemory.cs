@@ -42,6 +42,7 @@ public sealed partial class AiChatMemory
     public int ChatCount => _chats.Count;
 
     /// <summary>Remembers a message somebody sent to a chat. Admin commands other than /c ai are skipped.</summary>
+    /// <remarks>/ai and /c ai are remembered as the question alone.</remarks>
     public void Remember(Message message)
     {
         if (message.From is null)
@@ -88,12 +89,15 @@ public sealed partial class AiChatMemory
         string? text = message.Text ?? message.Caption;
         if (text is not null)
         {
-            if (!text.StartsWith("/c", StringComparison.OrdinalIgnoreCase) || text.Length > 2 && !char.IsWhiteSpace(text[2]) && text[2] != '@')
-                return text;
-
-            // Admin commands stay private; only what was asked of the AI is kept.
+            // Of /ai and /c ai only what was asked of the AI is kept.
             Match ai = AiCommandPattern().Match(text);
-            return ai.Success ? ai.Groups["prompt"].Value.Trim() is { Length: > 0 } prompt ? prompt : "(позвали тебя)" : null;
+            if (ai.Success)
+                return ai.Groups["prompt"].Value.Trim() is { Length: > 0 } prompt ? prompt : "(позвали тебя)";
+
+            // Other admin commands stay private.
+            bool adminCommand = text.StartsWith("/c", StringComparison.OrdinalIgnoreCase) &&
+                                (text.Length == 2 || char.IsWhiteSpace(text[2]) || text[2] == '@');
+            return adminCommand ? null : text;
         }
 
         return message.Type switch
@@ -111,7 +115,7 @@ public sealed partial class AiChatMemory
         };
     }
 
-    /// <summary>"/c ai text" and "/c@bot ai text": the text after "ai", line breaks included.</summary>
+    /// <summary>"/ai text", "/c ai text" and their "@bot" forms: the text after "ai", line breaks included.</summary>
     public static string? ExtractAiCommandPrompt(string text)
     {
         Match match = AiCommandPattern().Match(text);
@@ -167,7 +171,7 @@ public sealed partial class AiChatMemory
         return text.Length <= maxLength ? text : text[..maxLength] + "…";
     }
 
-    [GeneratedRegex(@"^/c(?:@\w+)?\s+ai(?:\s+(?<prompt>[\s\S]*))?$", RegexOptions.IgnoreCase)]
+    [GeneratedRegex(@"^/(?:c(?:@\w+)?\s+ai|ai(?:@\w+)?)(?:\s+(?<prompt>[\s\S]*))?$", RegexOptions.IgnoreCase)]
     private static partial Regex AiCommandPattern();
 
     private sealed class ChatLog

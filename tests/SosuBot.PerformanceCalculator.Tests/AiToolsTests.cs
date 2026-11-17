@@ -11,9 +11,9 @@ namespace SosuBot.PerformanceCalculator.Tests;
 public sealed class AiToolsTests
 {
     // Registered but deliberately not documented: admin commands stay secret, /userw and /lw are hidden
-    // (Telegram forbade sendWidget for ordinary bots), /ll and /postvideo are not in /help.
+    // (Telegram forbade sendWidget for ordinary bots), /ll and /postvideo are not in /help, /ai is in development.
     private static readonly HashSet<string> UndocumentedCommands =
-        ["/c", "/db", "/del", "/msg", "/userw", "/lw", "/ll", "/postvideo"];
+        ["/c", "/db", "/del", "/msg", "/userw", "/lw", "/ll", "/postvideo", "/ai"];
 
     private static readonly AiToolContext GroupContext = new(-100, PrivateChat: false, SpeakerId: 1, _ => Task.FromResult(true));
 

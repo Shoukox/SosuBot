@@ -99,6 +99,8 @@ public class ConfigureBotService(IServiceProvider serviceProvider) : IHostedServ
         RegisterCommand<MsgCommand>(MsgCommand.Commands);
         RegisterCommand<DbCommand>(DbCommand.Commands);
         RegisterCommand<CustomCommand>(CustomCommand.Commands);
+        // In development: answers admins only and is kept out of /help and the command menu for now.
+        RegisterCommand<AiCommand>(AiCommand.Commands);
         RegisterCommand<DeleteCommand>(DeleteCommand.Commands);
         RegisterCommand<GetDailyStatisticsCommand>(GetDailyStatisticsCommand.Commands);
         RegisterCommand<GetWeeklyStatisticsCommand>(GetWeeklyStatisticsCommand.Commands);

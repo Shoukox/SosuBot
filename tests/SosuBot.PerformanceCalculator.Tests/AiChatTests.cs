@@ -66,6 +66,21 @@ public sealed class AiChatTests
     }
 
     [Fact]
+    public void TheAiCommandIsRememberedAsItsQuestion()
+    {
+        var memory = new AiChatMemory();
+        memory.Remember(GroupMessage(1, "/ai кто топ1 в мире?"));
+        memory.Remember(GroupMessage(2, "/ai@sosubot"));
+        memory.Remember(GroupMessage(3, "/aim прокачать"));
+        memory.Remember(GroupMessage(4, "/c"));
+
+        Assert.Equal(["кто топ1 в мире?", "(позвали тебя)", "/aim прокачать"], memory.GetRecent(-100).Select(m => m.Text));
+        Assert.Equal("как\nдела", AiChatMemory.ExtractAiCommandPrompt("/ai как\nдела"));
+        Assert.Equal("", AiChatMemory.ExtractAiCommandPrompt("/ai@sosubot"));
+        Assert.Null(AiChatMemory.ExtractAiCommandPrompt("/aim"));
+    }
+
+    [Fact]
     public void MemoryRemembersRepliesAndTheAssistantsOwnMessages()
     {
         var memory = new AiChatMemory();
