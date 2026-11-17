@@ -3,6 +3,7 @@ using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using OpenAI.Responses;
 using osu.Game.Rulesets.Scoring;
@@ -20,18 +21,27 @@ using GameMod = osu.Game.Rulesets.Mods.Mod;
 
 namespace SosuBot.Services.Ai;
 
-/// <summary>What a tool call may do in the chat it was made from.</summary>
-public sealed record AiToolContext(Func<string, Task<bool>> ReactAsync);
+/// <summary>The chat a tool call was made from and what it may do there.</summary>
+/// <param name="ChatId">The Telegram chat the AI answers in.</param>
+/// <param name="PrivateChat">The chat is the private chat with the speaker.</param>
+/// <param name="SpeakerId">Telegram id of the person the AI answers.</param>
+public sealed record AiToolContext(long ChatId, bool PrivateChat, long SpeakerId, Func<string, Task<bool>> ReactAsync);
+
+/// <summary>A tool the model may call.</summary>
+/// <param name="Schema">Strict JSON schema of its arguments: every property is required, nullable when optional.</param>
+public sealed record AiToolDefinition(string Name, string Description, string Schema);
 
 /// <summary>
-/// The osu! tools the AI can call. Every result is compact JSON with only what a reply needs, so tool output
-/// stays cheap in tokens. Errors come back as <c>{"error": ...}</c> for the model to explain in its own words.
+/// The osu! and bot tools the AI can call. Every result is compact JSON with only what a reply needs, so tool
+/// output stays cheap in tokens. Errors come back as <c>{"error": ...}</c> for the model to explain in its own words.
 /// </summary>
-public sealed class AiToolbox(
+public sealed partial class AiToolbox(
     BanchoApiV2 osuApi,
     CachingHelper cachingHelper,
     BeatmapsService beatmapsService,
     IPerformanceCalculator performanceCalculator,
+    IServiceScopeFactory scopeFactory,
+    TelegramUserDirectory telegramUsers,
     ILogger<AiToolbox> logger)
 {
     /// <summary>Reactions a bot may set without Premium; the ones that fit a playful persona.</summary>
@@ -51,7 +61,8 @@ public sealed class AiToolbox(
         PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower
     };
 
-    public IReadOnlyList<ResponseTool> Tools { get; } =
+    /// <summary>Every tool the model may call: its name, what it is for and its strict JSON schema.</summary>
+    public static readonly IReadOnlyList<AiToolDefinition> Definitions =
     [
         Tool("get_osu_user",
             "osu! profile of a player: pp, ranks, accuracy, play count and time, grade counts.",
@@ -131,17 +142,186 @@ public sealed class AiToolbox(
               "additionalProperties": false
             }
             """),
-        Tool("get_country_ranking",
-            "Top players of a country by pp.",
+        Tool("get_ranking",
+            "osu! rankings, global or of one country: players by pp (performance) or by ranked score (score), or countries by total pp (country). Use it for 'who is #1', 'best players of Uzbekistan', 'strongest country'.",
             """
             {
               "type": "object",
               "properties": {
-                "country_code": { "type": "string", "description": "Two-letter country code, e.g. UZ" },
+                "type": { "type": "string", "enum": ["performance", "score", "country"] },
                 "mode": { "type": "integer", "description": "0 std, 1 taiko, 2 catch, 3 mania" },
+                "country_code": { "type": ["string", "null"], "description": "Two-letter country code like UZ for one country; null for the whole world. Ignored for type country" },
                 "count": { "type": "integer", "description": "1-50" }
               },
-              "required": ["country_code", "mode", "count"],
+              "required": ["type", "mode", "country_code", "count"],
+              "additionalProperties": false
+            }
+            """),
+        Tool("search_wiki",
+            "Searches the official osu! wiki: game mechanics, mods, skills and terms (finger control, aim, streams, jumps, reading), history, tournaments, famous players and maps, rules. Returns page paths for get_wiki_page.",
+            """
+            {
+              "type": "object",
+              "properties": {
+                "query": { "type": "string", "description": "Search words, best in English, e.g. 'hit window', 'Hidden mod', 'osu! World Cup'" },
+                "locale": { "type": "string", "description": "Language of the conversation: ru, en, de, ...; uz and unknown languages use en" }
+              },
+              "required": ["query", "locale"],
+              "additionalProperties": false
+            }
+            """),
+        Tool("get_wiki_page",
+            "Reads an osu! wiki page as plain text. Without a section you get the outline and the beginning; ask for a section to read just that part. Falls back to English when there is no translation.",
+            """
+            {
+              "type": "object",
+              "properties": {
+                "path": { "type": "string", "description": "Wiki path from search_wiki or a wiki link, e.g. Gameplay/Game_modifier/Hidden" },
+                "locale": { "type": "string", "description": "ru, en, de, ..." },
+                "section": { "type": ["string", "null"], "description": "A heading from the outline; null for the outline and the beginning" }
+              },
+              "required": ["path", "locale", "section"],
+              "additionalProperties": false
+            }
+            """),
+        Tool("get_news",
+            "Latest posts of the official osu! news: tournaments, updates, events, featured artists, project news.",
+            """
+            {
+              "type": "object",
+              "properties": {
+                "limit": { "type": "integer", "description": "1-8" }
+              },
+              "required": ["limit"],
+              "additionalProperties": false
+            }
+            """),
+        Tool("get_news_post",
+            "The text of one osu! news post, by the slug from get_news.",
+            """
+            {
+              "type": "object",
+              "properties": {
+                "slug": { "type": "string", "description": "Post slug, e.g. 2026-11-01-osu-world-cup-2026-results" }
+              },
+              "required": ["slug"],
+              "additionalProperties": false
+            }
+            """),
+        Tool("get_changelog",
+            "Recent osu! releases and what changed in them: lazer (the current client), stable (osu! classic), cuttingedge (stable testing) or web (the website).",
+            """
+            {
+              "type": "object",
+              "properties": {
+                "stream": { "type": "string", "enum": ["lazer", "stable", "cuttingedge", "web"] },
+                "limit": { "type": "integer", "description": "Number of releases, 1-5" }
+              },
+              "required": ["stream", "limit"],
+              "additionalProperties": false
+            }
+            """),
+        Tool("get_spotlights",
+            "osu! spotlights (seasonal and themed ranking events with their own map pools). Without an id: the latest spotlights; with an id: the top players of that spotlight by ranked score on its maps.",
+            """
+            {
+              "type": "object",
+              "properties": {
+                "mode": { "type": "integer", "description": "0 std, 1 taiko, 2 catch, 3 mania" },
+                "spotlight_id": { "type": ["integer", "null"], "description": "Id from the list; null for the list" }
+              },
+              "required": ["mode", "spotlight_id"],
+              "additionalProperties": false
+            }
+            """),
+        Tool("get_beatmapset",
+            "A whole beatmapset: artist, title, mapper, status and ranked date, plays, favourites, genre, language, tags, nominators, all difficulties. Give one of the ids.",
+            """
+            {
+              "type": "object",
+              "properties": {
+                "beatmapset_id": { "type": ["integer", "null"], "description": "Set id, the number after /beatmapsets/ or /s/" },
+                "beatmap_id": { "type": ["integer", "null"], "description": "Any difficulty id of the set, the number after /b/ or after #" }
+              },
+              "required": ["beatmapset_id", "beatmap_id"],
+              "additionalProperties": false
+            }
+            """),
+        Tool("get_beatmap_leaderboard",
+            "Global top scores on a beatmap difficulty: who is #1, with what mods, accuracy and pp.",
+            """
+            {
+              "type": "object",
+              "properties": {
+                "beatmap_id": { "type": "integer" },
+                "mode": { "type": ["integer", "null"], "description": "0 std, 1 taiko, 2 catch, 3 mania for converts; null for the beatmap's own mode" },
+                "limit": { "type": "integer", "description": "1-10" }
+              },
+              "required": ["beatmap_id", "mode", "limit"],
+              "additionalProperties": false
+            }
+            """),
+        Tool("get_user_beatmap_score",
+            "A player's best score on one beatmap and its place on the global leaderboard.",
+            """
+            {
+              "type": "object",
+              "properties": {
+                "user": { "type": "string", "description": "osu! username or numeric user id" },
+                "beatmap_id": { "type": "integer" },
+                "mode": { "type": ["integer", "null"], "description": "0 std, 1 taiko, 2 catch, 3 mania; null for the beatmap's own mode" }
+              },
+              "required": ["user", "beatmap_id", "mode"],
+              "additionalProperties": false
+            }
+            """),
+        Tool("get_user_activity",
+            "A player's recent events: new #1-#1000 ranks on maps, lost #1s, medals, ranked or uploaded beatmaps, name changes, supporter.",
+            """
+            {
+              "type": "object",
+              "properties": {
+                "user": { "type": "string", "description": "osu! username or numeric user id" },
+                "limit": { "type": "integer", "description": "1-15" }
+              },
+              "required": ["user", "limit"],
+              "additionalProperties": false
+            }
+            """),
+        Tool("get_chat_ranking",
+            "Top players of the current group chat by pp, from the bot's own data (like /chatstats). Only works in groups.",
+            """
+            {
+              "type": "object",
+              "properties": {
+                "mode": { "type": "integer", "description": "0 std, 1 taiko, 2 catch, 3 mania" },
+                "count": { "type": "integer", "description": "1-20" }
+              },
+              "required": ["mode", "count"],
+              "additionalProperties": false
+            }
+            """),
+        Tool("get_bot_user",
+            "What the bot knows about a Telegram user. Without a username: the person writing to you, with their linked osu! account, default mode, last saved stats and the players tracked in this chat. With a @username of someone in this chat: only their linked osu! nickname and mode.",
+            """
+            {
+              "type": "object",
+              "properties": {
+                "telegram_username": { "type": ["string", "null"], "description": "Telegram @username of a chat member; null for the person writing to you" }
+              },
+              "required": ["telegram_username"],
+              "additionalProperties": false
+            }
+            """),
+        Tool("get_bot_help",
+            "The guide to SosuBot's commands: what each does, its parameters, aliases and examples. Use it to explain a command or to point to the right one.",
+            """
+            {
+              "type": "object",
+              "properties": {
+                "command": { "type": ["string", "null"], "description": "One command like /calc or /render; null for the whole guide" }
+              },
+              "required": ["command"],
               "additionalProperties": false
             }
             """),
@@ -159,6 +339,11 @@ public sealed class AiToolbox(
             """)
     ];
 
+    public IReadOnlyList<ResponseTool> Tools { get; } = Definitions
+        .Select(tool => (ResponseTool)ResponseTool.CreateFunctionTool(tool.Name, BinaryData.FromString(tool.Schema),
+            strictModeEnabled: true, functionDescription: tool.Description))
+        .ToArray();
+
     public async Task<string> ExecuteAsync(string name, BinaryData arguments, AiToolContext context,
         CancellationToken cancellationToken)
     {
@@ -172,7 +357,20 @@ public sealed class AiToolbox(
                 "get_beatmap" => await GetBeatmapAsync(args),
                 "search_beatmaps" => await SearchBeatmapsAsync(args, cancellationToken),
                 "calculate_pp" => await CalculatePpAsync(args, cancellationToken),
-                "get_country_ranking" => await GetCountryRankingAsync(args, cancellationToken),
+                "get_ranking" => await GetRankingAsync(args, cancellationToken),
+                "search_wiki" => await SearchWikiAsync(args, cancellationToken),
+                "get_wiki_page" => await GetWikiPageAsync(args, cancellationToken),
+                "get_news" => await GetNewsAsync(args, cancellationToken),
+                "get_news_post" => await GetNewsPostAsync(args, cancellationToken),
+                "get_changelog" => await GetChangelogAsync(args, cancellationToken),
+                "get_spotlights" => await GetSpotlightsAsync(args, cancellationToken),
+                "get_beatmapset" => await GetBeatmapsetAsync(args, cancellationToken),
+                "get_beatmap_leaderboard" => await GetBeatmapLeaderboardAsync(args, cancellationToken),
+                "get_user_beatmap_score" => await GetUserBeatmapScoreAsync(args, cancellationToken),
+                "get_user_activity" => await GetUserActivityAsync(args, cancellationToken),
+                "get_chat_ranking" => await GetChatRankingAsync(args, context, cancellationToken),
+                "get_bot_user" => await GetBotUserAsync(args, context, cancellationToken),
+                "get_bot_help" => GetBotHelp(args),
                 "react" => await context.ReactAsync(args.GetProperty("emoji").GetString() ?? "")
                     ? new { ok = true }
                     : new { error = "reaction not allowed in this chat" },
@@ -191,9 +389,8 @@ public sealed class AiToolbox(
         }
     }
 
-    private static ResponseTool Tool(string name, string description, string schema) =>
-        ResponseTool.CreateFunctionTool(name, BinaryData.FromString(schema), strictModeEnabled: true,
-            functionDescription: description);
+    private static AiToolDefinition Tool(string name, string description, string schema) =>
+        new(name, description, schema);
 
     private async Task<object> GetOsuUserAsync(JsonElement args)
     {
@@ -417,27 +614,45 @@ public sealed class AiToolbox(
         };
     }
 
-    private async Task<object> GetCountryRankingAsync(JsonElement args, CancellationToken cancellationToken)
-    {
-        string country = (args.GetProperty("country_code").GetString() ?? "uz").Trim().ToLowerInvariant();
-        var mode = (Playmode)Math.Clamp(args.GetProperty("mode").GetInt32(), 0, 3);
-        int count = Math.Clamp(args.GetProperty("count").GetInt32(), 1, 50);
-        List<UserStatistics>? ranking = await OsuApiHelper.GetUsersFromRanking(osuApi, mode, country, count,
-            cancellationToken);
-        return new
-        {
-            Country = country.ToUpperInvariant(),
-            Mode = mode.ToGamemode(),
-            Players = (ranking ?? []).Take(count).Select((s, index) => new
-            {
-                Place = index + 1,
-                s.User?.Username,
-                Pp = Round(s.Pp, 0),
-                Accuracy = Round(s.HitAccuracy, 2),
-                s.PlayCount
-            }).ToArray()
-        };
-    }
+    /// <summary>GET on osu! API v2; <paramref name="pathAndQuery" /> starts with "/". <c>null</c> on 404.</summary>
+    private async Task<T?> ApiAsync<T>(string pathAndQuery, CancellationToken cancellationToken) where T : JsonNode =>
+        await osuApi.MakeRequestAsync<T>(BanchoApiV2.ApiMainFunctionsBaseAddress.TrimEnd('/') + pathAndQuery,
+            HttpMethod.Get, cancellationToken: cancellationToken);
+
+    private static string? Str(JsonNode? node, string key) =>
+        node?[key] is JsonValue value && value.TryGetValue(out string? text) ? text : null;
+
+    private static long? Long(JsonNode? node, string key) =>
+        node?[key] is JsonValue value
+            ? value.TryGetValue(out long number) ? number
+            : value.TryGetValue(out double real) ? (long)real : null
+            : null;
+
+    private static double? Dbl(JsonNode? node, string key, int digits = 2) =>
+        node?[key] is JsonValue value && value.TryGetValue(out double number) ? Math.Round(number, digits) : null;
+
+    private static bool? Bool(JsonNode? node, string key) =>
+        node?[key] is JsonValue value && value.TryGetValue(out bool flag) ? flag : null;
+
+    /// <summary>The date part of an ISO timestamp from the API.</summary>
+    private static string? Date(JsonNode? node, string key) =>
+        Str(node, key) is { Length: >= 10 } text ? text[..10] : null;
+
+    private static IEnumerable<JsonNode> Items(JsonNode? node) =>
+        node is JsonArray array ? array.OfType<JsonNode>() : [];
+
+    private static string ReadString(JsonElement args, string property) =>
+        args.TryGetProperty(property, out JsonElement value) && value.ValueKind == JsonValueKind.String
+            ? value.GetString()?.Trim() ?? ""
+            : "";
+
+    private static int? ReadInt(JsonElement args, string property) =>
+        args.TryGetProperty(property, out JsonElement value) && value.ValueKind == JsonValueKind.Number
+            ? value.GetInt32()
+            : null;
+
+    private static int ReadInt(JsonElement args, string property, int min, int max, int fallback) =>
+        Math.Clamp(ReadInt(args, property) ?? fallback, min, max);
 
     private async Task<UserExtend?> FindUserAsync(string? user, Playmode? mode)
     {

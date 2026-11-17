@@ -118,7 +118,7 @@ public sealed class AiChatTests
     [Fact]
     public void ToolSchemasSatisfyOpenAiStrictMode()
     {
-        var toolbox = new AiToolbox(null!, null!, null!, null!, NullLogger<AiToolbox>.Instance);
+        var toolbox = new AiToolbox(null!, null!, null!, null!, null!, null!, NullLogger<AiToolbox>.Instance);
 
         foreach (FunctionTool tool in toolbox.Tools.Cast<FunctionTool>())
         {

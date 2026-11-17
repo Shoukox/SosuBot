@@ -64,7 +64,8 @@ public sealed class AiChatResponder(
         try
         {
             AiReplyRequest request = await BuildRequestAsync(message, prompt, database, cancellationToken);
-            var toolContext = new AiToolContext(emoji => ReactAsync(bot, message, emoji, cancellationToken));
+            var toolContext = new AiToolContext(chatId, privateChat, message.From!.Id,
+                emoji => ReactAsync(bot, message, emoji, cancellationToken));
 
             Func<string, Task>? onText = null;
             if (privateChat && _draftsSupported)
