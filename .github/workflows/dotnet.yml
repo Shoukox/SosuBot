@@ -43,10 +43,10 @@ jobs:
       - name: Cache Cargo dependencies
         uses: Swatinem/rust-cache@v2
         with:
-          workspaces: SosuBot.PerformanceCalculator/native/rosu-pp-native -> target
+          workspaces: SosuBot.PerformanceCalculator/Calculators/Rosu/Native/rosu-pp-native -> target
 
       - name: Test and build native wrapper
-        working-directory: SosuBot.PerformanceCalculator/native/rosu-pp-native
+        working-directory: SosuBot.PerformanceCalculator/Calculators/Rosu/Native/rosu-pp-native
         run: |
           cargo fmt --check
           cargo clippy --all-targets -- -D warnings
@@ -56,8 +56,8 @@ jobs:
       - name: Stage Linux native asset
         run: |
           install -D -m 0755 \
-            SosuBot.PerformanceCalculator/native/rosu-pp-native/target/release/librosu_pp_native.so \
-            SosuBot.PerformanceCalculator/runtimes/linux-x64/native/librosu_pp_native.so
+            SosuBot.PerformanceCalculator/Calculators/Rosu/Native/rosu-pp-native/target/release/librosu_pp_native.so \
+            SosuBot.PerformanceCalculator/Calculators/Rosu/runtimes/linux-x64/native/librosu_pp_native.so
 
       - name: Set up .NET
         uses: actions/setup-dotnet@v4

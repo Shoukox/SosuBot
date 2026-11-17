@@ -99,10 +99,11 @@ Redis 7.4, Prometheus и Grafana. Бот ходит в Telegram через со�
 ## Известные подводные камни
 
 - **Сабмодуль `SosuBot.PerformanceCalculator`**: правки в нём (включая `.csproj`) нужно коммитить в репозиторий
-  сабмодуля, а потом обновлять указатель сабмодуля в основном репозитории. Каталог
-  `Calculators/Rosu/native/rosu-pp-native/` сейчас не отслеживается в сабмодуле, а Dockerfile и CI его ожидают.
-- CI (`.github/workflows/dotnet.yml`) ссылается на `SosuBot.PerformanceCalculator/native/rosu-pp-native` и
-  `.../runtimes/linux-x64`, а реальный путь `Calculators/Rosu/native/...` и `Calculators/Rosu/runtimes/...`.
+  сабмодуля, а потом обновлять указатель сабмодуля в основном репозитории.
+- **Регистр путей.** Rust-проект лежит в `Calculators/Rosu/Native/rosu-pp-native/` (заглавная `N`, рядом с C#
+  interop-кодом), а готовые библиотеки — в `Calculators/Rosu/runtimes/<rid>/native/` (строчная). Dockerfile, CI,
+  `.gitignore` и `.csproj` должны писать путь именно так. Держи `core.ignorecase=false` в обоих репозиториях: при
+  `true` на Linux git молча связывает `native/` с `Native/`, и в коммит попадает не тот путь.
 - **ImageSharp 3.2.0 / Drawing 2.2.0 требуют лицензию Six Labors.** Без ключа Release-сборка `SosuBot.Graphics`
   (единственного проекта с прямой ссылкой на эти пакеты) падает на таргете `SixLabors_ValidateLicense`. Ключ не
   коммитится: `Directory.Build.props` берёт его из `$(SixLaborsLicenseKey)` (свойство или переменная окружения) или
