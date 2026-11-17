@@ -14,11 +14,14 @@ public sealed class PollingBackgroundService(IServiceProvider serviceProvider) :
     private readonly UpdateQueueService _updateQueueService = serviceProvider.GetRequiredService<UpdateQueueService>();
     private readonly ILogger<PollingBackgroundService> _logger = serviceProvider.GetRequiredService<ILogger<PollingBackgroundService>>();
     private int? _offset;
-    private static readonly UpdateType[] AllowedUpdates = [
+    private static readonly UpdateType[] BaseAllowedUpdates = [
         UpdateType.Message,
         UpdateType.CallbackQuery,
         UpdateType.ChatMember
     ];
+
+    // The stop button under streamed AI drafts (Bot API 10.3). Dropped if the Bot API server rejects it.
+    private UpdateType[] _allowedUpdates = [.. BaseAllowedUpdates, UpdateType.StoppedMessageGeneration];
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
@@ -29,7 +32,7 @@ public sealed class PollingBackgroundService(IServiceProvider serviceProvider) :
             // Skip pending updates
             Update[] pendingUpdates = await _botClient.GetUpdates(
                 timeout: 1,
-                allowedUpdates: AllowedUpdates,
+                allowedUpdates: _allowedUpdates,
                 cancellationToken: stoppingToken);
             foreach (Update pendingUpdate in pendingUpdates.Where(IsMembershipUpdate))
                 await _updateQueueService.EnqueueUpdateAsync(pendingUpdate, stoppingToken);
@@ -78,7 +81,7 @@ public sealed class PollingBackgroundService(IServiceProvider serviceProvider) :
                 Update[] updates = await _botClient.GetUpdates(
                     _offset,
                     timeout: 20,
-                    allowedUpdates: AllowedUpdates,
+                    allowedUpdates: _allowedUpdates,
                     cancellationToken: stoppingToken);
                 consecutiveFailures = 0;
                 _logger.LogDebug("Received {Count} updates", updates.Length);
@@ -100,6 +103,14 @@ public sealed class PollingBackgroundService(IServiceProvider serviceProvider) :
                     "Telegram polling timed out; retry {FailureCount}",
                     consecutiveFailures);
                 await DelayAfterFailure(consecutiveFailures, stoppingToken);
+            }
+            catch (ApiRequestException exception) when (exception.ErrorCode == 400 &&
+                                                        _allowedUpdates.Length > BaseAllowedUpdates.Length)
+            {
+                // An older self-hosted Bot API server does not know the newer update type.
+                _logger.LogWarning("Bot API server rejected getUpdates ({Error}); polling without AI stop updates",
+                    exception.Message);
+                _allowedUpdates = BaseAllowedUpdates;
             }
             catch (ApiRequestException exception)
             {

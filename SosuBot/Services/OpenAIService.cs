@@ -1,435 +1,177 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using System.Security.Cryptography;
+using System.Text;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Newtonsoft.Json;
 using OpenAI.Responses;
-using OsuApi.BanchoV2;
-using OsuApi.BanchoV2.Clients.Users.HttpIO;
-using OsuApi.BanchoV2.Models;
-using OsuApi.BanchoV2.Users.Models;
 using SosuBot.Configuration;
-using SosuBot.Database.Models;
-using SosuBot.Extensions;
-using SosuBot.Helpers;
-using SosuBot.Helpers.Types;
-using SosuBot.Helpers.Types.Statistics;
-using System.Collections.Concurrent;
+using SosuBot.Services.Ai;
 
 #pragma warning disable OPENAI001
 
 namespace SosuBot.Services;
 
+/// <summary>One earlier message of the conversation as the model sees it.</summary>
+public sealed record AiTurn(bool FromAssistant, string Text);
+
+/// <param name="Context">Facts about the chat and the speaker (time, names, osu! accounts).</param>
+/// <param name="History">Earlier chat messages, oldest first.</param>
+/// <param name="Message">The message to answer, already formatted with its author.</param>
+/// <param name="SpeakerId">Telegram id of the speaker; sent to OpenAI only as a hash.</param>
+public sealed record AiReplyRequest(string Context, IReadOnlyList<AiTurn> History, string Message, long SpeakerId);
+
+/// <param name="Text">
+/// Everything the model wrote; parts meant as separate messages are split by <see cref="OpenAiService.MessageSeparator" />.
+/// </param>
+/// <param name="Stopped">The user stopped the generation; <paramref name="Text" /> is what was written by then.</param>
+public sealed record AiReply(string Text, bool Stopped);
+
 /// <summary>
-///     Service for managing OpenAI chat interactions with osu! integration capabilities.
-///     Provides conversation management, function calling for osu! user data retrieval,
-///     and thread-safe access control for concurrent user interactions.
+/// Talks to the OpenAI Responses API as the bot's persona: streams the reply text and runs the osu! tools the
+/// model asks for until it has answered.
 /// </summary>
 public sealed class OpenAiService
 {
-    /// <summary>
-    ///     Thread-safe dictionary that stores chat conversation history for each user.
-    ///     Key: Telegram user ID (long)
-    ///     Value: List of ResponseItem objects representing the conversation messages
-    /// </summary>
-    private readonly ConcurrentDictionary<long, List<ResponseItem>> _chatDictionary = new();
+    /// <summary>The model separates messages it wants to send one after another with this marker.</summary>
+    public const string MessageSeparator = "|||";
 
-    /// <summary>When each conversation in <see cref="_chatDictionary" /> was last used.</summary>
-    private readonly ConcurrentDictionary<long, DateTime> _conversationLastUsedUtc = new();
+    private const int MaxToolRounds = 6;
 
-    /// <summary>A conversation nobody continued for this long is forgotten.</summary>
-    private static readonly TimeSpan ConversationIdleTimeout = TimeSpan.FromHours(6);
-
-    /// <summary>Upper bound on remembered conversations; the least recently used ones go first.</summary>
-    private const int MaxConversations = 1_000;
-
-    private readonly FunctionTool _getCountryRankingTool = ResponseTool.CreateFunctionTool(
-        FunctionNames.GetCountryRanking,
-        functionDescription:
-        "Gets players from the country leaderboard. You can use it to gain players from a given country",
-        functionParameters: BinaryData.FromBytes(
-            """
-                {
-                  "type": "object",
-                  "properties": {
-                        "count": {
-                            "type": "integer",
-                            "description": "How many players going to be retrieved from the ranking"
-                        },
-                        "country_code":{
-                            "type": "string",
-                            "description": "Two-letter country code to retrieve the ranking from"
-                        },
-                        "mode": {
-                            "type": "integer",
-                            "description": "From which osu! gamemode (std, taiko, catch, mania) should scores be returned. Use 0=std, 1=taiko, 2=catch, 3=mania"
-                        }
-                  },
-                  "additionalProperties": false,
-                  "required": [ "count", "country_code", "mode"],
-                  "examples": [
-                           { "count": 50, "country_code": "uz", "mode": 0 },
-                           { "count": 75, "country_code": "ru", "mode": 1 },
-                           { "count": 100, "country_code": "uz", "mode": 2 }
-                  ]
-                }
-                """u8.ToArray()),
-        strictModeEnabled: false
-    );
-
-    private readonly FunctionTool _getOsuUserTool = ResponseTool.CreateFunctionTool(
-        FunctionNames.GetOsuUser,
-        functionDescription: "Gets osu! user profile as json",
-        functionParameters: BinaryData.FromBytes(
-            """
-                {
-                  "type": "object",
-                  "properties": {
-                      "user_id": {
-                          "anyOf": [
-                              { "type": "string" },
-                              { "type": "integer" }
-                            ],
-                          "description": "Username (optionally prefixed with '@') or numeric user id of an osu! player"
-                      }
-                  },
-                  "additionalProperties": false,
-                  "required": [ "user_id" ],
-                  "examples": [
-                           { "user_id": 15319810 },
-                           { "user_id": "@shoukko" },
-                           { "user_id": "shoukko" }
-                  ]
-                }
-                """u8.ToArray()),
-        strictModeEnabled: false
-    );
-
-    private readonly FunctionTool _getUserBestTool = ResponseTool.CreateFunctionTool(
-        FunctionNames.GetUserScores,
-        functionDescription: "Gets osu!player's recent/best/pinned scores",
-        functionParameters: BinaryData.FromBytes(
-            """
-                {
-                  "type": "object",
-                  "properties": {
-                        "user_id": {
-                            "type": "integer",
-                            "description": "Numeric user id of an osu! player. If you have only username, you can gain the id via function call GetOsuUser"
-                        },
-                        "score_type":{
-                            "type": "string",
-                            "description": "Use 'best' for best scores. Use 'recent' for recent scores. Use 'pinned' for pinned scores. Use 'firsts' for the scores where the used gained rank #1 on the beatmap"
-                        },
-                        "include_fails": {
-                            "type": "integer",
-                            "description": "Use 1 to include failed scores. Else 0."
-                        },
-                        "mode": {
-                            "type": "integer",
-                            "description": "From which osu! gamemode (std, taiko, catch, mania) should scores be returned. Use 0=std, 1=taiko, 2=catch, 3=mania"
-                        },
-                        "limit": {
-                            "type": "integer",
-                            "description": "Indicates, how many scores will be returned. Interval=[1; 5]"
-                        }
-                  },
-                  "additionalProperties": false,
-                  "required": [ "user_id", "score_type", "include_fails", "mode", "limit"],
-                  "examples": [
-                           { "user_id": 15319810, "score_type": "best", "include_fails": 0, "mode": 0, "limit": 100 },
-                           { "user_id": 15319810, "score_type": "recent", "include_fails": 1, "mode": 0, "limit": 5 },
-                           { "user_id": 15319810, "score_type": "pinned", "include_fails": 0, "mode": 0, "limit": 2 }
-                  ]
-                }
-                """u8.ToArray()),
-        strictModeEnabled: false
-    );
-
-    private readonly JsonSerializerSettings _jsonSerializerSettings = new()
-    {
-        NullValueHandling = NullValueHandling.Ignore
-    };
-
+    private readonly ResponsesClient _client;
+    private readonly OpenAiConfiguration _configuration;
+    private readonly AiToolbox _toolbox;
     private readonly ILogger<OpenAiService> _logger;
+    private readonly Lazy<string> _persona;
 
-    private readonly string _openaiToken;
-    private readonly BanchoApiV2 _osuApiV2;
-
-    /// <summary>
-    ///     Users with a request in progress, to prevent concurrent requests from one user. An entry lives only
-    ///     while its request runs.
-    /// </summary>
-    private readonly ConcurrentDictionary<long, byte> _activeRequests = new();
-
-    private string _model;
-    private readonly ResponsesClient _responseClient;
-
-    public OpenAiService(BanchoApiV2 osuApiV2, ILogger<OpenAiService> logger, IOptions<OpenAiConfiguration> openAiConfig)
+    public OpenAiService(IOptions<OpenAiConfiguration> configuration, AiToolbox toolbox, ILogger<OpenAiService> logger)
     {
+        _configuration = configuration.Value;
+        _toolbox = toolbox;
         _logger = logger;
-        _osuApiV2 = osuApiV2;
-
-        _openaiToken = Environment.GetEnvironmentVariable("OPEN_AI_TOKEN") ?? openAiConfig.Value.Token;
-        _model = openAiConfig.Value.Model;
-
-        DeveloperPrompt = File.ReadAllText("developer-prompt.txt");
-        _responseClient = new ResponsesClient(_openaiToken);
+        string token = Environment.GetEnvironmentVariable("OPEN_AI_TOKEN") ?? _configuration.Token;
+        _client = new ResponsesClient(token);
+        _persona = new Lazy<string>(() =>
+            File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "developer-prompt.txt")).Trim());
     }
 
-    private string DeveloperPrompt { get; }
-
-    /// <summary>
-    ///     Changes the model for this gpt instance
-    /// </summary>
-    /// <param name="model">
-    ///     <see cref="Model" />
-    /// </param>
-    public void ChangeModel(string model)
+    /// <param name="onText">Receives the whole text written so far each time it grows.</param>
+    /// <param name="cancellationToken">Cancelling it stops the generation and returns what was written.</param>
+    public async Task<AiReply> GenerateAsync(AiReplyRequest request, AiToolContext toolContext,
+        Func<string, Task>? onText, CancellationToken cancellationToken)
     {
-        _model = model;
-    }
+        List<ResponseItem> items =
+        [
+            ResponseItem.CreateDeveloperMessageItem(_persona.Value),
+            ResponseItem.CreateDeveloperMessageItem(request.Context)
+        ];
+        items.AddRange(request.History.Select(turn => turn.FromAssistant
+            ? ResponseItem.CreateAssistantMessageItem(turn.Text, [])
+            : (ResponseItem)ResponseItem.CreateUserMessageItem(turn.Text)));
+        items.Add(ResponseItem.CreateUserMessageItem(request.Message));
 
-    public async Task<Result<string>> GetResponseAsync(string userInput, long userTelegramId)
-    {
-        if (!_activeRequests.TryAdd(userTelegramId, 0))
-            return new Result<string>(null, new Error(ErrorCode.Locked), false);
-
+        var text = new StringBuilder();
         try
         {
-            _conversationLastUsedUtc[userTelegramId] = DateTime.UtcNow;
-            ForgetStaleConversations();
-            return await GetResponseCoreAsync(userInput, userTelegramId);
-        }
-        finally
-        {
-            _activeRequests.TryRemove(userTelegramId, out _);
-        }
-    }
-
-    private void ForgetStaleConversations()
-    {
-        DateTime idleSince = DateTime.UtcNow - ConversationIdleTimeout;
-        foreach ((long userId, DateTime lastUsed) in _conversationLastUsedUtc)
-        {
-            if (lastUsed < idleSince && !_activeRequests.ContainsKey(userId))
-                ForgetConversation(userId);
-        }
-
-        int excess = _conversationLastUsedUtc.Count - MaxConversations;
-        if (excess <= 0)
-            return;
-
-        foreach (long userId in _conversationLastUsedUtc
-                     .Where(pair => !_activeRequests.ContainsKey(pair.Key))
-                     .OrderBy(pair => pair.Value)
-                     .Take(excess)
-                     .Select(pair => pair.Key)
-                     .ToList())
-            ForgetConversation(userId);
-    }
-
-    private void ForgetConversation(long userId)
-    {
-        _chatDictionary.TryRemove(userId, out _);
-        _conversationLastUsedUtc.TryRemove(userId, out _);
-    }
-
-    private async Task<Result<string>> GetResponseCoreAsync(string userInput, long userTelegramId)
-    {
-        List<ResponseItem> inputItems;
-        MessageResponseItem developerMessageItem = ResponseItem.CreateDeveloperMessageItem(DeveloperPrompt);
-        MessageResponseItem userResponseItem = ResponseItem.CreateUserMessageItem(userInput);
-        if (_chatDictionary.ContainsKey(userTelegramId))
-        {
-            _chatDictionary[userTelegramId].Add(userResponseItem);
-            TrimMessageHistory(_chatDictionary[userTelegramId]);
-            inputItems = new List<ResponseItem>(_chatDictionary[userTelegramId]);
-        }
-        else
-        {
-            inputItems =
-            [
-                developerMessageItem,
-                userResponseItem
-            ];
-            _chatDictionary[userTelegramId] = new List<ResponseItem>(inputItems);
-        }
-
-        var output = "";
-        bool requiresAction;
-        try
-        {
-            do
+            for (var round = 0; round < MaxToolRounds; round++)
             {
-                requiresAction = false;
-                CreateResponseOptions options = new()
+                // Text written before a tool call reads like "one sec, checking": it becomes its own message.
+                int roundStart = text.Length;
+                if (roundStart > 0)
+                    text.Append('\n').Append(MessageSeparator).Append('\n');
+                int textStart = text.Length;
+
+                ResponseResult response = await StreamRoundAsync(CreateOptions(items, request.SpeakerId), text,
+                    onText, cancellationToken);
+                items.AddRange(response.OutputItems);
+
+                // A round without text must not leave a dangling separator.
+                if (text.Length == textStart)
+                    text.Length = roundStart;
+
+                FunctionCallResponseItem[] calls = response.OutputItems.OfType<FunctionCallResponseItem>().ToArray();
+                if (calls.Length == 0)
+                    break;
+
+                foreach (FunctionCallResponseItem call in calls)
                 {
-                    Model = _model,
-                    Tools = { _getOsuUserTool, _getUserBestTool, _getCountryRankingTool },
-                    Temperature = 0.7f
-                };
-                foreach (ResponseItem inputItem in inputItems) options.InputItems.Add(inputItem);
-
-                ResponseResult response = await _responseClient.CreateResponseAsync(options);
-                inputItems.AddRange(response.OutputItems);
-
-                foreach (FunctionCallResponseItem functionCall in response.OutputItems.OfType<FunctionCallResponseItem>())
-                {
-                    switch (functionCall.FunctionName)
-                    {
-                        case FunctionNames.GetOsuUser:
-                            {
-                                var userId =
-                                    functionCall.FunctionArguments.ToObjectFromJson<Dictionary<string, string>>()![
-                                        "user_id"];
-                                GetUserResponse? getUserResponse =
-                                    await _osuApiV2.Users.GetUser(userId, new GetUserQueryParameters());
-                                getUserResponse!.UserExtend!.Cover = null;
-                                getUserResponse.UserExtend.CoverUrl = null;
-                                getUserResponse.UserExtend.DefaultGroup = null;
-                                getUserResponse.UserExtend.Groups = null;
-                                getUserResponse.UserExtend.MaxBlocks = null;
-                                getUserResponse.UserExtend.MaxFriends = null;
-                                getUserResponse.UserExtend.ProfileOrder = null;
-                                getUserResponse.UserExtend.UserAchievements = null;
-                                getUserResponse.UserExtend.ReplaysWatchedCounts = null;
-
-                                var functionOutput = JsonConvert.SerializeObject(getUserResponse.UserExtend,
-                                    Formatting.None, _jsonSerializerSettings);
-                                inputItems.Add(new FunctionCallOutputResponseItem(functionCall.CallId, functionOutput));
-                                break;
-                            }
-                        case FunctionNames.GetUserScores:
-                            {
-                                OpenAiFunctionCallParameters parameters = functionCall.FunctionArguments
-                                    .ToObjectFromJson<OpenAiFunctionCallParameters>()!;
-                                var userId = parameters.UserId!.Value;
-                                var scoreType = parameters.ScoreType!;
-                                var mode = ((Playmode)parameters.Mode!).ToRuleset();
-                                var limit = parameters.Limit!.Value;
-
-                                GetUserScoresResponse? getUserBestResponse =
-                                    await _osuApiV2.Users.GetUserScores(userId, scoreType,
-                                        new GetUserScoreQueryParameters { Mode = mode, Limit = limit });
-                                Score[] scores = getUserBestResponse!.Scores;
-                                Array.ForEach(scores, m =>
-                                {
-                                    m.Beatmap!.Checksum = null;
-                                    m.Beatmap.Failtimes = null;
-                                    m.Beatmap.Mode = null;
-                                    m.Beatmap.Owners = null;
-
-                                    m.Beatmapset!.User = null;
-                                    m.Beatmapset.UserId = null;
-                                    m.Beatmapset.ArtistUnicode = null;
-                                    m.Beatmapset.Availability = null;
-                                    m.Beatmapset.Beatmaps = null;
-                                    m.Beatmapset.Converts = null;
-                                    m.Beatmapset.UserId = null;
-                                    m.Beatmapset.CurrentNominations = null;
-                                    m.Beatmapset.Description = null;
-                                    m.Beatmapset.Covers = null;
-                                    m.Beatmapset.Genre = null;
-                                    m.Beatmapset.Spotlight = null;
-                                    m.Beatmapset.Hype = null;
-                                    m.Beatmapset.FavouriteCount = null;
-                                    m.Beatmapset.NominationsSummary = null;
-                                    m.Beatmapset.PackTags = null;
-                                    m.Beatmapset.PreviewUrl = null;
-                                    m.Beatmapset.Source = null;
-                                    m.Beatmapset.Title = null;
-                                    m.Beatmapset.Video = null;
-                                    m.Beatmapset.PlayCount = null;
-                                    m.Beatmapset.Nsfw = null;
-                                    m.Statistics = null;
-                                    m.Preserve = null;
-                                    m.BestId = null;
-                                    m.BuildId = null;
-                                    m.ClassicTotalScore = null;
-                                    m.EndedAt = null;
-                                    m.IsPerfectCombo = null;
-                                    m.LegacyPerfect = null;
-                                    m.LegacyScoreId = null;
-                                    m.LegacyTotalScore = null;
-                                    m.MaximumStatistics = null;
-                                    m.Mode = null;
-                                    m.ModeInt = null;
-                                    m.Passed = null;
-                                    m.PlaylistItemId = null;
-                                    m.StartedAt = null;
-                                    m.TotalScore = null;
-                                    m.TotalScoreWithoutMods = null;
-                                    m.Weight = null;
-                                    m.Type = null;
-                                    m.UserId = null;
-                                    m.User = null;
-                                    m.Processed = null;
-                                    m.Ranked = null;
-                                });
-
-                                var functionOutput = JsonConvert.SerializeObject(scores, _jsonSerializerSettings);
-                                inputItems.Add(new FunctionCallOutputResponseItem(functionCall.CallId, functionOutput));
-                                break;
-                            }
-                        case FunctionNames.GetCountryRanking:
-                            {
-                                OpenAiFunctionCallParameters parameters = functionCall.FunctionArguments
-                                    .ToObjectFromJson<OpenAiFunctionCallParameters>()!;
-                                var count = parameters.Count!.Value;
-                                var countryCode = parameters.CountryCode!;
-                                var mode = parameters.Mode!.Value;
-
-                                List<UserStatistics>? getUserBestResponse =
-                                    await OsuApiHelper.GetUsersFromRanking(_osuApiV2, (Playmode)mode, countryCode, count);
-                                var functionOutput = JsonConvert.SerializeObject(getUserBestResponse, Formatting.None,
-                                    _jsonSerializerSettings);
-                                inputItems.Add(new FunctionCallOutputResponseItem(functionCall.CallId, functionOutput));
-                                break;
-                            }
-                        default:
-                            {
-                                throw new NotImplementedException($"Unknown response item type: {functionCall.Id}");
-                            }
-                    }
-
-                    requiresAction = true;
+                    _logger.LogInformation("AI calls {Tool} {Arguments}", call.FunctionName, call.FunctionArguments);
+                    string output = await _toolbox.ExecuteAsync(call.FunctionName, call.FunctionArguments,
+                        toolContext, cancellationToken);
+                    items.Add(new FunctionCallOutputResponseItem(call.CallId, output));
                 }
-
-                IEnumerable<MessageResponseItem> messageResponseItems = response.OutputItems.OfType<MessageResponseItem>();
-                foreach (MessageResponseItem messageResponseItem in messageResponseItems)
-                {
-                    var currentOutputText = messageResponseItem.Content[0].Text;
-                    output += currentOutputText;
-                    if (_chatDictionary.TryGetValue(userTelegramId, out List<ResponseItem>? history))
-                        history.Add(ResponseItem.CreateAssistantMessageItem(currentOutputText));
-                }
-            } while (requiresAction);
+            }
         }
-        catch (Exception e)
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
-            _logger.LogError(e, "Exception while requesting to openai api");
-            return new Result<string>(null, new Error(ErrorCode.Error), false);
+            return new AiReply(text.ToString().Trim(), Stopped: true);
         }
 
-        return new Result<string>(output, null, true);
+        return new AiReply(text.ToString().Trim(), Stopped: false);
     }
 
-    private void TrimMessageHistory(List<ResponseItem> items, int keepLast = 7)
+    private CreateResponseOptions CreateOptions(IEnumerable<ResponseItem> items, long speakerId)
     {
-        if (items.Count <= keepLast) return;
-        items.RemoveRange(1, items.Count - keepLast);
+        var options = new CreateResponseOptions
+        {
+            Model = _configuration.Model,
+            MaxOutputTokenCount = _configuration.MaxOutputTokens,
+            StreamingEnabled = true,
+            ParallelToolCallsEnabled = true,
+            // The same instructions start every request, so OpenAI can reuse the cached prompt prefix.
+            PromptCacheKey = "sosubot-ai-persona",
+            SafetyIdentifier = HashUserId(speakerId)
+        };
+        foreach (ResponseTool tool in _toolbox.Tools)
+            options.Tools.Add(tool);
+        foreach (ResponseItem item in items)
+            options.InputItems.Add(item);
+
+        if (_configuration.Temperature is { } temperature)
+            options.Temperature = temperature;
+        if (!string.IsNullOrWhiteSpace(_configuration.Reasoning))
+        {
+            options.ReasoningOptions = new ResponseReasoningOptions
+            {
+                ReasoningEffortLevel = new ResponseReasoningEffortLevel(_configuration.Reasoning.Trim())
+            };
+        }
+
+        return options;
     }
 
-    private static class FunctionNames
+    private async Task<ResponseResult> StreamRoundAsync(CreateResponseOptions options, StringBuilder text,
+        Func<string, Task>? onText, CancellationToken cancellationToken)
     {
-        public const string GetOsuUser = "GetOsuUser";
-        public const string GetUserScores = "GetUserScores";
-        public const string GetCountryRanking = "GetCountryRanking";
+        ResponseResult? result = null;
+        await foreach (StreamingResponseUpdate update in
+                       (await _client.CreateResponseStreamingAsync(options, cancellationToken))
+                       .WithCancellation(cancellationToken))
+        {
+            switch (update)
+            {
+                case StreamingResponseOutputTextDeltaUpdate delta:
+                    text.Append(delta.Delta);
+                    if (onText is not null)
+                        await onText(text.ToString());
+                    break;
+                case StreamingResponseCompletedUpdate completed:
+                    result = completed.Response;
+                    break;
+                case StreamingResponseIncompleteUpdate incomplete:
+                    // Out of output tokens: keep what was written.
+                    _logger.LogWarning("AI reply was cut short: {Reason}",
+                        incomplete.Response?.IncompleteStatusDetails?.Reason);
+                    result = incomplete.Response;
+                    break;
+                case StreamingResponseFailedUpdate failed:
+                    throw new InvalidOperationException($"OpenAI failed: {failed.Response?.Error?.Message}");
+                case StreamingResponseErrorUpdate error:
+                    throw new InvalidOperationException($"OpenAI error {error.Code}: {error.Message}");
+            }
+        }
+
+        return result ?? throw new InvalidOperationException("OpenAI ended the stream without a response.");
     }
 
-    public static class Model
-    {
-        public const string Gpt5 = "gpt-5";
-        public const string Gpt5Mini = "gpt-5-mini";
-        public const string Gpt5Nano = "gpt-5-nano";
-    }
+    private static string HashUserId(long userId) =>
+        Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes($"sosubot:{userId}")))[..32].ToLowerInvariant();
 }

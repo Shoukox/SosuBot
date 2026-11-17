@@ -156,6 +156,9 @@ internal class Program
                 httpClient);
         });
         builder.Services.AddSingleton<OpenAiService>();
+        builder.Services.AddSingleton<SosuBot.Services.Ai.AiToolbox>();
+        builder.Services.AddSingleton<SosuBot.Services.Ai.AiChatMemory>();
+        builder.Services.AddSingleton<SosuBot.Services.Ai.AiChatResponder>();
         builder.Services.AddSingleton<BeatmapFileCache>();
         builder.Services.AddSingleton<BeatmapsService>();
 

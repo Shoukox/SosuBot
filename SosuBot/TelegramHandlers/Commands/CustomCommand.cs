@@ -17,6 +17,7 @@ using SosuBot.Localization;
 using SosuBot.Localization.Languages;
 using SosuBot.PerformanceCalculator;
 using SosuBot.Services;
+using SosuBot.Services.Ai;
 using SosuBot.TelegramHandlers.Abstract;
 using System.Diagnostics;
 using Telegram.Bot;
@@ -94,7 +95,7 @@ public sealed class CustomCommand : CommandBase<Message>
         \\ \_ \* \[ \] \( \) \~ \` \> \# \+ \- \= \| \{ \} \. \!
         """;
 
-    private OpenAiService _openaiService = null!;
+    private AiChatResponder _aiChatResponder = null!;
     private BanchoApiV2 _osuApiV2 = null!;
     private ScoreHelper _scoreHelper = null!;
     private BeatmapsService _beatmapsService = null!;
@@ -106,7 +107,7 @@ public sealed class CustomCommand : CommandBase<Message>
     public override async Task BeforeExecuteAsync()
     {
         await base.BeforeExecuteAsync();
-        _openaiService = Context.ServiceProvider.GetRequiredService<OpenAiService>();
+        _aiChatResponder = Context.ServiceProvider.GetRequiredService<AiChatResponder>();
         _osuApiV2 = Context.ServiceProvider.GetRequiredService<BanchoApiV2>();
         _scoreHelper = Context.ServiceProvider.GetRequiredService<ScoreHelper>();
         _beatmapsService = Context.ServiceProvider.GetRequiredService<BeatmapsService>();
@@ -194,34 +195,10 @@ public sealed class CustomCommand : CommandBase<Message>
         }
         else if (parameters[0] == "ai")
         {
-            ILocalization language = new Russian();
-            Message waitMessage = await Context.Update.ReplyAsync(Context.BotClient, language.waiting);
-
-            var userInput = string.Join(" ", parameters[1..]);
-            Result<string> output = await _openaiService.GetResponseAsync(userInput, Context.Update.From.Id);
-            if (!output.IsSuccess || string.IsNullOrEmpty(output.Data))
-            {
-                switch (output.Exception?.Code)
-                {
-                    case ErrorCode.Locked:
-                        {
-                            await waitMessage.EditAsync(Context.BotClient, "Подожди обработки предыдущего запроса!");
-                            return;
-                        }
-                }
-
-                await waitMessage.EditAsync(Context.BotClient, language.error_baseMessage);
-                return;
-            }
-
-            try
-            {
-                await waitMessage.EditAsync(Context.BotClient, output.Data!, ParseMode.Markdown);
-            }
-            catch
-            {
-                await waitMessage.EditAsync(Context.BotClient, output.Data!, ParseMode.None);
-            }
+            // Everything after "ai", line breaks included; a bare "/c ai" in reply to a message asks about it.
+            string prompt = Services.Ai.AiChatMemory.ExtractAiCommandPrompt(Context.Update.Text!) ?? "";
+            await _aiChatResponder.RespondAsync(Context.BotClient, Context.Update, prompt, _database,
+                Context.CancellationToken);
         }
         else if (parameters[0] == "slavik")
         {

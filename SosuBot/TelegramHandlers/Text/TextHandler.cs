@@ -16,6 +16,7 @@ using SosuBot.Helpers;
 using SosuBot.Localization;
 using SosuBot.PerformanceCalculator;
 using SosuBot.Services;
+using SosuBot.Services.Ai;
 using SosuBot.Services.Synchronization;
 using SosuBot.TelegramHandlers.Abstract;
 using Telegram.Bot.Types;
@@ -34,6 +35,7 @@ public sealed class TextHandler : CommandBase<Message>
     private BotContext _database = null!;
     private ILogger<TextHandler> _logger = null!;
     private IPerformanceCalculator _performanceCalculator = null!;
+    private AiChatResponder _aiChatResponder = null!;
 
     private TokenBucketRateLimiter _tokenBucketRateLimiter = null!;
 
@@ -48,6 +50,7 @@ public sealed class TextHandler : CommandBase<Message>
         _botConfig = Context.ServiceProvider.GetRequiredService<IOptions<BotConfiguration>>().Value;
         _logger = Context.ServiceProvider.GetRequiredService<ILogger<TextHandler>>();
         _performanceCalculator = Context.ServiceProvider.GetRequiredService<IPerformanceCalculator>();
+        _aiChatResponder = Context.ServiceProvider.GetRequiredService<AiChatResponder>();
 
         _tokenBucketRateLimiter = _rateLimiterFactory.Get(RateLimiterFactory.RateLimitPolicy.Command);
         return Task.CompletedTask;
@@ -56,11 +59,35 @@ public sealed class TextHandler : CommandBase<Message>
     public override async Task ExecuteAsync()
     {
         if (Context.Update.IsForwardedFrom(_botConfig.Id)) return;
+        if (await TryAnswerAsAiAsync()) return;
 
         ILocalization language = Context.GetLocalization();
         await HandleBeatmapLink(language);
         await HandleUserProfileLink(language);
         await HandleScoreLink(language);
+    }
+
+    /// <summary>
+    /// Messages to the AI persona: in private chats, replies to the bot, @mentions and messages starting with her
+    /// name. Only admins and the creator talk to her; for everyone else the bot behaves as before.
+    /// </summary>
+    private async Task<bool> TryAnswerAsAiAsync()
+    {
+        List<string> links = Context.Update.GetAllLinks().ToList();
+        bool hasOsuLink = OsuHelper.ParseOsuBeatmapLink(links, out _, out _) is not null ||
+                          OsuHelper.ParseOsuScoreLink(links, out _) is not null ||
+                          OsuHelper.ParseOsuUserLink(links, out _) is not null;
+        string? prompt = AiTriggers.Detect(Context.Update, _botConfig.Username, _botConfig.Id, hasOsuLink);
+        if (prompt is null)
+            return false;
+
+        long userId = Context.Update.From!.Id;
+        if (!ChatModerationService.IsCreator(userId) && (await _database.OsuUsers.FindAsync(userId))?.IsAdmin != true)
+            return false;
+
+        await _aiChatResponder.RespondAsync(Context.BotClient, Context.Update, prompt, _database,
+            Context.CancellationToken);
+        return true;
     }
 
     private async Task HandleScoreLink(ILocalization language)

@@ -9,6 +9,7 @@ using SosuBot.Helpers;
 using SosuBot.Monitoring;
 using SosuBot.Localization;
 using SosuBot.Services;
+using SosuBot.Services.Ai;
 using SosuBot.TelegramHandlers.Abstract;
 using SosuBot.TelegramHandlers.Commands;
 using SosuBot.TelegramHandlers.Text;
@@ -28,7 +29,9 @@ public class UpdateHandler(
     BotMetrics metrics,
     CommandUsageRecorder commandUsageRecorder,
     IServiceProvider serviceProvider,
-    TelegramUserDirectory userDirectory) : IUpdateHandler
+    TelegramUserDirectory userDirectory,
+    AiChatMemory aiChatMemory,
+    AiChatResponder aiChatResponder) : IUpdateHandler
 {
     public static Dictionary<string, Func<CommandBase<Message>>> Commands { get; set; } = new();
     public static Dictionary<string, string> CommandMetricNames { get; set; } = new();
@@ -64,6 +67,7 @@ public class UpdateHandler(
                 { Message: { } message } => OnMessage(botClient, message, cancellationToken),
                 { ChatMember: { } chatMember } => OnChatMemberUpdated(chatMember, cancellationToken),
                 { CallbackQuery: { } callbackQuery } => OnCallbackQuery(botClient, callbackQuery, cancellationToken),
+                { StoppedMessageGeneration: { } stopped } => OnGenerationStopped(stopped),
                 _ => DoNothing()
             });
             metrics.RecordUpdateProcessed(update, "success", System.Diagnostics.Stopwatch.GetElapsedTime(startedAt).TotalSeconds);
@@ -160,6 +164,8 @@ public class UpdateHandler(
         userDirectory.Remember(msg.ReplyToMessage?.From);
         foreach (User newMember in msg.NewChatMembers ?? [])
             userDirectory.Remember(newMember);
+        // Every message, so the AI knows what the chat was talking about when somebody calls her.
+        aiChatMemory.Remember(msg);
 
         // Add new chat and update chat members
         await database.AddOrUpdateTelegramChat(msg, logger, cancellationToken);
@@ -276,6 +282,13 @@ public class UpdateHandler(
         await textHandler.BeforeExecuteAsync();
         await textHandler.ExecuteAsync();
         await database.SaveChangesAsync(cancellationToken);
+    }
+
+    /// <summary>The stop button under a streamed AI draft.</summary>
+    private Task OnGenerationStopped(MessageGenerationStopped stopped)
+    {
+        aiChatResponder.Stop(stopped.Chat.Id, stopped.DraftId);
+        return Task.CompletedTask;
     }
 
     private Task DoNothing()
