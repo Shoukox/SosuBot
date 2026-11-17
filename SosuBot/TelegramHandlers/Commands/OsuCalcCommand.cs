@@ -92,7 +92,7 @@ public class OsuCalcCommand : CommandBase<Message>
             return;
         }
 
-        using Stream beatmapFile = await _beatmapsService.DownloadOrCacheBeatmapAsync(beatmap.Id!.Value, Context.CancellationToken);
+        using Stream beatmapFile = await _beatmapsService.DownloadOrCacheBeatmapAsync(beatmap.Id!.Value, beatmap.Checksum, Context.CancellationToken);
         Mod[] classicMods = AddClassicMod(mods, playmode);
         PPCalculationResult? lazer = await _performanceCalculator.CalculatePpAsync(
             beatmap.Id.Value, beatmapFile, accuracy, scoreMods: mods, scoreStatistics: statistics,

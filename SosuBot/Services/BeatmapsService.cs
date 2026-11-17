@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.Logging;
 using SosuBot.Database.Models;
 using System.Globalization;
+using System.Security.Cryptography;
 
 namespace SosuBot.Services;
 
@@ -33,12 +34,27 @@ public sealed class BeatmapsService
         return _cache.GetRandomBeatmapIdAsync(playmode, cancellationToken);
     }
 
-    public async Task<Stream> DownloadOrCacheBeatmapAsync(int beatmapId,
+    public Task<Stream> DownloadOrCacheBeatmapAsync(int beatmapId,
+        CancellationToken cancellationToken = default) =>
+        DownloadOrCacheBeatmapAsync(beatmapId, expectedChecksum: null, cancellationToken);
+
+    /// <param name="expectedChecksum">
+    /// MD5 of the current .osu file (the API's <c>checksum</c>). A cached file that does not match it is an older
+    /// version of an unranked beatmap the mapper has updated since, and is downloaded again.
+    /// </param>
+    public async Task<Stream> DownloadOrCacheBeatmapAsync(int beatmapId, string? expectedChecksum,
         CancellationToken cancellationToken = default)
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(beatmapId);
 
         byte[]? cachedBeatmap = await _cache.TryReadAsync(beatmapId, cancellationToken);
+        if (cachedBeatmap is not null && !MatchesChecksum(cachedBeatmap, expectedChecksum))
+        {
+            _logger.LogInformation("Cached beatmap {BeatmapId} is outdated; downloading the current version",
+                beatmapId);
+            cachedBeatmap = null;
+        }
+
         if (cachedBeatmap is not null)
         {
             if (BeatmapFileMetadata.TryReadPlaymode(cachedBeatmap, out _))
@@ -96,6 +112,11 @@ public sealed class BeatmapsService
 
         return content;
     }
+
+    private static bool MatchesChecksum(byte[] content, string? expectedChecksum) =>
+        string.IsNullOrWhiteSpace(expectedChecksum) ||
+        string.Equals(Convert.ToHexString(MD5.HashData(content)), expectedChecksum.Trim(),
+            StringComparison.OrdinalIgnoreCase);
 
     private static Stream CreateReadOnlyStream(byte[] content)
     {

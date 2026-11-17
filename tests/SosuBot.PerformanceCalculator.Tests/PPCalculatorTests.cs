@@ -84,8 +84,8 @@ public sealed class PPCalculatorTests
         var extendedDifficultyAdjust = new OsuModDifficultyAdjust();
         extendedDifficultyAdjust.ExtendedLimits.Value = true;
 
-        string defaultKey = PPCalculationCacheKey.Create(1, 0, null, [defaultDifficultyAdjust]);
-        string extendedKey = PPCalculationCacheKey.Create(1, 0, null, [extendedDifficultyAdjust]);
+        string defaultKey = PPCalculationCacheKey.Create("hash", 0, null, [defaultDifficultyAdjust]);
+        string extendedKey = PPCalculationCacheKey.Create("hash", 0, null, [extendedDifficultyAdjust]);
 
         Assert.NotEqual(defaultKey, extendedKey);
     }

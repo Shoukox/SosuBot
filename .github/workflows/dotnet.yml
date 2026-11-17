@@ -29,6 +29,14 @@ jobs:
     timeout-minutes: 20
 
     steps:
+      # Fail in seconds with a clear reason instead of after the Rust build. Push runs read repository
+      # secrets; Dependabot pull requests read Dependabot secrets; pull requests from forks get no secrets.
+      - name: Check Six Labors license secret
+        if: ${{ env.SixLaborsLicenseKey == '' }}
+        run: |
+          echo "::error title=SIXLABORS_LICENSE_KEY is not available::The Release build of SosuBot.Graphics needs the Six Labors license key. Add the SIXLABORS_LICENSE_KEY secret under Settings > Secrets and variables > Actions (Repository secrets for pushes, Dependabot secrets for Dependabot pull requests)."
+          exit 1
+
       - name: Checkout repository
         uses: actions/checkout@v4
         with:

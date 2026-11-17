@@ -12,13 +12,13 @@ namespace SosuBot.Services.Synchronization
             _limiters = new Dictionary<RateLimitPolicy, TokenBucketRateLimiter>
             {
                 [RateLimitPolicy.Command] =
-                    new TokenBucketRateLimiter(redis, logger, 5, 1.0), // 5 per 1 second
+                    new TokenBucketRateLimiter(redis, logger, "command", 5, 1.0), // bursts of 5, then 1 per second
 
                 [RateLimitPolicy.BeatmapLeaderboard] =
-                    new TokenBucketRateLimiter(redis, logger, 1, 1.0), // 1 osu! API request per second for /bl
+                    new TokenBucketRateLimiter(redis, logger, "beatmap_leaderboard", 1, 1.0), // 1 osu! API request per second for /bl
 
                 [RateLimitPolicy.RenderCommand] =
-                    new TokenBucketRateLimiter(redis, logger, 10, 10.0 / 3600.0), // 10 per 1 hour
+                    new TokenBucketRateLimiter(redis, logger, "render", 10, 10.0 / 3600.0), // 10 per 1 hour
             };
         }
 

@@ -24,12 +24,21 @@ public static partial class OsuHelper
     [GeneratedRegex(@"https?:\/\/(?:old\.|new\.)?osu\.ppy\.sh\/(?:ss|scores)\/(\w+\/\d+|\d+)", RegexOptions.Compiled | RegexOptions.IgnoreCase)]
     private static partial Regex OsuScoreLinkRegex();
 
+    // One client for the process: a new HttpClient per request opens a new connection every time and leaves
+    // sockets behind in TIME_WAIT.
+    private static readonly HttpClient SongPreviewClient = new(new SocketsHttpHandler
+    {
+        PooledConnectionLifetime = TimeSpan.FromMinutes(5)
+    })
+    {
+        Timeout = TimeSpan.FromSeconds(30)
+    };
+
     public static async Task<byte[]?> GetSongPreviewAsync(int beatmapsetId)
     {
         try
         {
-            using var hc = new HttpClient();
-            return await hc.GetByteArrayAsync($"https://b.ppy.sh/preview/{beatmapsetId}.mp3");
+            return await SongPreviewClient.GetByteArrayAsync($"https://b.ppy.sh/preview/{beatmapsetId}.mp3");
         }
         catch
         {

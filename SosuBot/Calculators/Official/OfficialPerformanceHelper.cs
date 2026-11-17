@@ -33,10 +33,19 @@ public sealed class OfficialPerformanceHelper(
         try
         {
             GameMod[] mods = (score.Mods ?? []).ToOsuMods(playmode);
+            bool passed = score.Passed != false;
+            // A passed score with maximum statistics goes through the same inputs osu! servers use, so the
+            // result matches the pp on the website. Failed scores have no server pp and stay an estimate.
+            bool submitted = passed && score.Statistics is not null && score.MaximumStatistics is not null;
             Dictionary<HitResult, int>? statistics = score.Statistics is null
                 ? null
-                : ToHitStatistics(score.Statistics, playmode);
-            bool passed = score.Passed != false;
+                : submitted
+                    ? score.Statistics.ToStatistics()
+                    : ToHitStatistics(score.Statistics, playmode);
+            Dictionary<HitResult, int>? maximumStatistics = submitted ? score.MaximumStatistics!.ToStatistics() : null;
+            long? legacyTotalScore = score.LegacyTotalScore is { } legacyScore and <= long.MaxValue
+                ? (long)legacyScore
+                : null;
 
             PPCalculationResult? current = calculateCurrent
                 ? await CalculateAsync(
@@ -48,7 +57,9 @@ public sealed class OfficialPerformanceHelper(
                     mods,
                     statistics,
                     playmode,
-                    cancellationToken)
+                    cancellationToken,
+                    maximumStatistics,
+                    legacyTotalScore)
                 : null;
 
             PPCalculationResult? ifFc = null;
@@ -114,7 +125,9 @@ public sealed class OfficialPerformanceHelper(
         GameMod[] mods,
         Dictionary<HitResult, int>? scoreStatistics,
         Playmode playmode,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        Dictionary<HitResult, int>? maximumStatistics = null,
+        long? legacyTotalScore = null)
     {
         return await performanceCalculator.CalculatePpAsync(
             beatmapId,
@@ -125,7 +138,9 @@ public sealed class OfficialPerformanceHelper(
             mods,
             scoreStatistics,
             (int)playmode,
-            cancellationToken);
+            cancellationToken,
+            maximumStatistics,
+            legacyTotalScore);
     }
 
     private static Dictionary<HitResult, int> ToHitStatistics(ScoreStatistics statistics, Playmode playmode)

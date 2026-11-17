@@ -3,77 +3,90 @@ using StackExchange.Redis;
 
 namespace SosuBot.Services.Synchronization
 {
+    /// <summary>
+    /// Token bucket shared by all bot replicas through Redis. Each limiter keeps its own buckets: limiters with
+    /// different names never share state, even for the same key.
+    /// </summary>
     public class TokenBucketRateLimiter
     {
+        // KEYS[1] = bucket hash (fields: tokens, ts)
+        // ARGV[1] = bucket capacity
+        // ARGV[2] = refill rate, tokens per millisecond
+        // ARGV[3] = bucket lifetime when idle, ms
+        // Tokens are kept fractional, so slow buckets (a few per hour) refill even between frequent requests.
+        // Redis' own clock is used, so replicas with skewed clocks agree.
+        private const string Script = @"
+            local key = KEYS[1]
+            local capacity = tonumber(ARGV[1])
+            local refill_per_ms = tonumber(ARGV[2])
+            local ttl_ms = tonumber(ARGV[3])
+
+            local time = redis.call('TIME')
+            local now = tonumber(time[1]) * 1000 + math.floor(tonumber(time[2]) / 1000)
+
+            local state = redis.call('HMGET', key, 'tokens', 'ts')
+            local tokens = tonumber(state[1])
+            local last = tonumber(state[2])
+            if tokens == nil or last == nil then
+                tokens = capacity
+                last = now
+            end
+
+            tokens = math.min(capacity, tokens + math.max(0, now - last) * refill_per_ms)
+
+            local allowed = 0
+            if tokens >= 1 then
+                tokens = tokens - 1
+                allowed = 1
+            end
+
+            redis.call('HSET', key, 'tokens', tostring(tokens), 'ts', tostring(now))
+            redis.call('PEXPIRE', key, ttl_ms)
+            return allowed
+        ";
+
         private readonly IDatabase _redis;
         private readonly ILogger<TokenBucketRateLimiter> _logger;
-        private readonly LuaScript _luaScript;
+        private readonly string _name;
         private readonly int _bucketCapacity;
-        private readonly double _refillRatePerSecond;
+        private readonly double _refillRatePerMillisecond;
+        private readonly long _idleLifetimeMilliseconds;
         private readonly SemaphoreSlim _waitLock = new(1, 1);
 
+        /// <param name="name">Distinguishes this limiter's buckets from other limiters' in Redis.</param>
         public TokenBucketRateLimiter(
             IConnectionMultiplexer connectionMultiplexer,
             ILogger<TokenBucketRateLimiter> logger,
+            string name,
             int bucketCapacity,
             double refillRatePerSecond)
         {
+            ArgumentException.ThrowIfNullOrWhiteSpace(name);
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(bucketCapacity);
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(refillRatePerSecond);
+
             _redis = connectionMultiplexer.GetDatabase();
             _logger = logger;
+            _name = name;
             _bucketCapacity = bucketCapacity;
-            _refillRatePerSecond = refillRatePerSecond;
-
-            // Lua script:
-            // KEYS[1] = token key
-            // KEYS[2] = timestamp key
-            // ARGV[1] = current timestamp (ms)
-            // ARGV[2] = bucket capacity
-            // ARGV[3] = refill rate per second
-            _luaScript = LuaScript.Prepare(@"
-                local tokens_key = KEYS[1]
-                local timestamp_key = KEYS[2]
-                local now = tonumber(ARGV[1])
-                local capacity = tonumber(ARGV[2])
-                local refill_rate = tonumber(ARGV[3])
- 
-                local last_tokens = tonumber(redis.call('GET', tokens_key) or capacity)
-                local last_refill = tonumber(redis.call('GET', timestamp_key) or now)
- 
-                local elapsed = now - last_refill
-                local refill = math.floor(elapsed * refill_rate / 1000)
-                local tokens = math.min(capacity, last_tokens + refill)
- 
-                if tokens <= 0 then
-                    return 0
-                else
-                    tokens = tokens - 1
-                    redis.call('SET', tokens_key, tokens)
-                    redis.call('SET', timestamp_key, now)
-                    redis.call('PEXPIRE', tokens_key, 60000)
-                    redis.call('PEXPIRE', timestamp_key, 60000)
-                    return 1
-                end
-            ");
+            _refillRatePerMillisecond = refillRatePerSecond / 1000;
+            // After this long without requests the bucket is full again, so dropping it changes nothing.
+            _idleLifetimeMilliseconds = Math.Max(1_000, (long)Math.Ceiling(bucketCapacity / _refillRatePerMillisecond));
         }
 
         public async Task<bool> IsAllowedAsync(string key)
         {
-            var now = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-            var redisKeys = new RedisKey[]
-            {
-                new RedisKey($"token_bucket:{key}:tokens"),
-                new RedisKey($"token_bucket:{key}:timestamp")
-            };
+            var redisKeys = new RedisKey[] { GetBucketKey(key) };
             var redisArgs = new RedisValue[]
             {
-                now,
                 _bucketCapacity,
-                _refillRatePerSecond
+                _refillRatePerMillisecond,
+                _idleLifetimeMilliseconds
             };
 
             try
             {
-                var result = (int)await _redis.ScriptEvaluateAsync(_luaScript.OriginalScript, redisKeys, redisArgs);
+                var result = (int)await _redis.ScriptEvaluateAsync(Script, redisKeys, redisArgs);
                 return result == 1;
             }
             catch (Exception ex)
@@ -82,6 +95,8 @@ namespace SosuBot.Services.Synchronization
                 return true; // fail-open strategy
             }
         }
+
+        internal string GetBucketKey(string key) => $"token_bucket:{_name}:{key}";
 
         public async Task WaitAsync(string key, CancellationToken cancellationToken = default)
         {

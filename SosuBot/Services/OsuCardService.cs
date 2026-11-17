@@ -155,7 +155,7 @@ public sealed class OsuCardService
             return null;
 
         using Stream beatmap = await _beatmapsService.DownloadOrCacheBeatmapAsync(score.BeatmapId.Value,
-            cancellationToken);
+            score.Beatmap?.Checksum, cancellationToken);
         BeatmapFileValues fileValues = ReadBeatmapValues(beatmap);
         OfficialScoreCalculation scoreCalculation = await _officialPerformanceHelper.CalculateScoreAsync(
             beatmap,

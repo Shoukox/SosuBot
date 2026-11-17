@@ -92,7 +92,8 @@ internal class Program
         builder.Services.Configure<RenderConfiguration>(renderConfig);
         builder.Services.Configure<MonitoringConfiguration>(builder.Configuration.GetSection("Monitoring"));
         builder.Services.AddSingleton<BotMetrics>();
-        builder.Services.AddSingleton<IPerformanceCalculator, PPCalculator>();
+        // Disposed with the host; the calculator owns a bounded in-memory cache.
+        builder.Services.AddSingleton<IPerformanceCalculator>(_ => new PPCalculator());
         builder.Services.AddSingleton<CommandUsageRecorder>();
         builder.Services.AddHostedService<MetricsServerHostedService>();
         builder.Services.AddHostedService<MetricsSnapshotBackgroundService>();

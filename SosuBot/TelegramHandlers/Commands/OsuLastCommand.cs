@@ -175,7 +175,7 @@ public class OsuLastCommand(bool onlyPassed = false, bool sendCover = false, boo
             if (!beatmapContainsTooManyHitObjects)
             {
                 using Stream beatmapFile = await _beatmapsService.DownloadOrCacheBeatmapAsync(beatmap.Id!.Value,
-                    Context.CancellationToken);
+                    beatmap.Checksum, Context.CancellationToken);
 
                 _logger.LogInformation("[/last] Calculating pp");
                 OfficialScoreCalculation calculation = await _officialPerformanceHelper.CalculateScoreAsync(

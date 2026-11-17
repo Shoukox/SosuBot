@@ -32,6 +32,15 @@ public sealed class OpenAiService
     /// </summary>
     private readonly ConcurrentDictionary<long, List<ResponseItem>> _chatDictionary = new();
 
+    /// <summary>When each conversation in <see cref="_chatDictionary" /> was last used.</summary>
+    private readonly ConcurrentDictionary<long, DateTime> _conversationLastUsedUtc = new();
+
+    /// <summary>A conversation nobody continued for this long is forgotten.</summary>
+    private static readonly TimeSpan ConversationIdleTimeout = TimeSpan.FromHours(6);
+
+    /// <summary>Upper bound on remembered conversations; the least recently used ones go first.</summary>
+    private const int MaxConversations = 1_000;
+
     private readonly FunctionTool _getCountryRankingTool = ResponseTool.CreateFunctionTool(
         FunctionNames.GetCountryRanking,
         functionDescription:
@@ -146,11 +155,10 @@ public sealed class OpenAiService
     private readonly BanchoApiV2 _osuApiV2;
 
     /// <summary>
-    ///     Thread-safe dictionary that tracks the processing state for each user to prevent concurrent requests.
-    ///     Key: Telegram user ID (long)
-    ///     Value: Boolean indicating if the user currently has an active request being processed
+    ///     Users with a request in progress, to prevent concurrent requests from one user. An entry lives only
+    ///     while its request runs.
     /// </summary>
-    private readonly ConcurrentDictionary<long, bool> _syncDictionary = new();
+    private readonly ConcurrentDictionary<long, byte> _activeRequests = new();
 
     private string _model;
     private readonly ResponsesClient _responseClient;
@@ -182,11 +190,51 @@ public sealed class OpenAiService
 
     public async Task<Result<string>> GetResponseAsync(string userInput, long userTelegramId)
     {
-        if (_syncDictionary.TryGetValue(userTelegramId, out var locked) && locked)
+        if (!_activeRequests.TryAdd(userTelegramId, 0))
             return new Result<string>(null, new Error(ErrorCode.Locked), false);
 
-        _syncDictionary[userTelegramId] = true;
+        try
+        {
+            _conversationLastUsedUtc[userTelegramId] = DateTime.UtcNow;
+            ForgetStaleConversations();
+            return await GetResponseCoreAsync(userInput, userTelegramId);
+        }
+        finally
+        {
+            _activeRequests.TryRemove(userTelegramId, out _);
+        }
+    }
 
+    private void ForgetStaleConversations()
+    {
+        DateTime idleSince = DateTime.UtcNow - ConversationIdleTimeout;
+        foreach ((long userId, DateTime lastUsed) in _conversationLastUsedUtc)
+        {
+            if (lastUsed < idleSince && !_activeRequests.ContainsKey(userId))
+                ForgetConversation(userId);
+        }
+
+        int excess = _conversationLastUsedUtc.Count - MaxConversations;
+        if (excess <= 0)
+            return;
+
+        foreach (long userId in _conversationLastUsedUtc
+                     .Where(pair => !_activeRequests.ContainsKey(pair.Key))
+                     .OrderBy(pair => pair.Value)
+                     .Take(excess)
+                     .Select(pair => pair.Key)
+                     .ToList())
+            ForgetConversation(userId);
+    }
+
+    private void ForgetConversation(long userId)
+    {
+        _chatDictionary.TryRemove(userId, out _);
+        _conversationLastUsedUtc.TryRemove(userId, out _);
+    }
+
+    private async Task<Result<string>> GetResponseCoreAsync(string userInput, long userTelegramId)
+    {
         List<ResponseItem> inputItems;
         MessageResponseItem developerMessageItem = ResponseItem.CreateDeveloperMessageItem(DeveloperPrompt);
         MessageResponseItem userResponseItem = ResponseItem.CreateUserMessageItem(userInput);
@@ -351,18 +399,17 @@ public sealed class OpenAiService
                 {
                     var currentOutputText = messageResponseItem.Content[0].Text;
                     output += currentOutputText;
-                    _chatDictionary[userTelegramId].Add(ResponseItem.CreateAssistantMessageItem(currentOutputText));
+                    if (_chatDictionary.TryGetValue(userTelegramId, out List<ResponseItem>? history))
+                        history.Add(ResponseItem.CreateAssistantMessageItem(currentOutputText));
                 }
             } while (requiresAction);
         }
         catch (Exception e)
         {
             _logger.LogError(e, "Exception while requesting to openai api");
-            _syncDictionary[userTelegramId] = false;
             return new Result<string>(null, new Error(ErrorCode.Error), false);
         }
 
-        _syncDictionary[userTelegramId] = false;
         return new Result<string>(output, null, true);
     }
 
