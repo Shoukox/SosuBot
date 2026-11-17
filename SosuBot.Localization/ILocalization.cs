@@ -243,4 +243,6 @@ public interface ILocalization
     public string richLast_scoreButton { get; }
     public string richLast_beatmapButton { get; }
     public string richLast_completion { get; }
+    public string ai_busy { get; }
+    public string ai_failed { get; }
 }

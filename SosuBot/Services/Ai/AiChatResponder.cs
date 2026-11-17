@@ -9,6 +9,7 @@ using SosuBot.Database;
 using SosuBot.Database.Models;
 using SosuBot.Extensions;
 using SosuBot.Helpers;
+using SosuBot.Localization;
 using Telegram.Bot;
 using Telegram.Bot.Exceptions;
 using Telegram.Bot.Types;
@@ -49,9 +50,10 @@ public sealed class AiChatResponder(
         CancellationToken cancellationToken)
     {
         long chatId = message.Chat.Id;
+        ILocalization language = database.GetLocalization(chatId);
         if (!_busyChats.TryAdd(chatId, 0))
         {
-            await SendAsync(bot, message, "секу, я ещё прошлое дописываю", reply: true, cancellationToken);
+            await SendAsync(bot, message, language.ai_busy, reply: true, cancellationToken);
             return;
         }
 
@@ -63,7 +65,7 @@ public sealed class AiChatResponder(
         Task? typingLoop = null;
         try
         {
-            AiReplyRequest request = await BuildRequestAsync(message, prompt, database, cancellationToken);
+            AiReplyRequest request = await BuildRequestAsync(message, prompt, database, language, cancellationToken);
             var toolContext = new AiToolContext(chatId, privateChat, message.From!.Id,
                 emoji => ReactAsync(bot, message, emoji, cancellationToken));
 
@@ -110,8 +112,7 @@ public sealed class AiChatResponder(
         catch (Exception exception)
         {
             logger.LogError(exception, "AI reply failed in chat {ChatId}", chatId);
-            await SendAsync(bot, message, "ой, у меня что-то зависло( напиши чуть позже", reply: true,
-                CancellationToken.None);
+            await SendAsync(bot, message, language.ai_failed, reply: true, CancellationToken.None);
         }
         finally
         {
@@ -156,7 +157,7 @@ public sealed class AiChatResponder(
     }
 
     private async Task<AiReplyRequest> BuildRequestAsync(Message message, string prompt, BotContext database,
-        CancellationToken cancellationToken)
+        ILocalization language, CancellationToken cancellationToken)
     {
         User speaker = message.From!;
         IReadOnlyList<AiChatMessage> history = memory.GetRecent(message.Chat.Id)
@@ -179,6 +180,8 @@ public sealed class AiChatResponder(
         context.AppendLine(message.Chat.Type == ChatType.Private
             ? $"Это личка с {AiChatMemory.DisplayName(speaker)}."
             : $"Это групповой чат «{message.Chat.Title}». Ниже последние сообщения чата, они просто для контекста.");
+        context.AppendLine(CultureInfo.InvariantCulture,
+            $"Язык бота в этом чате: {language.last_humanizerCulture[..2]}. Отвечай на языке собеседника, а если его по сообщению не понять (например, позвали без текста), то на языке бота.");
         context.Append($"Тебе пишет {Describe(speaker, osuAccounts)}");
         context.AppendLine(osuAccounts.ContainsKey(speaker.Id)
             ? "."

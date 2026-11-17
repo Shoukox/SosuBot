@@ -336,4 +336,6 @@ public sealed class English : ILocalization
     public string richLast_scoreButton => "Score";
     public string richLast_beatmapButton => "Beatmap";
     public string richLast_completion => "completed";
+    public string ai_busy => "sec, still finishing my last message";
+    public string ai_failed => "oops, something froze on my end( try again a bit later";
 }

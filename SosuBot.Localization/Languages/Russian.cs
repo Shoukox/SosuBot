@@ -336,4 +336,6 @@ public sealed class Russian : ILocalization
     public string richLast_scoreButton => "Скор";
     public string richLast_beatmapButton => "Карта";
     public string richLast_completion => "пройдено";
+    public string ai_busy => "секу, я ещё прошлое дописываю";
+    public string ai_failed => "ой, у меня что-то зависло( напиши чуть позже";
 }

@@ -329,4 +329,6 @@ public sealed class Deutsch : ILocalization
     public string richLast_scoreButton => "Score";
     public string richLast_beatmapButton => "Beatmap";
     public string richLast_completion => "abgeschlossen";
+    public string ai_busy => "sekunde, ich schreib noch meine letzte nachricht fertig";
+    public string ai_failed => "oh, bei mir hängt gerade was( schreib mir später nochmal";
 }
