@@ -23,10 +23,12 @@ public sealed class Deutsch : ILocalization
         $"/set [nickname] - Nickname im Bot setzen/ändern.\n" +
         $"/mode [gamemode] - Standard-Spielmodus ändern.\n" +
         $"/user [nickname] - Kurzinfos zu einem Spieler per Username.\n" +
+        $"/userp [nickname] - Spielerprofil als Bild mit Buttons für die Spielmodi.\n" +
         $"/userid [user_id] - Kurzinfos zu einem Spieler per User-ID.\n" +
         $"/last [nickname] [count] - letzte Plays.\n" +
         $"/lastpassed [nickname] [count] - /last nur mit bestandenen Scores.\n" +
         $"/score [beatmap_link] - deine Records auf dieser Map.\n" +
+        $"/scorep [beatmap_link] - dein bester Record auf dieser Map als Bild.\n" +
         $"/rnd [osu/mania/taiko/catch] - zufällige Beatmap für den gewählten Modus (standardmäßig osu).\n" +
         $"/osucard [nickname] [gamemode] - Profilkarte mit den Fähigkeiten des Spielers.\n" +
         $"/videopreview &lt;Text&gt; - Video-Vorschaubild für den Score-Link in der beantworteten Nachricht.\n" +
@@ -48,6 +50,7 @@ public sealed class Deutsch : ILocalization
         $"\n" +
         $"Wenn du einen Beatmap-Link sendest, schickt der Bot kurze Map-Infos.\n" +
         $"Um das zu verhindern, hänge ein Minus ans Linkende ('-').\n" +
+        $"Wenn du eine .osr-Replay-Datei sendest, zeigt der Bot eine Karte mit Spieler, Beatmap und pp.\n" +
         $"\n" +
         $"Fragen und Vorschläge: @Shoukkoo</blockquote>";
 
@@ -82,10 +85,12 @@ public sealed class Deutsch : ILocalization
     public string command_set_usage => "Beispiele:\n<b>/set mrekk</b>\n<b>/set Blue_Archive</b>";
     public string command_mode_usage => "Beispiele:\n<b>/mode osu</b>\n<b>/mode mania</b>";
     public string command_user_usage => "Beispiele:\n<b>/user mrekk</b>\n<b>/user mrekk mode=mania</b>";
+    public string command_userPicture_usage => "Beispiele:\n<b>/userp mrekk</b>\n<b>/userp mrekk mode=mania</b>";
     public string command_userId_usage => "Beispiel: <b>/userid 12345678</b>";
     public string command_userbest_usage => "Beispiele:\n<b>/userbest mrekk</b>\n<b>/userbest mrekk mania</b>";
     public string command_compare_usage => "Beispiele:\n<b>/compare mrekk whitecat</b>\n<b>/compare - HateP - | whitecat</b>\n<b>/compare mrekk whitecat osu</b>";
     public string command_score_usage => "Beispiele:\n<b>/score https://osu.ppy.sh/beatmaps/123456</b>\n<b>/score</b> als Antwort auf eine Nachricht mit Beatmap-Link";
+    public string command_scorePicture_usage => "Beispiele:\n<b>/scorep https://osu.ppy.sh/beatmaps/123456</b>\n<b>/scorep</b> als Antwort auf eine Nachricht mit Beatmap-Link";
     public string command_exclude_usage => "Beispiel: <b>/exclude mrekk</b>";
     public string command_include_usage => "Beispiel: <b>/include mrekk</b>";
     public string command_lastPassed_usage => "Beispiel: <b>/lastpassed mrekk 5</b>";
@@ -335,4 +340,9 @@ public sealed class Deutsch : ILocalization
     public string custom_usage =>
         "Beispiele: /c markdown\n/c rich\n/c json\n/c ai Text (oder /ai Text)\n/c kick (als Antwort auf eine Nachricht)";
     public string custom_richFailed => "Telegram hat die Rich-Nachricht abgelehnt: <code>{}</code>";
+    public string replayCard_caption =>
+        "🎬 Replay von <a href=\"{}\"><b>{}</b></a>\n🗺 <a href=\"{}\">{}</a>\n\nFür ein Video antworte auf die Datei mit /render";
+    public string replayCard_invalid => "Diese .osr-Datei konnte nicht gelesen werden: Sie scheint beschädigt zu sein.";
+    public string replayCard_beatmapNotFound =>
+        "Ein Replay von <b>{}</b>, aber die Beatmap gibt es nicht auf osu!: Vielleicht wurde sie nicht hochgeladen oder aktualisiert.";
 }

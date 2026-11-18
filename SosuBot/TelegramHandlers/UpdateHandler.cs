@@ -31,7 +31,8 @@ public class UpdateHandler(
     IServiceProvider serviceProvider,
     TelegramUserDirectory userDirectory,
     AiChatMemory aiChatMemory,
-    AiChatResponder aiChatResponder) : IUpdateHandler
+    AiChatResponder aiChatResponder,
+    ReplayCardService replayCardService) : IUpdateHandler
 {
     public static Dictionary<string, Func<CommandBase<Message>>> Commands { get; set; } = new();
     public static Dictionary<string, string> CommandMetricNames { get; set; } = new();
@@ -169,6 +170,10 @@ public class UpdateHandler(
 
         // Add new chat and update chat members
         await database.AddOrUpdateTelegramChat(msg, logger, cancellationToken);
+
+        // A replay file gets a card with the play; with /render in its caption the command takes it instead.
+        if (msg.From is not null && ReplayCardService.IsReplayFile(msg.Document) && msg.Caption?.IsCommand() != true)
+            await replayCardService.SendAsync(botClient, msg, database.GetLocalization(msg.Chat.Id), cancellationToken);
 
         if (msg.Text == null)
         {

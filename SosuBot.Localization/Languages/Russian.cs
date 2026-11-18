@@ -23,10 +23,12 @@ public sealed class Russian : ILocalization
         $"/set [nickname] - добавить\\изменить свой ник в боте.\n" +
         $"/mode [gamemode] - изменить игровой режим по умолчанию.\n" +
         $"/user [nickname] - краткая информация об игроке с данным юзернеймом.\n" +
+        $"/userp [nickname] - профиль игрока картинкой с кнопками режимов.\n" +
         $"/userid [user_id] - краткая информация об игроке с данным user id.\n" +
         $"/last [nickname] [count] - последние сыгранные игры.\n" +
         $"/lastpassed [nickname] [count] - /last только для пасснутых скоров.\n" +
         $"/score [beatmap_link] - ваши рекорды на этой карте.\n" +
+        $"/scorep [beatmap_link] - ваш лучший рекорд на карте картинкой.\n" +
         $"/rnd [osu/mania/taiko/catch] - случайная карта выбранного режима (по умолчанию osu).\n" +
         $"/osucard [nickname] [gamemode] - профильная карточка с навыками игрока.\n" +
         $"/videopreview &lt;текст&gt; - превью видео для ссылки на скор из сообщения, на которое отвечаешь.\n" +
@@ -48,6 +50,7 @@ public sealed class Russian : ILocalization
         $"\n" +
         $"Если отправить ссылку карты, бот отправит краткую информацию о ней\n" +
         $"Чтобы избежать отправки краткой информации, добавьте в конец ссылки минус ('-')\n" +
+        $"Если отправить .osr файл реплея, бот покажет карточку с игроком, картой и pp\n" +
         $"\n" +
         $"По вопросам и предложениям писать @Shoukkoo</blockquote>";
 
@@ -82,10 +85,12 @@ public sealed class Russian : ILocalization
     public string command_set_usage => "Примеры:\n<b>/set mrekk</b>\n<b>/set Blue_Archive</b>";
     public string command_mode_usage => "Примеры:\n<b>/mode osu</b>\n<b>/mode mania</b>";
     public string command_user_usage => "Примеры:\n<b>/user mrekk</b>\n<b>/user mrekk mode=mania</b>";
+    public string command_userPicture_usage => "Примеры:\n<b>/userp mrekk</b>\n<b>/userp mrekk mode=mania</b>";
     public string command_userId_usage => "Пример: <b>/userid 12345678</b>";
     public string command_userbest_usage => "Примеры:\n<b>/userbest mrekk</b>\n<b>/userbest mrekk mania</b>";
     public string command_compare_usage => "Примеры:\n<b>/compare mrekk whitecat</b>\n<b>/compare - HateP - | whitecat</b>\n<b>/compare mrekk whitecat osu</b>";
     public string command_score_usage => "Примеры:\n<b>/score https://osu.ppy.sh/beatmaps/123456</b>\n<b>/score</b> ответом на сообщение со ссылкой на карту";
+    public string command_scorePicture_usage => "Примеры:\n<b>/scorep https://osu.ppy.sh/beatmaps/123456</b>\n<b>/scorep</b> ответом на сообщение со ссылкой на карту";
     public string command_exclude_usage => "Пример: <b>/exclude mrekk</b>";
     public string command_include_usage => "Пример: <b>/include mrekk</b>";
     public string command_lastPassed_usage => "Пример: <b>/lastpassed mrekk 5</b>";
@@ -342,4 +347,9 @@ public sealed class Russian : ILocalization
     public string custom_usage =>
         "Примеры: /c markdown\n/c rich\n/c json\n/c ai текст (или /ai текст)\n/c kick (ответом на сообщение)";
     public string custom_richFailed => "Telegram не принял rich-сообщение: <code>{}</code>";
+    public string replayCard_caption =>
+        "🎬 Реплей игрока <a href=\"{}\"><b>{}</b></a>\n🗺 <a href=\"{}\">{}</a>\n\nЧтобы сделать видео, ответь на файл командой /render";
+    public string replayCard_invalid => "Не получилось прочитать этот .osr файл: похоже, он повреждён.";
+    public string replayCard_beatmapNotFound =>
+        "Реплей игрока <b>{}</b>, но его карты нет на osu!: возможно, она не загружена на сайт или была обновлена.";
 }

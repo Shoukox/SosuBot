@@ -150,6 +150,18 @@ Redis 7.4, Prometheus и Grafana. Бот ходит в Telegram через со�
   `build.secrets`, CI: секрет репозитория `SIXLABORS_LICENSE_KEY`). Остаёмся на линейке 3.x, потому что `ppy.osu.Game`
   собран под ImageSharp 3.1.x. Декодирование изображений всё равно идёт только через `SafeImageDecoding.Load`
   (только PNG/JPEG/GIF/WebP, без метаданных и ICC).
+- **Шрифты в `SosuBot.Graphics/Fonts`.** В Quicksand и Aller нет кириллицы. Для картинок с русским текстом бери
+  Nunito (`Fonts/Nunito`, SIL OFL, `OFL.txt` лежит рядом). На нём сделаны карточка реплея (`ReplayCardGenerator`,
+  ответ на присланный `.osr`), `/userp` (`UserProfileCardGenerator`) и `/scorep` (`ScoreCardGenerator`). Полоса скора и
+  ряды статистики общие (`ScoreStatsPainter`). SixLabors.Fonts не умеет вариативные шрифты, поэтому нужны статические
+  TTF.
+- **Множители скора модов.** В `ppy.osu.Game` 2026.x у каждого мода `Mod.ScoreMultiplier` равен 1. Настоящий
+  множитель считает `ruleset.CreateScoreMultiplierCalculator(new ScoreMultiplierContext(difficulty, scoreInfo))
+  .CalculateFor(mods)`, и он зависит от рулсета и сложности карты (пример — `ReplayCardService.MaxStandardisedScore`).
+- **Статистика реплея.** Обычные счётчики `.osr` не содержат концов слайдеров и тиков, поэтому pp по ним расходится с
+  сайтом. osu!lazer хранит полный результат в LZMA-блоке после кадров (`ReplayFileCompatibility.ReadScore`), для
+  остальных реплеев `ReplayCardService` берёт его из API: `GET /scores/{ruleset}/{legacy id}`. Файлы присылают чужие
+  люди, поэтому размер словаря LZMA и распакованных данных ограничен.
 - `Directory.Build.props` в корне действует на все проекты, включая сабмодуль. Dockerfile копируют его перед
   `dotnet restore`. При добавлении нового Dockerfile сделай так же.
 - Остаёмся на .NET 10 LTS: EF Core 11 требует `net11.0`, а стабильного `Npgsql.EntityFrameworkCore.PostgreSQL` 11 пока

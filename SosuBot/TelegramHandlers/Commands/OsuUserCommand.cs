@@ -81,6 +81,10 @@ public class OsuUserCommand(bool includeIdInSearch = false) : CommandBase<Messag
         await waitMessage.EditAsync(Context.BotClient, textToSend, replyMarkup: UserHelper.BuildUserModeKeyboard(user.Username!));
     }
 
+    /// <summary>The hint shown when the command is used without a player it can find.</summary>
+    protected virtual string UsageText(ILocalization language) =>
+        includeIdInSearch ? language.command_userId_usage : language.command_user_usage;
+
     /// <summary>
     ///     Resolves the player from the command arguments (or the sender's saved profile) and fetches them from osu!.
     ///     On failure the reason is written into <paramref name="waitMessage" /> and <c>null</c> is returned.
@@ -90,8 +94,7 @@ public class OsuUserCommand(bool includeIdInSearch = false) : CommandBase<Messag
         OsuCommandArguments.Player? arguments = OsuCommandArguments.ParsePlayer(Context.Update.Text!);
         if (arguments is null)
         {
-            await waitMessage.EditAsync(Context.BotClient,
-                includeIdInSearch ? language.command_userId_usage : language.command_user_usage);
+            await waitMessage.EditAsync(Context.BotClient, UsageText(language));
             return null;
         }
 
@@ -106,8 +109,7 @@ public class OsuUserCommand(bool includeIdInSearch = false) : CommandBase<Messag
         {
             if (osuUserInDatabase is null)
             {
-                await waitMessage.EditAsync(Context.BotClient,
-                    includeIdInSearch ? language.command_userId_usage : language.command_user_usage);
+                await waitMessage.EditAsync(Context.BotClient, UsageText(language));
                 return null;
             }
 

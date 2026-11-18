@@ -24,10 +24,12 @@ public class ConfigureBotService(IServiceProvider serviceProvider) : IHostedServ
         CreateBotCommand(OsuSetCommand.Commands[0], OsuSetCommand.Description),
         CreateBotCommand(OsuModeCommand.Commands[0], OsuModeCommand.Description),
         CreateBotCommand(OsuUserCommand.Commands[0], OsuUserCommand.Description),
+        CreateBotCommand(OsuUserPictureCommand.Commands[0], OsuUserPictureCommand.Description),
         CreateBotCommand(OsuUserIdCommand.Commands[0], OsuUserIdCommand.Description),
         CreateBotCommand(OsuLastWithCoverCommand.Commands[0], OsuLastWithCoverCommand.Description),
         CreateBotCommand(OsuLastPassedCommand.Commands[0], OsuLastPassedCommand.Description),
         CreateBotCommand(OsuScoreCommand.Commands[0], OsuScoreCommand.Description),
+        CreateBotCommand(OsuScorePictureCommand.Commands[0], OsuScorePictureCommand.Description),
         CreateBotCommand(OsuUserbestCommand.Commands[0], OsuUserbestCommand.Description),
         CreateBotCommand(OsuCompareCommand.Commands[0], OsuCompareCommand.Description),
         CreateBotCommand(OsuChatstatsCommand.Commands[0], OsuChatstatsCommand.Description),
@@ -95,7 +97,9 @@ public class ConfigureBotService(IServiceProvider serviceProvider) : IHostedServ
         RegisterCommandWithParameters(OsuUserCommand.Commands, () => new OsuUserCommand());
         RegisterCommand<OsuUserIdCommand>(OsuUserIdCommand.Commands);
         RegisterCommand<OsuUserWidgetCommand>(OsuUserWidgetCommand.Commands);
+        RegisterCommand<OsuUserPictureCommand>(OsuUserPictureCommand.Commands);
         RegisterCommand<OsuScoreCommand>(OsuScoreCommand.Commands);
+        RegisterCommand<OsuScorePictureCommand>(OsuScorePictureCommand.Commands);
         RegisterCommand<MsgCommand>(MsgCommand.Commands);
         RegisterCommand<DbCommand>(DbCommand.Commands);
         RegisterCommand<CustomCommand>(CustomCommand.Commands);
@@ -123,6 +127,7 @@ public class ConfigureBotService(IServiceProvider serviceProvider) : IHostedServ
 
         // Register callbacks
         RegisterCallback<OsuUserCallback>(OsuUserCallback.Command);
+        RegisterCallback<OsuUserPictureCallback>(OsuUserPictureCallback.Command);
         RegisterCallback<OsuUserBestCallback>(OsuUserBestCallback.Command);
         RegisterCallback<OsuSongPreviewCallback>(OsuSongPreviewCallback.Command);
         RegisterCallback<RenderStatusCallback>(RenderStatusCallback.Command);

@@ -20,6 +20,10 @@ public sealed class OsuProfileImageService(IHttpClientFactory httpClientFactory,
     public Task<byte[]?> DownloadBannerAsync(UserExtend user, CancellationToken cancellationToken = default) =>
         DownloadAsync(user.CoverUrl, cancellationToken);
 
+    /// <summary>Any osu! image, such as a beatmapset cover; <c>null</c> if it is too large or unavailable.</summary>
+    public Task<byte[]?> DownloadImageAsync(string? imageUrl, CancellationToken cancellationToken = default) =>
+        DownloadAsync(imageUrl, cancellationToken);
+
     /// <summary>The image bytes, or <c>null</c> if the URL is missing, too large or unavailable.</summary>
     private async Task<byte[]?> DownloadAsync(string? imageUrl, CancellationToken cancellationToken)
     {

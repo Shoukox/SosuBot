@@ -217,10 +217,12 @@ Command list from the current in-bot `/help` text:
 * `/set [nickname]` - add/change your nickname in the bot.
 * `/mode [gamemode]` - change your default game mode.
 * `/user [nickname]` - short info about a player by username.
+* `/userp [nickname]` - a player's profile as a picture with game mode buttons.
 * `/userid [user_id]` - short info about a player by user id.
 * `/last [nickname] [count]` - latest plays.
 * `/lastpassed [nickname] [count]` - `/last` for passed scores only.
 * `/score [beatmap_link]` - your records on this map.
+* `/scorep [beatmap_link]` - your best record on this map as a picture over the map's background.
 * `/osucard [nickname] [gamemode]` - a profile card with the player's skills.
 * `/videopreview <text>` - reply to an osu! score link with this command to generate a video thumbnail.
   The text supports nested `[color=#RRGGBB]...[/color]` and `[glow=0..40]...[/glow]` BB codes.
@@ -245,6 +247,7 @@ Additional behavior from help text:
 
 * If you send a beatmap link, the bot sends short map information.
 * To prevent that, add `-` at the end of the beatmap link.
+* If you send an `.osr` replay file, the bot answers with a card of the play (player, beatmap, score, pp, FC and SS pp) and suggests `/render`.
 
 
 ## 🪲 Logging

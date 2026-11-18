@@ -17,10 +17,12 @@ public interface ILocalization
     public string command_set_usage { get; }
     public string command_mode_usage { get; }
     public string command_user_usage { get; }
+    public string command_userPicture_usage { get; }
     public string command_userId_usage { get; }
     public string command_userbest_usage { get; }
     public string command_compare_usage { get; }
     public string command_score_usage { get; }
+    public string command_scorePicture_usage { get; }
     public string command_exclude_usage { get; }
     public string command_include_usage { get; }
     public string command_lastPassed_usage { get; }
@@ -248,4 +250,7 @@ public interface ILocalization
     public string ai_inDevelopment { get; }
     public string custom_usage { get; }
     public string custom_richFailed { get; }
+    public string replayCard_caption { get; }
+    public string replayCard_invalid { get; }
+    public string replayCard_beatmapNotFound { get; }
 }

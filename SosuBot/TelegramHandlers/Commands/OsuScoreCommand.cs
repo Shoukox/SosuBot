@@ -15,12 +15,12 @@ using Telegram.Bot.Types;
 
 namespace SosuBot.TelegramHandlers.Commands;
 
-public sealed class OsuScoreCommand : CommandBase<Message>
+public class OsuScoreCommand : CommandBase<Message>
 {
     public static readonly string[] Commands = ["/score", "/s"];
     public static readonly string Description = "[beatmap_link или beatmap_id] ваши рекорды на карте";
     private BanchoApiV2 _osuApiV2 = null!;
-    private ScoreHelper _scoreHelper = null!;
+    protected ScoreHelper _scoreHelper = null!;
     private CachingHelper _cachingHelper = null!;
     private RateLimiterFactory _rateLimiterFactory = null!;
     private BotContext _database = null!;
@@ -154,7 +154,7 @@ public sealed class OsuScoreCommand : CommandBase<Message>
 
         if (beatmapId is null)
         {
-            await waitMessage.EditAsync(Context.BotClient, language.command_score_usage);
+            await waitMessage.EditAsync(Context.BotClient, UsageText(language));
             return;
         }
 
@@ -210,9 +210,19 @@ public sealed class OsuScoreCommand : CommandBase<Message>
         if (beatmapset is null) beatmapset = await _cachingHelper.GetOrCacheBeatmapset(beatmap!.BeatmapsetId.Value, _osuApiV2);
         chatInDatabase!.LastBeatmapId = beatmap!.Id;
 
+        await SendScoresAsync(waitMessage, language, userResponse.UserExtend!, scores, beatmap, beatmapset!,
+            beatmapPlaymode ?? playmode.Value);
+    }
+
+    /// <summary>The hint shown when the command is used without a beatmap it can find.</summary>
+    protected virtual string UsageText(ILocalization language) => language.command_score_usage;
+
+    /// <summary>Shows the player's scores on the beatmap, the highest first and one for each set of mods.</summary>
+    protected virtual async Task SendScoresAsync(Message waitMessage, ILocalization language, UserExtend player,
+        Score[] scores, BeatmapExtended beatmap, BeatmapsetExtended beatmapset, Playmode currentPlaymode)
+    {
         var textToSend =
-            $"{UserHelper.GetUserProfileUrlWrappedInUsernameString(userResponse.UserExtend!.Id.Value, $"<b>{osuUsernameForScore}</b>")}\n\n";
-        Playmode currentPlaymode = beatmapPlaymode ?? playmode.Value;
+            $"{UserHelper.GetUserProfileUrlWrappedInUsernameString(player.Id!.Value, $"<b>{player.Username}</b>")}\n\n";
         for (var i = 0; i <= scores.Length - 1; i++)
         {
             Score score = scores[i];
@@ -220,7 +230,7 @@ public sealed class OsuScoreCommand : CommandBase<Message>
             textToSend += LocalizationMessageHelper.CommandScore(language,
                 $"{_scoreHelper.GetScoreRankEmoji(score.Rank)}{_scoreHelper.ParseScoreRank(score.Rank!)}",
                 $"{beatmap.Url}",
-                $"{beatmapset!.Title.EncodeHtml()}",
+                $"{beatmapset.Title.EncodeHtml()}",
                 $"{beatmap.Version.EncodeHtml()}",
                 $"{beatmap.Status}",
                 $"{_scoreHelper.GetScoreStatisticsText(score.Statistics!, currentPlaymode)}",

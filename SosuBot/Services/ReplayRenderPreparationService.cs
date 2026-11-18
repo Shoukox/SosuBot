@@ -7,6 +7,7 @@ using OsuParsers.Replays;
 using SosuBot.Database.Database.Models;
 using SosuBot.Database.Models;
 using SosuBot.Extensions;
+using SosuBot.Helpers;
 using SosuBot.Helpers.OutputText;
 using Telegram.Bot;
 using Telegram.Bot.Types;
@@ -244,7 +245,9 @@ public sealed class ReplayRenderPreparationService(
             {
                 // ReplayDecoder disposes the stream it receives. Decode a copy so
                 // that the original stream can still be passed to the renderer.
-                using MemoryStream decoderStream = new(replayStream.ToArray(), writable: false);
+                // The copy gets whole-millisecond life bar times: OsuParsers fails on lazer's decimal ones.
+                using MemoryStream decoderStream = new(
+                    ReplayFileCompatibility.NormalizeLifeBar(replayStream.ToArray()), writable: false);
                 replayInfo = OsuParsers.Decoders.ReplayDecoder.Decode(decoderStream);
                 replayStream.Position = 0;
             }

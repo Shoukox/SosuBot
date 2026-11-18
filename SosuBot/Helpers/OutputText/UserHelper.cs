@@ -142,4 +142,24 @@ public static class UserHelper
             ]
         });
     }
+
+    /// <summary>
+    ///     The mode buttons under a /userp picture. The shown mode is marked and its button does nothing, so a click
+    ///     on it does not draw the same picture again.
+    /// </summary>
+    public static InlineKeyboardMarkup BuildUserPictureKeyboard(string username, Playmode shownMode)
+    {
+        InlineKeyboardButton Button(string title, Playmode mode) => mode == shownMode
+            ? new InlineKeyboardButton($"• {title}") { CallbackData = $"{UserPictureCallbackCommand} {UserPictureShownMode}" }
+            : new InlineKeyboardButton(title) { CallbackData = $"{UserPictureCallbackCommand} {(int)mode} {username}" };
+
+        return new InlineKeyboardMarkup(new InlineKeyboardButton[][]
+        {
+            [Button("Standard", Playmode.Osu), Button("Taiko", Playmode.Taiko)],
+            [Button("Catch", Playmode.Catch), Button("Mania", Playmode.Mania)]
+        });
+    }
+
+    public const string UserPictureCallbackCommand = "userp";
+    public const string UserPictureShownMode = "shown";
 }
