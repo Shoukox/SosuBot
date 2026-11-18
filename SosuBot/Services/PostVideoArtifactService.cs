@@ -52,16 +52,16 @@ public sealed class PostVideoArtifactService(
         string beatmapTitle = CleanOneLine(beatmapset.Title ?? "Unknown map");
         string difficultyName = CleanOneLine(beatmap.Version ?? "Unknown difficulty");
         string mapper = CleanOneLine(beatmapset.Creator ?? "unknown");
-        string mapUrl = $"https://osu.ppy.sh/beatmaps/{beatmapId}";
-        string scoreUrl = $"https://osu.ppy.sh/scores/{scoreId}";
+        string mapUrl = $"{OsuConstants.BaseBeatmapUrl}{beatmapId}";
+        string scoreUrl = $"{OsuConstants.BaseScoreUrl}{scoreId}";
         string mapperUrl = beatmapset.UserId is { } mapperId
-            ? $"https://osu.ppy.sh/users/{mapperId}"
-            : $"https://osu.ppy.sh/users/{Uri.EscapeDataString(mapper)}";
+            ? $"{OsuConstants.BaseUsersUrl}{mapperId}"
+            : $"{OsuConstants.BaseUsersUrl}{Uri.EscapeDataString(mapper)}";
         string userUrl = scoreUser?.Id is { } userId
-            ? $"https://osu.ppy.sh/users/{userId}"
+            ? $"{OsuConstants.BaseUsersUrl}{userId}"
             : score.UserId is { } profileScoreUserId
-                ? $"https://osu.ppy.sh/users/{profileScoreUserId}"
-                : "https://osu.ppy.sh/";
+                ? $"{OsuConstants.BaseUsersUrl}{profileScoreUserId}"
+                : OsuConstants.HomePageUrl;
 
         GetBeatmapAttributesResponse? attributes = await osuApi.Beatmaps.GetBeatmapAttributes(
             beatmapId,
@@ -175,8 +175,8 @@ public sealed class PostVideoArtifactService(
 
         var output = new StringBuilder();
         output.AppendLine("👇🇺🇿 uzOSU! community 🇺🇿👇");
-        output.AppendLine("Telegram channel - https://t.me/uzbOsu");
-        output.AppendLine("Telegram chat - https://t.me/UzOsuAL");
+        output.AppendLine($"Telegram channel - {PostVideoConstants.CommunityChannelUrl}");
+        output.AppendLine($"Telegram chat - {PostVideoConstants.CommunityChatUrl}");
         output.AppendLine();
         output.AppendLine("//🎶Beatmap info🎶");
         output.AppendLine($"Map link: {mapUrl}");
@@ -192,9 +192,9 @@ public sealed class PostVideoArtifactService(
         output.AppendLine();
         output.AppendLine("//Useful links");
         output.AppendLine($"Skin used in replay: {CleanOneLine(skinName)}");
-        output.AppendLine("osu! related telegram bot: @shiukkz2bot");
+        output.AppendLine($"osu! related telegram bot: {PostVideoConstants.RelatedBotMention}");
         output.AppendLine();
-        output.AppendLine("osu! is a free to play online rhythm game, which you can use as a rhythm trainer online with lots of gameplay music! https://osu.ppy.sh/");
+        output.AppendLine($"osu! is a free to play online rhythm game, which you can use as a rhythm trainer online with lots of gameplay music! {OsuConstants.HomePageUrl}");
         output.AppendLine();
         output.AppendLine($"#osu #uzosu #{playerTag} #ru #en #english #russian #uzbekistan #uzbek #osugame #{mods.ToLowerInvariant()}");
         return output.ToString();
