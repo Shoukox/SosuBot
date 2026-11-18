@@ -59,7 +59,7 @@ public sealed class AiChatTests
         memory.Remember(GroupMessage(2, "/c ai как дела?\nчто нового"));
         memory.Remember(GroupMessage(3, "/calc 98%"));
 
-        Assert.Equal(["как дела?\nчто нового", "/calc 98%"], memory.GetRecent(-100).Select(m => m.Text));
+        Assert.Equal(["как дела?\nчто нового", "[команда боту: /calc 98%]"], memory.GetRecent(-100).Select(m => m.Text));
         Assert.Equal("оцени\nскор", AiChatMemory.ExtractAiCommandPrompt("/c@sosubot ai оцени\nскор"));
         Assert.Equal("", AiChatMemory.ExtractAiCommandPrompt("/c ai"));
         Assert.Null(AiChatMemory.ExtractAiCommandPrompt("/c msg ai"));
@@ -74,7 +74,7 @@ public sealed class AiChatTests
         memory.Remember(GroupMessage(3, "/aim прокачать"));
         memory.Remember(GroupMessage(4, "/c"));
 
-        Assert.Equal(["кто топ1 в мире?", "(позвали тебя)", "/aim прокачать"], memory.GetRecent(-100).Select(m => m.Text));
+        Assert.Equal(["кто топ1 в мире?", "(позвали тебя)", "[команда боту: /aim прокачать]"], memory.GetRecent(-100).Select(m => m.Text));
         Assert.Equal("как\nдела", AiChatMemory.ExtractAiCommandPrompt("/ai как\nдела"));
         Assert.Equal("", AiChatMemory.ExtractAiCommandPrompt("/ai@sosubot"));
         Assert.Null(AiChatMemory.ExtractAiCommandPrompt("/aim"));
@@ -97,26 +97,26 @@ public sealed class AiChatTests
 
     [Theory]
     [InlineData("@sosubot подбери карту", "подбери карту")]
-    [InlineData("Соня, оцени скор", "Соня, оцени скор")]
-    [InlineData("сонь глянь", "сонь глянь")]
+    [InlineData("слушай @SosuBot, оцени скор", "слушай , оцени скор")]
+    [InlineData("@sosubot_fan привет", null)]
+    [InlineData("Соня, оцени скор", null)]
     [InlineData("просто болтаем", null)]
-    [InlineData("сонный я сегодня", null)]
-    public void GroupMessagesCallTheAiByMentionOrName(string text, string? expected)
+    public void OnlyAMentionOfTheBotCallsTheAi(string text, string? expected)
     {
-        Assert.Equal(expected, AiTriggers.Detect(GroupMessage(1, text), BotUsername, BotId, hasOsuLink: false));
+        Assert.Equal(expected, AiTriggers.Detect(GroupMessage(1, text), BotUsername));
     }
 
     [Fact]
-    public void RepliesToTheBotAndPrivateMessagesCallTheAi()
+    public void RepliesToTheBotAndPrivateMessagesDoNotCallTheAi()
     {
         Message botMessage = GroupMessage(1, "S rank 98%", userId: BotId);
-        Assert.Equal("ну как?", AiTriggers.Detect(GroupMessage(2, "ну как?", reply: botMessage), BotUsername, BotId, false));
+        Assert.Null(AiTriggers.Detect(GroupMessage(2, "ну как?", reply: botMessage), BotUsername));
 
         Message privateMessage = GroupMessage(3, "привет");
         privateMessage.Chat = new Chat { Id = 1, Type = ChatType.Private };
-        Assert.Equal("привет", AiTriggers.Detect(privateMessage, BotUsername, BotId, hasOsuLink: false));
-        // A beatmap link in a private chat still gets the beatmap card.
-        Assert.Null(AiTriggers.Detect(privateMessage, BotUsername, BotId, hasOsuLink: true));
+        Assert.Null(AiTriggers.Detect(privateMessage, BotUsername));
+        privateMessage.Text = "@sosubot привет";
+        Assert.Equal("привет", AiTriggers.Detect(privateMessage, BotUsername));
     }
 
     [Fact]

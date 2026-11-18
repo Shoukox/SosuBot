@@ -97,7 +97,11 @@ public sealed partial class AiChatMemory
             // Other admin commands stay private.
             bool adminCommand = text.StartsWith("/c", StringComparison.OrdinalIgnoreCase) &&
                                 (text.Length == 2 || char.IsWhiteSpace(text[2]) || text[2] == '@');
-            return adminCommand ? null : text;
+            if (adminCommand)
+                return null;
+
+            // A command is something done with the bot, not a topic of conversation.
+            return text.StartsWith('/') ? $"[команда боту: {text}]" : text;
         }
 
         return message.Type switch

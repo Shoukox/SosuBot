@@ -142,6 +142,20 @@ public sealed partial class AiToolbox(
               "additionalProperties": false
             }
             """),
+        Tool("analyze_beatmap",
+            "Reads the beatmap file and tells how the map plays: rhythm (share of 1/2, 1/4, 1/3 notes), streams and bursts with their BPM and spacing, jumps with their distance and angles, sliders (kicksliders, SV changes), BPM changes, note density, aim vs speed stars and a timeline of sections. Mania: keys, LN, chords, jacks. Taiko: kat share, colour changes. Catch: hyperdashes. Use it to describe a map, say if it has streams or jumps, or compare maps.",
+            """
+            {
+              "type": "object",
+              "properties": {
+                "beatmap_id": { "type": "integer" },
+                "mode": { "type": ["integer", "null"], "description": "0 std, 1 taiko, 2 catch, 3 mania; null for the beatmap's own mode" },
+                "mods": { "type": "string", "description": "Mod acronyms like DT or HR, empty for no mods; DT/HT change BPM and density" }
+              },
+              "required": ["beatmap_id", "mode", "mods"],
+              "additionalProperties": false
+            }
+            """),
         Tool("get_ranking",
             "osu! rankings, global or of one country: players by pp (performance) or by ranked score (score), or countries by total pp (country). Use it for 'who is #1', 'best players of Uzbekistan', 'strongest country'.",
             """
@@ -357,6 +371,7 @@ public sealed partial class AiToolbox(
                 "get_beatmap" => await GetBeatmapAsync(args),
                 "search_beatmaps" => await SearchBeatmapsAsync(args, cancellationToken),
                 "calculate_pp" => await CalculatePpAsync(args, cancellationToken),
+                "analyze_beatmap" => await AnalyzeBeatmapAsync(args, cancellationToken),
                 "get_ranking" => await GetRankingAsync(args, cancellationToken),
                 "search_wiki" => await SearchWikiAsync(args, cancellationToken),
                 "get_wiki_page" => await GetWikiPageAsync(args, cancellationToken),
@@ -576,10 +591,7 @@ public sealed partial class AiToolbox(
             return new { error = "the beatmap is too long to calculate" };
 
         Playmode mode = ReadMode(args, "mode") ?? beatmap.Mode?.ParseRulesetToPlaymode() ?? Playmode.Osu;
-        string modsText = (args.GetProperty("mods").GetString() ?? "").Replace("+", "").Replace(" ", "")
-            .Replace(",", "");
-        if (modsText.Equals("NM", StringComparison.OrdinalIgnoreCase)) modsText = "";
-        if (!modsText.TryParseMods(mode, out GameMod[] mods))
+        if (!TryReadMods(args, mode, out GameMod[] mods, out string modsText))
             return new { error = $"unknown mods {modsText}" };
 
         double accuracy = Math.Clamp(args.GetProperty("accuracy").GetDouble(), 1, 100) / 100;

@@ -68,16 +68,12 @@ public sealed class TextHandler : CommandBase<Message>
     }
 
     /// <summary>
-    /// Messages to the AI persona: in private chats, replies to the bot, @mentions and messages starting with her
-    /// name. Only admins and the creator talk to her; for everyone else the bot behaves as before.
+    /// A message that mentions the bot by @username goes to the AI persona (besides the /ai and /c ai commands).
+    /// Only admins and the creator talk to her; for everyone else the bot behaves as before.
     /// </summary>
     private async Task<bool> TryAnswerAsAiAsync()
     {
-        List<string> links = Context.Update.GetAllLinks().ToList();
-        bool hasOsuLink = OsuHelper.ParseOsuBeatmapLink(links, out _, out _) is not null ||
-                          OsuHelper.ParseOsuScoreLink(links, out _) is not null ||
-                          OsuHelper.ParseOsuUserLink(links, out _) is not null;
-        string? prompt = AiTriggers.Detect(Context.Update, _botConfig.Username, _botConfig.Id, hasOsuLink);
+        string? prompt = AiTriggers.Detect(Context.Update, _botConfig.Username);
         if (prompt is null)
             return false;
 

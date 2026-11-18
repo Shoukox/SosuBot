@@ -36,6 +36,16 @@ public sealed class OpenAiService
 
     private const int MaxToolRounds = 6;
 
+    /// <summary>
+    /// Sits right before the new message whenever the AI has already talked in this chat: next to the message it is
+    /// followed far more reliably than the same rule deep in the persona prompt.
+    /// </summary>
+    private const string TopicChangeReminder =
+        "Перед ответом сравни новое сообщение с тем, о чём вы только что говорили. Если тема резко сменилась на " +
+        "совсем другую, начни с короткой живой реакции на это в своём стиле (каждый раз своими словами, можно " +
+        "отдельным первым сообщением через |||), потом отвечай. Если тема та же или это продолжение, про смену темы " +
+        "ничего не пиши.";
+
     private readonly ResponsesClient _client;
     private readonly OpenAiConfiguration _configuration;
     private readonly AiToolbox _toolbox;
@@ -66,6 +76,8 @@ public sealed class OpenAiService
         items.AddRange(request.History.Select(turn => turn.FromAssistant
             ? ResponseItem.CreateAssistantMessageItem(turn.Text, [])
             : (ResponseItem)ResponseItem.CreateUserMessageItem(turn.Text)));
+        if (request.History.Any(turn => turn.FromAssistant))
+            items.Add(ResponseItem.CreateDeveloperMessageItem(TopicChangeReminder));
         items.Add(ResponseItem.CreateUserMessageItem(request.Message));
 
         var text = new StringBuilder();
