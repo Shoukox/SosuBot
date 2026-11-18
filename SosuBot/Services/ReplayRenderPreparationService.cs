@@ -240,16 +240,15 @@ public sealed class ReplayRenderPreparationService(
         Replay? replayInfo = null;
         if (replayStream is not null)
         {
-            replayStream.Position = 0;
             try
             {
-                // ReplayDecoder disposes the stream it receives. Decode a copy so
-                // that the original stream can still be passed to the renderer.
-                // The copy gets whole-millisecond life bar times: OsuParsers fails on lazer's decimal ones.
-                using MemoryStream decoderStream = new(
-                    ReplayFileCompatibility.NormalizeLifeBar(replayStream.ToArray()), writable: false);
+                // Both the bot and ClientRenderer use OsuParsers, which requires whole-millisecond life bar times.
+                byte[] compatibleReplay = ReplayFileCompatibility.NormalizeLifeBar(replayStream.ToArray());
+                using MemoryStream decoderStream = new(compatibleReplay, writable: false);
                 replayInfo = OsuParsers.Decoders.ReplayDecoder.Decode(decoderStream);
-                replayStream.Position = 0;
+
+                replayStream.Dispose();
+                replayStream = new MemoryStream(compatibleReplay, writable: false);
             }
             catch (Exception exception) when (exception is not OperationCanceledException)
             {

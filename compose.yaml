@@ -115,9 +115,15 @@ services:
       Monitoring__Enabled: "false"
       Redis__Host: redis-service
       Redis__Port: "6379"
-      ConnectionStrings__Postgres: "Host=db-service;Port=5432;Database=${POSTGRES_DB:-sosubot};Username=${POSTGRES_USER:-sosubot}"
       Database__PasswordFile: /run/secrets/db-password
       Database__MigrateOnly: "true"
+    volumes:
+      - type: bind
+        source: ./SosuBot/appsettings.json
+        target: /app/appsettings.json
+        read_only: true
+        bind:
+          create_host_path: false
     secrets:
       - db-password
     depends_on:

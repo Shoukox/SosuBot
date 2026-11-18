@@ -118,7 +118,6 @@ public static class ReplayFileCompatibility
     /// milliseconds and everything else byte for byte; the file itself when there is nothing to change or it is
     /// not a replay at all, so the decoder can report that as usual.
     /// </summary>
-    /// <remarks>Only the copy for the decoder is changed: the renderer gets the original file.</remarks>
     public static byte[] NormalizeLifeBar(byte[] replay)
     {
         try

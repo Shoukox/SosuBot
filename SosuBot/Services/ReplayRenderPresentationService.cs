@@ -49,10 +49,10 @@ public sealed class ReplayRenderPresentationService(
         string? videoPath = null)
     {
         string watchUrl = BuildWatchUrl(job.VideoUri);
-        string? skinUrl = renderSettings.SkinName.Equals("default", StringComparison.OrdinalIgnoreCase)
-            ? null
-            : replayRenderService.BuildSkinUrl(renderSettings.SkinName, job.VideoUri).ToString();
-        string textOrCaption = LocalizationMessageHelper.ReplayFinishedWithLink(language, watchUrl, skinUrl);
+        // string? skinUrl = renderSettings.SkinName.Equals("default", StringComparison.OrdinalIgnoreCase)
+        //     ? null
+        //     : replayRenderService.BuildSkinUrl(renderSettings.SkinName, job.VideoUri).ToString();
+        string textOrCaption = LocalizationMessageHelper.ReplayFinishedWithLink(language, watchUrl);
         videoPath ??= ResolveVideoPath(job);
         if (videoPath is null)
         {

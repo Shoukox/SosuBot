@@ -108,7 +108,6 @@ public sealed class ReplayCardService(
             : null;
         string title = $"{beatmapset?.Artist} - {beatmapset?.Title} [{beatmap.Version}]";
         string caption = language.replayCard_caption.Fill([
-            $"https://osu.ppy.sh/users/{Uri.EscapeDataString(replay.PlayerName ?? "")}",
             Escape(replay.PlayerName),
             $"https://osu.ppy.sh/b/{beatmapId}",
             Escape(title)

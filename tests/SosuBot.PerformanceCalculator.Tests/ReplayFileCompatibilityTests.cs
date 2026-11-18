@@ -1,7 +1,13 @@
+using System.Net;
 using System.Text;
+using Microsoft.Extensions.Logging.Abstractions;
+using OsuParsers.Decoders;
 using osu.Game.Rulesets.Scoring;
 using osu.Game.Scoring;
 using SosuBot.Helpers;
+using SosuBot.Services;
+using Telegram.Bot;
+using Telegram.Bot.Types;
 using Xunit;
 
 namespace SosuBot.PerformanceCalculator.Tests;
@@ -37,6 +43,32 @@ public sealed class ReplayFileCompatibilityTests
     [InlineData("", "")]
     public void OnlyDecimalTimesChange(string lifeBar, string expected) =>
         Assert.Equal(expected, ReplayFileCompatibility.NormalizeLifeBar(lifeBar));
+
+    [Fact]
+    public async Task RenderPreparationPassesAReplayTheWorkerCanDecode()
+    {
+        // LZMA-compressed replay frames for a short osu! play.
+        byte[] frames = Convert.FromBase64String("XQAAgAApAAAAAAAAAAAYHwJDUQO0DobDyTn5IJXnep+o2uAkrBY7+Jgkt11Nt30f/+yQYAA=");
+        byte[] replay = FullReplay(30000019, -1, LazerScoreBlock, "255.63|1,2334.24|0.94,", frames);
+
+        using var httpClient = new HttpClient(new TelegramReplayHandler(replay));
+        var bot = new TelegramBotClient("123:offline", httpClient);
+        var preparation = new ReplayRenderPreparationService(null!, NullLogger<ReplayRenderPreparationService>.Instance);
+        var message = new Message
+        {
+            Text = "/render",
+            ReplyToMessage = new Message { Document = new Document { FileId = "replay" } }
+        };
+
+        ReplayRenderPreparationResult result = await preparation.PrepareMessageAsync(bot, message, new());
+        Assert.Equal(ReplayRenderPreparationFailure.None, result.Failure);
+        using PreparedReplay? prepared = result.Request;
+        Assert.NotNull(prepared);
+        MemoryStream upload = Assert.IsType<MemoryStream>(prepared.ReplayStream);
+        Assert.Equal(0, upload.Position);
+        Assert.NotEmpty(ReplayDecoder.Decode(upload).ReplayFrames);
+        Assert.Equal(FullReplay(30000019, -1, LazerScoreBlock, "256|1,2334|0.94,", frames), upload.ToArray());
+    }
 
     [Fact]
     public void StableReplaysAndBrokenFilesAreReturnedAsTheyAre()
@@ -98,7 +130,8 @@ public sealed class ReplayFileCompatibilityTests
     }
 
     /// <summary>A whole .osr file: header, life bar, timestamp, frames, online id and the osu!lazer block.</summary>
-    private static byte[] FullReplay(int version, long onlineId, byte[]? lazerBlock)
+    private static byte[] FullReplay(int version, long onlineId, byte[]? lazerBlock, string lifeBar = "27083|1,",
+        byte[]? frames = null)
     {
         using var stream = new MemoryStream();
         using var writer = new BinaryWriter(stream);
@@ -113,10 +146,11 @@ public sealed class ReplayFileCompatibilityTests
         writer.Write((ushort)415);
         writer.Write((byte)0);
         writer.Write(0);
-        WriteString(writer, "27083|1,");
+        WriteString(writer, lifeBar);
         writer.Write(638000000000000000L);
-        writer.Write(Tail.Length);
-        writer.Write(Tail);
+        frames ??= Tail;
+        writer.Write(frames.Length);
+        writer.Write(frames);
         writer.Write(onlineId);
         if (lazerBlock is not null)
         {
@@ -148,6 +182,24 @@ public sealed class ReplayFileCompatibilityTests
         writer.Write(Tail);
         writer.Flush();
         return stream.ToArray();
+    }
+
+    private sealed class TelegramReplayHandler(byte[] replay) : HttpMessageHandler
+    {
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request,
+            CancellationToken cancellationToken)
+        {
+            string path = request.RequestUri!.AbsolutePath;
+            HttpResponseMessage response = path.EndsWith("/getFile", StringComparison.OrdinalIgnoreCase)
+                ? new(HttpStatusCode.OK)
+                {
+                    Content = new StringContent(
+                        """{"ok":true,"result":{"file_id":"replay","file_unique_id":"unique","file_path":"replay.osr"}}""",
+                        Encoding.UTF8, "application/json")
+                }
+                : new(HttpStatusCode.OK) { Content = new ByteArrayContent(replay) };
+            return Task.FromResult(response);
+        }
     }
 
     private static void WriteString(BinaryWriter writer, string? text)

@@ -341,7 +341,7 @@ public sealed class Deutsch : ILocalization
         "Beispiele: /c markdown\n/c rich\n/c json\n/c ai Text (oder /ai Text)\n/c kick (als Antwort auf eine Nachricht)";
     public string custom_richFailed => "Telegram hat die Rich-Nachricht abgelehnt: <code>{}</code>";
     public string replayCard_caption =>
-        "🎬 Replay von <a href=\"{}\"><b>{}</b></a>\n🗺 <a href=\"{}\">{}</a>\n\nFür ein Video antworte auf die Datei mit /render";
+        "🎬 Replay von <b>{}</b>\n🗺 <a href=\"{}\">{}</a>\n\nFür ein Video antworte auf die Datei mit /render";
     public string replayCard_invalid => "Diese .osr-Datei konnte nicht gelesen werden: Sie scheint beschädigt zu sein.";
     public string replayCard_beatmapNotFound =>
         "Ein Replay von <b>{}</b>, aber die Beatmap gibt es nicht auf osu!: Vielleicht wurde sie nicht hochgeladen oder aktualisiert.";

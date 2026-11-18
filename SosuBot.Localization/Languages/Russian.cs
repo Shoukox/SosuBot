@@ -348,7 +348,7 @@ public sealed class Russian : ILocalization
         "Примеры: /c markdown\n/c rich\n/c json\n/c ai текст (или /ai текст)\n/c kick (ответом на сообщение)";
     public string custom_richFailed => "Telegram не принял rich-сообщение: <code>{}</code>";
     public string replayCard_caption =>
-        "🎬 Реплей игрока <a href=\"{}\"><b>{}</b></a>\n🗺 <a href=\"{}\">{}</a>\n\nЧтобы сделать видео, ответь на файл командой /render";
+        "🎬 Реплей игрока <b>{}</b>\n🗺 <a href=\"{}\">{}</a>\n\nЧтобы сделать видео, ответь на файл командой /render";
     public string replayCard_invalid => "Не получилось прочитать этот .osr файл: похоже, он повреждён.";
     public string replayCard_beatmapNotFound =>
         "Реплей игрока <b>{}</b>, но его карты нет на osu!: возможно, она не загружена на сайт или была обновлена.";
